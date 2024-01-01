@@ -1,15 +1,10 @@
-trait Printable<T> {
-    fn print(a:T);
-}
-
-struct Test;
-
-impl<T> Printable<T> for Test where T: std::fmt::Display {
-    fn print(a:T) {
-        println!("{a}");
-    }
-}
-
+mod test_mod;
+mod test_mods;
+mod a_sibling_file;
 fn main() {
-    <Test>::print(1.5);
+    use test_mod::a_mod::hello_world;
+    use test_mods::another_mod;
+    hello_world();
+    another_mod::another_fn();
+    a_sibling_file::sibling_mod::sibling_fn();
 }
