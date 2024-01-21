@@ -152,112 +152,64 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-constexpr int N = 1e6 + 10;
-
-ll s[N];
-ll n, sa[N], rk[N], oldrk[N << 1], id[N], key1[N], cnt[N], height[N];
-
-bool cmp(ll x, ll y, ll w) {
-  return oldrk[x] == oldrk[y] && oldrk[x + w] == oldrk[y + w];
-}
-
-void calc_sa() {
-    ll i, m = N - 1, p, w;
-    for (i = 1; i <= n; ++i) ++cnt[rk[i] = s[i]];
-      for (i = 1; i <= m; ++i) cnt[i] += cnt[i - 1];
-      for (i = n; i >= 1; --i) sa[cnt[rk[i]]--] = i;
-
-      for (w = 1;; w <<= 1, m = p) {
-        for (p = 0, i = n; i > n - w; --i) id[++p] = i;
-        for (i = 1; i <= n; ++i)
-          if (sa[i] > w) id[++p] = sa[i] - w;
-
-        memset(cnt, 0, sizeof(cnt));
-        for (i = 1; i <= n; ++i) ++cnt[key1[i] = rk[id[i]]];
-
-        for (i = 1; i <= m; ++i) cnt[i] += cnt[i - 1];
-        for (i = n; i >= 1; --i) sa[cnt[key1[i]]--] = id[i];
-        memcpy(oldrk + 1, rk + 1, n * sizeof(ll));
-        for (p = 0, i = 1; i <= n; ++i)
-          rk[sa[i]] = cmp(sa[i], sa[i - 1], w) ? p : ++p;
-        if (p == n) {
-          break;
+void solve() {
+    read(int, n, q);
+    // for periodic prefixes, last denotes the position of its last period.
+    // for other prefixes, last denotes the position of its period part.
+    vector<int> last(n);
+    vector<int> per(n);
+    vector<pli> length(n);
+    vector<ll> num(n);  // if the current op is append, then it stores the added number.
+    for (int i  =0; i < n; ++i) {
+        read(ll, b, x);
+        if (b == 1) {
+            length[i] = {i ? (length[i - 1].first + 1) : 1, i};
+            num[i] = x;
+            if (i) {
+                if (per[i-1]) last[i] = i - 1;
+                else last[i] = last[i-1];
+            } else {
+                last[i] = i;
+            }
+            per[i] = 0;
+        } else {
+            ll prev_len = length[i-1].first;
+            if (x >= LLONG_MAX / prev_len) {
+                length[i] = {1e18, i};
+            } else {
+                length[i] = {min(ll(1e18), prev_len * (x + 1)), i};
+            }
+            if (per[i-1]) last[i] = last[i-1];
+            else last[i] = i - 1;
+            per[i] = 1;
         }
-      }
-}
-
-void calc_height() {
-    int i, k;
-  for (i = 1, k = 0; i <= n; ++i) {
-    if (rk[i] == 0) continue;
-    if (k) --k;
-    while (s[i + k] == s[sa[rk[i] - 1] + k]) ++k;
-    height[rk[i]] = k;
-  }
-}
-
-ll d[4*N];
-
-void build(int s,int t,int p){  // root p, range [s,t]
-    // debug(s), debug(t), debug(p);
-    if(s==t){
-        d[p]=height[s];
-        return;
     }
-    int m=s+(t-s>>1);
-    build(s,m,p*2),build(m+1,t,p*2+1);
-    d[p]=min(d[p*2], d[p*2+1]);
-}
-
-ll getmin(int s,int t,int p,int l,int r){
-    if (l > r) return LLONG_MAX;
-    if(l<=s&&t<=r)return d[p];
-    int m=s+(t-s>>1);
-    ll sum=LLONG_MAX;
-    if(l<=m)sum=min(sum, getmin(s,m,p*2,l,r));
-    if(r>m) sum=min(sum, getmin(m+1,t,p*2+1,l,r));
-    return sum;
+    while (q--) {
+        read(ll, k);
+        int i = lower_bound(length.begin(), length.end(), make_pair(k, 0))->second;
+        loop {
+            if (i == 0) {
+                cout << num[0] << ' ';
+                break;
+            }
+            ll curr_len = length[last[i]].first;
+            if (per[i]) {
+                k = (k - 1) % curr_len + 1;
+                i = last[i];
+            } else {
+                if (k > curr_len) {
+                    cout << num[last[i] + k - curr_len] << ' ';
+                    break;
+                } else {
+                    i = last[i];
+                }
+            }
+        }
+    }
+    cout << endl;
 }
 
 int main() {
-    untie;
-    cin >> n;
-    read(int, k);
-    for (int i = 1; i <= n; ++i) cin >> s[i];
-    calc_sa(), calc_height();
-    build(1, n, 1);
-    int l = 0, r = n;
-    auto binary_search = [&] (int start, int length) {
-        int l = start, r = n;
-        while (l < r) {
-            int mid = l + r + 1 >> 1;
-            if (getmin(1, n, 1, start + 1, mid) < length) {
-                r = mid - 1;
-            } else {
-                l = mid;
-            }
-        }
-        return l;
-    };
-    // l = 2, r = 4;
-    // for (int i = 1; i <= n; ++i) cerr << height[i] << " \n"[i == n];
-    // debug(rk[2]), debug(rk[4]);
-    // for (int start = 1; start <= n; ++start)
-    //     for (int i = start; i <= n; ++i) cerr << getmin(1, n, 1, start, i) << " \n"[i == n];
-    while (l < r) {
-        int curr_len = l + r + 1 >> 1;
-        ll match = 0;
-        for (int i = 1; i <= n; ++i) {
-            ll idx = binary_search(i, curr_len);
-            match = max(match, idx - i + 1);
-        }
-        // debug(curr_len), debug(match);
-        if (match < k) {
-            // cerr << curr_len << " not ok\n";
-            r = curr_len - 1;
-        } else {
-            l = curr_len;
-        }
-    }
-    cout << l << endl;
+    read(int, t);
+    while (t--) solve();
 }

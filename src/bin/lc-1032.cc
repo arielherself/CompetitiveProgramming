@@ -152,112 +152,73 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-constexpr int N = 1e6 + 10;
 
-ll s[N];
-ll n, sa[N], rk[N], oldrk[N << 1], id[N], key1[N], cnt[N], height[N];
 
-bool cmp(ll x, ll y, ll w) {
-  return oldrk[x] == oldrk[y] && oldrk[x + w] == oldrk[y + w];
-}
-
-void calc_sa() {
-    ll i, m = N - 1, p, w;
-    for (i = 1; i <= n; ++i) ++cnt[rk[i] = s[i]];
-      for (i = 1; i <= m; ++i) cnt[i] += cnt[i - 1];
-      for (i = n; i >= 1; --i) sa[cnt[rk[i]]--] = i;
-
-      for (w = 1;; w <<= 1, m = p) {
-        for (p = 0, i = n; i > n - w; --i) id[++p] = i;
-        for (i = 1; i <= n; ++i)
-          if (sa[i] > w) id[++p] = sa[i] - w;
-
-        memset(cnt, 0, sizeof(cnt));
-        for (i = 1; i <= n; ++i) ++cnt[key1[i] = rk[id[i]]];
-
-        for (i = 1; i <= m; ++i) cnt[i] += cnt[i - 1];
-        for (i = n; i >= 1; --i) sa[cnt[key1[i]]--] = id[i];
-        memcpy(oldrk + 1, rk + 1, n * sizeof(ll));
-        for (p = 0, i = 1; i <= n; ++i)
-          rk[sa[i]] = cmp(sa[i], sa[i - 1], w) ? p : ++p;
-        if (p == n) {
-          break;
+class StreamChecker {
+private:
+    vector<vector<int>> trie;
+    vector<int> tag;
+    int state;
+public:
+    StreamChecker(vector<string>& ss) {
+        state = 0;
+        int n = ss.size();
+        trie.push_back(vector<int>(26));
+        tag.push_back(0);
+        int last = 0;
+        // build trie for ss
+        for (int i = 0; i < n; ++i) {
+            auto&& s = ss[i];
+            int curr = 0;
+            for (auto&& c : s) {
+                int x = c - 'a';
+                if (!trie[curr][x])
+                    trie[curr][x] = ++last,
+                    tag.push_back(0),
+                    trie.push_back(vector<int>(26));
+                curr = trie[curr][x];
+            }
+            // cout << "state " << curr << " is for " << s << endl;
+            tag[curr] = 1;
         }
-      }
-}
 
-void calc_height() {
-    int i, k;
-  for (i = 1, k = 0; i <= n; ++i) {
-    if (rk[i] == 0) continue;
-    if (k) --k;
-    while (s[i + k] == s[sa[rk[i] - 1] + k]) ++k;
-    height[rk[i]] = k;
-  }
-}
 
-ll d[4*N];
-
-void build(int s,int t,int p){  // root p, range [s,t]
-    // debug(s), debug(t), debug(p);
-    if(s==t){
-        d[p]=height[s];
-        return;
-    }
-    int m=s+(t-s>>1);
-    build(s,m,p*2),build(m+1,t,p*2+1);
-    d[p]=min(d[p*2], d[p*2+1]);
-}
-
-ll getmin(int s,int t,int p,int l,int r){
-    if (l > r) return LLONG_MAX;
-    if(l<=s&&t<=r)return d[p];
-    int m=s+(t-s>>1);
-    ll sum=LLONG_MAX;
-    if(l<=m)sum=min(sum, getmin(s,m,p*2,l,r));
-    if(r>m) sum=min(sum, getmin(m+1,t,p*2+1,l,r));
-    return sum;
-}
-
-int main() {
-    untie;
-    cin >> n;
-    read(int, k);
-    for (int i = 1; i <= n; ++i) cin >> s[i];
-    calc_sa(), calc_height();
-    build(1, n, 1);
-    int l = 0, r = n;
-    auto binary_search = [&] (int start, int length) {
-        int l = start, r = n;
-        while (l < r) {
-            int mid = l + r + 1 >> 1;
-            if (getmin(1, n, 1, start + 1, mid) < length) {
-                r = mid - 1;
-            } else {
-                l = mid;
+        // build fail
+        vector<int> fail(last + 1);
+        vector<vector<int>> suc(last + 1);
+        deque<int> dq;
+        for (int i = 0; i < 26; ++i) {
+            if (trie[0][i]) dq.push_back(trie[0][i]), suc[0].push_back(trie[0][i]);
+        }
+        while (dq.size()) {
+            int c = dq.front(); dq.pop_front();
+            for (int i = 0; i < 26; ++i) {
+                if (trie[c][i]) {
+                    fail[trie[c][i]] = trie[fail[c]][i];
+                    suc[trie[fail[c]][i]].push_back(trie[c][i]);
+                    dq.push_back(trie[c][i]);
+                } else {
+                    trie[c][i] = trie[fail[c]][i];
+                }
             }
         }
-        return l;
-    };
-    // l = 2, r = 4;
-    // for (int i = 1; i <= n; ++i) cerr << height[i] << " \n"[i == n];
-    // debug(rk[2]), debug(rk[4]);
-    // for (int start = 1; start <= n; ++start)
-    //     for (int i = start; i <= n; ++i) cerr << getmin(1, n, 1, start, i) << " \n"[i == n];
-    while (l < r) {
-        int curr_len = l + r + 1 >> 1;
-        ll match = 0;
-        for (int i = 1; i <= n; ++i) {
-            ll idx = binary_search(i, curr_len);
-            match = max(match, idx - i + 1);
-        }
-        // debug(curr_len), debug(match);
-        if (match < k) {
-            // cerr << curr_len << " not ok\n";
-            r = curr_len - 1;
-        } else {
-            l = curr_len;
-        }
+        auto dfs = [&] (auto dfs, int curr, int prev_tag) -> void {
+            if (prev_tag | tag[curr]) {
+                tag[curr] = 1;
+            }
+            for (auto&& c : suc[curr]) dfs(dfs, c, prev_tag | tag[curr]);
+        };
+        dfs(dfs, 0, 0);
     }
-    cout << l << endl;
-}
+
+    bool query(char letter) {
+        state = trie[state][letter - 'a'];
+        return tag[state];
+    }
+};
+
+/**
+ * Your StreamChecker object will be instantiated and called as such:
+ * StreamChecker* obj = new StreamChecker(words);
+ * bool param_1 = obj->query(letter);
+ */
