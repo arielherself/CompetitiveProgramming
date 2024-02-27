@@ -213,39 +213,43 @@ int period(string s) {  // find the length of shortest recurring period
 
 void dump() {}
 
-void prep() {}
-
 void solve() {
-    read(int, n, h);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end());
-    auto work = [&] (vector<int> pattern) -> int {
-        int ptr = 0;
-        int i = 0;
-        ll curr = h;
-        while (i < n) {
-            if (curr > a[i]) {
-                curr += a[i] / 2;
-                i += 1;
-            } else {
-                if (ptr >= 3) break;
-                curr *= pattern[ptr];
-                ptr += 1;
-            }
-        }
-        return i;
-    };
-    int res = 0;
-    vector<vector<int>> patterns = {{2, 2, 3}, {2, 3, 2}, {3, 2, 2}};
-    for (auto&& p : patterns) {
-        res = max(res, work(p));
+    read(int, n, k);
+    adj(ch, n);
+    for (int i = 2; i <= n; ++i) {
+        read(int, p);
+        edge(ch, p, i);
     }
-    cout << res << endl;
+    auto check = [&] (int mx) -> bool {
+        int res = 0;
+        auto dfs = [&] (auto dfs, int v, int pa, int h) -> void {
+            if (h > mx) {
+                res += 1;
+                h = 1;
+            }
+            for (auto&& u : ch[v]) {
+                if (u != pa) {
+                    dfs(dfs, u, v, h + 1);
+                }
+            }
+        };
+        dfs(dfs, 1, 0, 0);
+        return res <= k;
+    };
+    int l = 1, r = 2e5 + 10;
+    while (l < r) {
+        int mid = l + r >> 1;
+        if (check(mid)) {
+            r = mid;
+        } else {
+            l = mid + 1;
+        }
+    }
+    cout << l << endl;
 }
 
 int main() {
     untie, cout.tie(NULL);
-    prep();
 #ifdef SINGLE_TEST_CASE
     solve();
 #else

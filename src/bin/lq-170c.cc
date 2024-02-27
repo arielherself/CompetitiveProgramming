@@ -30,7 +30,6 @@ using pll = pair<ll, ll>;
 
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
-constexpr ll INFLL = 0x3f3f3f3f3f3f3f3fLL;
 constexpr ull MDL = 1e9 + 7;
 constexpr ull PRIME = 998'244'353;
 constexpr ll MDL1 = 8784491;
@@ -213,39 +212,26 @@ int period(string s) {  // find the length of shortest recurring period
 
 void dump() {}
 
-void prep() {}
-
 void solve() {
-    read(int, n, h);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end());
-    auto work = [&] (vector<int> pattern) -> int {
-        int ptr = 0;
-        int i = 0;
-        ll curr = h;
-        while (i < n) {
-            if (curr > a[i]) {
-                curr += a[i] / 2;
-                i += 1;
-            } else {
-                if (ptr >= 3) break;
-                curr *= pattern[ptr];
-                ptr += 1;
-            }
-        }
-        return i;
+    read(int, k, m);
+    int l = 1, r = m * m + 1;
+    auto calc = [&] (int x) -> double {
+        return sqrt(x) + int(log(x) / log(k)) - m;
     };
-    int res = 0;
-    vector<vector<int>> patterns = {{2, 2, 3}, {2, 3, 2}, {3, 2, 2}};
-    for (auto&& p : patterns) {
-        res = max(res, work(p));
+    debug(log(2) / log(1));
+    while (l < r) {
+        int mid = l + r >> 1;
+        if (calc(mid) > 0) {
+            r = mid;
+        } else {
+            l = mid + 1;
+        }
     }
-    cout << res << endl;
+    cout << l << endl;
 }
 
 int main() {
     untie, cout.tie(NULL);
-    prep();
 #ifdef SINGLE_TEST_CASE
     solve();
 #else

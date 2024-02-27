@@ -30,7 +30,6 @@ using pll = pair<ll, ll>;
 
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
-constexpr ll INFLL = 0x3f3f3f3f3f3f3f3fLL;
 constexpr ull MDL = 1e9 + 7;
 constexpr ull PRIME = 998'244'353;
 constexpr ll MDL1 = 8784491;
@@ -208,44 +207,79 @@ int period(string s) {  // find the length of shortest recurring period
 /////////////////////////////////////////////////////////
 
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
-void prep() {}
+auto umx = [] (const pii& a, const pii& b) -> pii { 
+    array<int, 4> t {a.first, a.second, b.first, b.second};
+    sort(t.begin(), t.end(), greater<>());
+    return {t[0], t[1]};
+};
+
+template<typename T> class segtree {
+private:
+    using size_type = uint64_t;
+    T _max;
+    vector<pii> d;
+
+    void _update(size_type s, size_type t, size_type p, size_type l, size_type r, T c) {
+        if (l <= s && t <= r) {
+            d[p] = {c, 0};
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        if (l <= m) _update(s, m, p * 2, l, r, c);
+        if (r > m)  _update(m + 1, t, p * 2 + 1, l, r, c);
+        d[p] = umx(d[p * 2], d[p * 2 + 1]);
+    }
+
+    pii _query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+        if (l <= s && t <= r) return d[p];
+        size_type m = s + (t - s >> 1);
+        pii res = {};
+        if (l <= m) res = umx(res, _query(s, m, p * 2, l, r));
+        if (r > m)  res = umx(res, _query(m + 1, t, p * 2 + 1, l, r));
+        return res;
+    }
+public:
+    segtree(T _max) : d(4 * _max), _max(_max) {}
+
+    void update(size_type l, size_type r, T c) {
+        _update({}, _max, 1, l, r, c);
+    }
+
+    pii query(size_type l, size_type r) {
+        return _query({}, _max, 1, l, r);
+    }
+};
 
 void solve() {
-    read(int, n, h);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end());
-    auto work = [&] (vector<int> pattern) -> int {
-        int ptr = 0;
-        int i = 0;
-        ll curr = h;
-        while (i < n) {
-            if (curr > a[i]) {
-                curr += a[i] / 2;
-                i += 1;
-            } else {
-                if (ptr >= 3) break;
-                curr *= pattern[ptr];
-                ptr += 1;
-            }
-        }
-        return i;
-    };
-    int res = 0;
-    vector<vector<int>> patterns = {{2, 2, 3}, {2, 3, 2}, {3, 2, 2}};
-    for (auto&& p : patterns) {
-        res = max(res, work(p));
+    read(int, n, q);
+    vector<pii> raw(n);
+    segtree<int> tr(n);
+    for (int i = 0; i < n; ++i) {
+        read(int, x);
+        tr.update(i + 1, i + 1, x);
+    }
+    ll res = 0;
+    while (q--) {
+        read(int, l, r);
+        auto [x, y] = tr.query(l, r);
+        res += x + y;
     }
     cout << res << endl;
+    read(int, m);
+    if (res % (m + 1) == 0) {
+        cout << "blue\n";
+    } else {
+        cout << "red\n";
+    }
 }
 
 int main() {
     untie, cout.tie(NULL);
-    prep();
 #ifdef SINGLE_TEST_CASE
     solve();
 #else

@@ -1,29 +1,25 @@
-def kmp(s, t):  # find all occurrences of t in s
-    n = len(s)
-    m = len(t)
-    next = [-1]
-    j = -1
-    i = 0
-    while i < m:
-        if j == -1 or t[i] == t[j]:
-            i += 1
-            j += 1
-            if i != m and t[j] == t[i]:
-                next.append(next[j])
-            else:
-                next.append(j)
+import  hashlib
+
+def generateLicense(email):
+    array = []
+
+    hashObject = hashlib.md5(email.encode('utf-8'))
+    hexDigest = hashObject.hexdigest()
+
+    for i in range(0, len(hexDigest),5):
+        if i < 21:
+            flag = hexDigest[i:i + 5]
+            array.append(flag)
         else:
-            j = next[j]
-    res = []
-    i = 0
-    j = 0
-    while i < n and j < m:
-        if j == -1 or s[i] == t[j]:
-            i += 1
-            j += 1
-            if j == m:
-                res.append(i - j)
-                j = next[j]
-        else:
-            j = next[j]
-    return res
+            pass
+        licenseKey = '-'.join(array)
+
+    return licenseKey
+
+if __name__ == '__main__':
+    emailInput = input('请输入Email:')
+
+    licenseKey = generateLicense(emailInput)
+    listen = '{\n   "email" : "' +str(emailInput) + '",\n    "license_key" : "' + format(licenseKey) + '"\n}'
+
+    print(listen)

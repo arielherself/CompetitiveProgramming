@@ -30,10 +30,9 @@ using pll = pair<ll, ll>;
 
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
-constexpr ll INFLL = 0x3f3f3f3f3f3f3f3fLL;
 constexpr ull MDL = 1e9 + 7;
 constexpr ull PRIME = 998'244'353;
-constexpr ll MDL1 = 8784491;
+constexpr ll MDL1 = 825;
 constexpr ll MDL2 = PRIME;
 
 /* random */
@@ -139,8 +138,6 @@ template<typename T> ostream& operator<<(ostream& out, vector<T> vec) {
 #define popfront(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.front();q.pop_front();)
 
 /* math */
-constexpr inline int lg2(ll x) { return x == 0 ? -1 : sizeof(ll) * 8 - 1 - __builtin_clzll(x); }
-
 void __exgcd(ll a, ll b, ll& x, ll& y) {
   if (b == 0) {
     x = 1, y = 0;
@@ -207,45 +204,49 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-
 // #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
-void prep() {}
-
 void solve() {
-    read(int, n, h);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end());
-    auto work = [&] (vector<int> pattern) -> int {
-        int ptr = 0;
-        int i = 0;
-        ll curr = h;
-        while (i < n) {
-            if (curr > a[i]) {
-                curr += a[i] / 2;
-                i += 1;
+    read(int, n);
+    read(ll, k);
+    vector<pli> raw(n);
+    for (int i = 0; i < n; ++i) {
+        cin >> raw[i].first;
+    }
+    for (int i = 0; i < n; ++i) {
+        cin >> raw[i].second;
+    }
+    vector<ll> bucket(n + 1);
+    for (int i = 0; i < n; ++i) {
+        bucket[abs(raw[i].second)] += raw[i].first;
+    }
+    int r = 1;
+    for (int i = 0; i <= n; ++i) {
+        // debug(bucket[i]);
+        if (bucket[i] != 0) {
+            cout << "NO\n";
+            return;
+        }
+        ll curr = k;
+        while (r <= n) {
+            if (bucket[r] > curr) {
+                bucket[r] -= curr;
+                break;
             } else {
-                if (ptr >= 3) break;
-                curr *= pattern[ptr];
-                ptr += 1;
+                curr -= bucket[r];
+                bucket[r] = 0;
+                r += 1;
             }
         }
-        return i;
-    };
-    int res = 0;
-    vector<vector<int>> patterns = {{2, 2, 3}, {2, 3, 2}, {3, 2, 2}};
-    for (auto&& p : patterns) {
-        res = max(res, work(p));
     }
-    cout << res << endl;
+    cout << "YES\n";
 }
 
 int main() {
     untie, cout.tie(NULL);
-    prep();
 #ifdef SINGLE_TEST_CASE
     solve();
 #else

@@ -30,7 +30,6 @@ using pll = pair<ll, ll>;
 
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
-constexpr ll INFLL = 0x3f3f3f3f3f3f3f3fLL;
 constexpr ull MDL = 1e9 + 7;
 constexpr ull PRIME = 998'244'353;
 constexpr ll MDL1 = 8784491;
@@ -208,44 +207,67 @@ int period(string s) {  // find the length of shortest recurring period
 /////////////////////////////////////////////////////////
 
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
-void prep() {}
-
 void solve() {
-    read(int, n, h);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end());
-    auto work = [&] (vector<int> pattern) -> int {
-        int ptr = 0;
-        int i = 0;
-        ll curr = h;
-        while (i < n) {
-            if (curr > a[i]) {
-                curr += a[i] / 2;
-                i += 1;
-            } else {
-                if (ptr >= 3) break;
-                curr *= pattern[ptr];
-                ptr += 1;
+    array<array<ll, 25>, 13> full{};
+    full[0][0] = 1;
+    for (int i = 1; i <= 12; ++i) {
+        for (int j = 0; j <= 24; ++j) {
+            full[i][j] = full[i-1][j] * 5 + (j > 0 ? full[i-1][j-1] * 4 : 0) + (j > 1 ? full[i-1][j-2] : 0);
+        }
+    }
+    auto cnt = [] (ll x) -> int {
+        int res = 0;
+        while (x) {
+            res += 1;
+            x /= 10;
+        }
+        return res;
+    };
+    auto get = [] (ll x, int d) -> int {
+        for (int i = 0; i < d; ++i) {
+            x /= 10;
+        }
+        return x % 10;
+    };
+    read(ll, l, r);
+    read(int, k);
+    array<int, 10> tab {1, 0, 0, 0, 1, 0, 1, 0, 2, 1};
+    auto work = [&] (ll x) -> ll {
+        if (x == 0) return k == 1;
+        int tot = cnt(x), acc = 0;
+        ll res = k == 1;
+        for (int i = 0; i < tot - 1; ++i) {
+            for (int j = 1; j < 10; ++j) {
+                if (k - acc - tab[j] >= 0)
+                res += full[i][k - acc - tab[j]];
             }
         }
-        return i;
+        for (int i = tot - 1; ~i; --i) {
+            int digit = get(x, i);
+            for (int j = 0; j < digit; ++j) {
+                if (i == tot - 1 && j == 0) continue;
+                int curr = tab[j];;
+                if (k - acc - curr >= 0) {
+                    res += full[i][k - acc - curr];
+                }
+            }
+            acc += tab[digit];
+        }
+        if (acc == k) res += 1;
+        return res;
     };
-    int res = 0;
-    vector<vector<int>> patterns = {{2, 2, 3}, {2, 3, 2}, {3, 2, 2}};
-    for (auto&& p : patterns) {
-        res = max(res, work(p));
-    }
-    cout << res << endl;
+    ll rl = work(l - 1);
+    ll rr = work(r);
+    cout << rr - rl << endl;
 }
 
 int main() {
     untie, cout.tie(NULL);
-    prep();
 #ifdef SINGLE_TEST_CASE
     solve();
 #else

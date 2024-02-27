@@ -1,0 +1,1 @@
+{"name":"Local: lc-1552","url":"/home/user/RustIsBestLang/src/bin/lc-1552.rs","tests":[{"id":1703835090875,"input":"1 2 3 4 7\n3","output":"3"}],"interactive":false,"memoryLimit":1024,"timeLimit":3000,"srcPath":"/home/user/RustIsBestLang/src/bin/lc-1552.rs","group":"local","local":true}

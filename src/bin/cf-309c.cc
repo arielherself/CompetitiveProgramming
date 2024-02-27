@@ -1,4 +1,3 @@
-#pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
  * Useful Macros
@@ -7,10 +6,7 @@
  */
 
 #include<bits/stdc++.h>
-#include<bits/extc++.h>
 using namespace std;
-using namespace __gnu_cxx;
-using namespace __gnu_pbds;
 
 /* macro helpers */
 #define __NARGS(...) std::tuple_size<decltype(std::make_tuple(__VA_ARGS__))>::value
@@ -30,15 +26,10 @@ using pll = pair<ll, ll>;
 
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
-constexpr ll INFLL = 0x3f3f3f3f3f3f3f3fLL;
 constexpr ull MDL = 1e9 + 7;
 constexpr ull PRIME = 998'244'353;
-constexpr ll MDL1 = 8784491;
-constexpr ll MDL2 = PRIME;
-
-/* random */
-
-mt19937 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
+constexpr ull MDL1 = 825;
+constexpr ull MDL2 = 87825;
 
 /* bit-wise operations */
 #define lowbit(x) ((x) & -(x))
@@ -48,11 +39,11 @@ mt19937 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now
 #define lsp(x) (__builtin_ctzll(ll(x)))
 
 /* arithmetic operations */
-#define mod(x, y) ((((x) % (y)) + (y)) % (y))
+#define mod(x, y) (((x) + (y)) % (y))
 
 /* fast pairs */
 #define upair ull
-#define umake(x, y) (ull(x) << 32 | (ull(y) & ((1ULL << 32) - 1)))
+#define umake(x, y) (ull(x) << 32 | ull(y))
 #define u1(p) ((p) >> 32)
 #define u2(p) ((p) & ((1ULL << 32) - 1))
 #define ult std::less<upair>
@@ -60,8 +51,8 @@ mt19937 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now
 
 #define ipair ull
 #define imake(x, y) (umake(x, y))
-#define i1(p) (int(u1(ll(p))))
-#define i2(p) (ll(u2(p) << 32) >> 32)
+#define i1(p) (int(u1(p)))
+#define i2(p) (int(u2(p)))
 struct ilt {
     bool operator()(const ipair& a, const ipair& b) const {
         if (i1(a) == i1(b)) return i2(a) < i2(b);
@@ -81,37 +72,8 @@ struct igt {
 #define continue_or(var, val) __AS_PROCEDURE(if (var == val) continue; var = val;)
 #define break_or(var, val) __AS_PROCEDURE(if (var == val) break; var = val;)
 
-/* hash */
-struct safe_hash {
-    // https://codeforces.com/blog/entry/62393
-    static uint64_t splitmix64(uint64_t x) {
-        // http://xorshift.di.unimi.it/splitmix64.c
-        x += 0x9e3779b97f4a7c15;
-        x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
-        x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
-        return x ^ (x >> 31);
-    }
-
-    size_t operator()(uint64_t x) const {
-        static const uint64_t FIXED_RANDOM = chrono::steady_clock::now().time_since_epoch().count();
-        return splitmix64(x + FIXED_RANDOM);
-    }
-};
-
-struct pair_hash {
-    template <typename T, typename U>
-    size_t operator()(const pair<T, U>& a) const {
-        auto hash1 = safe_hash()(a.first);
-        auto hash2 = safe_hash()(a.second);
-        if (hash1 != hash2) {
-            return hash1 ^ hash2;
-        }
-        return hash1;
-    }
-};
-
 /* build data structures */
-#define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
+#define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
 #define pa(a) __AS_PROCEDURE(__typeof(a) pa; pa.push_back({}); for (auto&&x : a) pa.push_back(pa.back() + x);)
 #define sa(a) __AS_PROCEDURE(__typeof(a) sa(a.size() + 1); {int n = a.size(); for (int i = n - 1; i >= 0; --i) sa[i] = sa[i + 1] + a[i];};)
@@ -138,25 +100,8 @@ template<typename T> ostream& operator<<(ostream& out, vector<T> vec) {
 #define popback(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.back(); q.pop_back();)
 #define popfront(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.front();q.pop_front();)
 
-/* math */
-constexpr inline int lg2(ll x) { return x == 0 ? -1 : sizeof(ll) * 8 - 1 - __builtin_clzll(x); }
+/* algorithms */
 
-void __exgcd(ll a, ll b, ll& x, ll& y) {
-  if (b == 0) {
-    x = 1, y = 0;
-    return;
-  }
-  __exgcd(b, a % b, y, x);
-  y -= a / b * x;
-}
-
-ll inverse(ll a, ll b) {
-    ll x, y;
-    __exgcd(a, b, x, y);
-    return mod(x, b);
-}
-
-/* string algorithms */
 vector<int> calc_next(string t) {  // pi function of t
   int n = (int)t.length();
   vector<int> pi(n);
@@ -207,59 +152,40 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-
-// #define SINGLE_TEST_CASE
-// #define DUMP_TEST_CASE 512
-
-void dump() {}
-
-void prep() {}
-
-void solve() {
-    read(int, n, h);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end());
-    auto work = [&] (vector<int> pattern) -> int {
-        int ptr = 0;
-        int i = 0;
-        ll curr = h;
-        while (i < n) {
-            if (curr > a[i]) {
-                curr += a[i] / 2;
-                i += 1;
-            } else {
-                if (ptr >= 3) break;
-                curr *= pattern[ptr];
-                ptr += 1;
+int main() {
+    untie;
+    read(int, n, m);
+    ll res = 0;
+    vector<ll> a_p(32);
+    for (int i = 0; i < n; ++i) {
+        read(ll, a);
+        int j = 0;
+        while (a) {
+            a_p[j] += a & 1;
+            a >>= 1;
+            j += 1;
+        }
+    }
+    vector<ll> b_p(32);
+    for (int i = 0; i < m; ++i) {
+        read(int, b);
+        b_p[b] += 1;
+    }
+    for (int i = 0; i < 32; ++i) {
+        for (int t = 0; t < a_p[i]; ++t) {
+            ll remains = 1 << i;
+            for (int j = 0; j < 32; ++j) {
+                if ((b_p[j] << j) > remains) {
+                    ll add = remains / (1 << j);
+                    res += add;
+                    b_p[j] -= add;
+                    break;
+                }
+                res += b_p[j];
+                remains -= b_p[j] << j;
+                b_p[j] = 0;
             }
         }
-        return i;
-    };
-    int res = 0;
-    vector<vector<int>> patterns = {{2, 2, 3}, {2, 3, 2}, {3, 2, 2}};
-    for (auto&& p : patterns) {
-        res = max(res, work(p));
     }
     cout << res << endl;
-}
-
-int main() {
-    untie, cout.tie(NULL);
-    prep();
-#ifdef SINGLE_TEST_CASE
-    solve();
-#else
-    read(int, t);
-    for (int i = 0; i < t; ++i) {
-#ifdef DUMP_TEST_CASE
-        if (i + 1 == (DUMP_TEST_CASE)) {
-            dump();
-        } else {
-        solve();
-        }
-#else
-        solve();
-#endif
-    }
-#endif
 }

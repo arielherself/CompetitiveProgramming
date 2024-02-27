@@ -30,7 +30,6 @@ using pll = pair<ll, ll>;
 
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
-constexpr ll INFLL = 0x3f3f3f3f3f3f3f3fLL;
 constexpr ull MDL = 1e9 + 7;
 constexpr ull PRIME = 998'244'353;
 constexpr ll MDL1 = 8784491;
@@ -208,44 +207,54 @@ int period(string s) {  // find the length of shortest recurring period
 /////////////////////////////////////////////////////////
 
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
-void prep() {}
-
 void solve() {
-    read(int, n, h);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end());
-    auto work = [&] (vector<int> pattern) -> int {
-        int ptr = 0;
-        int i = 0;
-        ll curr = h;
-        while (i < n) {
-            if (curr > a[i]) {
-                curr += a[i] / 2;
-                i += 1;
-            } else {
-                if (ptr >= 3) break;
-                curr *= pattern[ptr];
-                ptr += 1;
+    read(int, n);
+    readvec(int, a, n);
+    array<int, 16> bucket {};
+    for (int mask = 1; mask < (1 << 15); ++mask) {
+        int f = 1, cnt = 0;
+        int pattern = a[0] & mask;
+        for (int i = 0; i < n; ++i) {
+            if ((a[i] & mask) == pattern) {
+                cnt += 1;
+            } else if (((~a[i]) & mask) != pattern) {
+                f = 0;
+                break;
             }
         }
-        return i;
-    };
-    int res = 0;
-    vector<vector<int>> patterns = {{2, 2, 3}, {2, 3, 2}, {3, 2, 2}};
-    for (auto&& p : patterns) {
-        res = max(res, work(p));
+        if (f) {
+            if (pattern == 0) {
+                if (n - cnt) {
+                    bucket[popcount(mask)] += 1 << cnt + 1;
+                }
+            } else if (pattern == mask) {
+                if (cnt) {
+                    bucket[popcount(mask)] += 1 << n - cnt + 1;
+                }
+            } else {
+                bucket[popcount(mask)] += 2;
+            }
+        }
     }
-    cout << res << endl;
+    int res = 0;
+    for (int i = 1; i < 16; ++i) {
+        if (i % 2) {
+            res += bucket[i];
+        } else {
+            res -= bucket[i];
+        }
+    }
+    debugvec(bucket);;
+    cout << (1 << n) - res << endl;
 }
 
 int main() {
     untie, cout.tie(NULL);
-    prep();
 #ifdef SINGLE_TEST_CASE
     solve();
 #else

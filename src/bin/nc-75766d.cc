@@ -30,7 +30,6 @@ using pll = pair<ll, ll>;
 
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
-constexpr ll INFLL = 0x3f3f3f3f3f3f3f3fLL;
 constexpr ull MDL = 1e9 + 7;
 constexpr ull PRIME = 998'244'353;
 constexpr ll MDL1 = 8784491;
@@ -208,44 +207,70 @@ int period(string s) {  // find the length of shortest recurring period
 /////////////////////////////////////////////////////////
 
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
-void prep() {}
-
 void solve() {
-    read(int, n, h);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end());
-    auto work = [&] (vector<int> pattern) -> int {
-        int ptr = 0;
-        int i = 0;
-        ll curr = h;
-        while (i < n) {
-            if (curr > a[i]) {
-                curr += a[i] / 2;
-                i += 1;
+    read(int, n);
+    readvec(int, a, n);
+    int prev = 0, tp = -1;
+    for (int i = 0; i < n; ++i) {
+        if (a[i] && a[i] != prev) {
+            if (prev == 0) {
+                prev = a[i];
             } else {
-                if (ptr >= 3) break;
-                curr *= pattern[ptr];
-                ptr += 1;
+                tp = i;
+                break;
             }
         }
-        return i;
-    };
-    int res = 0;
-    vector<vector<int>> patterns = {{2, 2, 3}, {2, 3, 2}, {3, 2, 2}};
-    for (auto&& p : patterns) {
-        res = max(res, work(p));
     }
-    cout << res << endl;
+    if (tp != -1) {
+        for (int i = 0; i < tp; ++i) {
+            a[i] = prev;
+        }
+        for (int i = tp; i < n; ++i) {
+            if (a[i] && a[i] != a[tp]) {
+                cout << -1 << endl;
+                return;
+            }
+            a[i] = a[tp];
+        }
+        putvec(a);
+    } else {
+        if (prev == 0) {
+            if (n == 1) cout << -1 << endl;
+            else {
+                fill(a.begin(), a.end(), 2);
+                a[0] = 1;
+                putvec(a);
+            }
+        } else {
+            if (n == 1) cout << -1 << endl;
+            else {
+                if (a[0] == 0) {
+                    a[0] = prev + 1;
+                    for (int i = 1; i < n; ++i) {
+                        a[i] = prev;
+                    }
+                } else if (a[n - 1] == 0) {
+                    a[n - 1] = prev + 1;
+                    for (int i = 0; i < n - 1; ++i) {
+                        a[i] = prev;
+                    }
+                } else {
+                    cout << -1 << endl;
+                    return;
+                }
+                putvec(a);
+            }
+        }
+    }
 }
 
 int main() {
     untie, cout.tie(NULL);
-    prep();
 #ifdef SINGLE_TEST_CASE
     solve();
 #else

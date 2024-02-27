@@ -139,7 +139,7 @@ vector<int> kmp(string s, string t) {  // find all t in s
 int period(string s) {  // find the length of shortest recurring period
     int n = s.length();
     auto z = calc_z(s);
-    for (int i = 1; i <= n / 2; ++i) {
+    for (int i = 1; i <= n / 2; ++i) 
         if (n % i == 0 && z[i] == n - i) {
             return i;
         }
@@ -149,9 +149,8 @@ int period(string s) {  // find the length of shortest recurring period
 /////////////////////////////////////////////////////////
 
 int main() {
-    constexpr int n = 3e5;
-    cout << 1 << ' ' << n << endl;
-    for (int i = 0; i < n; ++i) {
-        cout << 1 << ' ';
+    cout << 1000 << endl;;
+    for (int i = 0; i < 1000; ++i) {
+
     }
 }

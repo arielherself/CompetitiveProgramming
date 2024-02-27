@@ -213,39 +213,83 @@ int period(string s) {  // find the length of shortest recurring period
 
 void dump() {}
 
-void prep() {}
+ll full[19];
+ll pw[19];
+
+void prep() {
+    full[1] = 1;
+    pw[1] = 10;
+    pw[0] = 1;
+    for (int i = 2; i <= 18; ++i) {
+        full[i] = full[i-1] * 9 + pw[i-1];
+        pw[i] = pw[i-1] * 10;
+    }
+}
 
 void solve() {
-    read(int, n, h);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end());
-    auto work = [&] (vector<int> pattern) -> int {
-        int ptr = 0;
-        int i = 0;
-        ll curr = h;
-        while (i < n) {
-            if (curr > a[i]) {
-                curr += a[i] / 2;
-                i += 1;
-            } else {
-                if (ptr >= 3) break;
-                curr *= pattern[ptr];
-                ptr += 1;
+    read(ll, k);
+    auto gettot = [] (ll x) -> int{
+        int res = 0;
+        while (x) {
+            res += 1;
+            x /= 10;
+        }
+        return res;
+    };
+    auto get = [] (ll x, int b) -> int {
+        for (int i = 0; i < b; ++i) {
+            x /= 10;
+        }
+        return x % 10;
+    };
+    auto so = [&] (ll x) -> ll {
+        ll cnt = 0;
+        int tot = gettot(x);
+        int mark = 0;
+        for (int b = tot - 1; b > 0; --b) {
+            // b - 1
+            for (int j = 1; j < 10; ++j) {
+                if (j == 4) {
+                    cnt += pw[b-1];
+                } else {
+                    cnt += full[b-1];
+                }
             }
         }
-        return i;
+        for (int b = tot - 1; ~b; --b) {
+            int digit = get(x, b);
+            for (int j = 0; j < digit; ++j) {
+                if (b == tot - 1 && j == 0) continue;
+                if (mark) {
+                    cnt += pw[b];
+                } else {
+                    if (j == 4) {
+                        cnt += pw[b];
+                    } else {
+                        cnt += full[b];
+                    }
+                }
+            }
+            if (digit == 4) mark = 1;
+        }
+        if (mark) cnt += 1;
+        return cnt;
     };
-    int res = 0;
-    vector<vector<int>> patterns = {{2, 2, 3}, {2, 3, 2}, {3, 2, 2}};
-    for (auto&& p : patterns) {
-        res = max(res, work(p));
+    ll l = 1, r = INFLL;
+    while (l < r) {
+        ll mid = l + r >> 1;
+        if (mid - so(mid) < k) {
+            l = mid + 1;
+        } else {
+            r = mid;
+        }
     }
-    cout << res << endl;
+    cout << l << endl;
 }
 
 int main() {
-    untie, cout.tie(NULL);
     prep();
+    untie, cout.tie(NULL);
 #ifdef SINGLE_TEST_CASE
     solve();
 #else

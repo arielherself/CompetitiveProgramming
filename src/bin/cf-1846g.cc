@@ -213,39 +213,55 @@ int period(string s) {  // find the length of shortest recurring period
 
 void dump() {}
 
-void prep() {}
+int read_binary(int length) {
+    int res = 0;
+    for (int i = length - 1; ~i; --i) {
+        read(char, c);
+        res |= int(c - 48) << i;
+    }
+    return res;
+}
 
 void solve() {
-    read(int, n, h);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end());
-    auto work = [&] (vector<int> pattern) -> int {
-        int ptr = 0;
-        int i = 0;
-        ll curr = h;
-        while (i < n) {
-            if (curr > a[i]) {
-                curr += a[i] / 2;
-                i += 1;
-            } else {
-                if (ptr >= 3) break;
-                curr *= pattern[ptr];
-                ptr += 1;
+    read(int, n, m);
+    vector<vector<pii>> ch(1 << n);
+    vector<tuple<int, int, int>> masks;
+    int start = read_binary(n);
+    while (m--) {
+        read(int, d);
+        int x = read_binary(n), y = read_binary(n);
+        masks.emplace_back(x, y, d);
+    }
+    for (int i = 0; i < (1 << n); ++i) {
+        for (auto&& [rem, add, w] : masks) {
+            ch[i].emplace_back((i & ~rem) | add, w);
+        }
+    }
+    std::priority_queue<pli, vector<pli>, greater<>> pq;
+    pq.emplace(0, start);
+    vector<bool> vis(1 << n);
+    vector<ll> dis(1 << n, INFLL);
+    dis[start] = 0;
+    while (pq.size()) {
+        auto [_, v] = pq.top(); pq.pop();
+        continue_or(vis[v], 1);
+        for (auto&& [u, w] : ch[v]) {
+            if (!vis[u] && dis[v] + w < dis[u]) {
+                dis[u] = dis[v] + w;
+                pq.emplace(dis[u], u);
             }
         }
-        return i;
-    };
-    int res = 0;
-    vector<vector<int>> patterns = {{2, 2, 3}, {2, 3, 2}, {3, 2, 2}};
-    for (auto&& p : patterns) {
-        res = max(res, work(p));
     }
-    cout << res << endl;
+    if (dis[0] == INFLL) {
+        cout << -1 << endl;
+    } else {
+        cout << dis[0] << endl;
+    }
+
 }
 
 int main() {
     untie, cout.tie(NULL);
-    prep();
 #ifdef SINGLE_TEST_CASE
     solve();
 #else

@@ -30,10 +30,9 @@ using pll = pair<ll, ll>;
 
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
-constexpr ll INFLL = 0x3f3f3f3f3f3f3f3fLL;
 constexpr ull MDL = 1e9 + 7;
 constexpr ull PRIME = 998'244'353;
-constexpr ll MDL1 = 8784491;
+constexpr ll MDL1 = 825;
 constexpr ll MDL2 = PRIME;
 
 /* random */
@@ -207,45 +206,95 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-
 // #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
-void prep() {}
+template<typename _Tp, typename _Op = function<_Tp(const _Tp&, const _Tp&)>> struct sparse_table {
+    _Op op;
+    vector<vector<_Tp>> st;
+    template <typename ReverseIterator>
+    sparse_table(ReverseIterator __first, ReverseIterator __last, _Op&& __operation) {
+        op = __operation;
+        int n = distance(__first, __last);
+        st = vector<vector<_Tp>>(n, vector<_Tp>(int(log2(n) + 1)));
+        int i = n - 1;
+        for (auto it = __first; it != __last; ++it) {
+            st[i][0] = *it;
+            for (int j = 1; i + (1 << j) <= n; ++j) {
+                st[i][j] = op(st[i][j - 1], st[i + (1 << (j - 1))][j - 1]);
+            }
+            i -= 1;
+        }
+    }
+    _Tp query(size_t __start, size_t __end) {
+        int s = lg2(__end - __start + 1);
+        return op(st[__start][s], st[__end - (1 << s) + 1][s]);
+    }
+};
+
+auto u_max = [] (const int& a, const int& b) { return max(a, b); };
+auto u_min = [] (const int& a, const int& b) { return min(a, b); };
 
 void solve() {
-    read(int, n, h);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end());
-    auto work = [&] (vector<int> pattern) -> int {
-        int ptr = 0;
-        int i = 0;
-        ll curr = h;
-        while (i < n) {
-            if (curr > a[i]) {
-                curr += a[i] / 2;
-                i += 1;
+    read(int, n);
+    readvec(int, a, n);
+    vector<ll> ps(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        ps[i] = ps[i - 1] + a[i - 1];
+    }
+    vector<int> res(n);
+    // sparse_table<int> mxt(a.rbegin(), a.rend(), u_max);
+    // sparse_table<int> mnt(a.rbegin(), a.rend(), u_min);
+    sparse_table<int> mxt(a.rbegin(), a.rend(), u_max);
+    sparse_table<int> mnt(a.rbegin(), a.rend(), u_min);
+    auto find_left = [&] (int i) -> int {
+        // find the first ps > a[i - 1]
+        if (i == 1) return INT_MAX;
+        int l = 0, r = i - 1;
+        while (l < r) {
+            int mid = l + r + 1 >> 1;
+            if (ps[i - 1] - ps[mid] <= a[i - 1] || mid + 1 != i - 1 &&  mxt.query(mid, i - 2) == mnt.query(mid, i - 2)) {
+                r = mid - 1;
             } else {
-                if (ptr >= 3) break;
-                curr *= pattern[ptr];
-                ptr += 1;
+                l = mid;
             }
         }
-        return i;
+        if (ps[i - 1] - ps[l] <= a[i - 1] || l + 1 != i - 1 && mxt.query(l, i - 2) == mnt.query(l, i - 2)) {
+            return INT_MAX;
+        } else {
+            return i - l - 1;
+        }
     };
-    int res = 0;
-    vector<vector<int>> patterns = {{2, 2, 3}, {2, 3, 2}, {3, 2, 2}};
-    for (auto&& p : patterns) {
-        res = max(res, work(p));
+    auto find_right = [&] (int i) -> int {
+        if (i == n) return INT_MAX;
+        int l = i, r = n;
+        while (l < r) {
+            int mid = l + r >> 1;
+            if (ps[mid] - ps[i] <= a[i - 1] || i + 1 != mid && mxt.query(i, mid - 1) == mnt.query(i, mid - 1)) {
+                l = mid + 1;
+            } else {
+                r = mid;
+            }
+        }
+        if (ps[r] - ps[i] <= a[i - 1] || i + 1 != r && mxt.query(i, r - 1) == mnt.query(i, r - 1)) {
+            return INT_MAX;
+        } else {
+            return r - i;
+        }
+    };
+    for (int i = 1; i <= n; ++i) {
+        if (i > 1 && a[i-2] > a[i-1]) res[i-1] = 1;
+        else if (i < n && a[i] > a[i-1]) res[i-1] = 1;
+        else res[i - 1] = min(find_left(i), find_right(i));
+        if (res[i - 1] == INT_MAX) res[i - 1] = -1;
     }
-    cout << res << endl;
+    putvec(res);
 }
 
 int main() {
     untie, cout.tie(NULL);
-    prep();
 #ifdef SINGLE_TEST_CASE
     solve();
 #else

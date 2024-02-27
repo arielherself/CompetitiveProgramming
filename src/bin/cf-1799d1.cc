@@ -213,39 +213,53 @@ int period(string s) {  // find the length of shortest recurring period
 
 void dump() {}
 
-void prep() {}
+constexpr int MAXK = 5010;
+ll col_exclude[MAXK], row_exclude[MAXK], col[MAXK], row[MAXK];
 
 void solve() {
-    read(int, n, h);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end());
-    auto work = [&] (vector<int> pattern) -> int {
-        int ptr = 0;
-        int i = 0;
-        ll curr = h;
-        while (i < n) {
-            if (curr > a[i]) {
-                curr += a[i] / 2;
-                i += 1;
-            } else {
-                if (ptr >= 3) break;
-                curr *= pattern[ptr];
-                ptr += 1;
+    read(int, n, k);
+    readvec(int, a, n);
+    readvec(int, cold, k);
+    readvec(int, hot, k);
+    vector<pair<ipair, ll>> dp;
+    vector<pair<ipair, ll>> ndp;
+    dp.reserve(2 * k), ndp.reserve(2 * k);
+    dp.emplace_back(imake(0, 0), 0);
+    for (int i = 0; i < n; ++i) {
+        int curr = a[i];
+        memset(col_exclude, 0x3f, sizeof(col_exclude));
+        memset(col, 0x3f, sizeof(col));
+        memset(row_exclude, 0x3f, sizeof(row_exclude));
+        memset(row, 0x3f, sizeof(row));
+        for (auto&& [p, v] : dp) {
+            if (i1(p) == curr) row[i2(p)] = v;
+            else {
+                row_exclude[i2(p)] = min(row_exclude[i2(p)], v);
             }
+            if (i2(p) == curr) col[i1(p)] = v;
+            else {
+                col_exclude[i1(p)] = min(col_exclude[i1(p)], v);
+            } 
         }
-        return i;
-    };
-    int res = 0;
-    vector<vector<int>> patterns = {{2, 2, 3}, {2, 3, 2}, {3, 2, 2}};
-    for (auto&& p : patterns) {
-        res = max(res, work(p));
+        for (int y = 0; y <= k; ++y) {
+            // dp[curr][y]
+            if (y == curr) continue;
+            ndp.emplace_back(imake(curr, y), min(row_exclude[y] + cold[curr - 1], row[y] + hot[curr - 1]));
+            ndp.emplace_back(imake(y, curr), min(col_exclude[y] + cold[curr - 1], col[y] + hot[curr - 1]));
+        }
+        ndp.emplace_back(imake(curr, curr), min(cold[curr - 1] + min(row_exclude[curr], col_exclude[curr]), hot[curr - 1] + min(row[curr], col[curr])));
+        swap(dp, ndp);
+        ndp.clear();
+    }
+    ll res = INFLL;
+    for (auto&& [_, v] : dp) {
+        res = min(res, v);
     }
     cout << res << endl;
 }
 
 int main() {
     untie, cout.tie(NULL);
-    prep();
 #ifdef SINGLE_TEST_CASE
     solve();
 #else

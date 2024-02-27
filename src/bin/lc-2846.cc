@@ -1,4 +1,3 @@
-#pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
  * Useful Macros
@@ -7,10 +6,7 @@
  */
 
 #include<bits/stdc++.h>
-#include<bits/extc++.h>
 using namespace std;
-using namespace __gnu_cxx;
-using namespace __gnu_pbds;
 
 /* macro helpers */
 #define __NARGS(...) std::tuple_size<decltype(std::make_tuple(__VA_ARGS__))>::value
@@ -30,15 +26,10 @@ using pll = pair<ll, ll>;
 
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
-constexpr ll INFLL = 0x3f3f3f3f3f3f3f3fLL;
 constexpr ull MDL = 1e9 + 7;
 constexpr ull PRIME = 998'244'353;
-constexpr ll MDL1 = 8784491;
-constexpr ll MDL2 = PRIME;
-
-/* random */
-
-mt19937 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
+constexpr ull MDL1 = 825;
+constexpr ull MDL2 = 87825;
 
 /* bit-wise operations */
 #define lowbit(x) ((x) & -(x))
@@ -48,11 +39,11 @@ mt19937 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now
 #define lsp(x) (__builtin_ctzll(ll(x)))
 
 /* arithmetic operations */
-#define mod(x, y) ((((x) % (y)) + (y)) % (y))
+#define mod(x, y) (((x) + (y)) % (y))
 
 /* fast pairs */
 #define upair ull
-#define umake(x, y) (ull(x) << 32 | (ull(y) & ((1ULL << 32) - 1)))
+#define umake(x, y) (ull(x) << 32 | ull(y))
 #define u1(p) ((p) >> 32)
 #define u2(p) ((p) & ((1ULL << 32) - 1))
 #define ult std::less<upair>
@@ -60,8 +51,8 @@ mt19937 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now
 
 #define ipair ull
 #define imake(x, y) (umake(x, y))
-#define i1(p) (int(u1(ll(p))))
-#define i2(p) (ll(u2(p) << 32) >> 32)
+#define i1(p) (int(u1(p)))
+#define i2(p) (int(u2(p)))
 struct ilt {
     bool operator()(const ipair& a, const ipair& b) const {
         if (i1(a) == i1(b)) return i2(a) < i2(b);
@@ -81,37 +72,8 @@ struct igt {
 #define continue_or(var, val) __AS_PROCEDURE(if (var == val) continue; var = val;)
 #define break_or(var, val) __AS_PROCEDURE(if (var == val) break; var = val;)
 
-/* hash */
-struct safe_hash {
-    // https://codeforces.com/blog/entry/62393
-    static uint64_t splitmix64(uint64_t x) {
-        // http://xorshift.di.unimi.it/splitmix64.c
-        x += 0x9e3779b97f4a7c15;
-        x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
-        x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
-        return x ^ (x >> 31);
-    }
-
-    size_t operator()(uint64_t x) const {
-        static const uint64_t FIXED_RANDOM = chrono::steady_clock::now().time_since_epoch().count();
-        return splitmix64(x + FIXED_RANDOM);
-    }
-};
-
-struct pair_hash {
-    template <typename T, typename U>
-    size_t operator()(const pair<T, U>& a) const {
-        auto hash1 = safe_hash()(a.first);
-        auto hash2 = safe_hash()(a.second);
-        if (hash1 != hash2) {
-            return hash1 ^ hash2;
-        }
-        return hash1;
-    }
-};
-
 /* build data structures */
-#define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
+#define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
 #define pa(a) __AS_PROCEDURE(__typeof(a) pa; pa.push_back({}); for (auto&&x : a) pa.push_back(pa.back() + x);)
 #define sa(a) __AS_PROCEDURE(__typeof(a) sa(a.size() + 1); {int n = a.size(); for (int i = n - 1; i >= 0; --i) sa[i] = sa[i + 1] + a[i];};)
@@ -138,25 +100,8 @@ template<typename T> ostream& operator<<(ostream& out, vector<T> vec) {
 #define popback(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.back(); q.pop_back();)
 #define popfront(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.front();q.pop_front();)
 
-/* math */
-constexpr inline int lg2(ll x) { return x == 0 ? -1 : sizeof(ll) * 8 - 1 - __builtin_clzll(x); }
+/* algorithms */
 
-void __exgcd(ll a, ll b, ll& x, ll& y) {
-  if (b == 0) {
-    x = 1, y = 0;
-    return;
-  }
-  __exgcd(b, a % b, y, x);
-  y -= a / b * x;
-}
-
-ll inverse(ll a, ll b) {
-    ll x, y;
-    __exgcd(a, b, x, y);
-    return mod(x, b);
-}
-
-/* string algorithms */
 vector<int> calc_next(string t) {  // pi function of t
   int n = (int)t.length();
   vector<int> pi(n);
@@ -206,60 +151,118 @@ int period(string s) {  // find the length of shortest recurring period
     return n;
 }
 /////////////////////////////////////////////////////////
+using pii = pair<int, int>;
+constexpr int MAXN = 1e4 + 10;
+constexpr int MAXM = 2e4 + 10;
 
+int curr[27], lca[MAXM], cnt[MAXN][27], sz[MAXN];
+pii heavy[MAXN];
+vector<pii> ch[MAXN];
+vector<int> tag[MAXN];
+unordered_map<int, int> tags;
 
-// #define SINGLE_TEST_CASE
-// #define DUMP_TEST_CASE 512
-
-void dump() {}
-
-void prep() {}
-
-void solve() {
-    read(int, n, h);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end());
-    auto work = [&] (vector<int> pattern) -> int {
-        int ptr = 0;
-        int i = 0;
-        ll curr = h;
-        while (i < n) {
-            if (curr > a[i]) {
-                curr += a[i] / 2;
-                i += 1;
-            } else {
-                if (ptr >= 3) break;
-                curr *= pattern[ptr];
-                ptr += 1;
+int prep(int v, int pa) {
+    int curr = 1;
+    heavy[v].first = -1;
+    for (auto&& [u, w] : ch[v]) {
+        if (u != pa) {
+            int t = prep(u, v);
+            curr += t;
+            if (heavy[v].first == -1 || t > sz[heavy[v].first]) {
+                heavy[v] = {u, w};
             }
         }
-        return i;
-    };
-    int res = 0;
-    vector<vector<int>> patterns = {{2, 2, 3}, {2, 3, 2}, {3, 2, 2}};
-    for (auto&& p : patterns) {
-        res = max(res, work(p));
     }
-    cout << res << endl;
+    sz[v] = curr;
+    return curr;
 }
 
-int main() {
-    untie, cout.tie(NULL);
-    prep();
-#ifdef SINGLE_TEST_CASE
-    solve();
-#else
-    read(int, t);
-    for (int i = 0; i < t; ++i) {
-#ifdef DUMP_TEST_CASE
-        if (i + 1 == (DUMP_TEST_CASE)) {
-            dump();
-        } else {
-        solve();
+void dfs(int v, int pa, int save) {
+    cerr << "dfs(" << v << ", " << pa << ", " << save << ")\n";
+    if (save) {
+        for (int i = 0; i < 27; ++i) {
+            cnt[v][i] = curr[i];
         }
-#else
-        solve();
-#endif
+        for (auto&& [u, w] : ch[v]) {
+            if (u != pa && u != heavy[v].first) {
+                curr[w] += 1;
+                dfs(u, v, 1);
+                curr[w] -= 1;
+                tags.clear();
+            }
+        }
     }
-#endif
+    if (heavy[v].first != -1) {
+        curr[heavy[v].second] += 1;
+        dfs(heavy[v].first, v, save);
+        curr[heavy[v].second] -= 1;
+    }
+    for (auto&& i : tag[v]) {
+        tags[i] += 1;
+        if (tags[i] > 1 && save) {
+            if (lca[i] == -1) lca[i] = v;
+            tags[i] = 0;
+        }
+    }
+    for (auto&& [u, w] : ch[v]) {
+        if (u != pa && u != heavy[v].first) {
+            dfs(u, v, 0);
+            for (auto&& [i, o] : tags) {
+                if (o > 1 && save) {
+                    if (lca[i] == -1) lca[i] = v;
+                    tags[i] = 0;
+                }
+            }
+        }
+    }
+}
+
+class Solution {
+public:
+    vector<int> minOperationsQueries(int n, vector<vector<int>>& edges, vector<vector<int>>& queries) {
+        int q = queries.size();
+
+        memset(sz, 0, sizeof(sz));
+        memset(curr, 0, sizeof(curr));
+        memset(lca, 0xff, q * sizeof(int));
+        memset(cnt, 0, sizeof(cnt));
+        for (int i = 0; i < n; ++i) {
+            ch[i].clear(), tag[i].clear();
+        }
+        tags.clear();
+
+        for (auto&& e : edges) {
+            ch[e[0]].emplace_back(e[1], e[2]);
+            ch[e[1]].emplace_back(e[0], e[2]);
+        }
+        for (int i = 0; i < q; ++i) {
+                tag[queries[i][0]].push_back(i);
+                tag[queries[i][1]].push_back(i);
+        }
+        prep(0, 0);
+        dfs(0, 0, 1);
+        vector<int> res(q);
+        for (int i = 0; i < q; ++i) {
+            int u = queries[i][0], v = queries[i][1];
+            if (u == v) {
+                res[i] = 0;
+                continue;
+            }
+            int l = lca[i];
+            int mx = 0, tot = 0;
+            for (int i = 1; i < 27; ++i) {
+                int curr = cnt[u][i] + cnt[v][i] - 2 * cnt[l][i];
+                tot += curr;
+                mx = max(mx, curr);
+            }
+            res[i] = tot - mx;
+        }
+        return res;
+    }
+};
+
+int main() {
+    vector<vector<int>> edges = {{9,7,1},{5,9,2},{0,9,4},{3,9,5},{1,9,5},{4,0,4},{2,0,2},{8,7,4},{6,3,2}};
+    vector<vector<int>> queries = {{4,3},{8,1},{9,6},{7,0},{1,1},{5,0},{4,8},{3,6},{8,2},{9,7}};
+    cout << Solution().minOperationsQueries(6, edges, queries);
 }

@@ -213,39 +213,39 @@ int period(string s) {  // find the length of shortest recurring period
 
 void dump() {}
 
-void prep() {}
-
 void solve() {
-    read(int, n, h);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end());
-    auto work = [&] (vector<int> pattern) -> int {
-        int ptr = 0;
-        int i = 0;
-        ll curr = h;
-        while (i < n) {
-            if (curr > a[i]) {
-                curr += a[i] / 2;
-                i += 1;
-            } else {
-                if (ptr >= 3) break;
-                curr *= pattern[ptr];
-                ptr += 1;
-            }
+    read(int, n, k);
+    read(string, a);
+    read(string, b);
+    if (k >= n) {
+        if (a == b) {
+            cout << "YES\n";
+        } else {
+            cout << "NO\n";
         }
-        return i;
-    };
-    int res = 0;
-    vector<vector<int>> patterns = {{2, 2, 3}, {2, 3, 2}, {3, 2, 2}};
-    for (auto&& p : patterns) {
-        res = max(res, work(p));
+        return;;
     }
-    cout << res << endl;
+    string sa = a, sb = b;
+    sort(sa.begin(), sa.end());
+    sort(sb.begin(), sb.end());
+    if (sa != sb) {
+        cout << "NO\n";
+        return;
+    }
+    if (n - k >= k) {
+        cout << "YES\n";
+        return;
+    }
+    string p1(a.begin() + n - k, a.begin() + k), p2(b.begin() + n - k, b.begin() + k);
+    if (p1 == p2) {
+        cout << "YES\n";
+    } else {
+        cout << "NO\n";
+    }
 }
 
 int main() {
     untie, cout.tie(NULL);
-    prep();
 #ifdef SINGLE_TEST_CASE
     solve();
 #else

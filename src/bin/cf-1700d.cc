@@ -208,44 +208,38 @@ int period(string s) {  // find the length of shortest recurring period
 /////////////////////////////////////////////////////////
 
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
-void prep() {}
-
 void solve() {
-    read(int, n, h);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end());
-    auto work = [&] (vector<int> pattern) -> int {
-        int ptr = 0;
-        int i = 0;
-        ll curr = h;
-        while (i < n) {
-            if (curr > a[i]) {
-                curr += a[i] / 2;
-                i += 1;
-            } else {
-                if (ptr >= 3) break;
-                curr *= pattern[ptr];
-                ptr += 1;
-            }
-        }
-        return i;
-    };
-    int res = 0;
-    vector<vector<int>> patterns = {{2, 2, 3}, {2, 3, 2}, {3, 2, 2}};
-    for (auto&& p : patterns) {
-        res = max(res, work(p));
+    read(int, n);
+    readvec(int, a, n);
+    vector<ll> p(n);
+    ll sum = 0;
+    for (int i = 0; i < n; ++i ) {
+        sum += a[i];
+        p[i] = (sum + i) / (i + 1);
     }
-    cout << res << endl;
+    vector<ll> pre_max(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        pre_max[i] = max(pre_max[i - 1], p[i - 1]);
+    }
+    read(int, q);
+    while (q--) {
+        read(ll, t);
+        ll x = (sum + t - 1) / t;
+        if (x > n || pre_max[x] > t) {
+            cout << -1 << endl;
+        } else {
+            cout << x << endl;
+        }
+    }
 }
 
 int main() {
     untie, cout.tie(NULL);
-    prep();
 #ifdef SINGLE_TEST_CASE
     solve();
 #else

@@ -30,7 +30,6 @@ using pll = pair<ll, ll>;
 
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
-constexpr ll INFLL = 0x3f3f3f3f3f3f3f3fLL;
 constexpr ull MDL = 1e9 + 7;
 constexpr ull PRIME = 998'244'353;
 constexpr ll MDL1 = 8784491;
@@ -208,44 +207,67 @@ int period(string s) {  // find the length of shortest recurring period
 /////////////////////////////////////////////////////////
 
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
-void prep() {}
-
 void solve() {
-    read(int, n, h);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end());
-    auto work = [&] (vector<int> pattern) -> int {
-        int ptr = 0;
-        int i = 0;
-        ll curr = h;
-        while (i < n) {
-            if (curr > a[i]) {
-                curr += a[i] / 2;
-                i += 1;
-            } else {
-                if (ptr >= 3) break;
-                curr *= pattern[ptr];
-                ptr += 1;
+    read(int, n, m, x);
+    int mx = min(n, m);
+    vector<vector<int>> res(n, vector<int>(m));
+    for (int i = 2; i <= mx; i += 2) {
+        if (x % (i * i) == 0) {
+            int per = x / (i * i);
+            for (int j = 0; j < i; ++j) {
+                for (int k = 0; k < i; ++k) {
+                    res[j][k] = per;
+                }
             }
+            for (int x = 0; x < n; ++x) {
+                for (int y = 0; y < m; ++y) {
+                    cout << res[x][y] << " \n"[y + 1 == m];
+                }
+            }
+            return;
         }
-        return i;
-    };
-    int res = 0;
-    vector<vector<int>> patterns = {{2, 2, 3}, {2, 3, 2}, {3, 2, 2}};
-    for (auto&& p : patterns) {
-        res = max(res, work(p));
     }
-    cout << res << endl;
+    if (n == m) {
+        if (x % n == 0) {
+            int per = x / n;
+            for (int j = 0; j < n; ++j) {
+                res[j][j] = per;
+            }
+            for (int x = 0; x < n; ++x) {
+                for (int y = 0; y < m; ++y) {
+                    cout << res[x][y] << " \n"[y + 1 == m];
+                }
+            }
+            return;
+        }
+    }
+    if (n % 2 == m % 2) {
+        if (x % (m * n) == 0) {
+            int per = x / (m * n);
+            for (int j = 0; j < n; ++j) {
+                for (int k = 0; k < m; ++k) {
+                    res[j][k] = per;
+                }
+            }
+            for (int x = 0; x < n; ++x) {
+                for (int y = 0; y < m; ++y) {
+                    cout << res[x][y] << " \n"[y + 1 == m];
+                }
+            }
+            return;
+        }
+    }
+    cout << -1 << endl;
+    return;
 }
 
 int main() {
     untie, cout.tie(NULL);
-    prep();
 #ifdef SINGLE_TEST_CASE
     solve();
 #else
@@ -255,7 +277,7 @@ int main() {
         if (i + 1 == (DUMP_TEST_CASE)) {
             dump();
         } else {
-        solve();
+        solve(); 
         }
 #else
         solve();

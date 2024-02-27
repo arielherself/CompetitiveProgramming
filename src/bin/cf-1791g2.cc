@@ -213,39 +213,72 @@ int period(string s) {  // find the length of shortest recurring period
 
 void dump() {}
 
-void prep() {}
-
 void solve() {
-    read(int, n, h);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end());
-    auto work = [&] (vector<int> pattern) -> int {
-        int ptr = 0;
-        int i = 0;
-        ll curr = h;
-        while (i < n) {
-            if (curr > a[i]) {
-                curr += a[i] / 2;
-                i += 1;
-            } else {
-                if (ptr >= 3) break;
-                curr *= pattern[ptr];
-                ptr += 1;
+    read(int, n, c);
+    readvec(int, a, n);
+    vector<tuple<int, int, int>> event;
+    for (int i = 0; i < n; ++i) {
+        event.emplace_back(i + 1 + a[i], i, 0);
+        event.emplace_back(n - i + a[i], i, 1);
+    }
+    sort(event.begin(), event.end());
+    for (auto [x, y, z] : event) {
+        cerr << "{" << x << ", " << y << ", " << z << "}\n";
+    }
+    map<int, int, greater<>> open;
+    int dc = -1, tar = -1;
+    ll sum = 0, cnt = 0;
+    int m = event.size();
+    for (int i = 0; i < m; ++i) {
+        auto [x, y, z] = event[i];
+        if (z == 0) {
+            if (open.count(y)) {
+                dc = open[y];
+                sum -= get<0>(event[open[y]]);
+                cnt -= 1;
+            }
+            tar = i;
+            cnt += 1;
+            sum += x;
+            break;
+        } else {
+            open[y] = i;
+            cnt += 1;
+            sum += x;
+        }
+    }
+    if (tar == -1) {
+        cout << 0 << endl;
+        return;
+    }
+    if (sum <= c) {
+        for (int i = tar + 1; i < m; ++i) {
+            auto [x, y, z] = event[i];
+            if (sum + x > c) break;
+            if (!open.count(y)) {
+                cnt += 1;
+                sum += x;
             }
         }
-        return i;
-    };
-    int res = 0;
-    vector<vector<int>> patterns = {{2, 2, 3}, {2, 3, 2}, {3, 2, 2}};
-    for (auto&& p : patterns) {
-        res = max(res, work(p));
+        cout << cnt << endl;
+    } else {
+        for (int i = tar - 1; ~i; --i) {
+            if (i == dc) continue;
+            auto [x, y, z] = event[i];
+            sum -= x;
+            cnt -= 1;
+            if (sum <= c) break;
+        }
+        if (sum > c) {
+            cout << 0 << endl;
+        } else {
+            cout << cnt << endl;
+        }
     }
-    cout << res << endl;
 }
 
 int main() {
     untie, cout.tie(NULL);
-    prep();
 #ifdef SINGLE_TEST_CASE
     solve();
 #else
