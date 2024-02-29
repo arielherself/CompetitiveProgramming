@@ -7,10 +7,7 @@
  */
 
 #include<bits/stdc++.h>
-#include<bits/extc++.h>
 using namespace std;
-using namespace __gnu_cxx;
-using namespace __gnu_pbds;
 
 /* macro helpers */
 #define __NARGS(...) std::tuple_size<decltype(std::make_tuple(__VA_ARGS__))>::value
@@ -208,7 +205,7 @@ int period(string s) {  // find the length of shortest recurring period
 /////////////////////////////////////////////////////////
 
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
@@ -217,12 +214,18 @@ void prep() {}
 
 void solve() {
     read(int, n);
-    ll res = 0;
-    for (int i  =0; i < n; ++i) {
+    constexpr int N = 1e5 + 10;
+    vector<int> cnt(N + 1);
+    for (int i = 0; i < n; ++i) {
         read(int, x);
-        res += abs(x);
+        cnt[x] += 1;
     }
-    cout << res << endl;
+    vector<array<ll, 2>> dp(N + 1);
+    for (int i = 1; i <= N; ++i) {
+        dp[i][1] = dp[i-1][0] + ll(cnt[i]) * i;
+        dp[i][0] = max(dp[i-1][0], dp[i-1][1]);
+    }
+    cout << max(dp[N][1], dp[N][0]) << endl;
 }
 
 int main() {

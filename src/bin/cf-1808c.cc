@@ -213,16 +213,80 @@ int period(string s) {  // find the length of shortest recurring period
 
 void dump() {}
 
-void prep() {}
+ll pw[11][19];
+
+void prep() {
+    for (int b = 1; b < 11; ++b) {
+        pw[b][0] = 1;
+        for (int j = 1; j < 19; ++j) {
+            pw[b][j] = pw[b][j-1] * b;
+        }
+    }
+}
 
 void solve() {
-    read(int, n);
-    ll res = 0;
-    for (int i  =0; i < n; ++i) {
-        read(int, x);
-        res += abs(x);
+    read(ll, l, r);
+    auto gettot = [] (ll x) -> int {
+        int res = 0;
+        while (x) {
+            res += 1;
+            x /= 10;
+        }
+        return res;
+    };
+    auto get = [] (ll x, int b) -> int {
+        while (b--) x /= 10;
+        return x % 10;
+    };
+    auto getrep = [] (int digit, int t) -> ll {
+        ll res = 0;
+        while (t--) {
+            res *= 10;
+            res += digit;
+        }
+        return res;
+    };
+    auto set = [] (int digit, int t) -> ll {
+        return digit * pw[10][t];
+    };
+    auto work = [&] (ll x, int rg) -> ll {
+        int mx = 0, mn = 10;
+        int tot = gettot(x);
+        ll res = 0;
+        for (int t = tot - 2; ~t; --t) {
+            for (int i = 1; i < 10; ++i) {
+                for (int k = i - rg; k <= i; ++k) {
+                    int tmx = min(k + rg, 9), tmn = max(k, 0);
+                    if (tmx < tmn) continue;
+                    res = max(res, set(i, t) + getrep(tmx, t));
+                }
+            }
+        }
+        ll acc = 0;
+        for (int t = tot - 1; ~t; --t) {
+            int digit = get(x, t);
+            for (int i = 0; i < digit; ++i) {
+                if (t == tot - 1 && i == 0) continue;
+                int new_mx = min(max(mx, i), 9), new_mn = max(min(mn, i), 0);
+                if (new_mx < new_mn || new_mx - new_mn > rg) continue;
+               res = max(res, acc + set(i, t) + getrep(min(new_mn + rg, 9), t));
+            }
+            int new_mx = max(mx, digit), new_mn = min(mn, digit);
+            mx = new_mx, mn = new_mn;
+            if (mx - mn > rg) break;
+            acc += set(digit, t);
+        }
+        if (mx - mn <= rg) res = max(res, x);
+        return res;
+    };
+    for (int i = 0; i < 10; ++i) {
+        ll curr = work(r, i);
+        if (curr >= l) {
+            cout << curr << endl;
+            return;
+        }
     }
-    cout << res << endl;
+    exit(1);
 }
 
 int main() {

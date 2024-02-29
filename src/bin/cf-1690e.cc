@@ -7,10 +7,7 @@
  */
 
 #include<bits/stdc++.h>
-#include<bits/extc++.h>
 using namespace std;
-using namespace __gnu_cxx;
-using namespace __gnu_pbds;
 
 /* macro helpers */
 #define __NARGS(...) std::tuple_size<decltype(std::make_tuple(__VA_ARGS__))>::value
@@ -216,13 +213,39 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    read(int, n);
-    ll res = 0;
-    for (int i  =0; i < n; ++i) {
+    read(int, n, k);
+    vector<int> buckets(k);
+    ll sum = 0;
+    for (int i = 0; i < n; ++i) {
         read(int, x);
-        res += abs(x);
+        buckets[x % k] += 1;
+        sum += x;
     }
-    cout << res << endl;
+    ll neg = 0;
+    int r = k - 1, l = 1;
+    while (l <= r) {
+        if (!buckets[r]) --r;
+        else {
+            if (!buckets[l] || l + r < k) ++l;
+            else {
+                if (l == r) {
+                    neg += buckets[l] / 2 * ((2 * l) % k);
+                    buckets[l] %= 2;
+                    break;
+                } else {
+                    int v = min(buckets[l], buckets[r]);
+                    neg += v * ((l + r) % k);
+                    buckets[l] -= v;
+                    buckets[r] -= v;
+                }
+            }
+        }
+    }
+    for (int i = 0; i < k; ++i) {
+        neg += buckets[i] * i;
+    }
+    assert((sum - neg) % k == 0);
+    cout << (sum - neg) / k << endl;
 }
 
 int main() {

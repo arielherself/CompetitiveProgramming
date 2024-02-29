@@ -7,10 +7,7 @@
  */
 
 #include<bits/stdc++.h>
-#include<bits/extc++.h>
 using namespace std;
-using namespace __gnu_cxx;
-using namespace __gnu_pbds;
 
 /* macro helpers */
 #define __NARGS(...) std::tuple_size<decltype(std::make_tuple(__VA_ARGS__))>::value
@@ -217,10 +214,20 @@ void prep() {}
 
 void solve() {
     read(int, n);
-    ll res = 0;
-    for (int i  =0; i < n; ++i) {
+    vector<int> pos(n);
+    for (int i = 0; i < n; ++i) {
         read(int, x);
-        res += abs(x);
+        pos[x] = i;
+    }
+    ll res = 0;
+    int mn = n, mx = 0;
+    for (int i = 1; i <= (n + 1) / 2; ++i) {
+        mn = min(mn, pos[i-1]), mx = max(mx, pos[i-1]);
+        for (int l = i * 2 - 1; l < i * 2 + 1; ++l) {
+            if (mx - mn + 1 > l) continue;
+            int rl = max(0, mx - l + 1), rr = min(mn, n - l);
+            res += max(0, rr - rl + 1);
+        }
     }
     cout << res << endl;
 }

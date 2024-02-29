@@ -217,12 +217,28 @@ void prep() {}
 
 void solve() {
     read(int, n);
-    ll res = 0;
-    for (int i  =0; i < n; ++i) {
-        read(int, x);
-        res += abs(x);
+    vector<vector<pii>> open(n + 1);
+    vector<vector<pii>> close(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        read(int, b);
+        int left = i / (b + 1) + 1, right = b == 0 ? n : i / b;
+        open[left].emplace_back(right, i);
+        close[right].emplace_back(right, i);
     }
-    cout << res << endl;
+    vector<int> res(n);
+    set<pii> st;
+    for (int i = 1; i <= n; ++i) {
+        for (auto&& p : open[i]) st.insert(p);
+        while (st.size() && res[st.begin()->second - 1]) {
+            st.erase(st.begin());
+        }
+        if (st.size()) {
+            res[st.begin()->second - 1] = i;
+            st.erase(st.begin());
+        }
+        for (auto&& p : close[i]) if (st.count(p)) st.erase(p);
+    }
+    putvec(res);
 }
 
 int main() {

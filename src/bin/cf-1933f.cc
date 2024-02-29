@@ -216,13 +216,56 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    read(int, n);
-    ll res = 0;
-    for (int i  =0; i < n; ++i) {
-        read(int, x);
-        res += abs(x);
+    read(int, n, m);
+    vector<vector<bool>> a(n, vector<bool>(m));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            read(char, c);
+            a[i][j] = c - 48;
+        }
     }
-    cout << res << endl;
+    auto serialize = [&] (int x, int y) -> int {
+        return x * m + y;
+    };
+    vector<vector<int>> ch(n * m);
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            if (a[i][j]) continue;
+            if (a[mod(i-1, n)][j] == 0 && a[mod(i-2, n)][j] == 0) {
+                ch[serialize(mod(i-2, n), j)].push_back(serialize(mod(i, n), j));
+            }
+            if (j && a[mod(i-1, n)][j-1] == 0) {
+                ch[serialize(mod(i-1, n), j-1)].push_back(serialize(mod(i, n), j));
+            }
+        }
+    }
+    vector<bool> vis(n * m);
+    vector<int> dis(n * m, INF);
+    deque<int> dq;
+    dq.push_back(serialize(0, 0));
+    dis[serialize(0, 0)] = 0;
+    while (dq.size()) {
+        int v = dq.front(); dq.pop_front();
+        continue_or(vis[v], 1);
+        for (auto&& u : ch[v]) {
+            if (dis[v] + 1 < dis[u]) {
+                dis[u] = dis[v] + 1;
+                dq.push_back(u);
+            }
+        }
+    }
+    int res = INF;
+    for (int i = 0; i < n; ++i) {
+        int d = dis[serialize(i, m - 1)];
+        if (d == INF) continue;
+        int k = (d - i + n - 2) / n;
+        res = min(res, i + 1 + k * n);
+    }
+    if (res == INF) {
+        cout << -1 << endl;
+    } else {
+        cout << res << endl;
+    }
 }
 
 int main() {

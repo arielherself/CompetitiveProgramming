@@ -216,13 +216,32 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    read(int, n);
-    ll res = 0;
-    for (int i  =0; i < n; ++i) {
-        read(int, x);
-        res += abs(x);
+    read(int, q);
+    map<char, ll> a_seq;
+    map<char, ll, greater<>> b_seq;
+    a_seq['a'] = b_seq['a'] = 1;
+    while (q--) {
+        read(int, d, k);
+        read(string, x);
+        if (d == 1) {
+            for (auto&& c : x) a_seq[c] += k;;
+        } else {
+            for (auto&& c : x) b_seq[c] += k;;
+        }
+        if (b_seq.size() > 1) {
+            cout << "YES\n";
+        } else {
+            if (a_seq.size() > 1) {
+                cout << "NO\n";
+            } else {
+                if (a_seq.begin()->second < b_seq.begin()->second) {
+                    cout << "YES\n";
+                } else {
+                    cout << "NO\n";
+                }
+            }
+        }
     }
-    cout << res << endl;
 }
 
 int main() {

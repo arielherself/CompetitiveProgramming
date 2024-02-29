@@ -7,10 +7,7 @@
  */
 
 #include<bits/stdc++.h>
-#include<bits/extc++.h>
 using namespace std;
-using namespace __gnu_cxx;
-using namespace __gnu_pbds;
 
 /* macro helpers */
 #define __NARGS(...) std::tuple_size<decltype(std::make_tuple(__VA_ARGS__))>::value
@@ -217,12 +214,45 @@ void prep() {}
 
 void solve() {
     read(int, n);
-    ll res = 0;
-    for (int i  =0; i < n; ++i) {
-        read(int, x);
-        res += abs(x);
+    readvec(int, a, n);
+    readvec(int, b, n);
+    vector<ll> diff(n + 1), res(n);
+    vector<ll> ps(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        ps[i] = ps[i-1] + b[i-1];
     }
-    cout << res << endl;
+    auto get = [&] (int l, int r) -> ll {
+        return ps[r + 1] - ps[l];
+    };
+    auto set = [&] (int l, int r, ll val) -> void {
+        diff[l] += val;
+        diff[r + 1] -= val;
+    };
+    for (int i = 0; i < n; ++i) {
+        int l = i, r = n - 1;
+        while (l < r) {
+            int mid = l + r + 1 >> 1;
+            if (get(i, mid) > a[i]) {
+                r = mid - 1;
+            } else {
+                l = mid;
+            }
+        }
+        if (get(i, l) <= a[i]) {
+            set(i, l, 1);
+            if (get(i, l) < a[i] && l != n - 1) {
+                res[l + 1] += a[i] - get(i, l);
+            }
+        } else {
+            res[l] += a[i];
+        }
+    }
+    ll acc = 0;
+    for (int i = 0; i < n; ++i) {
+        acc += diff[i];
+        res[i] += b[i] * acc;
+    }
+    putvec(res);
 }
 
 int main() {

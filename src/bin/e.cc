@@ -217,12 +217,30 @@ void prep() {}
 
 void solve() {
     read(int, n);
-    ll res = 0;
-    for (int i  =0; i < n; ++i) {
-        read(int, x);
-        res += abs(x);
+    readvec(int, a, n);
+    vector<int> ps(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        ps[i] = ps[i-1] + a[i-1];
     }
-    cout << res << endl;
+    read(int, q);
+    auto calc = [] (ll u, int p) -> ll {
+        return (2 * u + 1 - p) * p / 2;
+    };
+    while (q--) {
+        read(int, s);
+        read(ll, u);
+        int l = s, r = n;
+        while (l < r) {
+            int mid = l + r + 1 >> 1;
+            if (mid != s && calc(u, ps[mid] - ps[s-1]) <= calc(u, ps[mid-1] - ps[s-1])) {
+                r = mid - 1;
+            } else {
+                l = mid;
+            }
+        }
+        cout << l << ' ';
+    }
+    cout << endl;
 }
 
 int main() {

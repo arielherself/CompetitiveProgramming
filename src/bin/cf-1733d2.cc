@@ -217,12 +217,37 @@ void prep() {}
 
 void solve() {
     read(int, n);
-    ll res = 0;
-    for (int i  =0; i < n; ++i) {
-        read(int, x);
-        res += abs(x);
+    read(ll, x, y);
+    read(string, a, b);
+    int cnt = 0;
+    for (int i = 0; i < n; ++i) {
+        if (a[i] != b[i]) cnt += 1;
     }
-    cout << res << endl;
+    if (cnt % 2) {
+        cout << -1 << endl;
+        return;
+    }
+    vector<tuple<ll, int, int>> edges;
+    for (int i = 0; i < n; ++i) {
+        if (a[i] == b[i]) continue;
+        for (int j = i + 1; j < n; ++i) {
+            if (a[j] == b[j]) continue;
+            if (x < y) {
+                edges.emplace_back(min((j - i) * x, y), i, j);
+            } else {
+                ll w = 2 * y;
+                if (j - i == 1) w = min(w, x);
+                edges.emplace_back(w, i, j);
+            }
+        }
+    }
+    sort(edges.begin(), edges.end());
+    unordered_set<int, safe_hash> cover;
+    for (auto [w, u, v] : edges) {
+        cover.insert(u), cover.insert(v);
+        if (cover.size() == cnt) {
+        }
+    }
 }
 
 int main() {

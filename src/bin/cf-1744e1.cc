@@ -215,14 +215,29 @@ void dump() {}
 
 void prep() {}
 
-void solve() {
-    read(int, n);
-    ll res = 0;
-    for (int i  =0; i < n; ++i) {
-        read(int, x);
-        res += abs(x);
+unordered_set<ll, safe_hash> decompose_all(ll x) {
+    unordered_set<ll, safe_hash> res;
+    ll sq = sqrt(x);
+    for (ll i = 1; i <= sq; ++i) {
+        if (x % i == 0) {
+            res.insert(i);
+            res.insert(x / i);
+        }
     }
-    cout << res << endl;
+    return res;
+}
+
+void solve() {
+    read(ll, a, b, c, d);
+    auto factors = decompose_all(a * b);
+    for (auto&& s : factors) {
+        ll t = a * b / s;
+        if (1 + a / s <= c / s && 1 + b / t <= d / t) {
+            cout << c / s * s << ' ' << d / t * t << endl;
+            return;
+        }
+    }
+    cout << -1 << ' ' << -1 << endl;
 }
 
 int main() {
