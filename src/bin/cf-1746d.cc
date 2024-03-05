@@ -228,11 +228,46 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int res = 0;
-    sort(a.begin(), a.end());
-    cout << (a[n-1] - a[0]) + (a[n-1] - a[1]) + (a[n-2] - a[0]) + (a[n-2] - a[1]) << endl;
+    read(int, n, k);
+    adj(ch, n);
+    for (int i = 2; i <= n; ++i) {
+        read(int, x);
+        edge(ch, x, i);
+    }
+    vector<int> s(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        cin >> s[i];
+    }
+    unordered_map<pii, ll, pair_hash> cache;
+    auto dfs = [&] (auto dfs, int v, int pa, int curr) -> ll {
+        if (cache.count({v, curr})) return cache[{v, curr}];
+        ll ret = 0;
+        int ch_cnt = ch[v].size() - 1 + (v == 1);
+        if (ch_cnt == 0) {
+            ret = ll(curr) * s[v];
+        } else {
+            int lb = curr / ch_cnt, ub = (curr + ch_cnt - 1) / ch_cnt;
+            int de = curr % ch_cnt;
+            priority_queue<pli> pq;
+            ll common_sum = 0;
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                ll prior = dfs(dfs, u, v, ub);
+                ll common = dfs(dfs, u, v, lb);
+                pq.emplace(prior - common, u);
+                common_sum += common;
+            }
+            for (int i = 0; i < de; ++i) {
+                ret += pq.top().first;
+                pq.pop();
+            }
+            ret += common_sum + ll(curr) * s[v];
+        }
+        cache[{v, curr}] = ret;
+        return ret;
+    };
+    ll res = dfs(dfs, 1, 0, k);
+    cout << res << endl;
 }
 
 int main() {

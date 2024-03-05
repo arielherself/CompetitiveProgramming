@@ -115,6 +115,20 @@ struct pair_hash {
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
 #define Edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v);)
+template <typename T, typename Iterator> pair<size_t, map<T, size_t>> discretize(Iterator __first, Iterator __last) {
+    set<T> st(__first, __last);
+    size_t N = 0;
+    map<T, size_t> mp;
+    for (auto&& x : st) mp[x] = ++N;
+    return {N, mp};
+}
+template <typename T, typename Iterator> pair<size_t, unordered_map<T, size_t, safe_hash>> unordered_discretize(Iterator __first, Iterator __last) {
+    set<T> st(__first, __last);
+    size_t N = 0;
+    unordered_map<T, size_t, safe_hash> mp;
+    for (auto&& x : st) mp[x] = ++N;
+    return {N, mp};
+}
 
 /* io */
 #define untie __AS_PROCEDURE(ios_base::sync_with_stdio(0), cin.tie(NULL))
@@ -219,7 +233,6 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-
 // #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
@@ -228,11 +241,37 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int res = 0;
-    sort(a.begin(), a.end());
-    cout << (a[n-1] - a[0]) + (a[n-1] - a[1]) + (a[n-2] - a[0]) + (a[n-2] - a[1]) << endl;
+    read(int, n, a, b);
+    vector<vector<pii>> e(n + 1);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v, w);
+        e[u].emplace_back(v, w);
+        e[v].emplace_back(u, w);
+    }
+    unordered_set<int, safe_hash> st, ed;
+    auto dfs1 = [&] (auto dfs1, int v, int fa, int dis) -> void {
+        st.insert(dis);
+        for (auto&& [u, w] : e[v]) {
+            if (u == fa || u == b) continue;
+            dfs1(dfs1, u, v, dis ^ w);
+        }
+    };
+    auto dfs2 = [&] (auto dfs2, int v, int fa, int dis) -> void {
+        for (auto&& [u, w] : e[v]) {
+            if (u == fa) continue;
+            ed.insert(dis ^ w);
+            dfs2(dfs2, u, v, dis ^ w);
+        }
+    };
+    dfs1(dfs1, a, a, 0);
+    dfs2(dfs2, b, b, 0);
+    for (auto&& x : st) {
+        if (ed.count(x)) {
+            cout << "YES\n";
+            return;
+        }
+    }
+    cout << "NO\n";
 }
 
 int main() {

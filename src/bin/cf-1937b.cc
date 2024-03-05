@@ -125,22 +125,7 @@ template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __
 #define putvec(a) __AS_PROCEDURE(for (auto&& x : a) cout << x << ' '; cout << endl;)
 #define debug(x) __AS_PROCEDURE(cerr << #x" = " << (x) << endl;)
 #define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : a) cerr << x << ' '; cerr << endl;)
-template<typename T, typename U> ostream& operator<<(ostream& out, const pair<T, U>& p) {
-    out << "{" << p.first << ", " << p.second << "}";
-    return out;
-}
-template<typename Char, typename Traits, typename Tuple, std::size_t... Index>
-void print_tuple_impl(std::basic_ostream<Char, Traits>& os, const Tuple& t, std::index_sequence<Index...>) {
-    using swallow = int[]; // guaranties left to right order
-    (void)swallow { 0, (void(os << (Index == 0 ? "" : ", ") << std::get<Index>(t)), 0)... };
-}
-template<typename Char, typename Traits, typename... Args>
-decltype(auto) operator<<(std::basic_ostream<Char, Traits>& os, const std::tuple<Args...>& t) {
-    os << "{";
-    print_tuple_impl(os, t, std::index_sequence_for<Args...>{});
-    return os << "}";
-}
-template<typename T> ostream& operator<<(ostream& out, const vector<T>& vec) {
+template<typename T> ostream& operator<<(ostream& out, vector<T> vec) {
     for (auto&& i : vec) out << i << ' ';
     return out;
 }
@@ -229,10 +214,58 @@ void prep() {}
 
 void solve() {
     read(int, n);
-    readvec(int, a, n);
-    int res = 0;
-    sort(a.begin(), a.end());
-    cout << (a[n-1] - a[0]) + (a[n-1] - a[1]) + (a[n-2] - a[0]) + (a[n-2] - a[1]) << endl;
+    vector<array<char, 2>> grid(n);
+    for (int i  =0; i < n; ++i) {
+        read(char, c);
+        grid[i][0] = c;
+    }
+    for (int i = 0; i < n; ++i) {
+        read(char, c);
+        grid[i][1] = c;
+    }
+    int x = 0, y = 0;
+    ll rt = 1;
+    string res;
+    while (x < n && y < 2) {
+        res += grid[x][y];
+        if (x == n - 1) {
+            y += 1;
+            continue;
+        }
+        if (y == 1) {
+            ++x;
+            continue;
+        }
+        int acc = 0, k = x + 1;
+        while (k <= n) {
+            if (k == n) {
+                for (int j = x + 1; j < n; ++j) {
+                    res += grid[j][0];
+                }
+                rt *= n - x;
+                x = n - 1, y = 1;;
+                break;
+            }
+            if (grid[k][0] == grid[k-1][1]) {
+                ++k;
+            } else {
+                if (grid[k][0] < grid[k-1][1]) {
+                    for (int j = x + 1; j < k; ++j) {
+                        res += grid[j][0];
+                    }
+                    x = k;
+                } else {
+                    for (int j = x + 1; j < k; ++j) {
+                        res += grid[j][0];
+                    }
+                    rt *= k - x;
+                    x = k - 1, y = 1;
+                }
+                break;
+            }
+        }
+    }
+    cout << res << endl << rt << endl;
 }
 
 int main() {

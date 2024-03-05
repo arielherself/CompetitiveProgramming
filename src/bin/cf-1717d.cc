@@ -28,8 +28,8 @@ using pll = pair<ll, ll>;
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
 constexpr ll INFLL = 0x3f3f3f3f3f3f3f3fLL;
-constexpr ull MDL = 1e9 + 7;
-constexpr ull PRIME = 998'244'353;
+constexpr ll MDL = 1e9 + 7;
+constexpr ll PRIME = 998'244'353;
 constexpr ll MDL1 = 8784491;
 constexpr ll MDL2 = PRIME;
 
@@ -115,6 +115,20 @@ struct pair_hash {
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
 #define Edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v);)
+template <typename T, typename Iterator> pair<size_t, map<T, size_t>> discretize(Iterator __first, Iterator __last) {
+    set<T> st(__first, __last);
+    size_t N = 0;
+    map<T, size_t> mp;
+    for (auto&& x : st) mp[x] = ++N;
+    return {N, mp};
+}
+template <typename T, typename Iterator> pair<size_t, unordered_map<T, size_t, safe_hash>> unordered_discretize(Iterator __first, Iterator __last) {
+    set<T> st(__first, __last);
+    size_t N = 0;
+    unordered_map<T, size_t, safe_hash> mp;
+    for (auto&& x : st) mp[x] = ++N;
+    return {N, mp};
+}
 
 /* io */
 #define untie __AS_PROCEDURE(ios_base::sync_with_stdio(0), cin.tie(NULL))
@@ -219,20 +233,34 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
-void prep() {}
+ll fact[100010];
+void prep() {
+    fact[0] = 1;
+    for (int i = 1; i <= 100000; ++i) {
+        fact[i] = mod(fact[i - 1] * i, MDL);
+    }
+}
 
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int res = 0;
-    sort(a.begin(), a.end());
-    cout << (a[n-1] - a[0]) + (a[n-1] - a[1]) + (a[n-2] - a[0]) + (a[n-2] - a[1]) << endl;
+    read(ll, n, k);
+    ll pw = 1;
+    for (int i = 0; i < n; ++i) {
+        pw = mod(pw * 2, MDL);
+    }
+    if (k >= n) {
+        cout << pw << endl;
+    } else {
+        ll mn = 0;
+        for (int i = k + 1; i <= n; ++i) {
+            mn = mod(mn + mod(mod(fact[n] * inverse(fact[i], MDL), MDL) * inverse(fact[n - i], MDL), MDL), MDL);
+        }
+        cout << mod(pw - mn, MDL) << endl;
+    }
 }
 
 int main() {

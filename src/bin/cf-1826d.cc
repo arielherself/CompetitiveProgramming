@@ -230,9 +230,7 @@ void prep() {}
 void solve() {
     read(int, n);
     readvec(int, a, n);
-    int res = 0;
-    sort(a.begin(), a.end());
-    cout << (a[n-1] - a[0]) + (a[n-1] - a[1]) + (a[n-2] - a[0]) + (a[n-2] - a[1]) << endl;
+
 }
 
 int main() {

@@ -115,6 +115,20 @@ struct pair_hash {
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
 #define Edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v);)
+template <typename T, typename Iterator> pair<size_t, map<T, size_t>> discretize(Iterator __first, Iterator __last) {
+    set<T> st(__first, __last);
+    size_t N = 0;
+    map<T, size_t> mp;
+    for (auto&& x : st) mp[x] = ++N;
+    return {N, mp};
+}
+template <typename T, typename Iterator> pair<size_t, unordered_map<T, size_t, safe_hash>> unordered_discretize(Iterator __first, Iterator __last) {
+    set<T> st(__first, __last);
+    size_t N = 0;
+    unordered_map<T, size_t, safe_hash> mp;
+    for (auto&& x : st) mp[x] = ++N;
+    return {N, mp};
+}
 
 /* io */
 #define untie __AS_PROCEDURE(ios_base::sync_with_stdio(0), cin.tie(NULL))
@@ -219,20 +233,50 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-
 // #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
-void prep() {}
+vector<vector<int>> st(100010);
+int slot[100010];
+void prep() {
+    for (int i = 1; i <= 100000; ++i) {
+        for (int j = 1; j * i <= 100000; ++j) {
+            st[j * i].push_back(i);
+        }
+    }
+}
 
 void solve() {
-    read(int, n);
+    read(int, n, m);
     readvec(int, a, n);
-    int res = 0;
     sort(a.begin(), a.end());
-    cout << (a[n-1] - a[0]) + (a[n-1] - a[1]) + (a[n-2] - a[0]) + (a[n-2] - a[1]) << endl;
+    n = unique(a.begin(), a.end()) - a.begin();
+    int r = -1;
+    int cnt = 0;
+    int res = INT_MAX;
+    for (int i = 0; i < n; ++i) {
+        while (cnt < m && r + 1 < n) {
+            r += 1;
+            for (auto&& x : st[a[r]]) {
+                if (x > m) break;
+                if (slot[x] == 0) cnt += 1;
+                slot[x] += 1;
+            }
+        }
+        if (cnt == m) res = min(res, a[r] - a[i]);
+        for (auto&& x : st[a[i]]) {
+            if (x > m) break;
+            slot[x] -= 1;
+            if (slot[x] == 0) cnt -= 1;
+        }
+    }
+    if (res == INT_MAX) {
+        cout << -1 << endl;
+    } else {
+        cout << res << endl;
+    }
 }
 
 int main() {

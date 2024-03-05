@@ -28,8 +28,8 @@ using pll = pair<ll, ll>;
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
 constexpr ll INFLL = 0x3f3f3f3f3f3f3f3fLL;
-constexpr ull MDL = 1e9 + 7;
-constexpr ull PRIME = 998'244'353;
+constexpr ll MDL = 1e9 + 7;
+constexpr ll PRIME = 998'244'353;
 constexpr ll MDL1 = 8784491;
 constexpr ll MDL2 = PRIME;
 
@@ -115,6 +115,20 @@ struct pair_hash {
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
 #define Edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v);)
+template <typename T, typename Iterator> pair<size_t, map<T, size_t>> discretize(Iterator __first, Iterator __last) {
+    set<T> st(__first, __last);
+    size_t N = 0;
+    map<T, size_t> mp;
+    for (auto&& x : st) mp[x] = ++N;
+    return {N, mp};
+}
+template <typename T, typename Iterator> pair<size_t, unordered_map<T, size_t, safe_hash>> unordered_discretize(Iterator __first, Iterator __last) {
+    set<T> st(__first, __last);
+    size_t N = 0;
+    unordered_map<T, size_t, safe_hash> mp;
+    for (auto&& x : st) mp[x] = ++N;
+    return {N, mp};
+}
 
 /* io */
 #define untie __AS_PROCEDURE(ios_base::sync_with_stdio(0), cin.tie(NULL))
@@ -219,7 +233,6 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-
 // #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
@@ -227,12 +240,66 @@ void dump() {}
 
 void prep() {}
 
+template<typename _Tp, typename _Op = function<_Tp(const _Tp&, const _Tp&)>> struct sparse_table {
+    _Op op;
+    vector<vector<_Tp>> st;
+    template <typename ReverseIterator>
+    sparse_table(ReverseIterator __first, ReverseIterator __last, _Op&& __operation) {
+        op = __operation;
+        int n = distance(__first, __last);
+        st = vector<vector<_Tp>>(n, vector<_Tp>(int(log2(n) + 1)));
+        int i = n - 1;
+        for (auto it = __first; it != __last; ++it) {
+            st[i][0] = *it;
+            for (int j = 1; i + (1 << j) <= n; ++j) {
+                st[i][j] = op(st[i][j - 1], st[i + (1 << (j - 1))][j - 1]);
+            }
+            i -= 1;
+        }
+    }
+    _Tp query(size_t __start, size_t __end) {
+        int s = lg2(__end - __start + 1);
+        return op(st[__start][s], st[__end - (1 << s) + 1][s]);
+    }
+};
 void solve() {
     read(int, n);
     readvec(int, a, n);
-    int res = 0;
-    sort(a.begin(), a.end());
-    cout << (a[n-1] - a[0]) + (a[n-1] - a[1]) + (a[n-2] - a[0]) + (a[n-2] - a[1]) << endl;
+    auto cmp = [&] (const int& i, const int& j) -> int {
+        if (a[i] > a[j]) {
+            return j;
+        } else {
+            return i;
+        }
+    };
+    auto cmpm = [&] (const int& i, const int& j) -> int {
+        if (a[i] < a[j]) {
+            return j;
+        } else {
+            return i;
+        }
+    };
+    vector<int> idx(n);
+    iota(idx.begin(), idx.end(), 0);
+    sparse_table<int> st(idx.rbegin(), idx.rend(), cmp);
+    sparse_table<int> stm(idx.rbegin(), idx.rend(), cmpm);
+    vector<int> dis(n, INF);
+    dis[0] = 0;
+    deque<int> q, qm;
+    q.push_back(0);
+    qm.push_back(0);
+    for (int i = 1; i < n; ++i) {
+        while (q.size() && a[q.back()] < a[i]) q.pop_back();
+        int pos = q.size() ? q.back() + 1 : 0;
+        int mn_pos = st.query(pos, i);
+        dis[i] = min(dis[i], dis[mn_pos] + 1);
+        while (qm.size() && a[qm.back()] > a[i]) qm.pop_back();
+        int posm = qm.size() ? qm.back() + 1 : 0;
+        int mx_pos = stm.query(posm, i);
+        dis[i] = min(dis[i], dis[mx_pos] + 1);
+        q.push_back(i), qm.push_back(i);
+    }
+    cout << dis[n - 1] << endl;
 }
 
 int main() {
@@ -247,7 +314,7 @@ int main() {
         if (i + 1 == (DUMP_TEST_CASE)) {
             dump();
         } else {
-        solve();
+            solve();
         }
 #else
         solve();

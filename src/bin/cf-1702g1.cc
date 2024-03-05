@@ -125,22 +125,7 @@ template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __
 #define putvec(a) __AS_PROCEDURE(for (auto&& x : a) cout << x << ' '; cout << endl;)
 #define debug(x) __AS_PROCEDURE(cerr << #x" = " << (x) << endl;)
 #define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : a) cerr << x << ' '; cerr << endl;)
-template<typename T, typename U> ostream& operator<<(ostream& out, const pair<T, U>& p) {
-    out << "{" << p.first << ", " << p.second << "}";
-    return out;
-}
-template<typename Char, typename Traits, typename Tuple, std::size_t... Index>
-void print_tuple_impl(std::basic_ostream<Char, Traits>& os, const Tuple& t, std::index_sequence<Index...>) {
-    using swallow = int[]; // guaranties left to right order
-    (void)swallow { 0, (void(os << (Index == 0 ? "" : ", ") << std::get<Index>(t)), 0)... };
-}
-template<typename Char, typename Traits, typename... Args>
-decltype(auto) operator<<(std::basic_ostream<Char, Traits>& os, const std::tuple<Args...>& t) {
-    os << "{";
-    print_tuple_impl(os, t, std::index_sequence_for<Args...>{});
-    return os << "}";
-}
-template<typename T> ostream& operator<<(ostream& out, const vector<T>& vec) {
+template<typename T> ostream& operator<<(ostream& out, vector<T> vec) {
     for (auto&& i : vec) out << i << ' ';
     return out;
 }
@@ -220,7 +205,7 @@ int period(string s) {  // find the length of shortest recurring period
 /////////////////////////////////////////////////////////
 
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
@@ -229,10 +214,42 @@ void prep() {}
 
 void solve() {
     read(int, n);
-    readvec(int, a, n);
-    int res = 0;
-    sort(a.begin(), a.end());
-    cout << (a[n-1] - a[0]) + (a[n-1] - a[1]) + (a[n-2] - a[0]) + (a[n-2] - a[1]) << endl;
+    adj(ch, n);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
+    }
+    read(int, q);
+    while (q--) {
+        read(int, m);
+        unordered_set<int, safe_hash> st;
+        for (int i = 0; i < m; ++i) {
+            read(int, x);
+            st.insert(x);
+        }
+        bool res = true;
+        auto dfs = [&] (auto dfs, int v, int pa) -> int {
+            int valid = 0, cnt = 0;
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                int curr = dfs(dfs, u, v);
+                if (curr) valid += 1;
+                cnt += curr;
+            }
+            if (st.count(v)) cnt += 1;
+            // debug(v), debug(valid), debug(cnt);
+            if (valid > 2 || valid == 2 && cnt != st.size()) {
+                res = false;
+            }
+            return cnt;
+        };
+        dfs(dfs, 1, 0);
+        if (res == true) {
+            cout << "YES\n";
+        } else {
+            cout << "NO\n";
+        }
+    }
 }
 
 int main() {

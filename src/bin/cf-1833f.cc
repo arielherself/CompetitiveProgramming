@@ -228,11 +228,33 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    read(int, n);
+    read(int, n, m);
     readvec(int, a, n);
-    int res = 0;
     sort(a.begin(), a.end());
-    cout << (a[n-1] - a[0]) + (a[n-1] - a[1]) + (a[n-2] - a[0]) + (a[n-2] - a[1]) << endl;
+    vector<pii> ct;
+    int prev = 0;
+    for (int i = 0; i < n; ++i) {
+        if (a[i] == prev) {
+            ct.back().second += 1;
+        } else {
+            prev = a[i];
+            ct.emplace_back(prev, 1);
+        }
+    }
+    ll res = 0, prod = 1;
+    int r = -1;
+    int s = ct.size();
+    for (int i = 0; i + m - 1 < s; ++i) {
+        while (r < i + m - 1) {
+            r += 1;
+            prod = (prod * ct[r].second) % MDL;
+        }
+        if (ct[r].first - ct[i].first + 1 == m) {
+            res = (res + prod) % MDL;
+        }
+        prod = (prod * inverse(ct[i].second, MDL)) % MDL;
+    }
+    cout << res << endl;
 }
 
 int main() {

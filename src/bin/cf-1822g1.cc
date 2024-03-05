@@ -229,10 +229,24 @@ void prep() {}
 
 void solve() {
     read(int, n);
-    readvec(int, a, n);
-    int res = 0;
-    sort(a.begin(), a.end());
-    cout << (a[n-1] - a[0]) + (a[n-1] - a[1]) + (a[n-2] - a[0]) + (a[n-2] - a[1]) << endl;
+    unordered_map<int, int, safe_hash> ct;
+    while (n--) {
+        read(int, x);
+        ct[x] += 1;
+    }
+    ll res = 0;
+    for (auto [x, a] : ct) {
+        for (int i = 2; ll(i) * i * x <= 1e6; ++i) {
+            if (!ct.count(i * x) || !ct.count(i * i * x)) {
+                continue;
+            }
+            res += ll(a) * ct[i * x] * ct[i * i * x];
+        }
+    }
+    for (auto [x, a] : ct) {
+        res += ll(a) * (a - 1) * (a - 2);
+    }
+    cout << res << endl;
 }
 
 int main() {

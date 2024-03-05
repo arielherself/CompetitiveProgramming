@@ -7,10 +7,7 @@
  */
 
 #include<bits/stdc++.h>
-#include<bits/extc++.h>
 using namespace std;
-using namespace __gnu_cxx;
-using namespace __gnu_pbds;
 
 /* macro helpers */
 #define __NARGS(...) std::tuple_size<decltype(std::make_tuple(__VA_ARGS__))>::value
@@ -118,6 +115,20 @@ struct pair_hash {
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
 #define Edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v);)
+template <typename T, typename Iterator> pair<size_t, map<T, size_t>> discretize(Iterator __first, Iterator __last) {
+    set<T> st(__first, __last);
+    size_t N = 0;
+    map<T, size_t> mp;
+    for (auto&& x : st) mp[x] = ++N;
+    return {N, mp};
+}
+template <typename T, typename Iterator> pair<size_t, unordered_map<T, size_t, safe_hash>> unordered_discretize(Iterator __first, Iterator __last) {
+    set<T> st(__first, __last);
+    size_t N = 0;
+    unordered_map<T, size_t, safe_hash> mp;
+    for (auto&& x : st) mp[x] = ++N;
+    return {N, mp};
+}
 
 /* io */
 #define untie __AS_PROCEDURE(ios_base::sync_with_stdio(0), cin.tie(NULL))
@@ -128,7 +139,22 @@ template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __
 #define putvec(a) __AS_PROCEDURE(for (auto&& x : a) cout << x << ' '; cout << endl;)
 #define debug(x) __AS_PROCEDURE(cerr << #x" = " << (x) << endl;)
 #define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : a) cerr << x << ' '; cerr << endl;)
-template<typename T> ostream& operator<<(ostream& out, vector<T> vec) {
+template<typename T, typename U> ostream& operator<<(ostream& out, const pair<T, U>& p) {
+    out << "{" << p.first << ", " << p.second << "}";
+    return out;
+}
+template<typename Char, typename Traits, typename Tuple, std::size_t... Index>
+void print_tuple_impl(std::basic_ostream<Char, Traits>& os, const Tuple& t, std::index_sequence<Index...>) {
+    using swallow = int[]; // guaranties left to right order
+    (void)swallow { 0, (void(os << (Index == 0 ? "" : ", ") << std::get<Index>(t)), 0)... };
+}
+template<typename Char, typename Traits, typename... Args>
+decltype(auto) operator<<(std::basic_ostream<Char, Traits>& os, const std::tuple<Args...>& t) {
+    os << "{";
+    print_tuple_impl(os, t, std::index_sequence_for<Args...>{});
+    return os << "}";
+}
+template<typename T> ostream& operator<<(ostream& out, const vector<T>& vec) {
     for (auto&& i : vec) out << i << ' ';
     return out;
 }
@@ -208,7 +234,7 @@ int period(string s) {  // find the length of shortest recurring period
 /////////////////////////////////////////////////////////
 
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}

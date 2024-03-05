@@ -28,8 +28,8 @@ using pll = pair<ll, ll>;
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
 constexpr ll INFLL = 0x3f3f3f3f3f3f3f3fLL;
-constexpr ull MDL = 1e9 + 7;
-constexpr ull PRIME = 998'244'353;
+constexpr ll MDL = 1e9 + 7;
+constexpr ll PRIME = 998'244'353;
 constexpr ll MDL1 = 8784491;
 constexpr ll MDL2 = PRIME;
 
@@ -115,6 +115,20 @@ struct pair_hash {
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
 #define Edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v);)
+template <typename T, typename Iterator> pair<size_t, map<T, size_t>> discretize(Iterator __first, Iterator __last) {
+    set<T> st(__first, __last);
+    size_t N = 0;
+    map<T, size_t> mp;
+    for (auto&& x : st) mp[x] = ++N;
+    return {N, mp};
+}
+template <typename T, typename Iterator> pair<size_t, unordered_map<T, size_t, safe_hash>> unordered_discretize(Iterator __first, Iterator __last) {
+    set<T> st(__first, __last);
+    size_t N = 0;
+    unordered_map<T, size_t, safe_hash> mp;
+    for (auto&& x : st) mp[x] = ++N;
+    return {N, mp};
+}
 
 /* io */
 #define untie __AS_PROCEDURE(ios_base::sync_with_stdio(0), cin.tie(NULL))
@@ -219,20 +233,86 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-
 // #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
-void prep() {}
+ll pw[200010];
+void prep() {
+    pw[0] = 1;
+    for (int i = 1; i <= 200000; ++i) {
+        pw[i] = (pw[i-1] * 2) % MDL;
+    }
+}
 
 void solve() {
     read(int, n);
-    readvec(int, a, n);
-    int res = 0;
-    sort(a.begin(), a.end());
-    cout << (a[n-1] - a[0]) + (a[n-1] - a[1]) + (a[n-2] - a[0]) + (a[n-2] - a[1]) << endl;
+    vector<vector<int>> ch(n + 1);
+    vector<int> heavy(n + 1), layer(n + 1), sz(n + 1);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        ch[u].push_back(v);
+        ch[v].push_back(u);
+    }
+    int mx_layer = 0;
+    auto prep = [&] (auto prep, int v, int pa, int l) -> void {
+        layer[v] = l;
+        mx_layer = max(mx_layer, l);
+        int t = -1, mx = -1;
+        int sum = 0;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            prep(prep, u, v, l + 1);
+            if (sz[u] > mx) {
+                t = u, mx = sz[u];
+            }
+            sum += sz[u];
+        }
+        heavy[v] = t;
+        sz[v] = sum + 1;
+    };
+    prep(prep, 1, 0, 0);
+    vector<int> slot(mx_layer + 1);
+    ll slot_ans = 0;
+    auto clear_slot = [&] (int i) -> void {
+        if (slot[i]) slot_ans = mod(slot_ans - pw[slot[i] - 1] * pw[n - slot[i]], MDL);
+        slot[i] = 0;
+    };
+    auto update_slot = [&] (int i) -> void {
+        // add 1 to slot i
+        if (slot[i]) slot_ans = mod(slot_ans - pw[slot[i] - 1] * pw[n - slot[i]], MDL);
+        slot[i] += 1;
+        slot_ans = mod(slot_ans + pw[slot[i] - 1] * pw[n - slot[i]], MDL);
+    };
+    ll res = 0;
+    auto dfs = [&] (auto dfs, int v, int pa, bool save, bool write) -> void {
+        if (write) {
+            for (auto&& u : ch[v]) {
+                if (u == pa || u == heavy[v]) continue;
+                dfs(dfs, u, v, false, true);
+            }
+        }
+        if (heavy[v] != -1) {
+            dfs(dfs, heavy[v], v, true, write);
+        }
+        for (auto&& u : ch[v]) {
+            if (u == pa || u == heavy[v]) continue;
+            dfs(dfs, u, v, true, false);
+        }
+        update_slot(layer[v]);
+        int right = min(mx_layer, layer[v] + sz[v]);
+        if (write) {
+            res = (res + slot_ans) % MDL;
+        }
+        if (!save) {
+            for (int i = layer[v]; i <= right; ++i) {
+                clear_slot(i);
+            }
+        }
+    };
+    dfs(dfs, 1, 0, false, true);
+    cout << res << endl;
 }
 
 int main() {

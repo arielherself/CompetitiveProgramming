@@ -28,8 +28,8 @@ using pll = pair<ll, ll>;
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
 constexpr ll INFLL = 0x3f3f3f3f3f3f3f3fLL;
-constexpr ull MDL = 1e9 + 7;
-constexpr ull PRIME = 998'244'353;
+constexpr ll MDL = 1e9 + 7;
+constexpr ll PRIME = 998'244'353;
 constexpr ll MDL1 = 8784491;
 constexpr ll MDL2 = PRIME;
 
@@ -115,6 +115,20 @@ struct pair_hash {
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
 #define Edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v);)
+template <typename T, typename Iterator> pair<size_t, map<T, size_t>> discretize(Iterator __first, Iterator __last) {
+    set<T> st(__first, __last);
+    size_t N = 0;
+    map<T, size_t> mp;
+    for (auto&& x : st) mp[x] = ++N;
+    return {N, mp};
+}
+template <typename T, typename Iterator> pair<size_t, unordered_map<T, size_t, safe_hash>> unordered_discretize(Iterator __first, Iterator __last) {
+    set<T> st(__first, __last);
+    size_t N = 0;
+    unordered_map<T, size_t, safe_hash> mp;
+    for (auto&& x : st) mp[x] = ++N;
+    return {N, mp};
+}
 
 /* io */
 #define untie __AS_PROCEDURE(ios_base::sync_with_stdio(0), cin.tie(NULL))
@@ -219,7 +233,6 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-
 // #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
@@ -230,9 +243,12 @@ void prep() {}
 void solve() {
     read(int, n);
     readvec(int, a, n);
-    int res = 0;
-    sort(a.begin(), a.end());
-    cout << (a[n-1] - a[0]) + (a[n-1] - a[1]) + (a[n-2] - a[0]) + (a[n-2] - a[1]) << endl;
+    int all = 0xffffffff;
+    for (int i = 0; i < n; ++i) all &= a[i];
+    ll fact = 1;
+    for (int i = 1; i <= n - 2; ++i) fact = (fact * i) % MDL;
+    ll cnt = count(a.begin(), a.end(), all);
+    cout << ((((ll(1) * cnt * (cnt - 1)) % MDL) * fact) % MDL) << endl;
 }
 
 int main() {
@@ -247,7 +263,7 @@ int main() {
         if (i + 1 == (DUMP_TEST_CASE)) {
             dump();
         } else {
-        solve();
+            solve();
         }
 #else
         solve();

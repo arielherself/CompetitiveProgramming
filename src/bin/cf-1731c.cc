@@ -227,12 +227,26 @@ void dump() {}
 
 void prep() {}
 
+int ct[262144];
+
 void solve() {
     read(int, n);
     readvec(int, a, n);
-    int res = 0;
-    sort(a.begin(), a.end());
-    cout << (a[n-1] - a[0]) + (a[n-1] - a[1]) + (a[n-2] - a[0]) + (a[n-2] - a[1]) << endl;
+    ll exclude = 0;
+    vector<int> ps(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        ps[i] = ps[i-1] ^ a[i-1];
+    }
+    int max_i2 = (1 << msp(*max_element(a.begin(), a.end())) + 1) - 1;
+    for (int i = 0; i * i <= max_i2; ++i) {
+        // count a[l] ^ ... ^ a[r] == i * i
+        for (int j = 0; j <= n; ++j) {
+            exclude += ct[ps[j] ^ (i * i)];
+            ct[ps[j]] += 1;
+        }
+        for (int j = 0; j <= n; ++j) ct[ps[j]] -= 1;
+    }
+    cout << ll(n) * (n + 1) / 2 - exclude << endl;
 }
 
 int main() {

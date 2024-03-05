@@ -115,6 +115,20 @@ struct pair_hash {
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
 #define Edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v);)
+template <typename T, typename Iterator> pair<size_t, map<T, size_t>> discretize(Iterator __first, Iterator __last) {
+    set<T> st(__first, __last);
+    size_t N = 0;
+    map<T, size_t> mp;
+    for (auto&& x : st) mp[x] = ++N;
+    return {N, mp};
+}
+template <typename T, typename Iterator> pair<size_t, unordered_map<T, size_t, safe_hash>> unordered_discretize(Iterator __first, Iterator __last) {
+    set<T> st(__first, __last);
+    size_t N = 0;
+    unordered_map<T, size_t, safe_hash> mp;
+    for (auto&& x : st) mp[x] = ++N;
+    return {N, mp};
+}
 
 /* io */
 #define untie __AS_PROCEDURE(ios_base::sync_with_stdio(0), cin.tie(NULL))
@@ -228,11 +242,25 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    read(int, n);
+    read(int, n, k);
     readvec(int, a, n);
-    int res = 0;
-    sort(a.begin(), a.end());
-    cout << (a[n-1] - a[0]) + (a[n-1] - a[1]) + (a[n-2] - a[0]) + (a[n-2] - a[1]) << endl;
+    vector<vector<ll>> dp(n + 1, vector<ll>(64));
+    for (int i = 1; i <= n; ++i) {
+        dp[i][a[i - 1]] = 1;
+        for (int m1 = 0; m1 < 64; ++m1) {
+            for (int m2 = 0; m2 < 64; ++m2) {
+                if ((a[i - 1] & m2) == m1) {
+                    dp[i][m1] = (dp[i][m1] + dp[i-1][m2]) % MDL;
+                }
+            }
+            dp[i][m1] = (dp[i][m1] + dp[i-1][m1]) % MDL;
+        }
+    }
+    ll res = 0;
+    for (int i = 0; i < 64; ++i) {
+        if (popcount(i) == k) res = (res + dp[n][i]) % MDL;
+    }
+    cout << res << endl;
 }
 
 int main() {
