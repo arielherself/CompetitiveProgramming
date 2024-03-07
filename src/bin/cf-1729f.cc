@@ -241,36 +241,42 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    read(int, n, c);
-    readvec(int, a, n);
-    ll tot = ll(c + 2) * (c + 1) / 2;
-    for (int i = 0; i < n; ++i) {
-        tot -= max(0, (2 * min(a[i], c) - a[i]) / 2 + 1);
-        tot -= max(0, c - a[i] + 1);
-    }
-    vector<int> odd(n + 1), even(n + 1);
+    read(string, a);
+    read(int, w, m);
+    int n = a.size();
+    vector<int> ps(n + 1);
     for (int i = 1; i <= n; ++i) {
-        odd[i] = odd[i - 1] + (a[i - 1] % 2 == 1);
-        even[i] = even[i - 1] + (a[i - 1] % 2 == 0);
+        ps[i] = ps[i - 1] + (a[i - 1] - 48); 
     }
-    for (int i = 0; i < n; ++i) {
-        if (a[i] > 2 * c) break;
-        int l = i, r = n - 1;
-        while (l < r) {
-            int mid = l + r + 1 >> 1;
-            if (a[mid] + a[i] > 2 * c) {
-                r = mid - 1;
+    auto get = [&] (int l, int r) -> int {
+        return (ps[r + 1] - ps[l]) % 9;
+    };
+    vector<vector<int>> slot(9); 
+    for (int i = 0; i + w <= n; ++i) {
+        slot[get(i, i + w - 1)].push_back(i);
+    }
+    while (m--) {
+        read(int, l, r, k);
+        int ss = get(l - 1, r - 1);
+        pii res = {INT_MAX, INT_MAX};
+        for (int i = 0; i < 9; ++i) {
+            int curr = (i * ss) % 9;
+            int tar = mod(k - curr, 9);
+            if (i == tar) {
+                if (slot[i].size() > 1)
+                    res = min(res, {slot[i][0], slot[i][1]});
             } else {
-                l = mid;
+                if (slot[i].size() && slot[tar].size()) {
+                    res = min(res, {slot[i][0], slot[tar][0]});
+                }
             }
         }
-        if (a[i] % 2 == 0) {
-            tot += even[r + 1] - even[i];
+        if (res == make_pair(INT_MAX, INT_MAX)) {
+            cout << -1 << ' ' << -1 << endl;
         } else {
-            tot += odd[r + 1] - odd[i];
+            cout << res.first + 1 << ' ' << res.second + 1 << endl;
         }
     }
-    cout << tot << endl;
 }
 
 int main() {

@@ -233,7 +233,7 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
@@ -241,36 +241,114 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    read(int, n, c);
-    readvec(int, a, n);
-    ll tot = ll(c + 2) * (c + 1) / 2;
-    for (int i = 0; i < n; ++i) {
-        tot -= max(0, (2 * min(a[i], c) - a[i]) / 2 + 1);
-        tot -= max(0, c - a[i] + 1);
+    read(int, n, d);
+    adj(ch, n);
+    for (int i  =0; i < n - 1; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
     }
-    vector<int> odd(n + 1), even(n + 1);
-    for (int i = 1; i <= n; ++i) {
-        odd[i] = odd[i - 1] + (a[i - 1] % 2 == 1);
-        even[i] = even[i - 1] + (a[i - 1] % 2 == 0);
+    unordered_set<int, safe_hash> open_a, open_b;
+    {
+        read(int, m);
+        while (m--) {
+            read(int, a);
+            open_a.insert(a);
+        }
     }
-    for (int i = 0; i < n; ++i) {
-        if (a[i] > 2 * c) break;
-        int l = i, r = n - 1;
-        while (l < r) {
-            int mid = l + r + 1 >> 1;
-            if (a[mid] + a[i] > 2 * c) {
-                r = mid - 1;
-            } else {
-                l = mid;
+    {
+        read(int, m);
+        while (m--) {
+            read(int, b);
+            open_b.insert(b);
+        }
+    }
+    {
+        deque<int> st;
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            st.push_back(v);
+            if (open_b.count(v)) {
+                int curr = st.size();
+                if (curr - d - 1 >= 0) {
+                    open_a.insert(st[curr - d - 1]);
+                }
             }
-        }
-        if (a[i] % 2 == 0) {
-            tot += even[r + 1] - even[i];
-        } else {
-            tot += odd[r + 1] - odd[i];
-        }
+            for (auto&& u : ch[v]) {
+                if (u != pa) dfs(dfs, u, v);
+            }
+            st.pop_back();
+        };
+        dfs(dfs, 1, 0);
     }
-    cout << tot << endl;
+    {
+        deque<int> st;
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            st.push_back(v);
+            if (open_a.count(v)) {
+                int curr = st.size();
+                if (curr - d - 1 >= 0) {
+                    open_b.insert(st[curr - d - 1]);
+                }
+            }
+            for (auto&& u : ch[v]) {
+                if (u != pa) dfs(dfs, u, v);
+            }
+            st.pop_back();
+        };
+        dfs(dfs, 1, 0);
+    }
+    vector<int> has_a(n + 1), has_b(n + 1);
+    {
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v);
+                has_a[v] |= has_a[u];
+            }
+            if (open_a.count(v)) {
+                has_a[v] = 1;
+            }
+        };
+        dfs(dfs, 1, 0);
+    }
+    {
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v);
+                has_b[v] |= has_b[u];
+            }
+            if (open_b.count(v)) {
+                has_b[v] = 1;
+            }
+        };
+        dfs(dfs, 1, 0);
+    }
+    ll res = 0;
+    {
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                if (has_a[u]) {
+                    res += 2;
+                    dfs(dfs, u, v);
+                }
+            }
+        };
+        dfs(dfs, 1, 0);
+    }
+    {
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                if (has_b[u]) {
+                    res += 2;
+                    dfs(dfs, u, v);
+                }
+            }
+        };
+        dfs(dfs, 1, 0);
+    }
+    cout << res << endl;
 }
 
 int main() {

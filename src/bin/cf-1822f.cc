@@ -241,36 +241,42 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    read(int, n, c);
-    readvec(int, a, n);
-    ll tot = ll(c + 2) * (c + 1) / 2;
-    for (int i = 0; i < n; ++i) {
-        tot -= max(0, (2 * min(a[i], c) - a[i]) / 2 + 1);
-        tot -= max(0, c - a[i] + 1);
+    read(int, n);
+    read(ll, k, c);
+    adj(ch, n);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
     }
-    vector<int> odd(n + 1), even(n + 1);
-    for (int i = 1; i <= n; ++i) {
-        odd[i] = odd[i - 1] + (a[i - 1] % 2 == 1);
-        even[i] = even[i - 1] + (a[i - 1] % 2 == 0);
-    }
-    for (int i = 0; i < n; ++i) {
-        if (a[i] > 2 * c) break;
-        int l = i, r = n - 1;
-        while (l < r) {
-            int mid = l + r + 1 >> 1;
-            if (a[mid] + a[i] > 2 * c) {
-                r = mid - 1;
-            } else {
-                l = mid;
+    vector<ll> max_depth(n + 1), second_max_depth(n + 1);
+    auto dfs1 = [&] (auto dfs1, int v, int pa) -> void {
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            dfs1(dfs1, u, v);
+            if (1 + max_depth[u] >= max_depth[v]) {
+                second_max_depth[v] = max_depth[v];
+                max_depth[v] = 1 + max_depth[u];
+            } else if (1 + max_depth[u] > second_max_depth[v]) {
+                second_max_depth[v] = 1 + max_depth[u];
             }
         }
-        if (a[i] % 2 == 0) {
-            tot += even[r + 1] - even[i];
-        } else {
-            tot += odd[r + 1] - odd[i];
+    };
+    dfs1(dfs1, 1, 0);
+    ll res = 0;
+    auto dfs = [&] (auto dfs, int v, int pa, ll up, int op) -> void {
+        ll curr_max = max(max_depth[v], up);
+        res = max(res, curr_max * k - op * c);
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            if (max_depth[u] + 1 == max_depth[v]) {
+                dfs(dfs, u, v, max(up, second_max_depth[v]) + 1, op + 1);
+            } else {
+                dfs(dfs, u, v, max(up, max_depth[v]) + 1, op + 1);
+            }
         }
-    }
-    cout << tot << endl;
+    };
+    dfs(dfs, 1, 0, 0, 0);
+    cout << res << endl;
 }
 
 int main() {

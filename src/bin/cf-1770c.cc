@@ -241,36 +241,27 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    read(int, n, c);
-    readvec(int, a, n);
-    ll tot = ll(c + 2) * (c + 1) / 2;
-    for (int i = 0; i < n; ++i) {
-        tot -= max(0, (2 * min(a[i], c) - a[i]) / 2 + 1);
-        tot -= max(0, c - a[i] + 1);
-    }
-    vector<int> odd(n + 1), even(n + 1);
-    for (int i = 1; i <= n; ++i) {
-        odd[i] = odd[i - 1] + (a[i - 1] % 2 == 1);
-        even[i] = even[i - 1] + (a[i - 1] % 2 == 0);
-    }
-    for (int i = 0; i < n; ++i) {
-        if (a[i] > 2 * c) break;
-        int l = i, r = n - 1;
-        while (l < r) {
-            int mid = l + r + 1 >> 1;
-            if (a[mid] + a[i] > 2 * c) {
-                r = mid - 1;
-            } else {
-                l = mid;
-            }
-        }
-        if (a[i] % 2 == 0) {
-            tot += even[r + 1] - even[i];
-        } else {
-            tot += odd[r + 1] - odd[i];
+    read(int, n);
+    readvec(ll, a, n);
+    unordered_map<ll, int, safe_hash> cnt;
+    for (auto&& x : a) {
+        ++cnt[x];
+        if (cnt[x] > 1) {
+            cout << "NO\n";
+            return;
         }
     }
-    cout << tot << endl;
+    for (int i = 2; i <= n; ++i) {
+        vector<int> slot(i);
+        for (auto&& x : a) ++slot[x % i];
+        int cnt = 0;
+        for (auto&& x : slot) if (x > 1) ++cnt;
+        if (cnt == i) {
+            cout << "NO\n";
+            return;
+        }
+    }
+    cout << "YES\n";
 }
 
 int main() {

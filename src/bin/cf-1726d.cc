@@ -240,37 +240,86 @@ void dump() {}
 
 void prep() {}
 
+class quick_union {
+private:
+    vector<size_t> c;
+public:
+    quick_union(size_t n) : c(n) {
+        iota(c.begin(), c.end(), 0);
+    }
+    
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    
+    void merge(size_t i, size_t j) {
+        c[query(i)] = query(j);
+    }
+
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+};
+
 void solve() {
-    read(int, n, c);
-    readvec(int, a, n);
-    ll tot = ll(c + 2) * (c + 1) / 2;
-    for (int i = 0; i < n; ++i) {
-        tot -= max(0, (2 * min(a[i], c) - a[i]) / 2 + 1);
-        tot -= max(0, c - a[i] + 1);
+    read(int, n, m);
+    vector<pii> edges(m);
+    for (int i = 0; i < m; ++i) {
+        cin >> edges[i].first >> edges[i].second;
     }
-    vector<int> odd(n + 1), even(n + 1);
-    for (int i = 1; i <= n; ++i) {
-        odd[i] = odd[i - 1] + (a[i - 1] % 2 == 1);
-        even[i] = even[i - 1] + (a[i - 1] % 2 == 0);
+    vector<int> res(m);
+    vector<vector<int>> ch(n + 1);
+    vector<vector<int>> cycle(n + 1);
+    quick_union qu(n + 1);
+    quick_union qu1(n + 1);
+    int f = 0, root = 0;
+    for (int i = 0; i < m; ++i) {
+        auto [u, v] = edges[i];
+        if (!qu.connected(u, v)) {
+            res[i] = 0;
+            qu.merge(u, v);
+            edge(ch, u, v);
+            root = v;
+        } else {
+            res[i] = 1;
+            if (qu1.connected(u, v)) {
+                f = 1;
+            }
+            qu1.merge(u, v);
+            edge(cycle, u, v);
+        }
     }
-    for (int i = 0; i < n; ++i) {
-        if (a[i] > 2 * c) break;
-        int l = i, r = n - 1;
-        while (l < r) {
-            int mid = l + r + 1 >> 1;
-            if (a[mid] + a[i] > 2 * c) {
-                r = mid - 1;
-            } else {
-                l = mid;
+    if (f) {
+        int success = 0;
+        pii add, rem;
+        quick_union subtree(n + 1);
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v);
+                subtree.merge(u, v);
+            }
+            for (auto&& u : cycle[v]) {
+                if (success == 0 && !subtree.connected(u, v)) {
+                    success = 1;
+                    add = {u, v};
+                    rem = {pa, v};
+                    break;
+                }
+            }
+        };
+        dfs(dfs, root, 0);
+        if (success) {
+            for (int i = 0; i < m; ++i) {
+                auto [u, v] = edges[i];
+                if (make_pair(u, v) == add || make_pair(v, u) == add) res[i] = 0;
+                if (make_pair(u, v) == rem || make_pair(v, u) == rem) res[i] = 1;
             }
         }
-        if (a[i] % 2 == 0) {
-            tot += even[r + 1] - even[i];
-        } else {
-            tot += odd[r + 1] - odd[i];
-        }
     }
-    cout << tot << endl;
+    for (auto&& x : res) cout << x;
+    cout << endl;
 }
 
 int main() {

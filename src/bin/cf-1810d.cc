@@ -241,36 +241,33 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    read(int, n, c);
-    readvec(int, a, n);
-    ll tot = ll(c + 2) * (c + 1) / 2;
-    for (int i = 0; i < n; ++i) {
-        tot -= max(0, (2 * min(a[i], c) - a[i]) / 2 + 1);
-        tot -= max(0, c - a[i] + 1);
-    }
-    vector<int> odd(n + 1), even(n + 1);
-    for (int i = 1; i <= n; ++i) {
-        odd[i] = odd[i - 1] + (a[i - 1] % 2 == 1);
-        even[i] = even[i - 1] + (a[i - 1] % 2 == 0);
-    }
-    for (int i = 0; i < n; ++i) {
-        if (a[i] > 2 * c) break;
-        int l = i, r = n - 1;
-        while (l < r) {
-            int mid = l + r + 1 >> 1;
-            if (a[mid] + a[i] > 2 * c) {
-                r = mid - 1;
+    read(int, q);
+    ll ub = LLONG_MAX, lb = 0;
+    while (q--) {
+        read(int, type);
+        if (type == 1) {
+            read(ll, a, b, n);
+            ll new_ub = min(ub, (n - 1) * (a - b) + a);
+            ll new_lb = n > 1 ? max(lb, (n - 2) * (a - b) + a + 1) : lb;
+            if (new_ub >= new_lb) {
+                ub = new_ub, lb = new_lb;
+                cout << 1 << ' ';
             } else {
-                l = mid;
+                cout << 0 << ' ';
+            }
+        } else {
+            read(ll, a, b);
+            ll res_ub = 1 + max(ll(0), (ub - b - 1) / (a - b));
+            ll res_lb = 1 + max(ll(0), (lb - b - 1) / (a - b));
+            // cerr << "res_ub = " << res_ub << ' ' << "res_lb = " << res_lb << ' ';
+            if (res_ub == res_lb) {
+                cout << res_ub << ' ';
+            } else {
+                cout << -1 << ' ';
             }
         }
-        if (a[i] % 2 == 0) {
-            tot += even[r + 1] - even[i];
-        } else {
-            tot += odd[r + 1] - odd[i];
-        }
     }
-    cout << tot << endl;
+    cout << endl;
 }
 
 int main() {

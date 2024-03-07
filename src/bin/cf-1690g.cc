@@ -240,37 +240,187 @@ void dump() {}
 
 void prep() {}
 
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+    using size_type = uint64_t;
+    using info_type = Addable_Info_t;
+    using tag_type = Tag_t;
+    size_type _max;
+    vector<info_type> d;
+    vector<tag_type> b;
+
+    void push(size_type p) {
+        d[p * 2].apply(b[p]), d[p * 2 + 1].apply(b[p]);
+        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+        b[p] = tag_type();
+    }
+    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+        if (s == t) {
+            d[p] = c;
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        if (s != t) push(p);
+        if (x <= m) range_set(s, m, p * 2, x, c);
+        else  range_set(m + 1, t, p * 2 + 1, x, c);
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+    
+    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+        if (l <= s && t <= r) {
+            d[p].apply(c);
+            b[p].apply(c);
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        push(p);
+        if (l <= m) range_apply(s, m, p * 2, l, r, c);
+        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+
+    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+        if (l <= s && t <= r) {
+            // cerr << "range_query(" << s << ", " << t << ", " << p << ", " << l << ", " << r << ") = " << d[p].val << endl;
+            return d[p];
+        }
+        size_type m = s + (t - s >> 1);
+        info_type res = {};
+        push(p);
+        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+        // cerr << "range_query(" << s << ", " << t << ", " << p << ", " << l << ", " << r << ") = " << res.val << endl;
+        return res;
+    }
+
+    void build(const Sequence& a, size_type s, size_type t, size_type p) {
+        if (s == t) {
+            d[p] = a[s];
+            return;
+        }
+        int m = s + (t - s >> 1);
+        build(a, s, m, p * 2);
+        build(a, m + 1, t, p * 2 + 1);
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+public:
+    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+    segtree(const Sequence& a) : segtree(a.size()) {
+        build(a, {}, _max, 1);
+    }
+
+    void set(size_type i, const info_type& c) {
+        set({}, _max, 1, i, c);
+    }
+    
+    void range_apply(size_type l, size_type r, const tag_type& c) {
+        range_apply({}, _max, 1, l, r, c);
+    }
+
+    void apply(size_type i, const tag_type& c) {
+        range_apply(i, i, c);
+    }
+
+    info_type range_query(size_type l, size_type r) {
+        return range_query({}, _max, 1, l, r);
+    }
+
+    info_type query(size_type i) {
+        return range_query(i, i);
+    }
+
+    Sequence serialize() {
+        Sequence res = {};
+        for (size_type i = 0; i <= _max; ++i) {
+            res.push_back(query(i));
+        }
+        return res;
+    }
+
+    const vector<info_type> get_d() {
+        return d;
+    }
+};
+
+struct Set_Tag {
+    int val = -1;
+    void apply(const Set_Tag& rhs) {
+        if (rhs.val != -1)
+        val = rhs.val;
+    }
+};
+
+struct Set_Info {
+    int val = 0;
+    void apply(const Set_Tag& rhs) {
+        if (rhs.val != -1)
+        val = rhs.val;
+    }
+};
+
+Set_Info operator+(const Set_Info &a, const Set_Info &b) {
+    return {a.val + b.val};
+}
+
 void solve() {
-    read(int, n, c);
+    read(int, n, m);
     readvec(int, a, n);
-    ll tot = ll(c + 2) * (c + 1) / 2;
-    for (int i = 0; i < n; ++i) {
-        tot -= max(0, (2 * min(a[i], c) - a[i]) / 2 + 1);
-        tot -= max(0, c - a[i] + 1);
+    vector<Set_Info> st(n + 1);
+    vector<Set_Info> sp(n + 1);
+    int mn = INT_MAX;
+    for (int i  =0; i  <n; ++i) {
+        if (a[i] < mn) {
+            mn = a[i];
+            sp[i].val = 1;
+        }
+        st[i].val = mn;
     }
-    vector<int> odd(n + 1), even(n + 1);
-    for (int i = 1; i <= n; ++i) {
-        odd[i] = odd[i - 1] + (a[i - 1] % 2 == 1);
-        even[i] = even[i - 1] + (a[i - 1] % 2 == 0);
-    }
-    for (int i = 0; i < n; ++i) {
-        if (a[i] > 2 * c) break;
-        int l = i, r = n - 1;
-        while (l < r) {
-            int mid = l + r + 1 >> 1;
-            if (a[mid] + a[i] > 2 * c) {
-                r = mid - 1;
-            } else {
-                l = mid;
+    segtree<Set_Info, Set_Tag> tr(st);
+    segtree<Set_Info, Set_Tag> split(sp);
+    // debug(">>>\n");
+    // for (auto&& x : tr.get_d()) cerr << x.val << ' '; cerr << endl;
+    // for (auto&& x : split.get_d()) cerr << x.val << ' '; cerr << endl;
+    // auto tr_vec = tr.serialize();
+    // auto sp_vec = split.serialize();
+    // for (auto&& x : tr_vec) cerr << x.val << ' '; cerr << endl;
+    // for (auto&& x : sp_vec) cerr << x.val << ' '; cerr << endl;
+    while (m--) {
+        read(int, k, d);
+        k -= 1;
+        a[k] -= d;
+        int curr = tr.query(k).val;
+        if (a[k] < curr) {
+            // debug(a[k]);
+            // for (auto&& x : tr.serialize()) cerr << x.val << ' ' ; cerr << endl;
+            // for (auto&& x : split.serialize()) cerr << x.val << ' ' ; cerr << endl;
+            int l = k, r = n - 1;
+            while (l < r) {
+                int mid = l + r + 1 >> 1;
+                if (tr.query(mid).val >= a[k]) {
+                    l = mid;
+                } else {
+                    r = mid - 1;
+                }
+            }
+            // debug(k), debug(l);
+            tr.range_apply(k, l, {a[k]});
+            // debug(tr.query(0).val);
+            split.range_apply(k, l, { 0 });
+            // debug(tr.range_query(k, l).val);
+            if (k == 0 || a[k] < tr.query(k - 1).val) {
+                split.apply(k, {1});
+            }
+            if (l + 1 != n) {
+                if (a[k] > tr.query(l + 1).val) {
+                    split.apply(l + 1, {1});
+                } else {
+                    split.apply(l + 1, {0});
+                }
             }
         }
-        if (a[i] % 2 == 0) {
-            tot += even[r + 1] - even[i];
-        } else {
-            tot += odd[r + 1] - odd[i];
-        }
+        cout << split.range_query(0, n - 1).val << ' ';
     }
-    cout << tot << endl;
+    cout << endl;
 }
 
 int main() {

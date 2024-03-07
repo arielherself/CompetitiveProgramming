@@ -241,36 +241,25 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    read(int, n, c);
-    readvec(int, a, n);
-    ll tot = ll(c + 2) * (c + 1) / 2;
+    read(int, n, m);
+    vector<vector<bool>> grid(n, vector<bool>(m));
     for (int i = 0; i < n; ++i) {
-        tot -= max(0, (2 * min(a[i], c) - a[i]) / 2 + 1);
-        tot -= max(0, c - a[i] + 1);
+        for (int j = 0; j < m; ++j) {
+            read(int, x);
+            grid[i][j] = x == 1;
+        }
     }
-    vector<int> odd(n + 1), even(n + 1);
+    if ((n + m - 1) & 1) {
+        cout << "NO\n";
+        return;
+    }
+    vector<vector<int>> dp(n + 1, vector<int>(m + 1));
+    dp[0][0] = 0;
     for (int i = 1; i <= n; ++i) {
-        odd[i] = odd[i - 1] + (a[i - 1] % 2 == 1);
-        even[i] = even[i - 1] + (a[i - 1] % 2 == 0);
-    }
-    for (int i = 0; i < n; ++i) {
-        if (a[i] > 2 * c) break;
-        int l = i, r = n - 1;
-        while (l < r) {
-            int mid = l + r + 1 >> 1;
-            if (a[mid] + a[i] > 2 * c) {
-                r = mid - 1;
-            } else {
-                l = mid;
-            }
-        }
-        if (a[i] % 2 == 0) {
-            tot += even[r + 1] - even[i];
-        } else {
-            tot += odd[r + 1] - odd[i];
+        for (int j = 1; j <= m; ++j) {
+            dp[i][j] = max(dp[i-1][j])
         }
     }
-    cout << tot << endl;
 }
 
 int main() {

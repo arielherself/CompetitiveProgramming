@@ -241,36 +241,46 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    read(int, n, c);
-    readvec(int, a, n);
-    ll tot = ll(c + 2) * (c + 1) / 2;
+    read(int, n, m);
+    vector<vector<int>> grid(n, vector<int>(m));
     for (int i = 0; i < n; ++i) {
-        tot -= max(0, (2 * min(a[i], c) - a[i]) / 2 + 1);
-        tot -= max(0, c - a[i] + 1);
+        for (int j = 0; j < m; ++j) {
+            cin >> grid[i][j];
+        }
     }
-    vector<int> odd(n + 1), even(n + 1);
-    for (int i = 1; i <= n; ++i) {
-        odd[i] = odd[i - 1] + (a[i - 1] % 2 == 1);
-        even[i] = even[i - 1] + (a[i - 1] % 2 == 0);
-    }
-    for (int i = 0; i < n; ++i) {
-        if (a[i] > 2 * c) break;
-        int l = i, r = n - 1;
-        while (l < r) {
-            int mid = l + r + 1 >> 1;
-            if (a[mid] + a[i] > 2 * c) {
-                r = mid - 1;
-            } else {
-                l = mid;
+    auto check = [&] (int l) -> bool {
+        vector<vector<int>> ps(n + 1, vector<int>(m + 1));
+        for (int i = 1; i <= n; ++i) {
+            for (int j = 1; j <= m; ++j) {
+                ps[i][j] = ps[i-1][j] + ps[i][j-1] - ps[i-1][j-1] + (grid[i - 1][j - 1] >= l);
             }
         }
-        if (a[i] % 2 == 0) {
-            tot += even[r + 1] - even[i];
+        // debug(l);
+        // for (int i = 1; i <= n; ++i) {
+        //     for (int j = 1; j <= m; ++j) {
+        //         cerr << ps[i][j] << ' ';
+        //     }
+        //     cerr << endl;
+        // }
+        for (int i = l - 1; i < n; ++i) {
+            for (int j = l - 1; j < m; ++j) {
+                int sum = ps[i + 1][j + 1] - ps[i - l + 1][j + 1] - ps[i + 1][j - l + 1] + ps[i - l + 1][j - l + 1];
+                // debug(sum);
+                if (sum == l * l) return 1;
+            }
+        }
+        return 0;
+    };
+    int l = 1, r = min(n, m);
+    while (l < r) {
+        int mid = l + r + 1 >> 1;
+        if (check(mid)) {
+            l = mid;
         } else {
-            tot += odd[r + 1] - odd[i];
+            r = mid - 1;
         }
     }
-    cout << tot << endl;
+    cout << l << endl;
 }
 
 int main() {

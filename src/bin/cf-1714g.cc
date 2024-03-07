@@ -241,36 +241,43 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    read(int, n, c);
-    readvec(int, a, n);
-    ll tot = ll(c + 2) * (c + 1) / 2;
-    for (int i = 0; i < n; ++i) {
-        tot -= max(0, (2 * min(a[i], c) - a[i]) / 2 + 1);
-        tot -= max(0, c - a[i] + 1);
+    read(int, n);
+    adj(ch, n);
+    vector<ll> a(n + 1), b(n + 1);
+    for (int i = 2; i <= n; ++i) {
+        read(int, p, x, y);
+        edge(ch, p, i);
+        a[i] = x, b[i] = y;
     }
-    vector<int> odd(n + 1), even(n + 1);
-    for (int i = 1; i <= n; ++i) {
-        odd[i] = odd[i - 1] + (a[i - 1] % 2 == 1);
-        even[i] = even[i - 1] + (a[i - 1] % 2 == 0);
-    }
-    for (int i = 0; i < n; ++i) {
-        if (a[i] > 2 * c) break;
-        int l = i, r = n - 1;
+    vector<ll> ps;
+    ps.push_back(0);
+    vector<ll> res(n + 1);
+    ll ub = 0;
+    auto dfs = [&] (auto dfs, int v, int pa) -> void {
+        ub += a[v];
+        ps.push_back( ps.back() + b[v] );
+        int n = ps.size();
+        int l = 0, r = n - 1;
         while (l < r) {
             int mid = l + r + 1 >> 1;
-            if (a[mid] + a[i] > 2 * c) {
-                r = mid - 1;
-            } else {
+            if (ps[mid] <= ub) {
                 l = mid;
+            } else {
+                r = mid - 1;
             }
         }
-        if (a[i] % 2 == 0) {
-            tot += even[r + 1] - even[i];
-        } else {
-            tot += odd[r + 1] - odd[i];
+        res[v] = l - 1;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            dfs(dfs, u, v);
         }
+        ps.pop_back();
+        ub -= a[v];
+    };
+    dfs(dfs, 1, 0);
+    for (int i = 2; i <= n; ++i) {
+        cout << res[i] << " \n"[i == n];
     }
-    cout << tot << endl;
 }
 
 int main() {
