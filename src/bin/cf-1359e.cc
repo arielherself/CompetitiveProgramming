@@ -233,7 +233,7 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
@@ -241,7 +241,17 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    
+    read(int, n, k);
+    vector<ll> factorial(n + 1);
+    factorial[0] = 1;
+    for (int i = 1; i <= n; ++i) factorial[i] = ( factorial[i - 1] * i ) % PRIME;
+    ll res = 0;
+    for (int i = 1; i <= n; ++i) {
+        int cnt = n / i - 1;
+        if (cnt < k - 1) continue;
+        res = (res + (((factorial[cnt] * inverse(factorial[cnt - k + 1], PRIME)) % PRIME) * inverse(factorial[k - 1], PRIME)) % PRIME) % PRIME;
+    }
+    cout << res << endl;
 }
 
 int main() {

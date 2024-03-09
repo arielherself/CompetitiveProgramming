@@ -233,15 +233,70 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
-void prep() {}
+vector<int> prime_table;
+void get_prime(int n) {
+    vector<bool> is_prime(n + 1);
+    is_prime[0] = is_prime[1] = false;
+    for (int i = 2; i <= n; ++i) is_prime[i] = true;
+    for (int i = 2; i <= n; ++i) {
+        if (is_prime[i]) {
+            prime_table.push_back(i);
+            if (ll(i) * i > n) continue;
+            for (int j = i * i; j <= n; j += i) {
+                is_prime[j] = false;
+            }
+        }
+    }
+}
+
+void prep() {
+    get_prime(1e7 + 10);
+}
+
+int mp[10'000'010];
+
+struct min_2 {
+    int a = INT_MAX, b = INT_MAX;
+    void update(int c) {
+        if (c < a) {
+            b = a;
+            a = c;
+        } else if (c < b) {
+            b = c;
+        }
+    }
+};
 
 void solve() {
-    
+    read(int, n);
+    readvec(int, a, n);
+    set<int> st(a.begin(), a.end());
+    int N = 0;
+    for (auto&& x : st) mp[x] = ++N;
+    vector<min_2> slot(N + 1);
+    vector<int> first(n), second(n);
+    for (auto&& x : prime_table) {
+        for (ll i = x; i <= 1e7; i += x) {
+            if (mp[i]) {
+                slot[mp[i]].update(x);
+            }
+        }
+    }
+    for (int i = 0; i < n; ++i) {
+        int j = mp[a[i]];
+        if (slot[j].a == INT_MAX || slot[j].b == INT_MAX) {
+            first[i] = -1, second[i] = -1;
+        } else {
+            first[i] = slot[j].a;
+            second[i] = slot[j].b;
+        }
+    }
+    putvec(first), putvec(second);
 }
 
 int main() {

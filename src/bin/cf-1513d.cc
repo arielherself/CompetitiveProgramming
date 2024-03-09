@@ -240,8 +240,55 @@ void dump() {}
 
 void prep() {}
 
-void solve() {
+class quick_union {
+private:
+    vector<size_t> c;
+public:
+    quick_union(size_t n) : c(n) {
+        iota(c.begin(), c.end(), 0);
+    }
     
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    
+    void merge(size_t i, size_t j) {
+        c[query(i)] = query(j);
+    }
+
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+};
+
+void solve() {
+    read(int, n);
+    read(ll, p);
+    readvec(ll, a, n);
+    vector<int> idx(n);
+    iota(idx.begin(), idx.end(), 0);
+    sort(idx.begin(), idx.end(), [&] (int i, int j) {return a[i] < a[j];});
+    ll res = 0;
+    int cnt = 0;
+    quick_union qu(n);
+    for (auto&& i : idx) {
+        if (a[i] >= p) break;
+        for (int j = i - 1; ~j; --j) {
+            if (a[j] % a[i] || qu.connected(j, i)) break;
+            res += a[i];
+            cnt += 1;
+            qu.merge(i, j);
+        }
+        for (int j = i + 1; j < n; ++j) {
+            if (a[j] % a[i] || qu.connected(j, i)) break;
+            res += a[i];
+            cnt += 1;
+            qu.merge(i, j);
+        }
+    }
+    res += max(0, n - 1 - cnt) * p;
+    cout << res << endl;
 }
 
 int main() {

@@ -240,8 +240,28 @@ void dump() {}
 
 void prep() {}
 
+ll ask(int a, int b) {
+    cout << "? " << a << ' ' << b << endl;
+    read(int, x);
+    return x;
+}
+
+void claim(int x) {
+    cout << "! " << x << endl;
+}
+
 void solve() {
-    
+    int bias = 0;
+    auto getbit = [&] (int b) -> int {
+        int incr1 = (1 << b) - bias;
+        int incr2 = (1 << 30)  + (1 << b) - bias;
+        int res = ask(incr1, incr2);
+        return res % (1 << (b + 1)) == 0;
+    };
+    for (int i = 0; i < 30; ++i) {
+        bias |= getbit(i) << i;
+    }
+    claim(bias);
 }
 
 int main() {

@@ -241,6 +241,7 @@ void dump() {}
 void prep() {}
 
 void solve() {
+    read(int, n);
     
 }
 
