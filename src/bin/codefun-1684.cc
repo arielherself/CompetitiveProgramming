@@ -240,15 +240,80 @@ void dump() {}
 
 void prep() {}
 
+class quick_union {
+private:
+    vector<size_t> c;
+public:
+    quick_union(size_t n) : c(n) {
+        iota(c.begin(), c.end(), 0);
+    }
+    
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    
+    void merge(size_t i, size_t j) {
+        c[query(i)] = query(j);
+    }
+
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+};
+
 void solve() {
+    read(int, n, m, q);
+    vector<pii> add_edge;
+    vector<tuple<int, int, int>> events;
+    set<int> pts;
+    for (int i = 0; i < m; ++i) {
+        read(int, u, v);
+        pts.insert(u), pts.insert(v);
+        add_edge.emplace_back(u, v);
+    }
+    int N = 0;
+    unordered_map<int, int, safe_hash> mp;
+    for (auto&& x : pts) mp[x] = ++N;
+    vector<unordered_set<int, safe_hash>> ch(N + 1);
+    for (auto [u, v] : add_edge) {
+        ch[mp[u]].insert(mp[v]), ch[mp[v]].insert(mp[u]);
+    }
+    for (int i = 0; i < q; ++i) {
+        read(int, op, u, v);
+        if (op == 1) {
+            ch[mp[v]].erase(mp[u]);
+            ch[mp[u]].erase(mp[v]);
+        }
+        events.emplace_back(op, u, v);
+    }
+    reverse(events.begin(), events.end());
+    quick_union qu(N + 1);
+    for (int i = 1; i <= N; ++i) {
+        for (auto&& j : ch[i]) {
+            qu.merge(i, j);
+        }
+    }
     vector<int> res;
-    loop {
-        read(int, x);
-        res.push_back(x);
-        if (x == 0) break;
+    for (auto&& [op, u, v] : events) {
+        if (op == 1) {
+            qu.merge(mp[u], mp[v]);
+        } else {
+            if (mp.count(u) && mp.count(v) && qu.connected(mp[u], mp[v])) {
+                res.push_back(1);
+            } else {
+                res.push_back(0);
+            }
+        }
     }
     reverse(res.begin(), res.end());
-    for (auto&& x : res) cout << x << endl;
+    for (auto&& x : res) {
+        if (x) {
+            cout << "Yes\n";
+        } else {
+            cout << "No\n";
+        }
+    }
 }
 
 int main() {
