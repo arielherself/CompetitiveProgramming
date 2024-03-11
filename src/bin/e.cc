@@ -233,64 +233,38 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
 void prep() {}
 
-struct ListNode {
-    int val;
-    ListNode* prev;
-    ListNode* next;
-};
-
 void solve() {
-    read(int, n);
-    ListNode head {0, nullptr, nullptr}, tail {0, nullptr, nullptr};
-    head.next = &tail;
-    tail.prev = &head;
-    ListNode* curr = &head;
-    unordered_map<int, ListNode*, safe_hash> mp;
+    read(int, n, m, k, d);
+    vector<ll> cost(n);
     for (int i = 0; i < n; ++i) {
-        read(int, x);
-        curr->next = new ListNode{x, curr, &tail};
-        curr = curr->next;
-        mp[x] = curr;
-    }
-    read(int, q);
-    while (q--) {
-        read(int, op);
-        if (op == 1) {
-            read(int, x, y);
-            ListNode* pre = mp[x];
-            ListNode* nxt = pre->next;
-            ListNode* nw = new ListNode {y, pre, nxt};
-            pre->next = nw;
-            nxt->prev = nw;
-            mp[y] = nw;
-        } else {
-            read(int, x);
-            ListNode* nw = mp[x];
-            ListNode* pre = nw->prev;
-            ListNode* nxt = nw->next;
-            pre->next = nxt;
-            nxt->prev = pre;
-            mp.erase(x);
-            delete nw;
+        readvec(ll, a, m);
+        priority_queue<pli, vector<pli>, greater<>> pq;
+        ll curr = 0;
+        for (int j = 0; j < m; ++j) {
+            while (pq.size() && pq.top().second < j - d - 1) pq.pop();
+            if (j > d + 1) {
+                curr = pq.top().first + a[j] + 1;
+            } else {
+                curr = 1 + a[j] + 1;
+            }
+            pq.emplace(curr, j);;
         }
+        cost[i] = curr;
     }
-    curr = &head;
-    loop {
-        curr = curr->next;
-        if (curr->prev != &head) delete curr->prev;
-        if (curr == &tail) {
-            break;
-        }
-        cout << curr->val << ' ';
+    ll sum = 0, res = INFLL;
+    for (int i = 0; i < n; ++i) {
+        sum += cost[i];
+        if (i - k >= 0) sum -= cost[i - k];
+        if (i + 1 >= k) res = min(res, sum);
     }
-    cout << endl;
+    cout << res << endl;
 }
 
 int main() {

@@ -233,7 +233,7 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
@@ -241,32 +241,27 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    read(string, t);
-    int n = t.length();
-    read(int, m);
-    vector<vector<int>> dp(m + 1, vector<int>(n + 1, INF));
-    dp[0][0] = 0;
-    for (int y = 1; y <= m; ++y) {
-        read(int, k);
-        readvec(string, s, k);
-        for (int i = 0; i <= n; ++i) dp[y][i] = dp[y - 1][i];
-        for (auto&& x : s) {
-            int l = x.size();
-            for (int i = 0; i + l <= n; ++i) {
-                int able = 1;
-                for (int j = 0; j < l; ++j) {
-                    if (t[i + j] != x[j]) {
-                        able = 0;
-                        break;
-                    }
-                }
-                if (able) {
-                    dp[y][i + l] = min(dp[y][i + l], dp[y - 1][i] + 1);
-                }
+    read(int, n, m, x);
+    vector<vector<bool>> dp(m + 1, vector<bool>(n));
+    dp[0][x - 1] = 1;
+    for (int i = 1; i <= m; ++i) {
+        read(int, r), read(char, op);
+        if (op != '1') {
+            for (int j = 0; j < n; ++j) {
+                if (dp[i - 1][j]) dp[i][mod(j + r, n)] = 1;
+            }
+        }
+        if (op != '0') {
+            for (int j = 0; j < n; ++j) {
+                if (dp[i - 1][j]) dp[i][mod(j - r, n)] = 1;
             }
         }
     }
-    cout << (dp[m][n] == INF ? -1 : dp[m][n]) << endl;
+    cout << count(dp[m].begin(), dp[m].end(), 1) << "\n";
+    for (int i = 0; i < n; ++i) {
+        if (dp[m][i]) cout << i + 1 << ' ';
+    }
+    cout << "\n";
 }
 
 int main() {

@@ -233,7 +233,7 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
@@ -241,66 +241,53 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    read(int, n);
-    vector<vector<ll>> cost(n, vector<ll>(n));
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            cin >> cost[i][j];
-        }
+    read(int, n, m, k);
+    readvec(ll, a, n);
+    int x = 1;
+    for (int i = 1; i < n; ++i) {
+        if (a[i] - a[i - 1] > a[x] - a[x - 1]) x = i;
     }
-    vector<vector<ll>> r(n, vector<ll>(n - 1));
-    vector<vector<ll>> d(n - 1, vector<ll>(n));
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n - 1; ++j) {
-            cin >> r[i][j];
-        }
+    ll other = 0;
+    for (int i = 1; i < n; ++i) {
+        if (i != x) other = max(other, a[i] - a[i - 1]);
     }
-    for (int i = 0; i < n - 1; ++i) {
-        for (int j = 0; j < n; ++j) {
-            cin >> d[i][j];
-        }
-    }
-    vector<vector<ll>> dp1(n, vector<ll>(n, INFLL));
-    dp1[n - 1][n - 1] = 0;
-    for (int i = n - 1; ~i; --i) {
-        for (int j = n - 1; ~j; --j) {
-            if (j + 1 != n) dp1[i][j] = min(dp1[i][j], dp1[i][j+1] + r[i][j]);
-            if (i + 1 != n) dp1[i][j] = min(dp1[i][j], dp1[i+1][j] + d[i][j]);
-        }
-    }
-    vector<vector<pll>> dp2(n, vector<pll>(n, {INFLL, 0}));
-    dp2[0][0] = {0, 0};
-    ll res = INFLL;
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            if (i) {
-                auto [co, sv] = dp2[i-1][j];
-                ll new_co = (max(ll(0), d[i-1][j] - sv) + cost[i-1][j] - 1) / cost[i-1][j];
-                ll new_sv = sv + new_co * cost[i-1][j] - d[i-1][j];
-                dp2[i][j] = min(dp2[i][j], {co + new_co + 1, new_sv});
+    ll u = a[x - 1], v = a[x];
+    ll target = (v + u) / 2;
+    readvec(ll, b, m);
+    readvec(ll, c, k);
+    sort(b.begin(), b.end());
+    sort(c.begin(), c.end());
+    ll res = v - u;
+    for (int i = 0; i < m; ++i) {
+        {
+            int l = 0, r = k - 1;
+            while (l < r) {
+                int mid = l + r + 1 >> 1;
+                if (c[mid] + b[i] <= target) {
+                    l = mid;
+                } else {
+                    r = mid - 1;
+                }
             }
-            if (j) {
-                auto [co, sv] = dp2[i][j-1];
-                ll new_co = (max(ll(0), r[i][j-1] - sv) + cost[i][j-1] - 1) / cost[i][j-1];
-                ll new_sv = sv + new_co * cost[i][j-1] - r[i][j-1];
-                dp2[i][j] = min(dp2[i][j], {co + new_co + 1, new_sv});
+            if (r >= 0 && c[r] + b[i] <= v && c[r] + b[i] >= u) {
+                res = min(res, max(other, max(c[r] + b[i] - u, v - c[r] - b[i])));
             }
-            ll wait = (max(ll(0), dp1[i][j] - dp2[i][j].second) + cost[i][j] - 1) / cost[i][j];
-            res = min(res, dp2[i][j].first + wait + 2 * n - 2 - i - j);
+        }
+        {
+            int l = 0, r = k - 1;
+            while (l < r) {
+                int mid = l + r >> 1;
+                if (c[mid] + b[i] > target) {
+                    r = mid;
+                } else {
+                    l = mid + 1;
+                }
+            }
+            if (l < k && c[l] + b[i] <= v && c[l] + b[i] >= u) {
+                res = min(res, max(other, max(c[l] + b[i] - u, v - c[l] - b[i])));
+            }
         }
     }
-    // for (int i = 0; i < n; ++i) {
-    //     for (int j = 0; j < n; ++j) {
-    //         cout << dp1[i][j] << ' ';
-    //     }
-    //     cout << endl;
-    // }
-    // for (int i = 0; i < n; ++i) {
-    //     for (int j = 0; j < n; ++j) {
-    //         cout << dp2[i][j] << ' ';
-    //     }
-    //     cout << endl;
-    // }
     cout << res << endl;
 }
 

@@ -241,14 +241,18 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    read(int, n);
-    read(string, a);
-    int res = 0;
-    for (int i = 2; i < n; ++i) {
-        if (a[i - 2] == 'p' && a[i - 1] == 'i' && a[i] == 'e') res += 1;
-        if (a[i - 2] == 'm' && a[i - 1] == 'a' && a[i] == 'p') res += 1, a[i] = 'x';
+    read(int, n, m);
+    unordered_map<int, vector<pii>, safe_hash> cl;
+    vector<vector< pii >> ch(n + 1);
+    for (int i = 0; i < m; ++i) {
+        read(int, u, v, c);
+        ch[u].emplace_back(v, c);
+        ch[v].emplace_back(u, c);
     }
-    cout << res << endl;
+    read(int, b, e);
+    unordered_set<int, safe_hash> b_open, e_open;
+    
+    assert(false);
 }
 
 int main() {
