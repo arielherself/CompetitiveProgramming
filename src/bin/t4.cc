@@ -1,0 +1,407 @@
+#pragma GCC optimize("Ofast")
+/////////////////////////////////////////////////////////
+/**
+ * Useful Macros
+ *   by subcrip
+ * (requires C++17)
+ */
+
+#include<bits/stdc++.h>
+using namespace std;
+
+/* macro helpers */
+#define __NARGS(...) std::tuple_size<decltype(std::make_tuple(__VA_ARGS__))>::value
+#define __DECOMPOSE_S(a, x) auto x = a;
+#define __DECOMPOSE_N(a, ...) auto [__VA_ARGS__] = a;
+constexpr void __() {}
+#define __AS_PROCEDURE(...) __(); __VA_ARGS__; __()
+#define __as_typeof(container) decltype(container)::value_type
+
+/* type aliases */
+using ll = int64_t;
+using ull = uint64_t;
+using pii = pair<int, int>;
+using pil = pair<int, ll>;
+using pli = pair<ll, int>;
+using pll = pair<ll, ll>;
+
+/* constants */
+constexpr int INF = 0x3f3f3f3f;
+constexpr ll INFLL = 0x3f3f3f3f3f3f3f3fLL;
+constexpr ll MDL = 1e9 + 7;
+constexpr ll PRIME = 998'244'353;
+constexpr ll MDL1 = 8784491;
+constexpr ll MDL2 = PRIME;
+
+/* random */
+
+mt19937 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
+
+/* bit-wise operations */
+#define lowbit(x) ((x) & -(x))
+#define popcount(x) (__builtin_popcountll(ll(x)))
+#define parity(x) (__builtin_parityll(ll(x)))
+#define msp(x) (63LL - __builtin_clzll(ll(x)))
+#define lsp(x) (__builtin_ctzll(ll(x)))
+
+/* arithmetic operations */
+#define mod(x, y) ((((x) % (y)) + (y)) % (y))
+
+/* fast pairs */
+#define upair ull
+#define umake(x, y) (ull(x) << 32 | (ull(y) & ((1ULL << 32) - 1)))
+#define u1(p) ((p) >> 32)
+#define u2(p) ((p) & ((1ULL << 32) - 1))
+#define ult std::less<upair>
+#define ugt std::greater<upair>
+
+#define ipair ull
+#define imake(x, y) (umake(x, y))
+#define i1(p) (int(u1(ll(p))))
+#define i2(p) (ll(u2(p) << 32) >> 32)
+struct ilt {
+    bool operator()(const ipair& a, const ipair& b) const {
+        if (i1(a) == i1(b)) return i2(a) < i2(b);
+        else return i1(a) < i1(b);
+    }
+};
+struct igt {
+    bool operator()(const ipair& a, const ipair& b) const {
+        if (i1(a) == i1(b)) return i2(a) > i2(b);
+        else return i1(a) > i1(b);
+    }
+};
+
+/* conditions */
+#define loop while (1)
+#define if_or(var, val) if (!(var == val)) var = val; else
+#define continue_or(var, val) __AS_PROCEDURE(if (var == val) continue; var = val;)
+#define break_or(var, val) __AS_PROCEDURE(if (var == val) break; var = val;)
+
+/* hash */
+struct safe_hash {
+    // https://codeforces.com/blog/entry/62393
+    static uint64_t splitmix64(uint64_t x) {
+        // http://xorshift.di.unimi.it/splitmix64.c
+        x += 0x9e3779b97f4a7c15;
+        x = (x ^ (x >> 30)) * 0xbf58476d1ce4e5b9;
+        x = (x ^ (x >> 27)) * 0x94d049bb133111eb;
+        return x ^ (x >> 31);
+    }
+
+    size_t operator()(uint64_t x) const {
+        static const uint64_t FIXED_RANDOM = chrono::steady_clock::now().time_since_epoch().count();
+        return splitmix64(x + FIXED_RANDOM);
+    }
+};
+
+struct pair_hash {
+    template <typename T, typename U>
+    size_t operator()(const pair<T, U>& a) const {
+        auto hash1 = safe_hash()(a.first);
+        auto hash2 = safe_hash()(a.second);
+        if (hash1 != hash2) {
+            return hash1 ^ hash2;
+        }
+        return hash1;
+    }
+};
+
+/* build data structures */
+#define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
+#define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
+#define pa(a) __AS_PROCEDURE(__typeof(a) pa; pa.push_back({}); for (auto&&x : a) pa.push_back(pa.back() + x);)
+#define sa(a) __AS_PROCEDURE(__typeof(a) sa(a.size() + 1); {int n = a.size(); for (int i = n - 1; i >= 0; --i) sa[i] = sa[i + 1] + a[i];};)
+#define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
+#define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
+#define Edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v);)
+template <typename T, typename Iterator> pair<size_t, map<T, size_t>> discretize(Iterator __first, Iterator __last) {
+    set<T> st(__first, __last);
+    size_t N = 0;
+    map<T, size_t> mp;
+    for (auto&& x : st) mp[x] = ++N;
+    return {N, mp};
+}
+template <typename T, typename Iterator> pair<size_t, unordered_map<T, size_t, safe_hash>> unordered_discretize(Iterator __first, Iterator __last) {
+    set<T> st(__first, __last);
+    size_t N = 0;
+    unordered_map<T, size_t, safe_hash> mp;
+    for (auto&& x : st) mp[x] = ++N;
+    return {N, mp};
+}
+
+/* io */
+#define untie __AS_PROCEDURE(ios_base::sync_with_stdio(0), cin.tie(NULL))
+template<typename T> void __read(T& x) { cin >> x; }
+template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __read(args...); }
+#define read(type, ...) __AS_PROCEDURE(type __VA_ARGS__; __read(__VA_ARGS__);)
+#define readvec(type, a, n) __AS_PROCEDURE(vector<type> a(n); for (int i = 0; i < (n); ++i) cin >> a[i];)
+#define putvec(a) __AS_PROCEDURE(for (auto&& x : a) cout << x << ' '; cout << endl;)
+#define debug(x) __AS_PROCEDURE(cerr << #x" = " << (x) << endl;)
+#define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : a) cerr << x << ' '; cerr << endl;)
+template<typename T, typename U> ostream& operator<<(ostream& out, const pair<T, U>& p) {
+    out << "{" << p.first << ", " << p.second << "}";
+    return out;
+}
+template<typename Char, typename Traits, typename Tuple, std::size_t... Index>
+void print_tuple_impl(std::basic_ostream<Char, Traits>& os, const Tuple& t, std::index_sequence<Index...>) {
+    using swallow = int[]; // guaranties left to right order
+    (void)swallow { 0, (void(os << (Index == 0 ? "" : ", ") << std::get<Index>(t)), 0)... };
+}
+template<typename Char, typename Traits, typename... Args>
+decltype(auto) operator<<(std::basic_ostream<Char, Traits>& os, const std::tuple<Args...>& t) {
+    os << "{";
+    print_tuple_impl(os, t, std::index_sequence_for<Args...>{});
+    return os << "}";
+}
+template<typename T> ostream& operator<<(ostream& out, const vector<T>& vec) {
+    for (auto&& i : vec) out << i << ' ';
+    return out;
+}
+
+/* pops */
+#define poptop(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.top(); q.pop();)
+#define popback(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.back(); q.pop_back();)
+#define popfront(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.front();q.pop_front();)
+
+/* math */
+constexpr inline int lg2(ll x) { return x == 0 ? -1 : sizeof(ll) * 8 - 1 - __builtin_clzll(x); }
+
+void __exgcd(ll a, ll b, ll& x, ll& y) {
+  if (b == 0) {
+    x = 1, y = 0;
+    return;
+  }
+  __exgcd(b, a % b, y, x);
+  y -= a / b * x;
+}
+
+ll inverse(ll a, ll b) {
+    ll x, y;
+    __exgcd(a, b, x, y);
+    return mod(x, b);
+}
+
+/* string algorithms */
+vector<int> calc_next(string t) {  // pi function of t
+  int n = (int)t.length();
+  vector<int> pi(n);
+  for (int i = 1; i < n; i++) {
+    int j = pi[i - 1];
+    while (j > 0 && t[i] != t[j]) j = pi[j - 1];
+    if (t[i] == t[j]) j++;
+    pi[i] = j;
+  }
+  return pi;
+}
+vector<int> calc_z(string t) {  // z function of t
+    int m = t.length();
+    vector<int> z;
+    z.push_back(m);
+    pair<int, int> prev = {1, -1};
+    for (int i = 1; i < m; ++i) {
+        if (z[i - prev.first] + i <= prev.second) {
+            z.push_back(z[i - prev.first]);
+        } else {
+            int j = max(i, prev.second + 1);
+            while (j < m && t[j] == t[j - i]) ++j;
+            z.push_back(j - i);
+            prev = {i, j - 1};
+        }
+    }
+    return z;
+}
+vector<int> kmp(string s, string t) {  // find all t in s
+  string cur = t + '#' + s;
+  int sz1 = s.size(), sz2 = t.size();
+  vector<int> v;
+  vector<int> lps = calc_next(cur);
+  for (int i = sz2 + 1; i <= sz1 + sz2; i++) {
+    if (lps[i] == sz2) v.push_back(i - 2 * sz2);
+  }
+  return v;
+}
+int period(string s) {  // find the length of shortest recurring period
+    int n = s.length();
+    auto z = calc_z(s);
+    for (int i = 1; i <= n / 2; ++i) {
+        if (n % i == 0 && z[i] == n - i) {
+            return i;
+        }
+    }
+    return n;
+}
+/////////////////////////////////////////////////////////
+
+#define SINGLE_TEST_CASE
+// #define DUMP_TEST_CASE 512
+
+void dump() {}
+
+void prep() {}
+
+template<typename _Tp, typename _Op = function<_Tp(const _Tp&, const _Tp&)>> struct sparse_table {
+    _Op op;
+    vector<vector<_Tp>> st;
+    template <typename ReverseIterator>
+    sparse_table(ReverseIterator __first, ReverseIterator __last, _Op&& __operation) {
+        op = __operation;
+        int n = distance(__first, __last);
+        st = vector<vector<_Tp>>(n, vector<_Tp>(int(log2(n) + 1)));
+        int i = n - 1;
+        for (auto it = __first; it != __last; ++it) {
+            st[i][0] = *it;
+            for (int j = 1; i + (1 << j) <= n; ++j) {
+                st[i][j] = op(st[i][j - 1], st[i + (1 << (j - 1))][j - 1]);
+            }
+            i -= 1;
+        }
+    }
+    _Tp query(size_t __start, size_t __end) {
+        int s = lg2(__end - __start + 1);
+        return op(st[__start][s], st[__end - (1 << s) + 1][s]);
+    }
+};
+void solve() {
+    using tup = tuple<int, int, int>;
+    auto min_pos = [] (const tup& a, const tup& b) -> tup {
+        if (get<1>(a) < get<1>(b)) return a;
+        return b;
+    };
+    auto max_pos = [] (const tup& a, const tup& b) -> tup {
+        if (get<1>(a) > get<1>(b)) return a;
+        return b;
+    };
+    read(int, nothing);
+    read(int, n);
+    vector<tup> a;
+    for (int i = 0; i < n; ++i) {
+        read(int, u, v);
+        a.emplace_back(u, v, i);
+    }
+    sort(a.begin(), a.end());
+    sparse_table<tup> min_get(a.rbegin(), a.rend(), min_pos), max_get(a.rbegin(), a.rend(), max_pos);
+    vector<int> res(n);
+    auto cmp = [] (const tup& a, const tup& b) {
+        if (get<1>(a) == get<1>(b)) return get<2>(a) < get<2>(b);
+        return get<1>(a) < get<1>(b);
+    };
+    set<tup, decltype(cmp)> st(cmp);
+    int prev = -1;
+    
+    for (int i = 0; i < n; ++i) {
+             while (get<0>(a[prev + 1]) < get<0>(a[i])) {
+            prev += 1;
+            st.emplace(a[prev]);
+        }  
+        // find a greater
+        int l = i + 1, r = n - 1;
+        while (l < r) {
+            int mid = l + r >> 1;
+            if (get<0>(a[mid]) > get<1>(a[i])) {
+                r = mid;
+            } else {
+                l = mid + 1;
+            }
+        }
+        if (l < n && get<0>(a[l]) > get<1>(a[i])) {
+            res[get<2>(a[i])] = get<2>(a[l]) + 1;
+            res[get<2>(a[l])] = get<2>(a[i]) + 1;
+            continue;
+        }
+
+        // find (a, b)
+        int lb, ub;
+        {
+            int l = i + 1, r = n - 1;
+            while (l < r) {
+                int mid = l + r >> 1;
+                if (get<0>(a[mid]) > get<0>(a[i])) {
+                    r = mid;
+                } else {
+                    l = mid + 1;
+                }
+            }
+            if (l < n && get<0>(a[l]) > get<0>(a[i])) {
+                lb = l;
+            } else {
+                lb = INF;
+            }
+        }
+        {
+            int l = i + 1, r = n - 1;
+            while (l < r) {
+                int mid = l + r + 1 >> 1;
+                if (get<0>(a[mid]) < get<1>(a[i])) {
+                    l = mid;
+                } else {
+                    r = mid - 1;
+                }
+            }
+            if (r > i && get<0>(a[r]) < get<1>(a[i])) {
+                ub = r;
+            } else {
+                ub = INF;
+            }
+        }
+        if (ub == INF || lb == INF || lb > ub) {
+            ;;
+        } else {
+            tup mx = max_get.query(lb, ub), mn = min_get.query(lb, ub);
+            if (get<1>(mx) != get<1>(a[i])) {
+                res[get<2>(a[i])] = get<2>(mx) + 1;
+                res[get<2>(mx)] = get<2>(a[i]) + 1;
+                continue;
+            } else if (get<1>(mn) != get<1>(a[i])) {
+                res[get<2>(a[i])] = get<2>(mn) + 1;
+                res[get<2>(mn)] = get<2>(a[i]) + 1;
+                continue;
+            }
+        }
+        
+
+        if (prev != -1) {
+            auto lb1 = st.lower_bound({0, get<0>(a[i]), 0});
+            auto lb = st.upper_bound({0, get<0>(a[i]), INF});
+            auto ub = st.lower_bound({0, get<1>(a[i]), 0});
+            auto ub1 = st.upper_bound({0, get<1>(a[i]), INF});
+            if (lb == ub || lb == st.end()) {
+                if (lb1 != st.begin()) {
+                    --lb1;
+                    res[get<2>(a[i])] = get<2>(*lb1) + 1;
+                    res[get<2>(*lb1)] = get<2>(a[i]) + 1;
+                } else if (ub1 != st.end()) {
+                    res[get<2>(a[i])] = get<2>(*ub1) + 1;
+                    res[get<2>(*ub1)] = get<2>(a[i]) + 1;
+                }
+            } else {
+                res[get<2>(a[i])] = get<2>(*lb) + 1;
+                res[get<2>(*lb)] = get<2>(a[i]) + 1;
+            }
+        }
+    }
+
+
+    putvec(res);
+}
+
+int main() {
+    untie, cout.tie(NULL);
+    prep();
+#ifdef SINGLE_TEST_CASE
+    solve();
+#else
+    read(int, t);
+    for (int i = 0; i < t; ++i) {
+#ifdef DUMP_TEST_CASE
+        if (i + 1 == (DUMP_TEST_CASE)) {
+            dump();
+        } else {
+            solve();
+        }
+#else
+        solve();
+#endif
+    }
+#endif
+}
