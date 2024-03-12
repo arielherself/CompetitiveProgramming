@@ -243,31 +243,76 @@ void prep() {}
 void solve() {
     read(int, m);
     vector<vector<ll>> mat(2, vector<ll>(m));
-    for (int i = 0; i < 1; ++i) {
+    for (int i = 0; i < 2; ++i) {
         for (int j = 0; j < m; ++j) {
             cin >> mat[i][j];
         }
     }
-    ll res = INFLL;
-    {
-        ll curr = 0;
-        for (int i = 1; i < m; ++i) {
-            curr = max(curr, mat[0][i]) + 1;
+    vector<vector<ll>> mx_pos_fw(2, vector<ll>(m + 1)), mx_pos_bw(2, vector<ll>(m + 1));
+    for (int i = 0; i < 2; ++i) {
+        mx_pos_fw[i][m] = 0;
+        for (int j = m - 1; ~j; --j) {
+            mx_pos_fw[i][j] = max(mx_pos_fw[i][j + 1], mat[i][j] + 1 + m - 1 - j);
         }
-        for (int i = m - 1; ~i; --i) {
-            curr = max(curr, mat[1][i]) + 1;
+        mx_pos_bw[i][m - 1] = 0;
+        for (int j = m - 2; ~j; --j) {
+            mx_pos_bw[i][j] = max(mx_pos_bw[i][j + 1] + 1, mat[i][j] + 1);
         }
-        res = min(res, curr);
     }
-    {
-        ll curr = 0;
-        for (int i = 0; i < m; ++i) {
-            curr = max(curr, mat[1][i]) + 1;
+    auto check_up = [&] (int x, ll t, int enter) -> ll {
+        if (x >= m) return 0;
+        if (x + 1 >= m) {
+            if (enter == x) {
+                return max(t, mat[1][m - 1]) + 1;
+            } else {
+                return t;
+            }
         }
-        for (int i = m - 1; i; --i) {
-            curr = max(curr, mat[0][i]) + 1;
+        ll right = max(t + m - 1 - x, mx_pos_fw[0][x + 1]);
+        ll down = max(right, mat[1][m - 1]) + 1;
+        ll left = max(down + m - 1 - enter, mx_pos_bw[1][enter]);
+        return left;
+    };
+    auto check_down = [&] (int x, ll t, int enter) -> ll {
+        if (x >= m) return 0;
+        if (x + 1 >= m) {
+            if (enter == x) {
+                return max(t, mat[0][m - 1]) + 1;
+            } else {
+                return t;
+            }
         }
-        res = min(res, curr);
+        ll right = max(t + m - 1 - x, mx_pos_fw[1][x + 1]);
+        ll down = max(right, mat[0][m - 1]) + 1;
+        ll left = max(down + m - 1 - enter, mx_pos_bw[0][enter]);
+        return left;
+    };
+    int prev_op = 0;
+    int i = 0, j = 0;
+    ll res = INFLL;
+    ll curr = 0;
+    while (j < m) {
+        if (i == 0) {
+            if (prev_op == 1) {
+                res = min(res, check_up(j, curr, j + 1));
+            } else {
+                res = min(res, check_up(j, curr, j));
+            }
+        } else {
+            if (prev_op == 0) {
+                res = min(res, check_down(j, curr, j));
+            } else {
+                res = min(res, check_down(j, curr, j + 1));
+            }
+        }
+        // cerr << "i = " << i << ", " << "j = " << j << ", res = " << res << endl;
+        if (prev_op == 0) {
+            i ^= 1;
+        } else {
+            j += 1;
+        }
+        prev_op ^= 1;
+        if (j < m) curr = max(curr, mat[i][j]) + 1;
     }
     cout << res << endl;
 }
