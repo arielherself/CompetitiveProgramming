@@ -241,6 +241,54 @@ void dump() {}
 void prep() {}
 
 void solve() {
+    read(int, n, m, k);
+    readvec(ll, a, n);
+    int x = 1;
+    for (int i = 1; i < n; ++i) {
+        if (a[i] - a[i - 1] > a[x] - a[x - 1]) x = i;
+    }
+    ll other = 0;
+    for (int i = 1; i < n; ++i) {
+        if (i != x) other = max(other, a[i] - a[i - 1]);
+    }
+    ll u = a[x - 1], v = a[x];
+    ll target = (v + u) / 2;
+    readvec(ll, b, m);
+    readvec(ll, c, k);
+    sort(b.begin(), b.end());
+    sort(c.begin(), c.end());
+    ll res = v - u;
+    for (int i = 0; i < m; ++i) {
+        {
+            int l = 0, r = k - 1;
+            while (l < r) {
+                int mid = l + r + 1 >> 1;
+                if (c[mid] + b[i] <= target) {
+                    l = mid;
+                } else {
+                    r = mid - 1;
+                }
+            }
+            if (r >= 0 && c[r] + b[i] <= v && c[r] + b[i] >= u) {
+                res = min(res, max(other, max(c[r] + b[i] - u, v - c[r] - b[i])));
+            }
+        }
+        {
+            int l = 0, r = k - 1;
+            while (l < r) {
+                int mid = l + r >> 1;
+                if (c[mid] + b[i] > target) {
+                    r = mid;
+                } else {
+                    l = mid + 1;
+                }
+            }
+            if (l < k && c[l] + b[i] <= v && c[l] + b[i] >= u) {
+                res = min(res, max(other, max(c[l] + b[i] - u, v - c[l] - b[i])));
+            }
+        }
+    }
+    cout << res << endl;
 }
 
 int main() {

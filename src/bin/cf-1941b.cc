@@ -241,6 +241,21 @@ void dump() {}
 void prep() {}
 
 void solve() {
+    read(int, n);
+    readvec(ll, a, n);
+    for (int i = 1; i < n - 1; ++i) {
+        if (a[i - 1] < 0) {
+            cout << "NO\n";
+            return;
+        }
+        a[i] -= 2 * a[i - 1];
+        a[i + 1] -= a[i - 1];
+    }
+    if (a[n - 1] != 0 || a[n - 2] != 0) {
+        cout << "NO\n";
+    } else {
+        cout << "YES\n";
+    }
 }
 
 int main() {

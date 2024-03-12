@@ -241,6 +241,35 @@ void dump() {}
 void prep() {}
 
 void solve() {
+    read(int, m);
+    vector<vector<ll>> mat(2, vector<ll>(m));
+    for (int i = 0; i < 1; ++i) {
+        for (int j = 0; j < m; ++j) {
+            cin >> mat[i][j];
+        }
+    }
+    ll res = INFLL;
+    {
+        ll curr = 0;
+        for (int i = 1; i < m; ++i) {
+            curr = max(curr, mat[0][i]) + 1;
+        }
+        for (int i = m - 1; ~i; --i) {
+            curr = max(curr, mat[1][i]) + 1;
+        }
+        res = min(res, curr);
+    }
+    {
+        ll curr = 0;
+        for (int i = 0; i < m; ++i) {
+            curr = max(curr, mat[1][i]) + 1;
+        }
+        for (int i = m - 1; i; --i) {
+            curr = max(curr, mat[0][i]) + 1;
+        }
+        res = min(res, curr);
+    }
+    cout << res << endl;
 }
 
 int main() {

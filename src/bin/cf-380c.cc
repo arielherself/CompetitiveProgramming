@@ -233,7 +233,7 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
@@ -241,6 +241,57 @@ void dump() {}
 void prep() {}
 
 void solve() {
+    read(string, a);
+    int n = a.size();
+    set<int> splits;
+    int cnt = 0, prev = -1;
+    for (int i = 0; i < n; ++i) {
+        if (cnt == 0 && a[i] == '(') {
+            if (prev != -1) splits.insert(prev);
+            prev = i;
+        }
+        if (a[i] == '(') {
+            cnt += 1;
+        } else {
+            cnt -= 1;
+            cnt = max(cnt, 0);
+        }
+    }
+    if (prev != -1) splits.insert(prev);
+    debugvec(splits);
+    vector<int> ps(n + 1), ss(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        ps[i] = ps[i - 1] + (a[i - 1] == '(');
+    }
+    for (int i = n - 1; ~i; --i) {
+        ss[i] = ss[i + 1] + (a[i] == ')');
+    }
+    read(int, m);
+    while (m--) {
+        read(int, l, r);
+        --l, --r;
+        auto lb = splits.lower_bound(l);
+        int res = 0;
+        if (lb != splits.end()) {
+            if (*lb <= r) res += ps[*lb] - ps[l];
+        }
+        auto ub = splits.upper_bound(r);
+        if (ub != splits.begin()) {
+            if (*--ub >= l) {
+                res += min(ss[*ub] - ss[r + 1], ps[r + 1] - ps[*ub]);
+                if (lb != splits.end() && *ub >= *lb) {
+                    res += ps[*ub] - ps[*lb];
+                } else {
+                    res = min(ss[l] - ss[r + 1], ps[r + 1] - ps[l]);
+                }
+            } else {
+                res = min(ss[l] - ss[r + 1], ps[r + 1] - ps[l]);
+            }
+        } else {
+            res = min(ss[l] - ss[r + 1], ps[r + 1] - ps[l]);
+        }
+    fi: cout << res * 2 << endl;
+    }
 }
 
 int main() {

@@ -241,6 +241,18 @@ void dump() {}
 void prep() {}
 
 void solve() {
+    read(int, n, m);
+    unordered_map<int, vector<pii>, safe_hash> cl;
+    vector<vector< pii >> ch(n + 1);
+    for (int i = 0; i < m; ++i) {
+        read(int, u, v, c);
+        ch[u].emplace_back(v, c);
+        ch[v].emplace_back(u, c);
+    }
+    read(int, b, e);
+    unordered_set<int, safe_hash> b_open, e_open;
+    
+    assert(false);
 }
 
 int main() {

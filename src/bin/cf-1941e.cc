@@ -241,6 +241,30 @@ void dump() {}
 void prep() {}
 
 void solve() {
+    read(int, n, m, k, d);
+    vector<ll> cost(n);
+    for (int i = 0; i < n; ++i) {
+        readvec(ll, a, m);
+        priority_queue<pli, vector<pli>, greater<>> pq;
+        ll curr = 0;
+        for (int j = 0; j < m; ++j) {
+            while (pq.size() && pq.top().second < j - d - 1) pq.pop();
+            if (j > d + 1) {
+                curr = pq.top().first + a[j] + 1;
+            } else {
+                curr = 1 + a[j] + 1;
+            }
+            pq.emplace(curr, j);;
+        }
+        cost[i] = curr;
+    }
+    ll sum = 0, res = INFLL;
+    for (int i = 0; i < n; ++i) {
+        sum += cost[i];
+        if (i - k >= 0) sum -= cost[i - k];
+        if (i + 1 >= k) res = min(res, sum);
+    }
+    cout << res << endl;
 }
 
 int main() {

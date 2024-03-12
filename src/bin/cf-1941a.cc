@@ -241,6 +241,18 @@ void dump() {}
 void prep() {}
 
 void solve() {
+    read(int, n, m, k);
+    readvec(int, a, n);
+    readvec(int, b, m);
+    sort(a.begin(), a.end());
+    sort(b.begin(), b.end());
+    int res = 0;
+    for (int i = 0; i < n; ++i) {
+        int j = -1;
+        while (j + 1 < m && b[j + 1] + a[i] <= k) ++j;
+        res += j + 1;
+    }
+    cout << res << endl;
 }
 
 int main() {

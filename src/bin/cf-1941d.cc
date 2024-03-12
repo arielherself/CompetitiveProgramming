@@ -241,6 +241,27 @@ void dump() {}
 void prep() {}
 
 void solve() {
+    read(int, n, m, x);
+    vector<vector<bool>> dp(m + 1, vector<bool>(n));
+    dp[0][x - 1] = 1;
+    for (int i = 1; i <= m; ++i) {
+        read(int, r), read(char, op);
+        if (op != '1') {
+            for (int j = 0; j < n; ++j) {
+                if (dp[i - 1][j]) dp[i][mod(j + r, n)] = 1;
+            }
+        }
+        if (op != '0') {
+            for (int j = 0; j < n; ++j) {
+                if (dp[i - 1][j]) dp[i][mod(j - r, n)] = 1;
+            }
+        }
+    }
+    cout << count(dp[m].begin(), dp[m].end(), 1) << "\n";
+    for (int i = 0; i < n; ++i) {
+        if (dp[m][i]) cout << i + 1 << ' ';
+    }
+    cout << "\n";
 }
 
 int main() {
