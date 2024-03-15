@@ -1,25 +1,21 @@
-import  hashlib
+n = int(input())
+a = []
+for i in range(n):
+    line = [int(x) for x in input().split(' ')]
+    a.append(line)
+res = [set() for _ in range(n)]
+for i in range(n):
+    for j in range(n):
+        for k in range(n):
+            if j == i or k == i:
+                continue
+            f = 1
+            for l in range(len(a[0])):
+                if a[i][l] == a[j][l] and a[j][l] == a[k][l] or a[i][l] != a[j][l] and a[j][l] != a[k][l] and a[k][l] != a[i][l]:
+                    continue
+                else:
+                    f = 0
+                    break
+            if f: res[i].add(tuple(sorted([i, j, k])))
+print(res)
 
-def generateLicense(email):
-    array = []
-
-    hashObject = hashlib.md5(email.encode('utf-8'))
-    hexDigest = hashObject.hexdigest()
-
-    for i in range(0, len(hexDigest),5):
-        if i < 21:
-            flag = hexDigest[i:i + 5]
-            array.append(flag)
-        else:
-            pass
-        licenseKey = '-'.join(array)
-
-    return licenseKey
-
-if __name__ == '__main__':
-    emailInput = input('请输入Email:')
-
-    licenseKey = generateLicense(emailInput)
-    listen = '{\n   "email" : "' +str(emailInput) + '",\n    "license_key" : "' + format(licenseKey) + '"\n}'
-
-    print(listen)
