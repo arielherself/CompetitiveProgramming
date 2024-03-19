@@ -241,11 +241,98 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    read(int, n);
-    read(string, a);
-    for (int i = 0; i < n; ++i) {
-        for (int j = i + 1; j < n; ++j) {
-
+    read(int, n, m, k);
+    vector<vector<bool>> mat(k + 1, vector<bool>(n * m));
+    auto deserialize = [&] (int x) -> array<int, 2> {
+        return {x / m, x % m};
+    };
+    auto serialize = [&] (int x, int y) -> int {
+        return x * m + y;
+    };
+    // a to b
+    auto judge = [&] (const vector<bool>& a, const vector<bool>& b, int pos) -> bool {
+        auto [x, y] = deserialize(pos);
+        if (x == 0 || x == n - 1 || y == 0 || y == m - 1) return 0;
+        int color_up_a = a[serialize(x - 1, y)], color_down_a = a[serialize(x + 1, y)], color_left_a = a[serialize(x, y - 1)], color_right_a = a[serialize(x, y + 1)];
+        int color_up_b = b[serialize(x - 1, y)], color_down_b = b[serialize(x + 1, y)], color_left_b = b[serialize(x, y - 1)], color_right_b = b[serialize(x, y + 1)];
+        int color_a = a[pos], color_b = b[pos];
+        if (color_up_a == color_up_b && color_down_a == color_down_b && color_left_a == color_left_b && color_right_a == color_right_b && color_a != color_b && color_b == color_up_b) {
+            return true;
+        } else {
+            return false;
+        }
+    };
+    for (int i = 0; i < k + 1; ++i) {
+        for (int j = 0; j < n * m; ++j) {
+            read(char, c);
+            mat[i][j] = c - 48;
+        }
+    }
+    vector<vector<pair<int, vector<int>>>> ch(k + 1);
+    vector<int> ind(k + 1);
+    for (int i = 0; i < k + 1; ++i) {
+        for (int j = i + 1; j < k + 1; ++j) {
+            int direction = 0;
+            vector<int> curr;
+            for (int k = 0; k < n * m; ++k) {
+                if (mat[i][k] != mat[j][k]) {
+                    if (judge(mat[i], mat[j], k)) {
+                        if (direction != -1) curr.push_back(k), direction = 1;
+                        else {
+                            direction = 0;
+                            break;
+                        }
+                    } else if (judge(mat[j], mat[i], k)) {
+                        if (direction != 1) curr.push_back(k), direction = -1;
+                        else {
+                            direction = 0;
+                            break;
+                        }
+                    } else {
+                        direction = 0;
+                        break;
+                    }
+                }
+            }
+            if (direction == 1) {
+                ch[i].emplace_back(j, curr);
+                ind[j] += 1;
+            } else {
+                ch[j].emplace_back(i, curr);
+                ind[i] += 1;
+            }
+        }
+    }
+    vector<vector<int>> events;
+    int p = -1;
+    for (int i = 0; i < k + 1; ++i) {
+        if (ind[i] == 0) {
+            p = i;
+            break;
+        }
+    }
+    cout << p + 1 << '\n';
+    ll cnt = 0;
+    while (p != -1) {
+        int v = p;
+        p = -1;
+        for (auto&& [u, t] : ch[v]) {
+            if (--ind[u] == 0) {
+                if (t.size()) events.push_back(t), cnt += t.size();
+                events.push_back({-1, u}), cnt += 1;
+                p = u;
+            }
+        }
+    }
+    cout << cnt << '\n';
+    for (auto&& e : events) {
+        if (e[0] == -1) {
+            cout << "2 " << e[1] + 1 << '\n';
+        } else {
+            for (auto&& u : e) {
+                auto [x, y] = deserialize(u);
+                cout << "1 " << x + 1 << ' ' << y + 1 << '\n';
+            }
         }
     }
 }

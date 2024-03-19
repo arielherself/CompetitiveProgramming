@@ -233,7 +233,7 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
@@ -242,11 +242,58 @@ void prep() {}
 
 void solve() {
     read(int, n);
-    read(string, a);
+    unordered_map<char, int, safe_hash> mp = {{'w', 0}, {'i', 1}, {'n', 2}};
+    unordered_map<int, char, safe_hash> rev = {{0, 'w'}, {1, 'i'}, {2, 'n'}};
+    vector<array<int, 3>> a(n);
     for (int i = 0; i < n; ++i) {
-        for (int j = i + 1; j < n; ++j) {
-
+        read(string, x);
+        for (auto&& c : x) {
+            a[i][mp[c]] += 1;
         }
+    }
+    vector<tuple<int, char, int, char>> events;
+    array<vector<pii>, 3> q;
+    for (int i = 0; i < n; ++i) {
+        if (*max_element(a[i].begin(), a[i].end()) == 3) {
+            int abundant = 0;
+            for (int j = 0; j < 3; ++j) {
+                if (a[i][j]) abundant = j;
+            }
+            for (int j = 0; j < 3; ++j) {
+                if (j == abundant) continue;
+                if (q[j].size()) {
+                    auto& [v, c] = q[j].back();
+                    events.emplace_back(i + 1, rev[abundant], v + 1, rev[ j ]);
+                    a[i][j] = 1;
+                    c -= 1;
+                    if (!c) q[j].pop_back(); // BUG: check this
+                }
+            }
+        } else if (*max_element(a[i].begin(), a[i].end()) == 2) {
+            int abundant = 0;
+            for (int j = 0; j < 3; ++j) {
+                if (a[i][j] == 2) abundant = j; 
+            }
+            for (int j = 0; j < 3; ++j) {
+                if (a[i][j]) continue;
+                if (q[j].size()) {
+                    auto& [v, c] = q[j].back();
+                    events.emplace_back(i + 1, rev[ abundant ], v + 1, rev[j]);
+                    a[i][j] = 1;
+                    c -= 1;
+                    if (!c) q[j].pop_back();
+                }
+            }
+        }
+        for (int j = 0; j < 3; ++j) {
+            if (a[i][j] > 1) {
+                q[j].emplace_back(i, a[i][j] - 1);
+            }
+        }
+    }
+    cout << events.size() << '\n';
+    for (auto [x, y, z, w] : events) {
+        cout << x << ' ' << y << ' ' << z << ' ' << w << '\n';
     }
 }
 

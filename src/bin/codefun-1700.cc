@@ -242,12 +242,20 @@ void prep() {}
 
 void solve() {
     read(int, n);
-    read(string, a);
-    for (int i = 0; i < n; ++i) {
-        for (int j = i + 1; j < n; ++j) {
-
-        }
+    readvec(int, a, n);
+    vector<int> diff(n + 1);
+    for (auto&& x : a) {
+        if (x > n) continue;
+        diff[x] += 1;
     }
+    ll res = 1;
+    int curr = 0;
+    for (int i = 1; i <= n; ++i) {
+        curr += diff[i];
+        res = (res * (curr - i + 1)) % MDL;
+        // debug(res);
+    }
+    cout << res << endl;
 }
 
 int main() {

@@ -233,21 +233,65 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
-// #define DUMP_TEST_CASE 512
+// #define SINGLE_TEST_CASE
+// #define DUMP_TEST_CASE 65
 
-void dump() {}
+void dump() {
+    read(int, n);
+    readvec(int, e, 2 * n);
+    putvec(e);
+}
 
 void prep() {}
 
 void solve() {
     read(int, n);
-    read(string, a);
+    vector<vector<pii>> ch(n + 1);
+    readvec(int, e, 2 * n);
+    int ec = 0;
     for (int i = 0; i < n; ++i) {
-        for (int j = i + 1; j < n; ++j) {
-
+        if (e[i] == e[i + n]) {
+            ch[e[i]].emplace_back(e[i], ec++);
+        } else {
+            ch[e[i]].emplace_back(e[i + n], ec);
+            ch[e[i + n]].emplace_back(e[i], ec++);
         }
     }
+    int cnt = 0;
+    int edge_cnt = 0;
+    int self_loop = 0;
+    vector<bool> vis(n + 1);
+    vector<bool> edge_vis(ec);
+    auto dfs = [&] (auto dfs, int v, int pa) -> void {
+        if (vis[v]) return;
+        vis[v] = 1;
+        cnt += 1;
+        for (auto&& [u, id] : ch[v]) {
+            if (u == pa) continue;
+            if (edge_vis[id]) continue;
+            edge_vis[id] = 1;
+            edge_cnt += 1;
+            if (u == v) self_loop = 1;
+            dfs(dfs, u, v);
+        }
+    };
+    ll res = 1;
+    for (int i = 1; i <= n; ++i) {
+        if (vis[i]) continue;
+        cnt = 0, edge_cnt = 0, self_loop = 0;;
+        dfs(dfs, i, 0);
+        // debug(i), debug(cnt), debug(edge_cnt);
+        if (cnt != edge_cnt) {
+            cout << "0\n";
+            return;
+        }
+        if (self_loop) {
+            res = (res * n) % PRIME;
+        } else {
+            res = (res * 2) % PRIME;
+        }
+    }
+    cout << res << endl;
 }
 
 int main() {

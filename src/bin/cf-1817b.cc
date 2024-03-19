@@ -233,21 +233,173 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
 void prep() {}
 
-void solve() {
-    read(int, n);
-    read(string, a);
-    for (int i = 0; i < n; ++i) {
-        for (int j = i + 1; j < n; ++j) {
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+    using size_type = uint64_t;
+    using info_type = Addable_Info_t;
+    using tag_type = Tag_t;
+    size_type _max;
+    vector<info_type> d;
+    vector<tag_type> b;
 
-        }
+    void pull(size_type p) {
+        d[p] = d[p * 2] + d[p * 2 + 1];
     }
+
+    void push(size_type p) {
+        d[p * 2].apply(b[p]), d[p * 2 + 1].apply(b[p]);
+        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+        b[p] = tag_type();
+    }
+
+    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+        if (s == t) {
+            d[p] = c;
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        if (s != t) push(p);
+        if (x <= m) set(s, m, p * 2, x, c);
+        else set(m + 1, t, p * 2 + 1, x, c);
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+    
+    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+        if (l <= s && t <= r) {
+            d[p].apply(c);
+            b[p].apply(c);
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        push(p);
+        if (l <= m) range_apply(s, m, p * 2, l, r, c);
+        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
+        pull(p);
+    }
+
+    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+        if (l <= s && t <= r) {
+            return d[p];
+        }
+        size_type m = s + (t - s >> 1);
+        info_type res = {};
+        push(p);
+        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+        return res;
+    }
+
+    void build(const Sequence& a, size_type s, size_type t, size_type p) {
+        if (s == t) {
+            d[p] = a[s];
+            return;
+        }
+        int m = s + (t - s >> 1);
+        build(a, s, m, p * 2);
+        build(a, m + 1, t, p * 2 + 1);
+        pull(p);
+    }
+public:
+    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+    segtree(const Sequence& a) : segtree(a.size()) {
+        build(a, {}, _max, 1);
+    }
+
+    void set(size_type i, const info_type& c) {
+        set({}, _max, 1, i, c);
+    }
+    
+    void range_apply(size_type l, size_type r, const tag_type& c) {
+        range_apply({}, _max, 1, l, r, c);
+    }
+
+    void apply(size_type i, const tag_type& c) {
+        range_apply(i, i, c);
+    }
+
+    info_type range_query(size_type l, size_type r) {
+        return range_query({}, _max, 1, l, r);
+    }
+
+    info_type query(size_type i) {
+        return range_query(i, i);
+    }
+
+    Sequence serialize() {
+        Sequence res = {};
+        for (size_type i = 0; i <= _max; ++i) {
+            res.push_back(query(i));
+        }
+        return res;
+    }
+
+    const vector<info_type>& get_d() {
+        return d;
+    }
+};
+
+struct Set_Tag {
+    int val = -2;
+    void apply(const Set_Tag& rhs) {
+        if (rhs.val != -2)
+        val += rhs.val;
+    }
+};
+
+struct Set_Info {
+    int val = 0;
+    void apply(const Set_Tag& rhs) {
+        if (rhs.val != -2)
+        val += rhs.val;
+    }
+};
+
+Set_Info operator+(const Set_Info &a, const Set_Info &b) {
+    return { max(a.val, b.val) };
+}
+void solve() {
+    read(int, n, m);
+    adj(ch, n);
+    while (m--) {
+        read(int, u, v);
+        edge(ch, u, v);
+    }
+    segtree<Set_Info, Set_Tag> tr(n + 1);
+    vector<int> dfn(n + 1, -1);
+    vector<int> sz(n + 1);
+    int tm = 0;
+    auto dfs = [&] (auto dfs, int v, int pa) -> bool {
+        if (dfn[v] != -1) {
+            if (tr.range_query(dfn[v], tm)) {
+                // TODO: output
+                return true;
+            }
+        }
+        dfn[v] = ++tm;
+        tr.set(dfn[v], { sz[v] });
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            if (dfn[u] == -1) continue;
+            sz[v] -= 1;
+            tr.apply(dfn[v], {-1});
+            sz[u] -= 1;
+            tr.apply(dfn[u], {-1});
+        }
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            if (dfs(dfs, u, v)) return true;
+        }
+        dfn[v] = 0;
+        --tm;
+        return false;
+    };
 }
 
 int main() {
