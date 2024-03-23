@@ -1,6 +1,4 @@
-// #undef pragma
-#define undef
-#undef pragma
+
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -245,51 +243,173 @@ void prep() {}
 
 void solve() {
     read(int, n);
-    readvec(int, a, n);
-    auto locate = [&] (int x) -> int {
-        for (int i = 0; i < n; ++i) {
-            if (a[i] == x) {
-                return i + 1;
+    // auto query_max =[&] (int i, int j, int val_i) -> int {
+    //     if (val_i == n) {
+    //         cout << "? 1 " << j << ' ' << i << ' ' << n - 1 << endl;
+    //     } else {
+    //         cout << "? 1 " << i << ' ' << j << ' ' << n - 1 << endl;
+    //     }
+    //     read(int, x);
+    //     return x;
+    // };
+    // auto query_min = [&] (int i, int j, int val_i) -> int {
+    //     if (val_i == 1) {
+    //         cout << "? 2 " << i << ' ' << j << ' ' << 1 << endl;
+    //     } else {
+    //         cout << "? 2 " << j << ' ' << i << ' ' << 1 << endl;
+    //     }
+    //     read(int, x);
+    //     return x;
+    // };
+    // auto query_custom = [] (int i, int j, int x) -> int {
+    //     cout << "? 2 " << i << ' ' << j << ' ' << x << endl;
+    //     read(int, res);
+    //     return res;
+    // };
+    // auto claim = [] (const vector<int>& permu) -> void {
+    //     cout << "! ";
+    //     for (auto&& x : permu) cout << x << ' ';
+    //     cout << endl;
+    // };
+    // vector<int> p(n);
+    // int prev_direction = 0;  // 1 for upward, 0 for downward
+    // if (query_min(1, 2, 1) == 1) {
+    //     p[0] = 1;
+    // } else if (query_max(1, 2, n) == n) {
+    //     p[0] = n;
+    // } else {
+    //     int mn = query_min(1, 2, 0), mx = query_max(1, 2, 0);
+    //     if (query_custom(1, 2, mn) == mn) {
+    //         p[0] = mn;
+    //     } else {
+    //         p[0] = mx;
+    //     }
+    // }
+    // for (int i = 2; i <= n; ++i) {
+    //     if (prev_direction == 0) {
+    //         int mn = query_min(i - 1, i, p[i - 2]);
+    //         if (mn == p[i - 2]) {
+    //             p[i - 1] = query_max(i - 1, i, p[i - 2]);
+    //             prev_direction = 1;
+    //         } else {
+    //             p[i - 1] = mn;
+    //         }
+    //     } else {
+    //         int mx = query_max(i - 1, i, p[i - 2]);
+    //         if (mx == p[i - 2]) {
+    //             p[i - 1] = query_min(i - 1, i, p[i - 2]);
+    //             prev_direction = 0;
+    //         } else {
+    //             p[i - 1] = mx;
+    //         }
+    //     }
+    // }
+    // claim(p);
+    auto query = [] (int type, int i, int j, int x) -> int {
+        cout << "? " << type << ' ' << i + 1 << ' ' << j + 1 << ' ' << x << endl;
+        read(int, res);
+        return res;
+    };
+    auto claim = [] (const vector<int>& permu) -> void {
+        cout << "! ";
+        for (auto&& x : permu) cout << x << ' ';
+        cout << endl;
+    };
+    // auto detailed = [&] (int i, int j) -> pii {
+    //     int x, y;
+    //     if (query(2, i, j, 1) == 1) {
+    //         x = 1;
+    //         y = query(1, i, j, 1);
+    //     } else if (query(1, j, i, n - 1) == n) {
+    //         x = n;
+    //         y = query(2, j, i, 1);
+    //     } else {
+    //     }
+    //     return {x, y};
+    // };
+    auto detailed_ceil = [&] (int i, int j) -> int {
+        // who is n?
+        if (query(1, j, i, n - 1) == n) {
+            return i;
+        } else if (query(1, i, j, n - 1) == n) {
+            return j;
+        }
+        return -1;
+    };
+    auto detailed_floor = [&] (int i, int j) -> int {
+        // who is 1?
+        if (query(2, i, j, 1) == 1) {
+            return i;
+        } else if (query(2, j, i, 1) == 1) {
+            return j;
+        }
+        return -1;
+    };
+    vector<int> p(n);
+    for (int i = 0; i + 1 < n; i += 2) {
+        int mx = query(1, i, i + 1, n - 1);
+        int mn = query(2, i, i + 1, 1);
+        if (mx >= n - 1) {
+            int who_is_n = detailed_ceil(i, i + 1);
+            if (who_is_n != -1) p[who_is_n] = n;
+        }
+        if (mn <= 2) {
+            int who_is_1 = detailed_floor(i, i + 1);
+            if (who_is_1 != -1) p[who_is_1] = 1;
+        }
+        if (p[i] == 1 && p[i + 1] == n) {
+            ;;
+        } else if (p[i] == 1 && p[i + 1] != n) {
+            p[i + 1] = mx;
+        } else if (p[i] == n && p[i + 1] == 1) {
+            ;;
+        } else if (p[i] == n && p[i + 1] != 1) {
+            p[i + 1] = mn;
+        } else if (p[i + 1] == n) {
+            p[i] = mn;
+        } else if (p[i + 1] == 1) {
+            p[i] = mx;
+        } else {
+            if (query(2, i, i + 1, mn) == mn) {
+                p[i] = mn, p[i + 1] = mx;
+            } else {
+                p[i] = mx, p[i + 1] = mn;
             }
         }
-        __builtin_unreachable();
-    };
-    vector<int> ops;
-    auto operate = [&] (int i) -> void {
-        ops.push_back(i);
-        vector<int> nw;
-        for (int j = i - 1; ~j; --j) {
-            nw.push_back(a[j]);
+    }
+    if (n % 2 == 1) {
+        int i = n - 2;
+        int mx = query(1, i, i + 1, n - 1);
+        int mn = query(2, i, i + 1, 1);
+        if (mx >= n - 1) {
+            int who_is_n = detailed_ceil(i, i + 1);
+            if (who_is_n != -1) p[who_is_n] = n;
         }
-        for (int j = i; j < n; ++j) {
-            nw.push_back(a[j]);
+        if (mn <= 2) {
+            int who_is_1 = detailed_floor(i, i + 1);
+            if (who_is_1 != -1) p[who_is_1] = 1;
         }
-        a = nw;
-    };
-    for (int i = 1; i <= n; ++i) {
-        if (i % 2 != a[i - 1] % 2) {
-            cout << -1 << '\n';
-            return;
+        if (p[i] == 1 && p[i + 1] == n) {
+            ;;
+        } else if (p[i] == 1 && p[i + 1] != n) {
+            p[i + 1] = mx;
+        } else if (p[i] == n && p[i + 1] == 1) {
+            ;;
+        } else if (p[i] == n && p[i + 1] != 1) {
+            p[i + 1] = mn;
+        } else if (p[i + 1] == n) {
+            p[i] = mn;
+        } else if (p[i + 1] == 1) {
+            p[i] = mx;
+        } else {
+            if (query(2, i, i + 1, mn) == mn) {
+                p[i] = mn, p[i + 1] = mx;
+            } else {
+                p[i] = mx, p[i + 1] = mn;
+            }
         }
     }
-    for (int i = n; i > 1; i -= 2) {
-        int even = i - 1;
-        int odd = i;
-        // step 1: move odd to front
-        operate(locate(odd));
-        // step 2: move odd to the left of even
-        operate(locate(even) - 1);
-        // step 3: reverse prefix
-        int pf = locate(even) + 1;
-        operate(locate(even) + 1);
-        // step 4: swap odd & even
-        operate(3);
-        // step 5: move to target location
-        operate(i);
-    }
-    // debug(a);
-    cout << ops.size() << '\n';
-    putvec(ops);
+    claim(p);
 }
 
 int main() {
