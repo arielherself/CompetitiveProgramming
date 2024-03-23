@@ -234,77 +234,66 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
-
-struct LCA {
-    vector<int> depth;
-    vector<vector<int>> pa;
-    LCA(const vector<vector<int>>& g, int root = 1) {
-        int n = g.size() - 1;
-        int m = 32 - __builtin_clz(n);
-        depth.resize(n + 1);
-        pa.resize(n + 1, vector<int>(m, -1));
-        function<void(int, int)> dfs = [&](int x, int fa) {
-            pa[x][0] = fa;
-            for (int y: g[x]) {
-                if (y != fa) {
-                    depth[y] = depth[x] + 1;
-                    dfs(y, x);
-                }
-            }
-        };
-        dfs(root, 0);
-
-        for (int i = 0; i < m - 1; i++)
-            for (int x = 1; x <= n; x++)
-                if (int p = pa[x][i]; p != -1)
-                    pa[x][i + 1] = pa[p][i];
-    }
-
-    int get_kth_ancestor(int node, int k) {
-        for (; k; k &= k - 1)
-            node = pa[node][__builtin_ctz(k)];
-        return node;
-    }
-
-    int query(int x, int y) {
-        if (depth[x] > depth[y])
-            swap(x, y);
-        y = get_kth_ancestor(y, depth[y] - depth[x]);
-        if (y == x)
-            return x;
-        for (int i = pa[x].size() - 1; i >= 0; i--) {
-            int px = pa[x][i], py = pa[y][i];
-            if (px != py) {
-                x = px;
-                y = py;
-            }
-        }
-        return pa[x][0];
-    }
-};
-
 
 void dump() {}
 
 void prep() {}
 
 void solve() {
-    read(int, n, m, s);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(int, n);
+    readvec(int, a, n);
+    auto locate = [&] (int x) -> int {
+        for (int i = 0; i < n; ++i) {
+            if (a[i] == x) {
+                return i + 1;
+            }
+        }
+        __builtin_unreachable();
+    };
+    vector<int> ops;
+    auto operate = [&] (int i) -> void {
+        ops.push_back(i);
+        vector<int> nw;
+        for (int j = i - 1; ~j; --j) {
+            nw.push_back(a[j]);
+        }
+        for (int j = i; j < n; ++j) {
+            nw.push_back(a[j]);
+        }
+        a = nw;
+    };
+    for (int i = 1; i <= n; ++i) {
+        if (i % 2 != a[i - 1] % 2) {
+            cout << -1 << '\n';
+            return;
+        }
     }
-    LCA model(ch, s);
-    while (m--) {
-        read(int, u, v);
-        cout << model.query(u, v) << '\n';
+    for (int i = n; i > 1; i -= 2) {
+        int even = i - 1;
+        int odd = i;
+        // step 1: move odd to front
+        operate(locate(odd));
+        // step 2: move odd to the left of even
+        operate(locate(even) - 1);
+        // step 3: reverse prefix
+        int pf = locate(even) + 1;
+        operate(locate(even) + 1);
+        // step 4: swap odd & even
+        operate(3);
+        // step 5: move to target location
+        operate(i);
     }
+    // debug(a);
+    cout << ops.size() << '\n';
+    putvec(ops);
 }
 
 int main() {
+#if __cplusplus < 201703L || defined(_MSC_VER) && !defined(__clang__)
+    assert(false && "incompatible compiler variant detected.");
+#endif
     untie, cout.tie(NULL);
     prep();
 #ifdef SINGLE_TEST_CASE

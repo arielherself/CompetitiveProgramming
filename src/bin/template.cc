@@ -244,6 +244,9 @@ void solve() {
 }
 
 int main() {
+#if __cplusplus < 201703L || defined(_MSC_VER) && !defined(__clang__)
+    assert(false && "incompatible compiler variant detected.");
+#endif
     untie, cout.tie(NULL);
     prep();
 #ifdef SINGLE_TEST_CASE

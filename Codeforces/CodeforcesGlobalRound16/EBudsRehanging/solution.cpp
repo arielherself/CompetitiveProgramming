@@ -234,74 +234,65 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
-
-struct LCA {
-    vector<int> depth;
-    vector<vector<int>> pa;
-    LCA(const vector<vector<int>>& g, int root = 1) {
-        int n = g.size() - 1;
-        int m = 32 - __builtin_clz(n);
-        depth.resize(n + 1);
-        pa.resize(n + 1, vector<int>(m, -1));
-        function<void(int, int)> dfs = [&](int x, int fa) {
-            pa[x][0] = fa;
-            for (int y: g[x]) {
-                if (y != fa) {
-                    depth[y] = depth[x] + 1;
-                    dfs(y, x);
-                }
-            }
-        };
-        dfs(root, 0);
-
-        for (int i = 0; i < m - 1; i++)
-            for (int x = 1; x <= n; x++)
-                if (int p = pa[x][i]; p != -1)
-                    pa[x][i + 1] = pa[p][i];
-    }
-
-    int get_kth_ancestor(int node, int k) {
-        for (; k; k &= k - 1)
-            node = pa[node][__builtin_ctz(k)];
-        return node;
-    }
-
-    int query(int x, int y) {
-        if (depth[x] > depth[y])
-            swap(x, y);
-        y = get_kth_ancestor(y, depth[y] - depth[x]);
-        if (y == x)
-            return x;
-        for (int i = pa[x].size() - 1; i >= 0; i--) {
-            int px = pa[x][i], py = pa[y][i];
-            if (px != py) {
-                x = px;
-                y = py;
-            }
-        }
-        return pa[x][0];
-    }
-};
-
 
 void dump() {}
 
 void prep() {}
 
 void solve() {
-    read(int, n, m, s);
+    read(int, n);
     adj(ch, n);
     for (int i = 0; i < n - 1; ++i) {
         read(int, u, v);
         edge(ch, u, v);
     }
-    LCA model(ch, s);
-    while (m--) {
-        read(int, u, v);
-        cout << model.query(u, v) << '\n';
-    }
+    vector<bool> is_leaf(n + 1), is_bud(n + 1);
+    // vector<int> father(n + 1);
+    auto dfs = [&] (auto dfs, int v, int pa) -> void {
+        int leaf_cnt = 0, bud_cnt = 0, ch_cnt = 0;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            dfs(dfs, u, v);
+            // father[u] = v;
+            if (is_leaf[u]) leaf_cnt += 1;
+            if (is_bud[u])  bud_cnt  += 1;
+            ch_cnt += 1;
+        }
+        is_bud[v] = leaf_cnt == ch_cnt && ch_cnt;
+        is_leaf[v] = bud_cnt == ch_cnt;
+    };
+    dfs(dfs, 1, 0);
+    is_bud[1] = 0;
+    cout << count(is_leaf.begin(), is_leaf.end(), 1) - count(is_bud.begin(), is_bud.end(), 1) << '\n';
+    // mark_leaves(mark_leaves, 1, 0);
+    // auto mark_buds = [&] (auto mark_buds, int v, int pa) -> void {
+    //     int f = 1, common_cnt = 0;
+    //     for (auto&& u : ch[v]) {
+    //         if (u == pa) continue;
+    //         mark_buds(mark_buds, u, v);
+    //         if (!is_bud[u]) common_cnt += 1;
+    //         if (!is_bud[u] && !is_leaf[u]) f = 0;
+    //     }
+    //     is_bud[v] = f && !is_leaf[v];
+    // };
+    // mark_buds(mark_buds, 1, 0);
+    // is_bud[1] = 0;
+    // int bud_cnt = count(is_bud.begin(), is_bud.end(), true);
+    // int res = 0;
+    // auto dfs = [&] (auto dfs, int v, int pa, int path_bud_cnt) -> void {
+    //     if (is_leaf[v]) {
+    //         res = max(res, bud_cnt - path_bud_cnt);
+    //     } else {
+    //         for (auto&& u : ch[v]) {
+    //             if (u == pa) continue;
+    //             dfs(dfs, u, v, path_bud_cnt + is_bud[v]);
+    //         }
+    //     }
+    // };
+    // dfs(dfs, 1, 0, 0);
+    // cout << count(is_leaf.begin(), is_leaf.end(), true) - res << '\n';
 }
 
 int main() {

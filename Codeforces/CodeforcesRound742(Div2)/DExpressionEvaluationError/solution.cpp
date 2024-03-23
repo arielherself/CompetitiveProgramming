@@ -234,74 +234,49 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
-
-struct LCA {
-    vector<int> depth;
-    vector<vector<int>> pa;
-    LCA(const vector<vector<int>>& g, int root = 1) {
-        int n = g.size() - 1;
-        int m = 32 - __builtin_clz(n);
-        depth.resize(n + 1);
-        pa.resize(n + 1, vector<int>(m, -1));
-        function<void(int, int)> dfs = [&](int x, int fa) {
-            pa[x][0] = fa;
-            for (int y: g[x]) {
-                if (y != fa) {
-                    depth[y] = depth[x] + 1;
-                    dfs(y, x);
-                }
-            }
-        };
-        dfs(root, 0);
-
-        for (int i = 0; i < m - 1; i++)
-            for (int x = 1; x <= n; x++)
-                if (int p = pa[x][i]; p != -1)
-                    pa[x][i + 1] = pa[p][i];
-    }
-
-    int get_kth_ancestor(int node, int k) {
-        for (; k; k &= k - 1)
-            node = pa[node][__builtin_ctz(k)];
-        return node;
-    }
-
-    int query(int x, int y) {
-        if (depth[x] > depth[y])
-            swap(x, y);
-        y = get_kth_ancestor(y, depth[y] - depth[x]);
-        if (y == x)
-            return x;
-        for (int i = pa[x].size() - 1; i >= 0; i--) {
-            int px = pa[x][i], py = pa[y][i];
-            if (px != py) {
-                x = px;
-                y = py;
-            }
-        }
-        return pa[x][0];
-    }
-};
-
 
 void dump() {}
 
 void prep() {}
 
 void solve() {
-    read(int, n, m, s);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(int, a, n);
+    priority_queue<int, vector<int>, greater<>> pq;  // doesn't include 1
+    int one_cnt = 0;
+    int pw = 1;
+    while (a) {
+        int rm = a % 10;
+        a /= 10;
+        for (int i = 0; i < rm; ++i) {
+            if (pw == 1) one_cnt += 1;
+            else pq.push(pw);
+        }
+        pw *= 10;
     }
-    LCA model(ch, s);
-    while (m--) {
-        read(int, u, v);
-        cout << model.query(u, v) << '\n';
+    if (pq.size() + one_cnt < n) {
+        while (pq.size() + one_cnt < n) {
+            int x = pq.top(); pq.pop();
+            if (x == 10) one_cnt += 10;
+            else {
+                for (int i = 0; i < 10; ++i) {
+                    pq.push(x / 10);
+                }
+            }
+        }
     }
+    while (one_cnt--) pq.push(1);
+    while (pq.size() > n) {
+        int x = pq.top(); pq.pop();
+        int y = pq.top(); pq.pop();;
+        pq.push(x + y);
+    }
+    while (pq.size()) {
+        cout << pq.top() << ' ';
+        pq.pop();
+    }
+    cout << '\n';
 }
 
 int main() {
