@@ -233,132 +233,43 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
 void prep() {}
 
-struct LCA {
-    vector<int> depth;
-    vector<vector<int>> pa;
-    LCA(const vector<vector<int>>& g, int root = 1) {
-        int n = g.size() - 1;
-        int m = 32 - __builtin_clz(n);
-        depth.resize(n + 1);
-        pa.resize(n + 1, vector<int>(m, -1));
-        function<void(int, int)> dfs = [&](int x, int fa) {
-            pa[x][0] = fa;
-            for (int y: g[x]) {
-                if (y != fa) {
-                    depth[y] = depth[x] + 1;
-                    dfs(y, x);
-                }
-            }
-        };
-        dfs(root, 0);
-
-        for (int i = 0; i < m - 1; i++)
-            for (int x = 1; x <= n; x++)
-                if (int p = pa[x][i]; p != -1)
-                    pa[x][i + 1] = pa[p][i];
-    }
-
-    int get_kth_ancestor(int node, int k) {
-        for (; k; k &= k - 1)
-            node = pa[node][__builtin_ctz(k)];
-        return node;
-    }
-
-    int query(int x, int y) {
-        if (depth[x] > depth[y])
-            swap(x, y);
-        y = get_kth_ancestor(y, depth[y] - depth[x]);
-        if (y == x)
-            return x;
-        for (int i = pa[x].size() - 1; i >= 0; i--) {
-            int px = pa[x][i], py = pa[y][i];
-            if (px != py) {
-                x = px;
-                y = py;
-            }
-        }
-        return pa[x][0];
-    }
-};
-
 void solve() {
-    read(int, n, m);
-    adj(ch, n);
-    adj(ch_rev, n);
-    vector<int> ind(n + 1), ind_rev(n + 1);
-    while (m--) {
-        read(int, u, v);
-        Edge(ch, u, v);
-        Edge(ch_rev, v, u);
-        ind[v] += 1;
-        ind_rev[u] += 1;
-    }
-    auto work = [&] (vector<vector<int>>& ch, vector<int>& ind) -> vector<int> {
-        // debug("work");
-        vector<vector<int>> tr(n + 1);
-        for (int i = 1; i <= n; ++i) {
-            if (ind[i] == 0) ind[i] = 1, ch[0].push_back(i);
-        }
-        // debug(ind);
-        vector<bool> vis(n + 1);
-        vector<int> father(n + 1);
-        auto get_tr = [&] (auto get_tr, int v, int pa) -> void {
-            father[v] = pa;
-            vis[v] = 1;
-            for (auto&& u : ch[v]) {
-                if (!vis[u]) {
-                    tr[v].push_back(u);
-                    tr[u].push_back(v);
-                    get_tr(get_tr, u, v);
+    read(string, a);
+    int n = a.size();
+    vector<vector<int>> dp(n, vector<int>(n, INT_MAX));
+    for (int i = n - 1; ~i; --i) {
+        for (int j = i; j < n; ++j) {
+            if (i == j) dp[i][j] = 0;
+            else if (i + 1 == j) dp[i][j] = a[i] != a[j];
+            else {
+                for (int k = i; k + 1 <= j; ++k) {
+                    dp[i][j] = min(dp[i][j], 1 + dp[i][k] + dp[k + 1][j]);
                 }
-            }
-        };
-        get_tr(get_tr, 0, 0);
-        LCA lca(tr, 0);
-        vector<int> res(n + 1);
-        deque<int> q;
-        q.push_back(0);
-        while (q.size()) {
-            int v = q.front();  q.pop_front();
-            res[v] += 1;
-            // debug(res);
-            // debug(ind);
-            // debug(v);
-            for (auto&& u : ch[v]) {
-                if (ind[u] == 0) continue;
-                if (father[u] == v) {
-                    res[u] += res[v];
-                } else {
-                    // debug(u), debug(lca.query(u, v));
-                    res[u] += res[v] - res[lca.query(u, v)];
-                }
-                if (--ind[u] == 0) {
-                    q.push_back(u);
-                }
+                if (a[i] == a[j]) dp[i][j] = min(dp[i][j], dp[i + 1][j - 1]);
             }
         }
-        for (int i = 1; i <= n; ++i) {
-            res[i] -= 1;
-        }
-        return res;
-    };
-    vector<int> forward = work(ch, ind), backward = work(ch_rev, ind_rev);
-    // debug(forward), debug(backward);
-    int res = 0;
-    for (int i = 1; i <= n; ++i) {
-        if (forward[i] + backward[i] - 1 == n) {
-            // debug(i);
-            res += 1;
-        }
     }
-    cout << res << '\n';
+    // auto dfs = [&] (auto dfs, int l, int r) -> int {
+    //     if (dp[l][r] != INT_MAX) return dp[l][r];
+    //     if (l == r) dp[l][r] = 0;
+    //     else if (l + 1 == r) {
+    //         dp[l][r] = a[l] != a[r];
+    //     } else {
+    //         for (int i = l; i + 1 <= r; ++i) {
+    //             dp[l][r] = min(dp[l][r], 1 + dfs(dfs, l, i) + dfs(dfs, i + 1, r));
+    //         }
+    //         if (a[l] == a[r]) dp[l][r] = min(dp[l][r], dfs(dfs, l + 1, r - 1));
+    //     }
+    //     return dp[l][r];
+    // };
+    cout << 1 + dp[0][n - 1] << '\n';
 }
 
 int main() {
