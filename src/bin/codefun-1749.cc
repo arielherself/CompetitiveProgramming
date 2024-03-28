@@ -233,7 +233,7 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
@@ -241,7 +241,18 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    
+    read(int, n, m);
+    multiset<ll> st;
+    while (n--) {
+        read(int, x);
+        st.insert(x);
+    }
+    while (m--) {
+        ll curr = *st.begin(); st.erase(st.begin());
+        read(int, delta);
+        st.insert(curr + delta);
+        cout << *st.rbegin() << '\n';
+    }
 }
 
 int main() {
