@@ -233,7 +233,7 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
@@ -241,37 +241,61 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    read(ll, n);
-    readvec(int, a, n);
-    int l = 0, r = n - 1;
-    while (l + 1 < n && a[l] <= a[l + 1]) ++l;
-    while (r && a[r] >= a[r - 1]) --r;
-    if (!r) {
-        cout << n * (n + 1) / 2;
+    read(int, n);
+    readvec(ll, a, n);
+    int greater_pos = -1;
+    for (int i = 0; i < n; ++i) {
+        if (a[i] >= i + 1) {
+            greater_pos = i;
+            break;
+        }
+    }
+    if (greater_pos == -1) {
+        ll avg = a[0];
+        for (int i = 1; i < n; ++i) {
+            if (a[i] != avg) {
+                cout << -1 << '\n';
+                return;
+            }
+        }
+        cout << 0 << '\n';
         return;
     }
-    ll res = l + 2;
-    for (int i = r; i < n; ++i) {
-        int lf = 0, rf = l;
-        while (lf < rf) {
-            int mid = lf + rf + 1 >> 1;
-            if (a[mid] > a[i]) rf = mid - 1;
-            else lf = mid;
-        }
-        if (a[lf] <= a[i] && lf + 1 != i) {
-            res += lf + 2;
-        } else {
-            res += lf + 1;
-        }
+    vector<tuple<int, int, ll>> ops;
+    auto work = [&] (int i, int j, ll x) -> void {
+        a[i] -= x * (i + 1), a[j] += x * (i + 1);
+        assert(a[i] >= 0), assert(a[j] >= 0);
+        ops.emplace_back(i + 1, j + 1, x);
+    };
+    for (int i = greater_pos + 1; i < n; ++i) {
+        work(i - 1, i, 1);
     }
-    cout << res << '\n';
-    ll res = n - r + 1;
-    for (int i = 0; i <= l; ++i) {
-        while (r < n && a[i] > a[r]) ++r;
-        // debug(i), debug(r);
-        res += n - r + 1;
+    // now a[n - 1] is greater than n. Move n to a[0]
+    work(n - 1, 0, 1);
+    ll sum = accumulate(a.begin(), a.end(), 0LL);
+    if (sum % n) {
+        cout << -1 << '\n';
+        return;
     }
-    cout << res << '\n';
+    ll target = sum / n;
+    // debug(a);
+    for (int i = 1; i < n; ++i) {
+        if (a[i] > target) {
+            work(0, i, (i + 1 - (a[i] - target) % (i + 1)) % (i + 1));
+            work(i, 0, (a[i] - target) / (i + 1));
+        }
+        // debug(a);
+    }
+    for (int i = 1; i < n; ++i) {
+        assert(a[i] <= target);
+        if (a[i] < target) {
+            work(0, i, target - a[i]);
+        }
+        // debug(a);
+    }
+    assert(ops.size() <= 3 * n);
+    cout << ops.size() << '\n';
+    for (auto&& [x, y, z] : ops) cout << x << ' ' << y << ' ' << z << '\n';
 }
 
 int main() {
