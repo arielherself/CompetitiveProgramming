@@ -182,6 +182,22 @@ ll inverse(ll a, ll b) {
     return mod(x, b);
 }
 
+vector<tuple<int, int, ll>> decompose(ll x) {
+    vector<tuple<int, int, ll>> res;
+    for (int i = 2; i * i <= x; i++) {
+        if (x % i == 0) {
+            int cnt = 0;
+            ll pw = 1;
+            while (x % i == 0) ++cnt, x /= i, pw *= i;
+            res.emplace_back(i, cnt, pw);
+        }
+    }
+    if (x != 1) {
+        res.emplace_back(x, 1, x);
+    }
+    return res;
+}
+
 /* string algorithms */
 vector<int> calc_next(string t) {  // pi function of t
   int n = (int)t.length();
@@ -236,70 +252,58 @@ int period(string s) {  // find the length of shortest recurring period
 #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
-void dump() {}
+constexpr int N = 1e7 + 10;
 
-vector<int> prime_table;
-void get_prime(int n) {
-    vector<bool> is_prime(n + 1);
-    is_prime[0] = is_prime[1] = false;
-    for (int i = 2; i <= n; ++i) is_prime[i] = true;
+int lpf[N];
+
+void era(int n) {
+    lpf[0] = lpf[1] = -1;
+    for (int i = 2; i <= n; ++i) lpf[i] = i;
+    // debug(lpf[2]);
     for (int i = 2; i <= n; ++i) {
-        if (is_prime[i]) {
-            prime_table.push_back(i);
-            if (ll(i) * i > n) continue;
+        if (lpf[i] == i) {
+            if ((ll)i * i > n) continue;
             for (int j = i * i; j <= n; j += i) {
-                is_prime[j] = false;
+                if (lpf[j] == j) {
+                    lpf[j] = i;
+                }
             }
         }
     }
 }
 
+void dump() {}
+
 void prep() {
-    get_prime(1e7 + 10);
+    era(1e7 + 1);
 }
 
-int mp[10'000'010];
-
-struct min_2 {
-    int a = INT_MAX, b = INT_MAX;
-    void update(int c) {
-        if (c < a) {
-            b = a;
-            a = c;
-        } else if (c < b) {
-            b = c;
-        }
-    }
-};
+int res[2][500010];
 
 void solve() {
     read(int, n);
     readvec(int, a, n);
-    set<int> st(a.begin(), a.end());
-    int N = 0;
-    for (auto&& x : st) mp[x] = ++N;
-    vector<min_2> slot(N + 1);
-    vector<int> first(n), second(n);
-    for (auto&& x : prime_table) {
-        for (ll i = x; i <= 1e7; i += x) {
-            if (mp[i]) {
-                slot[mp[i]].update(x);
-            }
-        }
-    }
     for (int i = 0; i < n; ++i) {
-        int j = mp[a[i]];
-        if (slot[j].a == INT_MAX || slot[j].b == INT_MAX) {
-            first[i] = -1, second[i] = -1;
+        int x = a[i];
+        int fact = lpf[x];
+        ll curr = 1;
+        while ((x / curr) % fact == 0) curr *= fact;
+        if (curr == x) {
+            res[0][i] = -1, res[1][i] = -1;
         } else {
-            first[i] = slot[j].a;
-            second[i] = slot[j].b;
+            res[0][i] = curr, res[1][i] = x / curr;
         }
     }
-    putvec(first), putvec(second);
+    for (int i = 0; i < n; ++i) cout << res[0][i] << ' ';
+    cout << '\n';
+    for (int i = 0; i < n; ++i) cout << res[1][i] << ' ';
+    cout << '\n';
 }
 
 int main() {
+#if __cplusplus < 201703L || defined(_MSC_VER) && !defined(__clang__)
+    assert(false && "incompatible compiler variant detected.");
+#endif
     untie, cout.tie(NULL);
     prep();
 #ifdef SINGLE_TEST_CASE

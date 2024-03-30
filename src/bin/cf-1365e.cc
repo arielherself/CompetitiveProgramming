@@ -257,6 +257,17 @@ void dump() {}
 void prep() {}
 
 void solve() {
+    read(int, n);
+    readvec(ll, a, n);
+    ll res = 0;
+    for (int i = 0; i < n; ++i) {
+        for (int j = i; j < n; ++j) {
+            for (int k = j; k < n; ++k) {
+                res = max(res, a[i] | a[j] | a[k]);
+            }
+        }
+    }
+    cout << res << '\n';
 }
 
 int main() {

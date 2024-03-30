@@ -182,22 +182,6 @@ ll inverse(ll a, ll b) {
     return mod(x, b);
 }
 
-vector<tuple<int, int, ll>> decompose(ll x) {
-    vector<tuple<int, int, ll>> res;
-    for (int i = 2; i * i <= x; i++) {
-        if (x % i == 0) {
-            int cnt = 0;
-            ll pw = 1;
-            while (x % i == 0) ++cnt, x /= i, pw *= i;
-            res.emplace_back(i, cnt, pw);
-        }
-    }
-    if (x != 1) {
-        res.emplace_back(x, 1, x);
-    }
-    return res;
-}
-
 /* string algorithms */
 vector<int> calc_next(string t) {  // pi function of t
   int n = (int)t.length();
@@ -257,6 +241,86 @@ void dump() {}
 void prep() {}
 
 void solve() {
+    read(int, n, m);
+    read(ll, x), read(int, k), read(ll, y);
+    vector<int> a(n + 2);
+    a[0] = INF, a[n + 1] = INF;
+    for (int i = 1; i <= n; ++i) cin >> a[i];
+    readvec(int, b, m);
+    int ptr = 1;
+    vector<bool> mark(n + 2);
+    mark[0] = 1, mark[n + 1] = 1;
+    for (int i = 0; i < m; ++i) {
+        while (ptr <= n && a[ptr] != b[i]) ++ptr;
+        if (ptr == n + 1) {
+            cout << -1 << '\n';
+            return;
+        }
+        mark[ptr] = 1;
+    }
+    vector<int> left(n + 2), right(n + 2);
+    int prev = 0, next = n + 1;
+    for (int i = 0; i <= n + 1; ++i) {
+        left[i] = prev;
+        if (mark[i]) prev = i;
+    }
+    for (int i = n + 1; ~i; --i) {
+        right[i] = next;
+        if (mark[i]) next = i;
+    }
+    vector<int> diff(n + 3);
+    vector<int> st;
+    vector<bool> cover(n + 2);
+    for (int i = 0; i <= n + 1; ++i) {
+        while (st.size() && a[st.back()] < a[i]) st.pop_back();
+        if (st.size()) {
+            int l = max(left[i], st.back()) + 1, r = i - 1;
+            if (l <= r) diff[l] += 1, diff[r + 1] -= 1;
+        }
+        st.push_back(i);
+    }
+    st.clear();
+    for (int i = n + 1; ~i; --i) {
+        while (st.size() && a[st.back()] < a[i]) st.pop_back();
+        if (st.size()) {
+            int l = i + 1, r = min(right[i], st.back()) - 1;
+            if (l <= r) diff[l] += 1, diff[r + 1] -= 1;
+        }
+        st.push_back(i);
+    }
+    int curr = 0;
+    for (int i = 0; i <= n + 1; ++i) {
+        curr += diff[i];
+        cover[i] = curr;
+    }
+    debug(left), debug(right);
+    debug(cover);
+    int length = 0;
+    ll res = 0;
+    for (int i = 0; i <= n + 1; ++i) {
+        if (mark[i]) {
+            int l = i - length - 1, r = i;
+            if (i != 0 and l <= r) {
+                ll curr = LLONG_MAX;
+                int li = l, ri = r;
+                int cap = 0;
+                while (li + 1 <= r && cover[li + 1]) ++li;
+                cap += li - l;
+                while (ri - 1 >= l && cover[ri - 1]) --ri;
+                cap += r - ri;
+                cap = min(cap, length);
+                for (int j = 0; j <= cap; ++j) {
+                    curr = min(curr, j * y + (length - j + k - 1) / k) * x;
+                }
+                debug(i), debug(curr);
+                res += curr;
+            }
+            length = 0;
+        } else {
+            ++length;
+        }
+    }
+    cout << res << '\n';
 }
 
 int main() {

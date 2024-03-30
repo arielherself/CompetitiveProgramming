@@ -249,7 +249,7 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
@@ -257,6 +257,27 @@ void dump() {}
 void prep() {}
 
 void solve() {
+    read(int, n, m);
+    read(int, a, b);
+    if (a * n != b * m) {
+        cout << "NO\n";
+        return;
+    }
+    cout << "YES\n";
+    vector<vector<bool>> res(n, vector<bool>(m));
+    int k = 0;
+    for (int i = 0; i < n; ++i) {
+        for (int j = k; j < k + a; ++j) {
+            res[i][j % m] = 1;
+        }
+        k = (k + a) % m;
+    }
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            cout << res[i][j];
+        }
+        cout << '\n';
+    }
 }
 
 int main() {
