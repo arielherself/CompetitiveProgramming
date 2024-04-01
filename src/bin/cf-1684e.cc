@@ -256,66 +256,68 @@ void dump() {}
 
 void prep() {}
 
-template <ll mdl> struct MLL {
-    ll val;
-    MLL(ll v = 0) : val(mod(v, mdl)) {}
-    friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
-    friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
-    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
-    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
-    friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
-    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
-    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
-    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
-    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
-    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
-};
-
-template <ll mdl>
-ostream& operator<<(ostream& out, const MLL<mdl>& num) {
-    return out << num.val;
-}
-
-template <ll mdl>
-istream& operator>>(istream& in, MLL<mdl>& num) {
-    return in >> num.val;
-}
-
 void solve() {
-    using ll = MLL<PRIME>;
-    read(int, n, m);
-    vector<ll> a(n + 1);
-    vector<int> ind(n + 1);
-    for (int i = 1; i <= n; ++i) cin >> a[i];
-    adj(ch, n);
-    while (m--) {
-        read(int, u, v);
-        ind[v] += 1;
-        Edge(ch, u, v);
-    }
-    vector<ll> dp(n + 1);
-    deque<int> dq;
-    for (int i = 1; i <= n; ++i) {
-        if (!ind[i]) dq.push_back(i);
-    }
-    while (dq.size()) {
-        int v = dq.front();  dq.pop_front();
-        dp[v] += a[v] + (!a[v].val);  // TODO:
-        for (auto&& u : ch[v]) {
-            dp[u] += dp[v];
-            if (--ind[u] == 0) {
-                dq.push_back(u);
+    read(int, n, k);
+    readvec(int, a, n);
+    sort(a.begin(), a.end());
+    // int prev = 0;
+    // int cnt = 0;
+    // vector<pii> buckets;
+    // for (int i = 0; i < n; ++i) {
+    //     if (a[i] != prev) {
+    //         if (cnt) buckets.emplace_back(prev, cnt);
+    //         prev = a[i];
+    //         cnt = 0;
+    //     }
+    //     cnt += 1;
+    // }
+    // if (cnt) buckets.emplace_back(prev, cnt);
+    auto work = [&] (int mex) -> pii {
+        // least steps required to get MEX == mex while minimizing DIFF
+        // mex <= n
+        int l = 0, r = n - 1;
+        while (l < r) {
+            int mid = l + r >> 1;
+            // cerr << "working on mex = " << mex << ": l = " << l << ", r = " << r << ", mid = " << mid << '\n';
+            if (a[mid] >= mex) {
+                r = mid;
+            } else {
+                l = mid + 1;
             }
         }
+        if (a[l] < mex) l = n;
+        int valid = 0;
+        int tot = 0;
+        for (int i = 0; i < n; ++i) {
+            tot += a[i]
+        }
+        for (int i = l; i < n; ++i) {
+            if (i == 0 || a[i] != a[i - 1]) valid += 1;
+        }
+        return {valid, tot};
+    };
+    int diff = 0, mex = n;
+    for (int i = 0; i < n; ++i) {
+        if (a[i] != i && mex == n) mex = i;
+        if (i == 0 || a[i] != a[i - 1]) diff += 1;
     }
-    debug(dp);
-    for (int i = 1; i <= n; ++i) {
-        if (!ch[i].size()) {
-            cout << dp[i] << '\n';
-            return;
+    int raw = diff - mex;
+    int l = 0, r = n;
+    int mx = 0;
+    debug(raw), debug(mex);
+    for (int i = 0; i <= n; ++i) {
+        cerr << work(i) << " \n"[i == n];
+    }
+    while (l < r) {
+        int mid = l + r >> 1;
+        auto [valid, tot] = work(mid);
+        if (tot <= k) {
+            r = mid;
+        } else {
+            l = mid + 1;
         }
     }
-    __builtin_unreachable();
+    cout << max(0, raw - work(l).first) << '\n';
 }
 
 int main() {

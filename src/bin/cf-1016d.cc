@@ -249,73 +249,63 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
 void prep() {}
 
-template <ll mdl> struct MLL {
-    ll val;
-    MLL(ll v = 0) : val(mod(v, mdl)) {}
-    friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
-    friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
-    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
-    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
-    friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
-    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
-    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
-    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
-    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
-    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
-};
-
-template <ll mdl>
-ostream& operator<<(ostream& out, const MLL<mdl>& num) {
-    return out << num.val;
-}
-
-template <ll mdl>
-istream& operator>>(istream& in, MLL<mdl>& num) {
-    return in >> num.val;
-}
-
 void solve() {
-    using ll = MLL<PRIME>;
     read(int, n, m);
-    vector<ll> a(n + 1);
-    vector<int> ind(n + 1);
-    for (int i = 1; i <= n; ++i) cin >> a[i];
-    adj(ch, n);
-    while (m--) {
-        read(int, u, v);
-        ind[v] += 1;
-        Edge(ch, u, v);
-    }
-    vector<ll> dp(n + 1);
-    deque<int> dq;
-    for (int i = 1; i <= n; ++i) {
-        if (!ind[i]) dq.push_back(i);
-    }
-    while (dq.size()) {
-        int v = dq.front();  dq.pop_front();
-        dp[v] += a[v] + (!a[v].val);  // TODO:
-        for (auto&& u : ch[v]) {
-            dp[u] += dp[v];
-            if (--ind[u] == 0) {
-                dq.push_back(u);
+    readvec(int, a, n);
+    readvec(int, b, m);
+    vector<vector<int>> res(n, vector<int>(m));
+    auto get = [] (int x, int pos) -> int {
+        return (x >> pos) & 1;
+    };
+    auto work = [&] (int pos, int x, int y) -> void {
+        if (x == n - 1) {
+            for (int j = y; j < m; ++j) {
+                res[x][j] |= get(b[j], pos) << pos;
+            }
+        } else if (y == m - 1) {
+            for (int i = x; i < n; ++i) {
+                res[i][y] |= get(a[i], pos) << pos;
+            }
+        } else {
+            res[x][y] |= 1 << pos;
+            if (get(a[x], pos) == 0) {
+                res[x][y + 1] |= 1 << pos;
+                b[y + 1] ^= 1 << pos;
+            }
+            if (get(b[y], pos) == 0) {
+                res[x + 1][y] |= 1 << pos;
+                a[x + 1] ^= 1 << pos;
             }
         }
-    }
-    debug(dp);
-    for (int i = 1; i <= n; ++i) {
-        if (!ch[i].size()) {
-            cout << dp[i] << '\n';
+    };
+    for (int pos = 0;pos < 30; ++pos) {
+        int x = 0, y = 0;
+        int row = 0, col = 0;
+        for (int i = 0; i < n; ++i) row ^= get(a[i], pos);
+        for (int j = 0; j < m; ++j) col ^= get(b[j], pos);
+        if (row != col) {
+            cout << "NO\n";
             return;
         }
+        while (1) {
+            work(pos, x, y);
+            if (x == n - 1 || y == m - 1) break;
+            x += 1, y += 1;
+        }
     }
-    __builtin_unreachable();
+    cout << "YES\n";
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            cout << res[i][j] << " \n"[j + 1 == m];
+        }
+    }
 }
 
 int main() {

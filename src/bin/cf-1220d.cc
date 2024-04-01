@@ -249,73 +249,29 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
 void prep() {}
 
-template <ll mdl> struct MLL {
-    ll val;
-    MLL(ll v = 0) : val(mod(v, mdl)) {}
-    friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
-    friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
-    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
-    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
-    friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
-    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
-    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
-    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
-    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
-    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
-};
-
-template <ll mdl>
-ostream& operator<<(ostream& out, const MLL<mdl>& num) {
-    return out << num.val;
-}
-
-template <ll mdl>
-istream& operator>>(istream& in, MLL<mdl>& num) {
-    return in >> num.val;
-}
-
 void solve() {
-    using ll = MLL<PRIME>;
-    read(int, n, m);
-    vector<ll> a(n + 1);
-    vector<int> ind(n + 1);
-    for (int i = 1; i <= n; ++i) cin >> a[i];
-    adj(ch, n);
-    while (m--) {
-        read(int, u, v);
-        ind[v] += 1;
-        Edge(ch, u, v);
-    }
-    vector<ll> dp(n + 1);
-    deque<int> dq;
-    for (int i = 1; i <= n; ++i) {
-        if (!ind[i]) dq.push_back(i);
-    }
-    while (dq.size()) {
-        int v = dq.front();  dq.pop_front();
-        dp[v] += a[v] + (!a[v].val);  // TODO:
-        for (auto&& u : ch[v]) {
-            dp[u] += dp[v];
-            if (--ind[u] == 0) {
-                dq.push_back(u);
-            }
+    read(int, n);
+    readvec(ll, a, n);
+    int sz = INF;
+    vector<ll> res;
+    for (int i = 0; i < 61; ++i) {
+        ll pw = 1LL << i;
+        vector<ll> curr;
+        for (auto&& x : a) if (!(x % pw == 0 && ((x / pw) % 2))) curr.push_back(x);
+        if (curr.size() < sz) {
+            sz = curr.size();
+            res = curr;
         }
     }
-    debug(dp);
-    for (int i = 1; i <= n; ++i) {
-        if (!ch[i].size()) {
-            cout << dp[i] << '\n';
-            return;
-        }
-    }
-    __builtin_unreachable();
+    cout << sz << '\n';
+    putvec(res);
 }
 
 int main() {

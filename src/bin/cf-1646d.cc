@@ -249,73 +249,80 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
 void prep() {}
 
-template <ll mdl> struct MLL {
-    ll val;
-    MLL(ll v = 0) : val(mod(v, mdl)) {}
-    friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
-    friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
-    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
-    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
-    friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
-    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
-    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
-    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
-    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
-    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
-};
-
-template <ll mdl>
-ostream& operator<<(ostream& out, const MLL<mdl>& num) {
-    return out << num.val;
-}
-
-template <ll mdl>
-istream& operator>>(istream& in, MLL<mdl>& num) {
-    return in >> num.val;
-}
-
 void solve() {
-    using ll = MLL<PRIME>;
-    read(int, n, m);
-    vector<ll> a(n + 1);
-    vector<int> ind(n + 1);
-    for (int i = 1; i <= n; ++i) cin >> a[i];
+    read(int, n);
     adj(ch, n);
-    while (m--) {
+    for (int i = 0; i < n - 1; ++i) {
         read(int, u, v);
-        ind[v] += 1;
-        Edge(ch, u, v);
+        edge(ch, u, v);
     }
-    vector<ll> dp(n + 1);
-    deque<int> dq;
-    for (int i = 1; i <= n; ++i) {
-        if (!ind[i]) dq.push_back(i);
+    if (n == 2) {
+        cout << "2 2\n1 1\n";
+        return;
     }
-    while (dq.size()) {
-        int v = dq.front();  dq.pop_front();
-        dp[v] += a[v] + (!a[v].val);  // TODO:
+    vector<array<tuple<int, int, ll>, 2>> dp(n + 1);  // (max good vertices, current w, subtree w)
+    unordered_map<pii, int, pair_hash> choices;
+    auto dfs = [&] (auto dfs, int v, int pa) -> void {
         for (auto&& u : ch[v]) {
-            dp[u] += dp[v];
-            if (--ind[u] == 0) {
-                dq.push_back(u);
+            if (u == pa) continue;
+            dfs(dfs, u, v);
+        }
+        // select v
+        get<0>(dp[v][1]) = 1;
+        if (pa) get<1>(dp[v][1]) = 1;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            get<0>(dp[v][1]) += get<0>(dp[u][0]);
+            get<1>(dp[v][1]) += get<1>(dp[u][0]);
+            get<2>(dp[v][1]) += get<2>(dp[u][0]);
+        }
+        get<2>(dp[v][1]) += get<1>(dp[v][1]);
+        // not select v
+        get<1>(dp[v][0]) = 1;
+        get<2>(dp[v][0]) = 1;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            if (get<0>(dp[u][0]) > get<0>(dp[u][1]) || get<0>(dp[u][0]) == get<0>(dp[u][1]) && get<2>(dp[u][0]) < get<2>(dp[u][1])) {
+                choices[minmax(u, v)] = 0;
+                get<0>(dp[v][0]) += get<0>(dp[u][0]);
+                get<2>(dp[v][0]) += get<2>(dp[u][0]);
+            } else {
+                choices[minmax(u, v)] = 1;
+                get<0>(dp[v][0]) += get<0>(dp[u][1]);
+                get<2>(dp[v][0]) += get<2>(dp[u][1]);
             }
         }
-    }
-    debug(dp);
-    for (int i = 1; i <= n; ++i) {
-        if (!ch[i].size()) {
-            cout << dp[i] << '\n';
-            return;
+        // debug(v), debug(dp[v][0]), debug(dp[v][1]);
+    };
+    dfs(dfs, 1, 0);
+    vector<ll> res(n + 1);
+    auto collect = [&] (auto collect, int v, int pa, int choice) -> void {
+        res[v] = get<1>(dp[v][choice]);
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            if (choice == 1) {
+                collect(collect, u, v, 0);
+            } else {
+                collect(collect, u, v, choices[minmax(u, v)]);
+            }
         }
+    };
+    if (get<0>(dp[1][0]) > get<0>(dp[1][1]) || get<0>(dp[1][0]) == get<0>(dp[1][1]) && get<2>(dp[1][0]) < get<2>(dp[1][1])) {
+        collect(collect, 1, 0, 0);
+        cout << get<0>(dp[1][0]) << ' ' << get<2>(dp[1][0]) << '\n';
+        for (int i = 1; i <= n; ++i) cout << res[i] << " \n"[i == n];
+    } else {
+        collect(collect, 1, 0, 1);
+        cout << get<0>(dp[1][1]) << ' ' << get<2>(dp[1][1]) << '\n';
+        for (int i = 1; i <= n; ++i) cout << res[i] << " \n"[i == n];
     }
-    __builtin_unreachable();
 }
 
 int main() {
