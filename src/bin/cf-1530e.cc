@@ -1,3 +1,4 @@
+#pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
  * Useful Macros
@@ -248,84 +249,140 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
 void prep() {}
 
-template <ll mdl> struct MLL {
-    ll val;
-    MLL(ll v = 0) : val(mod(v, mdl)) {}
-    friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
-    friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
-    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
-    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
-    friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
-    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
-    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
-    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
-    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
-    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
-};
-
-template <ll mdl>
-ostream& operator<<(ostream& out, const MLL<mdl>& num) {
-    return out << num.val;
-}
-
-template <ll mdl>
-istream& operator>>(istream& in, MLL<mdl>& num) {
-    return in >> num.val;
-}
-
 void solve() {
-    using ll = MLL<PRIME>;
-    read(int, n);
-    vector<vector<pii>> ch(n + 1);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        ch[u].emplace_back(v, i);
-        ch[v].emplace_back(u, i);
-    }
-    read(ll, e);
-    int root = -1;
-    int root_edge;
-    for (int i = 1; i <= n; ++i) {
-        if (ch[i].size() == 1) {
-            root = i;
-            root_edge = ch[i][0].second;
-            break;
+    read(string, a);
+    int n = a.size();
+    array<int, 26> slot {};
+    for (auto&& x : a) slot[x - 97] += 1;
+    int uq = 26 - count(slot.begin(), slot.end(), 0);
+    auto check = [&] (int k) -> optional<string> {
+        // only if uq >= 3
+        cerr << "Checking k = " << k << endl;
+        for (int i = 0; i < 26; ++i) {
+            if (!slot[i]) continue;
+            debug(i);
+            array<int, 26> slot1 = slot;
+            string res;
+            char mark = -1;
+            while (slot1[i]) {
+                int use = min(slot1[i], k + 1);
+                slot1[i] -= use;
+                res += string(use, char(i + 97));
+                if (res.size() == n) break;
+                int f = 0;
+                for (int j = 0; j < 26; ++j) {
+                    if (slot1[j] && j != mark && j != i) {
+                        res.push_back(j + 97);
+                        --slot1[j];
+                        if (mark == -1) {
+                            mark = j;
+                        }
+                        f = 1;
+                        break;
+                    }
+                }
+                if (f == 0) {
+                    goto fi;
+                }
+            }
+            for (int j = 0; j < 26; ++j) {
+                if (slot1[j]) res += string(slot1[j], char(j + 97));
+            }
+            assert(res.size() == n);
+            return res;
+        fi:
+            ;;
         }
-    }
-    if (root == -1) {
-        cout << -1 << '\n';
+        return nullopt;
+    };
+    char x = -1, y = -1;
+    auto check2 = [&] (int k, char x, char y) -> optional<string> {
+        for (int i = 0; i < 2; ++i) {
+            string res;
+            int cb = 0;
+            array<int, 26> slot1 = slot;
+            if (slot[x] < k + 1) {
+                res = string(slot[x], x + 97) + string(slot[y], y + 97);
+                return res;
+            } else {
+                res = string(k + 1, x + 97);
+                slot1[x] -= k + 1;
+                cb = k;
+                int flag = 1;
+                for (int i = k + 1; i < n; ++i) {
+                    if (cb == k) {
+                        if (!slot1[y]) {
+                            flag = 0;
+                            break;
+                        } else {
+                            --slot1[y];
+                            res.push_back(y + 97);
+                            cb = 0;
+                        }
+                    } else {
+                        if (!slot1[x]) {
+                            assert(slot1[y]);
+                            --slot1[y];
+                            res.push_back(y + 97);
+                            cb = 0;
+                        } else {
+                            --slot1[x];
+                            res.push_back(x + 97);
+                            cb += 1;
+                        }
+                    }
+                }
+                if (flag) {
+                    assert(res.size() == n);
+                    return res;
+                }
+            }
+            swap(x, y);
+        }
+        return nullopt;
+    };
+    if (uq == 1) {
+        cout << a << '\n';
+        return;
+    } else if (uq == 2) {
+        for (int i = 0; i < 26; ++i) {
+            if (!slot[i]) continue;
+            if (x != -1) {
+                y = i;
+                break;
+            } else {
+                x = i;
+            }
+        }
+        int l = 0, r = n;
+        while (l < r) {
+            int mid = l + r >> 1;
+            if (check2(mid, x, y) != nullopt) {
+                r = mid;
+            } else {
+                l = mid + 1;
+            }
+        }
+        cout << check2(l, x, y).value() << '\n';
         return;
     }
-    vector<int> dis(n + 1);
-    auto dfs = [&] (auto dfs, int v, int pa, int d) -> void {
-        dis[v] = d;
-        for (auto&& [u, _] : ch[v]) {
-            if (u == pa) continue;
-            dfs(dfs, u, v, d + 1);
-        }
-    };
-    dfs(dfs, root, 0, 0);
-    ll res = accumulate(dis.begin(), dis.end(), ll(0)) + *max_element(dis.begin(), dis.end());
-    ll target = e * n;
-    ll tar = (target - res) / n + 1;
-    int64_t tar_val = tar.val;
-    if (tar_val <= n + 2) {
-        tar_val += PRIME;
-    }
-    for (int i = 0; i < n - 1; ++i) {
-        if (i == root_edge) {
-        cout << tar_val << '\n';
+    int l = 0, r = n;
+    while (l < r) {
+        int mid = l + r >> 1;
+        if (check(mid) != nullopt) {
+            r = mid; 
         } else {
-            cout << 1 << '\n';
+            l = mid + 1;
         }
     }
+    cout << check(l).value() << '\n';
 }
 
 int main() {

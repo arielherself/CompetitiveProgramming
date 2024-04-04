@@ -1,3 +1,4 @@
+#pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
  * Useful Macros
@@ -248,84 +249,68 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
 void prep() {}
 
-template <ll mdl> struct MLL {
-    ll val;
-    MLL(ll v = 0) : val(mod(v, mdl)) {}
-    friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
-    friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
-    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
-    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
-    friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
-    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
-    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
-    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
-    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
-    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
+constexpr int charset[4] = {'A', 'N', 'O', 'T'};
+
+template<typename T>
+struct BIT {
+    int n;
+    vector<T> c;
+    BIT(size_t n) : n(n), c(n + 1) {}
+    void add(size_t i, const T& k) {
+        while (i <= n) {
+            c[i] += k;
+            i += lowbit(i);
+        }
+    }
+    T getsum(size_t i) {
+        T res = {};
+        while (i) {
+            res += c[i];
+            i -= lowbit(i);
+        }
+        return res;
+    }
 };
 
-template <ll mdl>
-ostream& operator<<(ostream& out, const MLL<mdl>& num) {
-    return out << num.val;
-}
-
-template <ll mdl>
-istream& operator>>(istream& in, MLL<mdl>& num) {
-    return in >> num.val;
-}
-
 void solve() {
-    using ll = MLL<PRIME>;
-    read(int, n);
-    vector<vector<pii>> ch(n + 1);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        ch[u].emplace_back(v, i);
-        ch[v].emplace_back(u, i);
+    read(string, a);
+    int n = a.size();
+    unordered_map<char, deque<int>, safe_hash> oc;
+    for (int i = 0; i < n; ++i) {
+        oc[a[i]].push_back(i);;
     }
-    read(ll, e);
-    int root = -1;
-    int root_edge;
-    for (int i = 1; i <= n; ++i) {
-        if (ch[i].size() == 1) {
-            root = i;
-            root_edge = ch[i][0].second;
-            break;
+    string res;
+    BIT<int> occ(n);
+    for (int i = 0; i < n; ++i) {
+        char mx;
+        int mx_v = -1;
+        for (auto&& c : charset) {
+            if (oc[c].size() && oc[c].front() - occ.getsum(oc[c].front()) > mx_v) {
+                mx_v = oc[c].front() - occ.getsum(oc[c].front());
+                mx = c;
+            }
         }
-    }
-    if (root == -1) {
-        cout << -1 << '\n';
-        return;
-    }
-    vector<int> dis(n + 1);
-    auto dfs = [&] (auto dfs, int v, int pa, int d) -> void {
-        dis[v] = d;
-        for (auto&& [u, _] : ch[v]) {
-            if (u == pa) continue;
-            dfs(dfs, u, v, d + 1);
+        assert(mx_v != -1);
+        debug(i), debug(mx), debug(mx_v);
+        cerr << "oc = ";
+        for (auto&& [u, v] : oc) {
+            cerr << "{" << u << ", ";
+            for (auto&& x : v) cerr << x << ' ';
+            cerr << "}, ";
         }
-    };
-    dfs(dfs, root, 0, 0);
-    ll res = accumulate(dis.begin(), dis.end(), ll(0)) + *max_element(dis.begin(), dis.end());
-    ll target = e * n;
-    ll tar = (target - res) / n + 1;
-    int64_t tar_val = tar.val;
-    if (tar_val <= n + 2) {
-        tar_val += PRIME;
+        cerr << endl;
+        res.push_back(mx);
+        oc[mx].pop_front();
+        occ.add(oc[mx].front(), 1);
     }
-    for (int i = 0; i < n - 1; ++i) {
-        if (i == root_edge) {
-        cout << tar_val << '\n';
-        } else {
-            cout << 1 << '\n';
-        }
-    }
+    cout << res << '\n';
 }
 
 int main() {

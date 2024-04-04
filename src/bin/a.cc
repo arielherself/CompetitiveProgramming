@@ -182,6 +182,22 @@ ll inverse(ll a, ll b) {
     return mod(x, b);
 }
 
+vector<tuple<int, int, ll>> decompose(ll x) {
+    vector<tuple<int, int, ll>> res;
+    for (int i = 2; i * i <= x; i++) {
+        if (x % i == 0) {
+            int cnt = 0;
+            ll pw = 1;
+            while (x % i == 0) ++cnt, x /= i, pw *= i;
+            res.emplace_back(i, cnt, pw);
+        }
+    }
+    if (x != 1) {
+        res.emplace_back(x, 1, x);
+    }
+    return res;
+}
+
 /* string algorithms */
 vector<int> calc_next(string t) {  // pi function of t
   int n = (int)t.length();
@@ -241,21 +257,21 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    read(int, n, m, k);
-    readvec(int, a, n);
-    readvec(int, b, m);
-    sort(a.begin(), a.end());
-    sort(b.begin(), b.end());
-    int res = 0;
-    for (int i = 0; i < n; ++i) {
-        int j = -1;
-        while (j + 1 < m && b[j + 1] + a[i] <= k) ++j;
-        res += j + 1;
+    read(int, n);
+    cout << "0 ";
+    for (int i = 1; i <= (n - 1) / 2; ++i) {
+        cout << i << ' ' << -i << ' ';
     }
-    cout << res << endl;
+    if (n % 2 == 0) {
+        cout << (n - 1) / 2 + 1;
+    }
+    cout << '\n';
 }
 
 int main() {
+#if __cplusplus < 201703L || defined(_MSC_VER) && !defined(__clang__)
+    assert(false && "incompatible compiler variant detected.");
+#endif
     untie, cout.tie(NULL);
     prep();
 #ifdef SINGLE_TEST_CASE

@@ -1,3 +1,4 @@
+#pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
  * Useful Macros
@@ -255,76 +256,42 @@ void dump() {}
 
 void prep() {}
 
-template <ll mdl> struct MLL {
-    ll val;
-    MLL(ll v = 0) : val(mod(v, mdl)) {}
-    friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
-    friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
-    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
-    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
-    friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
-    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
-    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
-    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
-    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
-    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
-};
-
-template <ll mdl>
-ostream& operator<<(ostream& out, const MLL<mdl>& num) {
-    return out << num.val;
-}
-
-template <ll mdl>
-istream& operator>>(istream& in, MLL<mdl>& num) {
-    return in >> num.val;
-}
-
 void solve() {
-    using ll = MLL<PRIME>;
-    read(int, n);
+    read(int, n, m);
+    vector<vector<pii>> ch1(n + 1);
+    while (m--) {
+        read(int, u, v, w);
+        ch1[u].emplace_back(v, w);
+        ch1[v].emplace_back(u, w);
+    }
     vector<vector<pii>> ch(n + 1);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        ch[u].emplace_back(v, i);
-        ch[v].emplace_back(u, i);
+    for (int v = 1; v <= n; ++v) {
+        for (auto&& [i, w1] : ch1[v]) {
+            for (auto&& [u, w2] : ch1[i]) {
+                if (u == v) continue;
+                ch[v].emplace_back(u, (w1 + w2) * (w1 + w2));
+                ch[u].emplace_back(v, (w1 + w2) * (w1 + w2));
+            }
+        }
     }
-    read(ll, e);
-    int root = -1;
-    int root_edge;
+    vector<bool> vis(n + 1);
+    vector<ll> dis(n + 1, INFLL);
+    priority_queue<pli, vector<pli>, greater<>> pq;
+    dis[1] = 0;
+    pq.emplace(0, 1);
+    while (pq.size()) {
+        poptop(pq, d, v);
+        continue_or(vis[v], 1);
+        // debug(v);
+        for (auto&& [u, w] : ch[v]) {
+            if (d + w < dis[u]) {
+                dis[u] = d + w;
+                pq.emplace(dis[u], u);
+            }
+        }
+    }
     for (int i = 1; i <= n; ++i) {
-        if (ch[i].size() == 1) {
-            root = i;
-            root_edge = ch[i][0].second;
-            break;
-        }
-    }
-    if (root == -1) {
-        cout << -1 << '\n';
-        return;
-    }
-    vector<int> dis(n + 1);
-    auto dfs = [&] (auto dfs, int v, int pa, int d) -> void {
-        dis[v] = d;
-        for (auto&& [u, _] : ch[v]) {
-            if (u == pa) continue;
-            dfs(dfs, u, v, d + 1);
-        }
-    };
-    dfs(dfs, root, 0, 0);
-    ll res = accumulate(dis.begin(), dis.end(), ll(0)) + *max_element(dis.begin(), dis.end());
-    ll target = e * n;
-    ll tar = (target - res) / n + 1;
-    int64_t tar_val = tar.val;
-    if (tar_val <= n + 2) {
-        tar_val += PRIME;
-    }
-    for (int i = 0; i < n - 1; ++i) {
-        if (i == root_edge) {
-        cout << tar_val << '\n';
-        } else {
-            cout << 1 << '\n';
-        }
+        cout << (dis[i] == INFLL ? -1 : dis[i]) << " \n"[i == n];
     }
 }
 

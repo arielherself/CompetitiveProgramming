@@ -1,4 +1,3 @@
-#pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
  * Useful Macros
@@ -182,6 +181,22 @@ ll inverse(ll a, ll b) {
     return mod(x, b);
 }
 
+vector<tuple<int, int, ll>> decompose(ll x) {
+    vector<tuple<int, int, ll>> res;
+    for (int i = 2; i * i <= x; i++) {
+        if (x % i == 0) {
+            int cnt = 0;
+            ll pw = 1;
+            while (x % i == 0) ++cnt, x /= i, pw *= i;
+            res.emplace_back(i, cnt, pw);
+        }
+    }
+    if (x != 1) {
+        res.emplace_back(x, 1, x);
+    }
+    return res;
+}
+
 /* string algorithms */
 vector<int> calc_next(string t) {  // pi function of t
   int n = (int)t.length();
@@ -242,23 +257,43 @@ void prep() {}
 
 void solve() {
     read(int, n);
-    readvec(ll, a, n);
-    for (int i = 1; i < n - 1; ++i) {
-        if (a[i - 1] < 0) {
-            cout << "NO\n";
-            return;
+    readvec(ll, a, n + 1);
+    vector<ll> ps(n + 2);
+    for (int i = 1; i <= n + 1; ++i) {
+        ps[i] = ps[i - 1] ^ a[i - 1];
+    }
+    vector<int> res(n + 2);
+    for (int i = 0; i <= n; ++i) {
+        if (ps[i] == a[i]) {
+            res[max(0, n - i - 1)] += 1;
         }
-        a[i] -= 2 * a[i - 1];
-        a[i + 1] -= a[i - 1];
     }
-    if (a[n - 1] != 0 || a[n - 2] != 0) {
-        cout << "NO\n";
-    } else {
-        cout << "YES\n";
+    int ptr = 0;
+    while (ptr <= n + 1 && res[ptr] == 2) {
+        res[ptr] = 0;
+        res[++ptr] += 1;
     }
+    int lo = 0;
+    for (int i = n + 1; ~i; --i) {
+        if (res[i] == 0) {
+            if (lo == 0) {
+                ;;
+            } else {
+                cout << 0;
+            }
+        } else {
+            lo = 1;
+            cout << 1;
+        }
+    }
+    if (lo == 0) cout << 0;
+    cout << '\n';
 }
 
 int main() {
+#if __cplusplus < 201703L || defined(_MSC_VER) && !defined(__clang__)
+    assert(false && "incompatible compiler variant detected.");
+#endif
     untie, cout.tie(NULL);
     prep();
 #ifdef SINGLE_TEST_CASE

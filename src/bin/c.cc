@@ -1,4 +1,3 @@
-#pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
  * Useful Macros
@@ -182,6 +181,22 @@ ll inverse(ll a, ll b) {
     return mod(x, b);
 }
 
+vector<tuple<int, int, ll>> decompose(ll x) {
+    vector<tuple<int, int, ll>> res;
+    for (int i = 2; i * i <= x; i++) {
+        if (x % i == 0) {
+            int cnt = 0;
+            ll pw = 1;
+            while (x % i == 0) ++cnt, x /= i, pw *= i;
+            res.emplace_back(i, cnt, pw);
+        }
+    }
+    if (x != 1) {
+        res.emplace_back(x, 1, x);
+    }
+    return res;
+}
+
 /* string algorithms */
 vector<int> calc_next(string t) {  // pi function of t
   int n = (int)t.length();
@@ -233,25 +248,66 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
 void prep() {}
 
-void solve() {
-    read(int, n);
-    read(string, a);
-    int res = 0;
-    for (int i = 2; i < n; ++i) {
-        if (a[i - 2] == 'p' && a[i - 1] == 'i' && a[i] == 'e') res += 1;
-        if (a[i - 2] == 'm' && a[i - 1] == 'a' && a[i] == 'p') res += 1, a[i] = 'x';
+template<typename T>
+struct BIT {
+    int n;
+    vector<T> c;
+    BIT(size_t n) : n(n), c(n + 1) {}
+    void add(size_t i, const T& k) {
+        while (i <= n) {
+            c[i] += k;
+            i += lowbit(i);
+        }
     }
-    cout << res << endl;
+    T getsum(size_t i) {
+        T res = {};
+        while (i) {
+            res += c[i];
+            i -= lowbit(i);
+        }
+        return res;
+    }
+};
+
+void solve() {
+    read(int, n, q);
+    BIT<int> tr(n);
+    for (int i = 1; i <= n; ++i) {
+        read(int, x);
+        tr.add(i, x);
+    }
+    while (q--) {
+        read(int, x, p);
+        tr.add(x, ll(p) - tr.getsum(x) + tr.getsum(x - 1));
+        int l = 0, r = lg2(n);
+        while (l < r) {
+            int mid = l + r >> 1;
+            if (tr.getsum(n - (1 << mid)) == 0) {
+                r = mid;
+            } else {
+                l = mid + 1;
+            }
+        }
+        // debug(l);
+        if (tr.getsum(n - (1 << l)) != 0) {
+            cout << (1 << l + 1) << '\n';
+        } else {
+            cout << (1 << l) << '\n';
+        }
+    }
 }
 
 int main() {
+#if __cplusplus < 201703L || defined(_MSC_VER) && !defined(__clang__)
+    assert(false && "incompatible compiler variant detected.");
+#endif
     untie, cout.tie(NULL);
     prep();
 #ifdef SINGLE_TEST_CASE
