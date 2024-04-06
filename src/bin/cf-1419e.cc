@@ -182,18 +182,25 @@ ll inverse(ll a, ll b) {
     return mod(x, b);
 }
 
-vector<tuple<int, int, ll>> decompose(ll x) {
-    vector<tuple<int, int, ll>> res;
-    for (int i = 2; i * i <= x; i++) {
+struct prime_factor {
+    ll factor;
+    int count;
+    ll total;
+};
+
+vector<prime_factor> decompose(ll x) {
+    // {factor, count, total}
+    vector<prime_factor> res;
+    for (ll i = 2; i * i <= x; i++) {
         if (x % i == 0) {
             int cnt = 0;
             ll pw = 1;
             while (x % i == 0) ++cnt, x /= i, pw *= i;
-            res.emplace_back(i, cnt, pw);
+            res.push_back({i, cnt, pw});
         }
     }
     if (x != 1) {
-        res.emplace_back(x, 1, x);
+        res.push_back({x, 1, x});
     }
     return res;
 }
@@ -256,114 +263,33 @@ void dump() {}
 
 void prep() {}
 
-void solve() {
-    read(int, n, x);
-    readvec(int, a, n);
-    vector<int> wall(n);
-    int res = -1;
-    auto update = [&n, &res] (const vector<int>& wall) -> void {
-        // debug(wall);
-        int st = 0;
-        int curr = 0;
-        for (int i = 0; i < n; ++i) {
-            if (wall[i] == 0) {
-                if (st == 0) {
-                    curr += 1;
-                }
-            } else if (wall[i] == 1) {
-                assert(st == 0);
-                st = 1;
-            } else {
-                st = 0;
-                curr += 1;
-            }
-        }
-        res = max(res, curr);
-    };
-    for (int k = 29; ~k; --k) {
-        int bit = (x >> k) & 1;
-        if (bit == 0) {
-            int open = -1;
-            for (int i = 0; i < n; ++i) {
-                if ((a[i] >> k) & 1) {
-                    if (open == -1) {
-                        open = i;
-                    } else {
-                        int st = 0;
-                        int valid = 1;
-                        for (int j = open; j <= i; ++j) {
-                            if (wall[j] == 1) {
-                                assert(st == 0);
-                                st = 1;
-                            } else if (wall[j] == 2) {
-                                if (st == 1) {
-                                    st = 0;
-                                } else {
-                                    valid = 0;
-                                    break;
-                                }
-                            }
-                        }
-                        if (!valid || st) {
-                            goto fi;
-                        } else {
-                            wall[open] = 1;
-                            wall[i] = 2;
-                            for (int j = open + 1; j < i; ++j) wall[j] = 0;
-                        }
-                        open = -1;
-                    }
-                }
-            }
-            if (open != -1) {
-                goto fi;
-            }
-        } else {
-            vector<int> new_wall = wall;
-            // consider restricting the current bit to 0
-            int f = 1;
-            int open = -1;
-            for (int i = 0; i < n; ++i) {
-                if ((a[i] >> k) & 1) {
-                    if (open == -1) {
-                        open = i;
-                    } else {
-                        int st = 0;
-                        int valid = 1;
-                        for (int j = open; j <= i; ++j) {
-                            if (wall[j] == 1) {
-                                assert(st == 0);
-                                st = 1;
-                            } else if (wall[j] == 2) {
-                                if (st == 1) {
-                                    st = 0;
-                                } else {
-                                    valid = 0;
-                                    break;
-                                }
-                            }
-                        }
-                        if (!valid || st) {
-                            f = 0;
-                            break;
-                        } else {
-                            new_wall[open] = 1;
-                            new_wall[i] = 2;
-                            for (int j = open + 1; j < i; ++j) new_wall[j] = 0;
-                        }
-                        open = -1;
-                    }
-                }
-            }
-            if (f && open == -1) {
-                update(new_wall);
-            }
-            // otherwise do nothing
+unordered_set<int, safe_hash> decompose_all(int x) {
+    int sq = sqrt(x);
+    unordered_set<int, safe_hash> res;
+    for (int i = 2; i <= sq; ++i) {
+        if (x % i == 0 && i != x) {
+            res.insert(i), res.insert(x / i);
         }
     }
-    update(wall);
-    fi:;;
-    cout << res << '\n';
+    return res;
+}
+void solve() {
+    read(int, n);
+    auto prime_facts = decompose(n);
+    auto facts = decompose_all(n);
+    vector<pair<int, vector<int>>> slots;
+    for (auto&& [factor, count, tot] : prime_facts) {
+        slots.emplace_back(factor, vector<int>());
+        for (auto&& x : facts) {
+            if (x % factor == 0) {
+                slots.back().second.push_back(x);
+                facts.erase(x);
+            }
+        }
+    }
+    for (auto&& [f, s] : slots) {
+        cerr << "f = " << f << ", v = " << s << endl;
+    }
 }
 
 int main() {

@@ -249,7 +249,7 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
@@ -257,113 +257,30 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    read(int, n, x);
+    read(int, n);
     readvec(int, a, n);
-    vector<int> wall(n);
-    int res = -1;
-    auto update = [&n, &res] (const vector<int>& wall) -> void {
-        // debug(wall);
-        int st = 0;
-        int curr = 0;
-        for (int i = 0; i < n; ++i) {
-            if (wall[i] == 0) {
-                if (st == 0) {
-                    curr += 1;
-                }
-            } else if (wall[i] == 1) {
-                assert(st == 0);
-                st = 1;
-            } else {
-                st = 0;
-                curr += 1;
+    vector<tuple<int, int, int>> ops;
+    if (n % 2 == 1) {
+        for (int t = 0; t < 2; ++t) {
+            for (int i = 1; i < n; i += 2) {
+                ops.emplace_back(0, i, i + 1);
             }
         }
-        res = max(res, curr);
-    };
-    for (int k = 29; ~k; --k) {
-        int bit = (x >> k) & 1;
-        if (bit == 0) {
-            int open = -1;
-            for (int i = 0; i < n; ++i) {
-                if ((a[i] >> k) & 1) {
-                    if (open == -1) {
-                        open = i;
-                    } else {
-                        int st = 0;
-                        int valid = 1;
-                        for (int j = open; j <= i; ++j) {
-                            if (wall[j] == 1) {
-                                assert(st == 0);
-                                st = 1;
-                            } else if (wall[j] == 2) {
-                                if (st == 1) {
-                                    st = 0;
-                                } else {
-                                    valid = 0;
-                                    break;
-                                }
-                            }
-                        }
-                        if (!valid || st) {
-                            goto fi;
-                        } else {
-                            wall[open] = 1;
-                            wall[i] = 2;
-                            for (int j = open + 1; j < i; ++j) wall[j] = 0;
-                        }
-                        open = -1;
-                    }
-                }
+    } else {
+        int s = 0;
+        for (auto&& x : a) s ^= x;
+        if (s) {
+            cout << "NO\n";
+            return;
+        }
+        for (int t = 0; t < 2; ++t) {
+            for (int i = 2; i < n; i += 2) {
+                ops.emplace_back(1, i, i + 1);
             }
-            if (open != -1) {
-                goto fi;
-            }
-        } else {
-            vector<int> new_wall = wall;
-            // consider restricting the current bit to 0
-            int f = 1;
-            int open = -1;
-            for (int i = 0; i < n; ++i) {
-                if ((a[i] >> k) & 1) {
-                    if (open == -1) {
-                        open = i;
-                    } else {
-                        int st = 0;
-                        int valid = 1;
-                        for (int j = open; j <= i; ++j) {
-                            if (wall[j] == 1) {
-                                assert(st == 0);
-                                st = 1;
-                            } else if (wall[j] == 2) {
-                                if (st == 1) {
-                                    st = 0;
-                                } else {
-                                    valid = 0;
-                                    break;
-                                }
-                            }
-                        }
-                        if (!valid || st) {
-                            f = 0;
-                            break;
-                        } else {
-                            new_wall[open] = 1;
-                            new_wall[i] = 2;
-                            for (int j = open + 1; j < i; ++j) new_wall[j] = 0;
-                        }
-                        open = -1;
-                    }
-                }
-            }
-            if (f && open == -1) {
-                update(new_wall);
-            }
-            // otherwise do nothing
         }
     }
-    update(wall);
-    fi:;;
-    cout << res << '\n';
+    cout << "YES\n" << ops.size() << '\n';
+    for (auto&& [x, y, z] : ops) cout << x + 1 << ' ' << y + 1 << ' ' << z + 1 << '\n';
 }
 
 int main() {

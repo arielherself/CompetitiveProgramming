@@ -257,113 +257,52 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    read(int, n, x);
-    readvec(int, a, n);
-    vector<int> wall(n);
-    int res = -1;
-    auto update = [&n, &res] (const vector<int>& wall) -> void {
-        // debug(wall);
-        int st = 0;
-        int curr = 0;
-        for (int i = 0; i < n; ++i) {
-            if (wall[i] == 0) {
-                if (st == 0) {
-                    curr += 1;
-                }
-            } else if (wall[i] == 1) {
-                assert(st == 0);
-                st = 1;
-            } else {
-                st = 0;
-                curr += 1;
-            }
-        }
-        res = max(res, curr);
+    read(ll, n, m);
+    vector<ll> res;
+    res.push_back(n);
+    // consider 0 1
+    auto get = [] (ll x, int k) -> int {
+        return (x >> k) & 1;
     };
-    for (int k = 29; ~k; --k) {
-        int bit = (x >> k) & 1;
-        if (bit == 0) {
-            int open = -1;
-            for (int i = 0; i < n; ++i) {
-                if ((a[i] >> k) & 1) {
-                    if (open == -1) {
-                        open = i;
-                    } else {
-                        int st = 0;
-                        int valid = 1;
-                        for (int j = open; j <= i; ++j) {
-                            if (wall[j] == 1) {
-                                assert(st == 0);
-                                st = 1;
-                            } else if (wall[j] == 2) {
-                                if (st == 1) {
-                                    st = 0;
-                                } else {
-                                    valid = 0;
-                                    break;
-                                }
-                            }
-                        }
-                        if (!valid || st) {
-                            goto fi;
-                        } else {
-                            wall[open] = 1;
-                            wall[i] = 2;
-                            for (int j = open + 1; j < i; ++j) wall[j] = 0;
-                        }
-                        open = -1;
-                    }
-                }
-            }
-            if (open != -1) {
-                goto fi;
-            }
-        } else {
-            vector<int> new_wall = wall;
-            // consider restricting the current bit to 0
-            int f = 1;
-            int open = -1;
-            for (int i = 0; i < n; ++i) {
-                if ((a[i] >> k) & 1) {
-                    if (open == -1) {
-                        open = i;
-                    } else {
-                        int st = 0;
-                        int valid = 1;
-                        for (int j = open; j <= i; ++j) {
-                            if (wall[j] == 1) {
-                                assert(st == 0);
-                                st = 1;
-                            } else if (wall[j] == 2) {
-                                if (st == 1) {
-                                    st = 0;
-                                } else {
-                                    valid = 0;
-                                    break;
-                                }
-                            }
-                        }
-                        if (!valid || st) {
-                            f = 0;
-                            break;
-                        } else {
-                            new_wall[open] = 1;
-                            new_wall[i] = 2;
-                            for (int j = open + 1; j < i; ++j) new_wall[j] = 0;
-                        }
-                        open = -1;
-                    }
-                }
-            }
-            if (f && open == -1) {
-                update(new_wall);
-            }
-            // otherwise do nothing
+    int pos = -1;
+    for (int i = 0; i < 63; ++i) {
+        if (get(n, i) == 0 && get(m, i) == 1) {
+            pos = i;
         }
     }
-    update(wall);
-    fi:;;
-    cout << res << '\n';
+    if (pos != -1) {
+        int pos10 = -1, pos11 = -1;
+        for (int i = pos + 1; i < 63; ++i) {
+            if (get(n, i) == 1 && get(m, i) == 0 && pos10 == -1) {
+                pos10 = i;
+            } else if (get(n, i) == 1 && pos11 == -1) {
+                pos11 = i;
+            }
+        }
+        if (pos10 == -1 || pos11 == -1) {
+            cout << -1 << '\n';
+            return;
+        }
+        ll mask = 1LL << pos10;
+        for (int i = pos; ~i; --i) {
+            if (get(n, i) == 0 && get(m, i) == 1) {
+                mask |= 1LL << i;
+            }
+        }
+        n ^= mask;
+        if (n != res.back()) res.push_back(n);
+    }
+    ll mask = 0;
+    for (int i = 0; i < 63; ++i) {
+        if (get(n, i) == 1 && get(m, i) == 0) {
+            mask |= 1LL << i;
+        }
+    }
+    n ^= mask;
+    if (n != res.back()) res.push_back(n);
+    assert(n == m);
+    cout << res.size() - 1 << '\n';
+    putvec(res);
 }
 
 int main() {

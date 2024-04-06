@@ -249,121 +249,168 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
+
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+    using size_type = uint64_t;
+    using info_type = Addable_Info_t;
+    using tag_type = Tag_t;
+    size_type _max;
+    vector<info_type> d;
+    vector<tag_type> b;
+
+    void pull(size_type p) {
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+
+    void push(size_type p) {
+        d[p * 2].apply(b[p]), d[p * 2 + 1].apply(b[p]);
+        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+        b[p] = tag_type();
+    }
+
+    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+        if (s == t) {
+            d[p] = c;
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        if (s != t) push(p);
+        if (x <= m) set(s, m, p * 2, x, c);
+        else set(m + 1, t, p * 2 + 1, x, c);
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+    
+    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+        if (l <= s && t <= r) {
+            d[p].apply(c);
+            b[p].apply(c);
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        push(p);
+        if (l <= m) range_apply(s, m, p * 2, l, r, c);
+        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
+        pull(p);
+    }
+
+    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+        if (l <= s && t <= r) {
+            return d[p];
+        }
+        size_type m = s + (t - s >> 1);
+        info_type res = {};
+        push(p);
+        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+        return res;
+    }
+
+    void build(const Sequence& a, size_type s, size_type t, size_type p) {
+        if (s == t) {
+            d[p] = a[s];
+            return;
+        }
+        int m = s + (t - s >> 1);
+        build(a, s, m, p * 2);
+        build(a, m + 1, t, p * 2 + 1);
+        pull(p);
+    }
+public:
+    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+    segtree(const Sequence& a) : segtree(a.size()) {
+        build(a, {}, _max, 1);
+    }
+
+    void set(size_type i, const info_type& c) {
+        set({}, _max, 1, i, c);
+    }
+    
+    void range_apply(size_type l, size_type r, const tag_type& c) {
+        range_apply({}, _max, 1, l, r, c);
+    }
+
+    void apply(size_type i, const tag_type& c) {
+        range_apply(i, i, c);
+    }
+
+    info_type range_query(size_type l, size_type r) {
+        return range_query({}, _max, 1, l, r);
+    }
+
+    info_type query(size_type i) {
+        return range_query(i, i);
+    }
+
+    Sequence serialize() {
+        Sequence res = {};
+        for (size_type i = 0; i <= _max; ++i) {
+            res.push_back(query(i));
+        }
+        return res;
+    }
+
+    const vector<info_type>& get_d() {
+        return d;
+    }
+};
+
+struct Add_Tag {
+    ll val = 0;
+    void apply(const Add_Tag& rhs) {
+        val += rhs.val;
+    }
+};
+
+struct Add_Info {
+    ll val = 0;
+    void apply(const Add_Tag& rhs) {
+        val += rhs.val;
+    }
+};
+
+Add_Info operator+(const Add_Info &a, const Add_Info &b) {
+    return {a.val + b.val};
+}
 
 void dump() {}
 
 void prep() {}
 
 void solve() {
-    read(int, n, x);
+    read(int, n);
     readvec(int, a, n);
-    vector<int> wall(n);
-    int res = -1;
-    auto update = [&n, &res] (const vector<int>& wall) -> void {
-        // debug(wall);
-        int st = 0;
-        int curr = 0;
-        for (int i = 0; i < n; ++i) {
-            if (wall[i] == 0) {
-                if (st == 0) {
-                    curr += 1;
-                }
-            } else if (wall[i] == 1) {
-                assert(st == 0);
-                st = 1;
-            } else {
-                st = 0;
-                curr += 1;
-            }
-        }
-        res = max(res, curr);
-    };
-    for (int k = 29; ~k; --k) {
-        int bit = (x >> k) & 1;
-        if (bit == 0) {
-            int open = -1;
-            for (int i = 0; i < n; ++i) {
-                if ((a[i] >> k) & 1) {
-                    if (open == -1) {
-                        open = i;
-                    } else {
-                        int st = 0;
-                        int valid = 1;
-                        for (int j = open; j <= i; ++j) {
-                            if (wall[j] == 1) {
-                                assert(st == 0);
-                                st = 1;
-                            } else if (wall[j] == 2) {
-                                if (st == 1) {
-                                    st = 0;
-                                } else {
-                                    valid = 0;
-                                    break;
-                                }
-                            }
-                        }
-                        if (!valid || st) {
-                            goto fi;
-                        } else {
-                            wall[open] = 1;
-                            wall[i] = 2;
-                            for (int j = open + 1; j < i; ++j) wall[j] = 0;
-                        }
-                        open = -1;
-                    }
-                }
-            }
-            if (open != -1) {
-                goto fi;
-            }
-        } else {
-            vector<int> new_wall = wall;
-            // consider restricting the current bit to 0
-            int f = 1;
-            int open = -1;
-            for (int i = 0; i < n; ++i) {
-                if ((a[i] >> k) & 1) {
-                    if (open == -1) {
-                        open = i;
-                    } else {
-                        int st = 0;
-                        int valid = 1;
-                        for (int j = open; j <= i; ++j) {
-                            if (wall[j] == 1) {
-                                assert(st == 0);
-                                st = 1;
-                            } else if (wall[j] == 2) {
-                                if (st == 1) {
-                                    st = 0;
-                                } else {
-                                    valid = 0;
-                                    break;
-                                }
-                            }
-                        }
-                        if (!valid || st) {
-                            f = 0;
-                            break;
-                        } else {
-                            new_wall[open] = 1;
-                            new_wall[i] = 2;
-                            for (int j = open + 1; j < i; ++j) new_wall[j] = 0;
-                        }
-                        open = -1;
-                    }
-                }
-            }
-            if (f && open == -1) {
-                update(new_wall);
-            }
-            // otherwise do nothing
-        }
+    segtree<Add_Info, Add_Tag> tr_number(n);
+    for (int i = 0; i < n; ++i) {
+        tr_number.set(i, {a[i]});
     }
-    update(wall);
-    fi:;;
-    cout << res << '\n';
+    ll diff = 0;
+    for (int i = 0; i < n - 1; ++i) {
+        diff += max(0, a[i + 1] - a[i]);
+    }
+    auto output = [&] () -> void {
+        ll res = INFLL;
+        ll a0 = tr_number.query(0).val;
+        // debug(diff), debug(a0);
+        for (auto&& x : {(a0 - diff) / 2, (a0 - diff + 1) / 2}) {
+            res = min(res, max(x + diff, a0 - x));
+        }
+        cout << res << '\n';
+    };
+    output();
+    read(int, q);
+    while (q--) {
+        read(int, l, r, x);
+        --l, --r;
+        if (l) diff -= max(ll(0), tr_number.query(l).val - tr_number.query(l - 1).val);
+        if (r + 1 < n) diff -= max(ll(0), tr_number.query(r + 1).val - tr_number.query(r).val);
+        tr_number.range_apply(l, r, {x});
+        if (l) diff += max(ll(0), tr_number.query(l).val - tr_number.query(l - 1).val);
+        if (r + 1 < n) diff += max(ll(0), tr_number.query(r + 1).val - tr_number.query(r).val);
+        output();
+    }
 }
 
 int main() {

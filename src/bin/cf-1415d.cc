@@ -269,7 +269,7 @@ void solve() {
                     res = min(res, i - j);
                     break;
                 }
-                if (msp(a[j]) == msp(a[j + 1])) {
+                if (msp(a[j]) == msp(a[j - 1])) {
                     break;
                 }
             }

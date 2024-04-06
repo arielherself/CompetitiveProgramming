@@ -257,113 +257,29 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    read(int, n, x);
-    readvec(int, a, n);
-    vector<int> wall(n);
-    int res = -1;
-    auto update = [&n, &res] (const vector<int>& wall) -> void {
-        // debug(wall);
-        int st = 0;
-        int curr = 0;
-        for (int i = 0; i < n; ++i) {
-            if (wall[i] == 0) {
-                if (st == 0) {
-                    curr += 1;
-                }
-            } else if (wall[i] == 1) {
-                assert(st == 0);
-                st = 1;
-            } else {
-                st = 0;
-                curr += 1;
-            }
+    read(int, n, k);
+    int ele = min(n, k);
+    int cnt = (n + ele - 1) / ele;
+    int rem = n;
+    for (int i = 0; i < cnt; ++i) {
+        int curr = min(rem, ele);
+        for (int j = i * ele + 2; j <= i * ele + curr; ++j) {
+            cout << j << ' ';
         }
-        res = max(res, curr);
-    };
-    for (int k = 29; ~k; --k) {
-        int bit = (x >> k) & 1;
-        if (bit == 0) {
-            int open = -1;
-            for (int i = 0; i < n; ++i) {
-                if ((a[i] >> k) & 1) {
-                    if (open == -1) {
-                        open = i;
-                    } else {
-                        int st = 0;
-                        int valid = 1;
-                        for (int j = open; j <= i; ++j) {
-                            if (wall[j] == 1) {
-                                assert(st == 0);
-                                st = 1;
-                            } else if (wall[j] == 2) {
-                                if (st == 1) {
-                                    st = 0;
-                                } else {
-                                    valid = 0;
-                                    break;
-                                }
-                            }
-                        }
-                        if (!valid || st) {
-                            goto fi;
-                        } else {
-                            wall[open] = 1;
-                            wall[i] = 2;
-                            for (int j = open + 1; j < i; ++j) wall[j] = 0;
-                        }
-                        open = -1;
-                    }
-                }
-            }
-            if (open != -1) {
-                goto fi;
-            }
-        } else {
-            vector<int> new_wall = wall;
-            // consider restricting the current bit to 0
-            int f = 1;
-            int open = -1;
-            for (int i = 0; i < n; ++i) {
-                if ((a[i] >> k) & 1) {
-                    if (open == -1) {
-                        open = i;
-                    } else {
-                        int st = 0;
-                        int valid = 1;
-                        for (int j = open; j <= i; ++j) {
-                            if (wall[j] == 1) {
-                                assert(st == 0);
-                                st = 1;
-                            } else if (wall[j] == 2) {
-                                if (st == 1) {
-                                    st = 0;
-                                } else {
-                                    valid = 0;
-                                    break;
-                                }
-                            }
-                        }
-                        if (!valid || st) {
-                            f = 0;
-                            break;
-                        } else {
-                            new_wall[open] = 1;
-                            new_wall[i] = 2;
-                            for (int j = open + 1; j < i; ++j) new_wall[j] = 0;
-                        }
-                        open = -1;
-                    }
-                }
-            }
-            if (f && open == -1) {
-                update(new_wall);
-            }
-            // otherwise do nothing
-        }
+        cout << i * ele + 1 << ' ';
+        rem -= ele;
     }
-    update(wall);
-    fi:;;
-    cout << res << '\n';
+    cout << '\n';
+    cout << cnt << '\n';
+    rem = n;
+    for (int i = 0; i < cnt; ++i) {
+        int curr = min(rem, ele);
+        for (int j = 0; j < curr; ++j) {
+            cout << i + 1 << ' ';
+        }
+        rem -= ele;
+    }
+    cout << '\n';
 }
 
 int main() {
