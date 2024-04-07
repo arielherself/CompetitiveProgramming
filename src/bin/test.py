@@ -1,10 +1,6 @@
-def diff(a, b):
-    n = len(a)
-    res = 0
-    for i in range(n):
-        if a[i] != b[i]:
-            for j in range(i + 1, n):
-                if b[j] == a[i]:
-                    res += j - i
-                    b = b[:i] + b[j] + b[i+1:j] + b[j+1:]
-    return res
+from random import randint
+print(100000)
+for _ in range(2):
+    for i in range(100000):
+        print(randint(0, 1), end='')
+    print()

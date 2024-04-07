@@ -249,7 +249,7 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
@@ -258,27 +258,41 @@ void prep() {}
 
 void solve() {
     read(int, n);
-    readvec(int, a, n);
-    auto get = [] (int n, int k) -> int {
-        return (n >> k) & 1;
-    };
-    for (int i = 30; ~i; --i) {
-        int cnt = 0;
-        for (auto&& x : a) cnt += get(x, i);
-        if (cnt & 1) {
-            if ((cnt / 2) & 1) {
-                if ((n - cnt) & 1) {
-                    cout << "WIN\n";
-                } else {
-                    cout << "LOSE\n";
-                }
-            } else {
-                cout << "WIN\n";
-            }
-            return;
+    read(string, s, t);
+    vector<int> a(n, -1);
+    for (int i = 0; i < n; ++i) {
+        if (s[i] == '0' && t[i] == '1') {
+            a[i] = 0;
+        } else if (s[i] == '1' && t[i] == '0') {
+            a[i] = 1;
         }
     }
-    cout << "DRAW\n";
+    if (count(a.begin(), a.end(), 1) != count(a.begin(), a.end(), 0)) {
+        cout << -1 << '\n';
+        return;
+    }
+    int cnt = 0;
+    int prev = -1;
+    vector<pii> slot;
+    for (int i = 0; i < n; ++i) {
+        if (a[i] == -1) continue;
+        if (a[i] != prev) {
+            if (cnt) slot.emplace_back(cnt, prev);
+            prev = a[i];
+            cnt = 0;
+        }
+        cnt += 1;
+    }
+    if (cnt) slot.emplace_back(cnt, prev);
+    int res = 0;
+    array<int, 2> dp {};
+    for (auto&& [x, type] : slot) {
+        int use = min(x, dp[1 ^ type]);
+        dp[type] += x;
+        dp[1 ^ type] -= use;
+        res += x - use;
+    }
+    cout << res << '\n';
 }
 
 int main() {
