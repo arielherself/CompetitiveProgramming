@@ -256,67 +256,77 @@ void dump() {}
 
 void prep() {}
 
-template <ll mdl> struct MLL {
-    ll val;
-    MLL(ll v = 0) : val(mod(v, mdl)) {}
-    friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
-    friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
-    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
-    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
-    friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
-    friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
-    friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
-    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
-    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
-    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
-    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
-    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
-};
-
-template <ll mdl>
-ostream& operator<<(ostream& out, const MLL<mdl>& num) {
-    return out << num.val;
-}
-
-template <ll mdl>
-istream& operator>>(istream& in, MLL<mdl>& num) {
-    return in >> num.val;
-}
-
-struct slice_hash {
-    using hash_type = pair<MLL<MDL1>, MLL<MDL2>>;
-    int n;
-    vector<MLL<MDL1>> pw1;
-    vector<MLL<MDL2>> pw2;
-    vector<MLL<MDL1>> hash1;
-    vector<MLL<MDL2>> hash2;
-    slice_hash(const string& s) : n(s.size()), pw1(n + 1), pw2(n + 1), hash1(n + 1), hash2(n + 1) {
-        constexpr int b = 31;
-        pw1[0] = 1, pw2[0] = 1;
-        for (int i = 1; i <= n; ++i) {
-            hash1[i] = hash1[i - 1] + s[i - 1] * pw1[i - 1];
-            hash2[i] = hash2[i - 1] + s[i - 1] * pw2[i - 1];
-            pw1[i] = pw1[i - 1] * b;
-            pw2[i] = pw2[i - 1] * b;
+void solve() {
+    read(int, n);
+    vector<int> ind(n + 1);
+    vector<int> ch(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        read(int, v);
+        ch[i] = v;
+        ind[v] += 1;
+    }
+    deque<int> dq;
+    for (int i = 1; i <= n; ++i) {
+        if (ind[i] == 0) {
+            dq.push_back(i);
         }
     }
-
-    // query [l, r]
-    hash_type hash(int l, int r) {
-        return { (hash1[r + 1] - hash1[l]) / pw1[l], (hash2[r + 1] - hash2[l]) / pw2[l] };
+    vector<bool> has_0(n + 1);
+    vector<bool> choose(n + 1);
+    vector<bool> vis(n + 1);
+    while (dq.size()) {
+        int v = dq.front(); dq.pop_front();
+        vis[v] = 1;
+        if (has_0[v]) {
+            choose[v] = 1;
+        }
+        int u = ch[v];
+        if (choose[v] == 0) {
+            has_0[u] = 1;
+        }
+        if (--ind[u] == 0) {
+            dq.push_back(u);
+        }
     }
-};
-
-void solve() {
-    auto oddcount = [] (ll a, ll b) -> ll {
-        return (b - a) / 2 + (a & 1 | b & 1);
+    vector<int> td;
+    for (int i = 1; i <= n; ++i) {
+        if (!vis[i]) {
+            if (has_0[i]) {
+                choose[i] = 1;
+                vis[i] = 1;
+                td.push_back(i);
+            }
+        }
+    }
+    auto dfs = [&] (auto dfs, int v, int col) -> void {
+        vis[v] = 1;
+        if (choose[v] == 0) {
+            choose[v] = col;
+        }
+        int u = ch[v];
+        if (!vis[u]) {
+            dfs(dfs, u, 1 ^ choose[v]);
+        }
     };
-    debug(oddcount(2, 3));
-    debug(oddcount(1, 3));
-    debug(oddcount(1, 2));
-    debug(oddcount(2, 5));
-    debug(oddcount(1, 5));
-    debug(oddcount(1, 4));
+    for (auto&& v : td) {
+        dfs(dfs, v, 1);
+    }
+    for (int i = 1; i <= n; ++i) {
+        if (!vis[i]) {
+            if (ind[i] == 1 && ch[i] == i) {
+                cout << -1 << '\n';
+                return;
+            }
+            dfs(dfs, i, 1);
+        }
+    }
+    assert(count(vis.begin() + 1, vis.end(), 0) == 0);
+    vector<int> res;
+    for (int i = 1; i <= n; ++i) {
+        if (!choose[i]) res.push_back(ch[i]);
+    }
+    cout << res.size() << '\n';
+    putvec(res);
 }
 
 int main() {

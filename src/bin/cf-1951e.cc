@@ -249,74 +249,88 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
 void prep() {}
 
-template <ll mdl> struct MLL {
-    ll val;
-    MLL(ll v = 0) : val(mod(v, mdl)) {}
-    friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
-    friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
-    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
-    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
-    friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
-    friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
-    friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
-    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
-    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
-    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
-    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
-    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
-};
-
-template <ll mdl>
-ostream& operator<<(ostream& out, const MLL<mdl>& num) {
-    return out << num.val;
-}
-
-template <ll mdl>
-istream& operator>>(istream& in, MLL<mdl>& num) {
-    return in >> num.val;
-}
-
-struct slice_hash {
-    using hash_type = pair<MLL<MDL1>, MLL<MDL2>>;
-    int n;
-    vector<MLL<MDL1>> pw1;
-    vector<MLL<MDL2>> pw2;
-    vector<MLL<MDL1>> hash1;
-    vector<MLL<MDL2>> hash2;
-    slice_hash(const string& s) : n(s.size()), pw1(n + 1), pw2(n + 1), hash1(n + 1), hash2(n + 1) {
-        constexpr int b = 31;
-        pw1[0] = 1, pw2[0] = 1;
-        for (int i = 1; i <= n; ++i) {
-            hash1[i] = hash1[i - 1] + s[i - 1] * pw1[i - 1];
-            hash2[i] = hash2[i - 1] + s[i - 1] * pw2[i - 1];
-            pw1[i] = pw1[i - 1] * b;
-            pw2[i] = pw2[i - 1] * b;
+void solve() {
+    read(string, a);
+    int n = a.size();
+    int palindrome = 1;
+    for (int i = 0; n - 1 - i > i; ++i) {
+        if (a[i] != a[n - 1 - i]) {
+            palindrome = 0;
+            break;
         }
     }
-
-    // query [l, r]
-    hash_type hash(int l, int r) {
-        return { (hash1[r + 1] - hash1[l]) / pw1[l], (hash2[r + 1] - hash2[l]) / pw2[l] };
+    if (!palindrome) {
+        cout << "YES\n1\n" << a << '\n';
+    } else {
+        char c = a[0];
+        int len = -1;
+        for (int i = 0; i < n; ++i) {
+            if (a[i] != c) {
+                len = i;
+                break;
+            }
+        }
+        if (len == -1) {
+            cout << "NO\n";
+            return;
+        }
+        int prev_pos = -1;
+        int cnt = 0;
+        for (int i = 000; i < n; ++i) {
+            if (a[i] != c) {
+                if (i - prev_pos - 1 != len) {
+                    cout << "YES\n2\n";
+                    cout << a.substr(0, i) << ' ' << a.substr(i) << '\n';
+                    return;
+                } else {
+                    prev_pos = i;
+                    cnt += 1;
+                }
+            }
+        }
+        if (cnt < 2) {
+            cout << "NO\n";
+        } else if (len > 1) {
+            int cnt = 0;
+            unordered_set<char, safe_hash> ct;
+            for (int i = 0; i < n; ++i) {
+                if (a[i] != c) {
+                    ct.insert(a[i]);
+                    cnt += 1;
+                    if (cnt == 2) {
+                        cout << "YES\n2\n";
+                        cout << a.substr(0, i - 1) << ' ' << a.substr(i - 1) << '\n';
+                        return;
+                    }
+                }
+            }
+        } else {
+            unordered_set<char, safe_hash> ct;
+            for (int i = 0; i < n; ++i) {
+                if (a[i] != c) ct.insert(a[i]);
+            }
+            if (ct.size() == 1) {
+                cout << "NO\n";
+            } else {
+                cout << "YES\n2\n";
+                int last_pos = 0;
+                for (int i = n - 1; ~i; --i) {
+                    if (a[i] != c) {
+                        last_pos = i;
+                        break;
+                    }
+                }
+                cout << a.substr(0, last_pos) << ' ' << a.substr(last_pos) << '\n';
+            }
+        }
     }
-};
-
-void solve() {
-    auto oddcount = [] (ll a, ll b) -> ll {
-        return (b - a) / 2 + (a & 1 | b & 1);
-    };
-    debug(oddcount(2, 3));
-    debug(oddcount(1, 3));
-    debug(oddcount(1, 2));
-    debug(oddcount(2, 5));
-    debug(oddcount(1, 5));
-    debug(oddcount(1, 4));
 }
 
 int main() {

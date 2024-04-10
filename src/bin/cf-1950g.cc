@@ -249,74 +249,96 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
 void prep() {}
 
-template <ll mdl> struct MLL {
-    ll val;
-    MLL(ll v = 0) : val(mod(v, mdl)) {}
-    friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
-    friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
-    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
-    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
-    friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
-    friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
-    friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
-    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
-    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
-    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
-    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
-    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
-};
-
-template <ll mdl>
-ostream& operator<<(ostream& out, const MLL<mdl>& num) {
-    return out << num.val;
-}
-
-template <ll mdl>
-istream& operator>>(istream& in, MLL<mdl>& num) {
-    return in >> num.val;
-}
-
-struct slice_hash {
-    using hash_type = pair<MLL<MDL1>, MLL<MDL2>>;
-    int n;
-    vector<MLL<MDL1>> pw1;
-    vector<MLL<MDL2>> pw2;
-    vector<MLL<MDL1>> hash1;
-    vector<MLL<MDL2>> hash2;
-    slice_hash(const string& s) : n(s.size()), pw1(n + 1), pw2(n + 1), hash1(n + 1), hash2(n + 1) {
-        constexpr int b = 31;
-        pw1[0] = 1, pw2[0] = 1;
-        for (int i = 1; i <= n; ++i) {
-            hash1[i] = hash1[i - 1] + s[i - 1] * pw1[i - 1];
-            hash2[i] = hash2[i - 1] + s[i - 1] * pw2[i - 1];
-            pw1[i] = pw1[i - 1] * b;
-            pw2[i] = pw2[i - 1] * b;
-        }
+class quick_union {
+private:
+    vector<size_t> c;
+public:
+    quick_union(size_t n) : c(n) {
+        iota(c.begin(), c.end(), 0);
+    }
+    
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    
+    void merge(size_t i, size_t j) {
+        c[query(i)] = query(j);
     }
 
-    // query [l, r]
-    hash_type hash(int l, int r) {
-        return { (hash1[r + 1] - hash1[l]) / pw1[l], (hash2[r + 1] - hash2[l]) / pw2[l] };
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
     }
 };
 
 void solve() {
-    auto oddcount = [] (ll a, ll b) -> ll {
-        return (b - a) / 2 + (a & 1 | b & 1);
+    read(int, n);
+    unordered_map<string, int> a_map, b_map;
+    // vector<int> a, b;
+    vector<pii> a;
+    int cnt_a = 0, cnt_b = 0;
+    for (int i = 0; i < n; ++i) {
+        read(string, x, y);
+        if (!a_map.count(x)) {
+            a_map[x] = cnt_a++;
+        }
+        // a.push_back(a_map[x]);
+        if (!b_map.count(y)) {
+            b_map[y] = cnt_b++;
+        }
+        // b.push_back(b_map[y]);
+        a.emplace_back(a_map[x], b_map[y]);
+    }
+    int res = 0;
+    auto serialize = [&] (const pii& x) {
+        return x.first * n + x.first;
     };
-    debug(oddcount(2, 3));
-    debug(oddcount(1, 3));
-    debug(oddcount(1, 2));
-    debug(oddcount(2, 5));
-    debug(oddcount(1, 5));
-    debug(oddcount(1, 4));
+    for (int mask = 0; mask < (1 << n); ++mask) {
+        unordered_set<int, safe_hash> a_oc, b_oc;
+        quick_union qu(n * n);
+        for (int i = 0; i < n; ++i) {
+            for (int j = i + 1; j < n; ++j) {
+                if (((mask >> i) & 1) && ((mask >> j) & 1) && (a[i].first == a[j].first || a[i].second == a[j].second)) {
+                    qu.merge(serialize(a[i]), serialize(a[j]));
+                }
+            }
+            // if ((mask >> i) & 1) {
+            //     a_oc.insert(a[i]), b_oc.insert(b[i]);
+            //     qu.merge(a[i] * n, b[i]);
+            // }
+        }
+        int connected = 1;
+        // for (auto&& x : a_oc) {
+        //     for (auto&& y : b_oc) {
+        //         if (!qu.connected(x * n, y)) {
+        //             connected = 0;
+        //             break;
+        //         }
+        //     }
+        // }
+        for (int i = 0; i < n; ++i) {
+            for (int j = i + 1; j < n; ++j) {
+                if (((mask >> i) & 1) && ((mask >> j) & 1)) {
+                    if (!qu.connected(serialize(a[i]), serialize(a[j]))) {
+                        connected = 0;
+                        break;
+                    }
+                }
+            }
+        }
+        if (connected) {
+            // debug(mask), debug(popcount(mask));
+            res = max(res, popcount(mask));
+        }
+    }
+    cout << n - res << '\n';
 }
 
 int main() {

@@ -249,7 +249,7 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
@@ -308,15 +308,85 @@ struct slice_hash {
 };
 
 void solve() {
+    // cerr << endl;
+    read(int, n, q);
+    read(string, a);
+    vector<int> even(n / 2 + 1), odd(n / 2 + 1);
+    vector<int> diff(n + 1);
+    for (int i = 2;i < n; i += 2) {
+        if (a[i] != a[i - 2] || a[i + 1] != a[i - 1]) {
+            even[i / 2] = even[i / 2 - 1] + 1;
+        } else {
+            even[i / 2] = even[i / 2 - 1];
+        }
+    }
+    for (int i = 3; i < n; i += 2) {
+        if (a[i] != a[i - 2] || a[i + 1] != a[i - 1]) {
+            odd[i / 2] = odd[i / 2 - 1] + 1;
+        } else {
+            odd[i / 2] = odd[i / 2 - 1];
+        }
+    }
+    for (int i = 1; i <= n; ++i) {
+        diff[i] = diff[i - 1] + (a[i] != a[i - 1]);
+    }
+    string rev_a(a.rbegin(), a.rend());
+    slice_hash a_hash(a), rev_a_hash(rev_a);
+    auto odds = [] (ll a, ll b) -> ll {
+        if (a % 2 == 0) a += 1;
+        if (b % 2 == 0) b -= 1;
+        if (a > b) return 0;
+        ll odd_sum = ((b + 1) / 2) * ((b + 1) / 2) - ((a - 1) / 2) * ((a - 1) / 2);
+        return odd_sum;
+    };
     auto oddcount = [] (ll a, ll b) -> ll {
         return (b - a) / 2 + (a & 1 | b & 1);
     };
-    debug(oddcount(2, 3));
-    debug(oddcount(1, 3));
-    debug(oddcount(1, 2));
-    debug(oddcount(2, 5));
-    debug(oddcount(1, 5));
-    debug(oddcount(1, 4));
+    while (q--) {
+        read(ll, l, r);
+        --l, --r;
+        ll l1 = l, r1 = (l + r) / 2, l2 = (l + r + 1) / 2, r2 = r;
+        // int res = r - l + 1 - 2 + 1;
+        ll res = (2 + r - l + 1) * (r - l) / 2;
+        // debug(l1), debug(r1), debug(n - 1 - r2), debug(n - 1 - l2);
+        // debug(a_hash.hash(l1, r1)), debug(rev_a_hash.hash(n - 1 - r2, n - 1 - l2));
+        if (a_hash.hash(l1, r1) == rev_a_hash.hash(n - 1 - r2, n - 1 - l2)) {
+            res -= r - l + 1;
+        }
+        if (diff[r] == diff[l]) {
+            res = 0;
+        } else if (r >= l + 2) {
+            int raw_r = r;
+            if (l % 2) {
+                if (r % 2) {
+                    r -= 2;
+                } else {
+                    r -= 1;
+                }
+                // debug("here");
+                if (odd[l / 2] == odd[r / 2] && (raw_r % 2 == 0 || a[l] == a[raw_r])) {
+                    // debug("remove");
+                    res -= odds(2, raw_r - l);
+                }
+            } else {
+                if (r % 2 == 0) {
+                    r -= 2;
+                } else {
+                    r -= 1;
+                }
+                // debug(even);
+                // debug(a[l]), debug(a[r + 2]);
+                // debug(raw_r);
+                // debug(even[l / 2] == even[r / 2]);
+                // debug(r % 2 == 1);
+                // debug(a[l] == a[raw_r]);
+                if (even[l / 2] == even[r / 2] && (raw_r % 2 == 1 || a[l] == a[raw_r])) {
+                    res -= odds(2, raw_r - l);
+                }
+            }
+        }
+        cout << res << '\n';
+    }
 }
 
 int main() {

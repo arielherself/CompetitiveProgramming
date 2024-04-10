@@ -249,74 +249,17 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
 void prep() {}
 
-template <ll mdl> struct MLL {
-    ll val;
-    MLL(ll v = 0) : val(mod(v, mdl)) {}
-    friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
-    friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
-    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
-    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
-    friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
-    friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
-    friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
-    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
-    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
-    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
-    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
-    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
-};
-
-template <ll mdl>
-ostream& operator<<(ostream& out, const MLL<mdl>& num) {
-    return out << num.val;
-}
-
-template <ll mdl>
-istream& operator>>(istream& in, MLL<mdl>& num) {
-    return in >> num.val;
-}
-
-struct slice_hash {
-    using hash_type = pair<MLL<MDL1>, MLL<MDL2>>;
-    int n;
-    vector<MLL<MDL1>> pw1;
-    vector<MLL<MDL2>> pw2;
-    vector<MLL<MDL1>> hash1;
-    vector<MLL<MDL2>> hash2;
-    slice_hash(const string& s) : n(s.size()), pw1(n + 1), pw2(n + 1), hash1(n + 1), hash2(n + 1) {
-        constexpr int b = 31;
-        pw1[0] = 1, pw2[0] = 1;
-        for (int i = 1; i <= n; ++i) {
-            hash1[i] = hash1[i - 1] + s[i - 1] * pw1[i - 1];
-            hash2[i] = hash2[i - 1] + s[i - 1] * pw2[i - 1];
-            pw1[i] = pw1[i - 1] * b;
-            pw2[i] = pw2[i - 1] * b;
-        }
-    }
-
-    // query [l, r]
-    hash_type hash(int l, int r) {
-        return { (hash1[r + 1] - hash1[l]) / pw1[l], (hash2[r + 1] - hash2[l]) / pw2[l] };
-    }
-};
-
 void solve() {
-    auto oddcount = [] (ll a, ll b) -> ll {
-        return (b - a) / 2 + (a & 1 | b & 1);
-    };
-    debug(oddcount(2, 3));
-    debug(oddcount(1, 3));
-    debug(oddcount(1, 2));
-    debug(oddcount(2, 5));
-    debug(oddcount(1, 5));
-    debug(oddcount(1, 4));
+    read(int, n);
+    readvec(int, a, n);
+    
 }
 
 int main() {
