@@ -249,151 +249,69 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
 void prep() {}
 
-template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
-private:
-    using size_type = uint64_t;
-    using info_type = Addable_Info_t;
-    using tag_type = Tag_t;
-    size_type _max;
-    vector<info_type> d;
-    vector<tag_type> b;
-
-    void pull(size_type p) {
-        d[p] = d[p * 2] + d[p * 2 + 1];
-    }
-
-    void push(size_type p, size_type left_len, size_type right_len) {
-        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
-        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
-        b[p] = tag_type();
-    }
-
-    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
-        if (s == t) {
-            d[p] = c;
-            return;
-        }
-        size_type m = s + (t - s >> 1);
-        if (s != t) push(p, m - s + 1, t - m);
-        if (x <= m) set(s, m, p * 2, x, c);
-        else set(m + 1, t, p * 2 + 1, x, c);
-        d[p] = d[p * 2] + d[p * 2 + 1];
-    }
-    
-    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
-        if (l <= s && t <= r) {
-            d[p].apply(c, t - s + 1);
-            b[p].apply(c);
-            return;
-        }
-        size_type m = s + (t - s >> 1);
-        push(p, m - s + 1, t - m);
-        if (l <= m) range_apply(s, m, p * 2, l, r, c);
-        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
-        pull(p);
-    }
-
-    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
-        if (l <= s && t <= r) {
-            return d[p];
-        }
-        size_type m = s + (t - s >> 1);
-        info_type res = {};
-        push(p, m - s + 1, t - m);
-        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
-        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
-        return res;
-    }
-
-    void build(const Sequence& a, size_type s, size_type t, size_type p) {
-        if (s == t) {
-            d[p] = a[s];
-            return;
-        }
-        int m = s + (t - s >> 1);
-        build(a, s, m, p * 2);
-        build(a, m + 1, t, p * 2 + 1);
-        pull(p);
-    }
-public:
-    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
-    segtree(const Sequence& a) : segtree(a.size()) {
-        build(a, {}, _max, 1);
-    }
-
-    void set(size_type i, const info_type& c) {
-        set({}, _max, 1, i, c);
-    }
-    
-    void range_apply(size_type l, size_type r, const tag_type& c) {
-        range_apply({}, _max, 1, l, r, c);
-    }
-
-    void apply(size_type i, const tag_type& c) {
-        range_apply(i, i, c);
-    }
-
-    info_type range_query(size_type l, size_type r) {
-        return range_query({}, _max, 1, l, r);
-    }
-
-    info_type query(size_type i) {
-        return range_query(i, i);
-    }
-
-    Sequence serialize() {
-        Sequence res = {};
-        for (size_type i = 0; i <= _max; ++i) {
-            res.push_back(query(i));
-        }
-        return res;
-    }
-
-    const vector<info_type>& get_d() {
-        return d;
-    }
+struct Node {
+    int left, right;
 };
-
-struct Set_Tag {
-    ll val = -1;
-    void apply(const Set_Tag& rhs) {
-        if (rhs.val != -1)
-        val = rhs.val;
-    }
-};
-
-struct Set_Info {
-    ll val = 0;
-    void apply(const Set_Tag& rhs, size_t len) {
-        if (rhs.val != -1)
-        val = rhs.val * len;
-    }
-};
-
-Set_Info operator+(const Set_Info &a, const Set_Info &b) {
-    return {a.val + b.val};
-}
 
 void solve() {
-    segtree<Set_Info, Set_Tag> tr(5);
-    tr.range_apply(0, 3, {1});
-    for (auto&& x : tr.serialize()) {
-        cerr << x.val << ' ';
+    read(int, n);
+    readvec(int, a, n);
+    readvec(int, d, n);
+    vector<Node> pos(n);
+    pos[0].left = -1;
+    pos[n - 1].right = -1;
+    for (int i = 0; i < n; ++i) {
+        if (i != n - 1) {
+            pos[i].right = i + 1;
+        }
+        if (i != 0) {
+            pos[i].left = i - 1;
+        }
     }
-    cerr << endl;
-    assert(tr.range_query(0, 4).val == 4);
-    tr.set(3, {2});
-    for (auto&& x : tr.serialize()) {
-        cerr << x.val << ' ';
+    unordered_set<int, safe_hash> open;
+    for (int i = 0; i < n; ++i) {
+        open.emplace(i);
     }
-    cerr << endl;
+    vector<int> res;
+    for (int t = 0; t < n; ++t) {
+        unordered_set<int, safe_hash> new_open;
+        unordered_set<int, safe_hash> remove;
+        int curr = 0;
+        for (auto&& i : open) {
+            int attack = 0;
+            if (pos[i].left != -1) {
+                attack += a[pos[i].left];
+            }
+            if (pos[i].right != -1) {
+                attack += a[pos[i].right];
+            }
+            if (attack > d[i]) {
+                curr += 1;
+                remove.emplace(i);
+                if (pos[i].left != -1) new_open.emplace(pos[i].left);
+                if (pos[i].right != -1) new_open.emplace(pos[i].right);
+            }
+        }
+        res.emplace_back(curr);
+        open = new_open;
+        for (auto&& i : remove) {
+            if (pos[i].left != -1) {
+                pos[pos[i].left].right = pos[i].right;
+            }
+            if (pos[i].right != -1) {
+                pos[pos[i].right].left = pos[i].left;
+            }
+            open.erase(i);
+        }
+    }
+    putvec(res);
 }
 
 int main() {

@@ -249,151 +249,74 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
+
+template <ll mdl> struct MLL {
+    ll val;
+    MLL(ll v = 0) : val(mod(v, mdl)) {}
+    friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
+    friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
+    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
+    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
+    friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
+    friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
+    friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
+    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
+    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
+    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
+    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
+    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
+};
+
+template <ll mdl>
+ostream& operator<<(ostream& out, const MLL<mdl>& num) {
+    return out << num.val;
+}
+
+template <ll mdl>
+istream& operator>>(istream& in, MLL<mdl>& num) {
+    return in >> num.val;
+}
 
 void dump() {}
 
-void prep() {}
+constexpr int MAXN = 4e6 + 10;
 
-template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
-private:
-    using size_type = uint64_t;
-    using info_type = Addable_Info_t;
-    using tag_type = Tag_t;
-    size_type _max;
-    vector<info_type> d;
-    vector<tag_type> b;
-
-    void pull(size_type p) {
-        d[p] = d[p * 2] + d[p * 2 + 1];
+MLL<PRIME> fact[MAXN];
+void prep() {
+    fact[0] = 1;
+    for (int i = 1; i < MAXN; ++i) {
+        fact[i] = fact[i - 1] * i;
     }
-
-    void push(size_type p, size_type left_len, size_type right_len) {
-        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
-        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
-        b[p] = tag_type();
-    }
-
-    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
-        if (s == t) {
-            d[p] = c;
-            return;
-        }
-        size_type m = s + (t - s >> 1);
-        if (s != t) push(p, m - s + 1, t - m);
-        if (x <= m) set(s, m, p * 2, x, c);
-        else set(m + 1, t, p * 2 + 1, x, c);
-        d[p] = d[p * 2] + d[p * 2 + 1];
-    }
-    
-    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
-        if (l <= s && t <= r) {
-            d[p].apply(c, t - s + 1);
-            b[p].apply(c);
-            return;
-        }
-        size_type m = s + (t - s >> 1);
-        push(p, m - s + 1, t - m);
-        if (l <= m) range_apply(s, m, p * 2, l, r, c);
-        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
-        pull(p);
-    }
-
-    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
-        if (l <= s && t <= r) {
-            return d[p];
-        }
-        size_type m = s + (t - s >> 1);
-        info_type res = {};
-        push(p, m - s + 1, t - m);
-        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
-        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
-        return res;
-    }
-
-    void build(const Sequence& a, size_type s, size_type t, size_type p) {
-        if (s == t) {
-            d[p] = a[s];
-            return;
-        }
-        int m = s + (t - s >> 1);
-        build(a, s, m, p * 2);
-        build(a, m + 1, t, p * 2 + 1);
-        pull(p);
-    }
-public:
-    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
-    segtree(const Sequence& a) : segtree(a.size()) {
-        build(a, {}, _max, 1);
-    }
-
-    void set(size_type i, const info_type& c) {
-        set({}, _max, 1, i, c);
-    }
-    
-    void range_apply(size_type l, size_type r, const tag_type& c) {
-        range_apply({}, _max, 1, l, r, c);
-    }
-
-    void apply(size_type i, const tag_type& c) {
-        range_apply(i, i, c);
-    }
-
-    info_type range_query(size_type l, size_type r) {
-        return range_query({}, _max, 1, l, r);
-    }
-
-    info_type query(size_type i) {
-        return range_query(i, i);
-    }
-
-    Sequence serialize() {
-        Sequence res = {};
-        for (size_type i = 0; i <= _max; ++i) {
-            res.push_back(query(i));
-        }
-        return res;
-    }
-
-    const vector<info_type>& get_d() {
-        return d;
-    }
-};
-
-struct Set_Tag {
-    ll val = -1;
-    void apply(const Set_Tag& rhs) {
-        if (rhs.val != -1)
-        val = rhs.val;
-    }
-};
-
-struct Set_Info {
-    ll val = 0;
-    void apply(const Set_Tag& rhs, size_t len) {
-        if (rhs.val != -1)
-        val = rhs.val * len;
-    }
-};
-
-Set_Info operator+(const Set_Info &a, const Set_Info &b) {
-    return {a.val + b.val};
 }
 
 void solve() {
-    segtree<Set_Info, Set_Tag> tr(5);
-    tr.range_apply(0, 3, {1});
-    for (auto&& x : tr.serialize()) {
-        cerr << x.val << ' ';
+    using ll = MLL<PRIME>;
+    read(int, a, b, c, d);
+    auto comb = [&] (int n, int m) -> ll {
+        return fact[n] / fact[m] / fact[n - m];
+    };
+    if (a == b) {
+        if (a == 0) {
+            if (d && c) {
+                cout << 0 << '\n';
+            } else {
+                cout << 1 << '\n';
+            }
+            return;
+        }
+        ll res = comb(c + a - 1, c) * comb(d + a, d) + comb(c + a, c) * comb(d + a - 1, d);
+        cout << res << '\n';
+    } else if (a == b + 1) {
+        ll res = comb(c + b, c) * comb(d + b, d);
+        cout << res << '\n';
+    } else if (b == a + 1) {
+        ll res = comb(c + a, c) * comb(d + a, d);
+        cout << res << '\n';
+    } else {
+        cout << 0 << '\n';
     }
-    cerr << endl;
-    assert(tr.range_query(0, 4).val == 4);
-    tr.set(3, {2});
-    for (auto&& x : tr.serialize()) {
-        cerr << x.val << ' ';
-    }
-    cerr << endl;
 }
 
 int main() {

@@ -361,39 +361,101 @@ public:
     }
 };
 
-struct Set_Tag {
+struct Tag {
     ll val = -1;
-    void apply(const Set_Tag& rhs) {
+    void apply(const Tag& rhs) {
         if (rhs.val != -1)
         val = rhs.val;
     }
 };
 
-struct Set_Info {
+struct Info {
     ll val = 0;
-    void apply(const Set_Tag& rhs, size_t len) {
+    void apply(const Tag& rhs, size_t len) {
         if (rhs.val != -1)
         val = rhs.val * len;
     }
 };
 
-Set_Info operator+(const Set_Info &a, const Set_Info &b) {
+Info operator+(const Info &a, const Info &b) {
     return {a.val + b.val};
 }
 
 void solve() {
-    segtree<Set_Info, Set_Tag> tr(5);
-    tr.range_apply(0, 3, {1});
-    for (auto&& x : tr.serialize()) {
-        cerr << x.val << ' ';
+    read(int, n, m, q);
+    map<int, ll> pts;
+    readvec(int, ipt, 2 * m);
+    for (int i = 0; i < m; ++i) {
+        pts[ipt[i] - 1] = ipt[i + m];
     }
-    cerr << endl;
-    assert(tr.range_query(0, 4).val == 4);
-    tr.set(3, {2});
-    for (auto&& x : tr.serialize()) {
-        cerr << x.val << ' ';
+    segtree<Info, Tag> tr(n);
+    int prev_idx = pts.begin()->first;
+    ll prev_y = pts.begin()->second;
+    for (auto&& [x, y] : pts) {
+        if (x == prev_idx) {
+            continue;
+        }
+        if (prev_idx + 1 != x) {
+            ll t = x - prev_idx - 1;
+            tr.set(prev_idx, {t * (t + 1) / 2 * prev_y});
+        }
+        prev_idx = x, prev_y = y;
     }
-    cerr << endl;
+    while (q--) {
+        read(int, op);
+        if (op == 1) {
+            read(int, x, y);
+            --x;
+            auto lb = pts.lower_bound(x);
+            auto ub = pts.upper_bound(x);
+            if (lb != pts.begin()) {
+                auto [prev_x, prev_y] = *--lb;
+                ll t = x - prev_x - 1;
+                tr.set(prev_x, {t * (t + 1) / 2 * prev_y});
+            }
+            assert(ub != pts.end());
+            if (ub != pts.end()) {
+                auto [next_x, next_y] = *ub;
+                ll t = next_x - x - 1;
+                tr.set(x, {t * (t + 1) / 2 * y});
+            }
+            pts[x] = y;
+        } else {
+            read(int, l, r);
+            --l, --r;
+            auto lb = pts.lower_bound(l);
+            auto ub = pts.upper_bound(r);
+            assert(lb != pts.end());
+            ll res = 0;
+            auto [p_x, p_y] = *lb;
+            assert(ub != pts.begin());
+            auto next_lb = ub;
+            --next_lb;
+            auto [q_x, q_y] = *next_lb;
+            // debug(res);
+            if (p_x <= q_x) {
+                if (lb != pts.begin()) {
+                    auto prev_lb = lb;
+                    --prev_lb;
+                    ll t = p_x - l;
+                    // debug(t);
+                    res += t * (t + 1) / 2 * prev_lb->second;
+                    // debug(res);
+                }
+                ll e = ub->first - r, f = ub->first - q_x - 1;
+                assert(f - e + 1 >= 0);
+                res += (e + f) * (f - e + 1) / 2 * q_y;
+                if (p_x <= q_x - 1) {
+                    res += tr.range_query(p_x, q_x - 1).val;
+                }
+            } else {
+                // use q?
+                ll e = p_x - r, f = p_x - l;
+                res += (e + f) * (f - e + 1) / 2 * q_y;
+            }
+            cout << res << '\n';
+        }
+    }
 }
 
 int main() {
