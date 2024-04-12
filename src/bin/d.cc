@@ -1,3 +1,4 @@
+#pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
  * Useful Macros
@@ -263,6 +264,8 @@ template <ll mdl> struct MLL {
     friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
     friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
     friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
+    friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
+    friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
     void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
     void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
     void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
@@ -281,51 +284,39 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
 }
 
 void solve() {
-    using ll = MLL<PRIME>;
     read(int, n);
-    vector<vector<pii>> ch(n + 1);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        ch[u].emplace_back(v, i);
-        ch[v].emplace_back(u, i);
-    }
-    read(ll, e);
-    int root = -1;
-    int root_edge;
-    for (int i = 1; i <= n; ++i) {
-        if (ch[i].size() == 1) {
-            root = i;
-            root_edge = ch[i][0].second;
-            break;
+    readvec(int, a, n);
+    sort(a.begin(), a.end());
+    array<vector<MLL<PRIME>>, 2> cnt = {vector<MLL<PRIME>>(10001), vector<MLL<PRIME>>(10001)};
+    int curr = 0;
+    cnt[curr][0] = 1;
+    for (auto&& x : a) {
+        curr ^= 1;
+        for (int i = 0; i <= 10000; ++i) {
+            cnt[curr][i] = cnt[1 ^ curr][i];
+        }
+        for (int i = x; i <= 10000; ++i) {
+            cnt[curr][i] += cnt[1 ^ curr][i - x];
         }
     }
-    if (root == -1) {
-        cout << -1 << '\n';
-        return;
-    }
-    vector<int> dis(n + 1);
-    auto dfs = [&] (auto dfs, int v, int pa, int d) -> void {
-        dis[v] = d;
-        for (auto&& [u, _] : ch[v]) {
-            if (u == pa) continue;
-            dfs(dfs, u, v, d + 1);
-        }
-    };
-    dfs(dfs, root, 0, 0);
-    ll res = accumulate(dis.begin(), dis.end(), ll(0)) + *max_element(dis.begin(), dis.end());
-    ll target = e * n;
-    ll tar = (target - res) / n + 1;
-    int64_t tar_val = tar.val;
-    if (tar_val <= n + 2) {
-        tar_val += PRIME;
-    }
-    for (int i = 0; i < n - 1; ++i) {
-        if (i == root_edge) {
-        cout << tar_val << '\n';
-        } else {
-            cout << 1 << '\n';
+    MLL<PRIME> res = 0;
+    MLL<PRIME> plus = 0, minus = 0;
+    for (auto&& x : a) {
+        for (int i = 0; i < x; ++i) {
+            res += cnt[curr][i] * x;
+            plus += cnt[curr][i] * x;
+            res -= cnt[curr][i] * ((x + i + 1) / 2);
+            minus += cnt[curr][i] * ((x + i + 1) / 2);
+            // cnt[curr][i] -= cnt[1 ^ curr][x - i];
         }
     }
+    // debug(res);
+    // debug(plus), debug(minus);
+    // debug(cnt[curr]);
+    for (int i = 1; i <= 5000; ++i) {
+        res += i * (cnt[curr][2 * i] + cnt[curr][2 * i - 1]);
+    }
+    cout << res << '\n';
 }
 
 int main() {

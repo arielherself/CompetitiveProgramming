@@ -1,3 +1,4 @@
+#pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
  * Useful Macros
@@ -248,60 +249,32 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
 void prep() {}
 
-template<typename T>
-struct BIT {
-    int n;
-    vector<T> c;
-    BIT(size_t n) : n(n), c(n + 1) {}
-    void add(size_t i, const T& k) {
-        while (i <= n) {
-            c[i] += k;
-            i += lowbit(i);
-        }
-    }
-    T getsum(size_t i) {
-        T res = {};
-        while (i) {
-            res += c[i];
-            i -= lowbit(i);
-        }
-        return res;
-    }
-};
-
 void solve() {
-    read(int, n, q);
-    BIT<int> tr(n);
-    for (int i = 1; i <= n; ++i) {
-        read(int, x);
-        tr.add(i, x);
-    }
-    while (q--) {
-        read(int, x, p);
-        tr.add(x, ll(p) - tr.getsum(x) + tr.getsum(x - 1));
-        int l = 0, r = lg2(n);
-        while (l < r) {
-            int mid = l + r >> 1;
-            if (tr.getsum(n - (1 << mid)) == 0) {
-                r = mid;
+    read(string, a, b);
+    int n = a.size();
+    int f = 0;
+    for (int i = 0; i < n; ++i) {
+        if (a[i] != b[i]) {
+            if (f == 0) {
+                if (a[i] > b[i]) {
+                    swap(a[i], b[i]);
+                }
+                f = 1;
             } else {
-                l = mid + 1;
+                if (a[i] < b[i]) {
+                    swap(a[i], b[i]);
+                }
             }
         }
-        // debug(l);
-        if (tr.getsum(n - (1 << l)) != 0) {
-            cout << (1 << l + 1) << '\n';
-        } else {
-            cout << (1 << l) << '\n';
-        }
     }
+    cout << a << '\n' << b << '\n';
 }
 
 int main() {

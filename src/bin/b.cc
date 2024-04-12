@@ -1,3 +1,4 @@
+#pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
  * Useful Macros
@@ -257,37 +258,26 @@ void prep() {}
 
 void solve() {
     read(int, n);
-    readvec(ll, a, n + 1);
-    vector<ll> ps(n + 2);
-    for (int i = 1; i <= n + 1; ++i) {
-        ps[i] = ps[i - 1] ^ a[i - 1];
-    }
-    vector<int> res(n + 2);
-    for (int i = 0; i <= n; ++i) {
-        if (ps[i] == a[i]) {
-            res[max(0, n - i - 1)] += 1;
-        }
-    }
-    int ptr = 0;
-    while (ptr <= n + 1 && res[ptr] == 2) {
-        res[ptr] = 0;
-        res[++ptr] += 1;
-    }
-    int lo = 0;
-    for (int i = n + 1; ~i; --i) {
-        if (res[i] == 0) {
-            if (lo == 0) {
-                ;;
-            } else {
-                cout << 0;
-            }
+    readvec(int, a, n);
+    int target = a[0];
+    int mn = INF;
+    int cnt = 0;
+    for (int i = 0; i < n; ++i) {
+        if (a[i] != target) {
+            mn = min(mn, cnt);
+            cnt = 0;
         } else {
-            lo = 1;
-            cout << 1;
+            cnt += 1;
         }
     }
-    if (lo == 0) cout << 0;
-    cout << '\n';
+    if (cnt) {
+        mn = min(mn, cnt);
+    }
+    if (mn == INF || mn == n) {
+        cout << -1 << '\n';
+    } else {
+        cout << mn << '\n';
+    }
 }
 
 int main() {

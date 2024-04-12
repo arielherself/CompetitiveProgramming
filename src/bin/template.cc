@@ -257,7 +257,6 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    
 }
 
 int main() {

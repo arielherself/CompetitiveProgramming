@@ -256,46 +256,40 @@ void dump() {}
 
 void prep() {}
 
-template <typename Set, typename Key = typename Set::value_type>
-static inline Set
-set_intersection(const Set& lhs, const Set& rhs) {
-    if (lhs.size() <= rhs.size()) {
-        Set iset;
-        for (const Key& key : lhs) {
-            if (rhs.count(key) > 0) {
-                iset.insert(key);
-            }
-        }
-        return std::move(iset);
+ll mygcd(ll a, ll b) {
+    if (a == 0 || b == 0) {
+        return 0;
     } else {
-        return set_intersection(rhs, lhs);
+        return std::gcd(a, b);
     }
 }
+
 void solve() {
     read(int, n), read(ll, k);
     readvec(ll, a, n);
-    auto work = [&] (int idx) -> unordered_set<ll, safe_hash> {
-        ll x = a[idx];
-        unordered_set<ll, safe_hash> res;
-        while (x) {
-            res.emplace(x);
-            if (((x + k) & 1) || (x + k) / 2 == x) {
-                break;
-            }
-            x = (x + k) / 2;
-        }
-        return res;
-    };
-    auto st = work(0);
+    if (*min_element(a.begin(), a.end()) < k && *max_element(a.begin(), a.end()) > k) {
+        cout << -1 << '\n';
+        return;
+    }
+    ll tar = abs(a[0] - k);
     for (int i = 1; i < n; ++i) {
-        st = set_intersection(st, work(i));
+        tar = mygcd(tar, abs(a[i] - k));
     }
-    if (!st.size()) {
-        debug(-1);
-    } else {
-        ll target = *max_element(st.begin(), st.end());
-        debug(*max_element(st.begin(), st.end()));
+    if (tar == 0) {
+        for (int i = 0; i < n; ++i) {
+            if (a[i] != k) {
+                cout << -1 << '\n';
+                return;
+            }
+        }
+        cout << 0 << '\n';
+        return;
     }
+    ll res = 0;
+    for (int i = 0; i < n; ++i) {
+        res += abs(a[i] - k) / tar - 1;
+    }
+    cout << res << '\n';
 }
 
 int main() {

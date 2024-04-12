@@ -257,15 +257,12 @@ void dump() {}
 void prep() {}
 
 void solve() {
-    read(int, n);
-    cout << "0 ";
-    for (int i = 1; i <= (n - 1) / 2; ++i) {
-        cout << i << ' ' << -i << ' ';
+    read(int, n, m, k);
+    if (n - k >= 1 && m * (n - k - 1) >= n) {
+        cout << "YES\n";
+    } else {
+        cout << "NO\n";
     }
-    if (n % 2 == 0) {
-        cout << (n - 1) / 2 + 1;
-    }
-    cout << '\n';
 }
 
 int main() {

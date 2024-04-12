@@ -249,55 +249,72 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
 
 void prep() {}
 
-template <ll mdl> struct MLL {
-    ll val;
-    MLL(ll v = 0) : val(mod(v, mdl)) {}
-    friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
-    friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
-    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
-    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
-    friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
-    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
-    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
-    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
-    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
-    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
-};
-
-template <ll mdl>
-ostream& operator<<(ostream& out, const MLL<mdl>& num) {
-    return out << num.val;
-}
-
-template <ll mdl>
-istream& operator>>(istream& in, MLL<mdl>& num) {
-    return in >> num.val;
-}
-
 void solve() {
-    using ll = MLL<MDL>;
-    read(int, n, m, k);
-    vector<ll> fact;
-    fact.push_back(1);
-    for (int i = 1; i <= n; ++i) {
-        fact.push_back(fact.back() * i);
+    read(int, n);
+    readvec(int, a, n);
+    vector<vector<int>> open(100010);
+    for (int i = 0; i < n; ++i) {
+        open[a[i]].push_back(i);
     }
-    // (M - K + 1) powers
-    vector<ll> pw1;
-    pw1.push_back(1);
-    for (int i = 1; i < k; ++i) {
-        pw1.push_back(pw1.back() * (m - k + 1));
+    vector<int> cnt(100010);
+    vector<int> state(n, 1);
+    int curr = 1;
+    for (int i = 0; i <= 1e5; ++i) {
+        int prev = -2;
+        int left = -1, right = -1;
+        for (auto&& x : open[i]) {
+            if (x == prev + 1) {
+                right = x;
+            } else {
+                if (left != -1) {
+                    if (left == 0 || state[left - 1] == 0) {
+                        if (right == n - 1 || state[right + 1] == 0) {
+                            curr -= 1;
+                        }
+                    } else {
+                        if (right == n - 1 || state[right + 1] == 0) {
+                            ;;
+                        } else {
+                            curr += 1;
+                        }
+                    }
+                }
+                left = x;
+                right = x;
+            }
+            state[x] = 0;
+        }
+        if (left != -1) {
+            if (left == 0 || state[left - 1] == 0) {
+                if (right == n - 1 || state[right + 1] == 0) {
+                    curr -= 1;
+                }
+            } else {
+                if (right == n - 1 || state[right + 1] == 0) {
+                    ;;
+                } else {
+                    curr += 1;
+                }
+            }
+        }
+        cnt[i] = curr;
     }
-    // (K - 1) powers
-    vector<ll> pw2;
-    for (int i = 1; i < k; ++i)
+    // debug(cnt);
+    int mx = *max_element(a.begin(), a.end());
+    for (int k = 1; k <= mx; ++k) {
+        ll res = 0;
+        for (int i = 0; i <= mx; i += k) {
+            res += cnt[i];
+        }
+        cout << res << " \n"[k == mx];
+    }
 }
 
 int main() {
