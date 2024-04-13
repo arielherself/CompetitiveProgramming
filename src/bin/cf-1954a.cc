@@ -1,6 +1,4 @@
-#ifdef ONLINE_JUDGE
 #pragma GCC optimize("Ofast")
-#endif
 /////////////////////////////////////////////////////////
 /**
  * Useful Macros
@@ -259,6 +257,12 @@ void dump() {}
 void prep() {}
 
 void solve() {
+    read(int, n, m, k);
+    if (n - k >= 1 && m * (n - k - 1) >= n) {
+        cout << "YES\n";
+    } else {
+        cout << "NO\n";
+    }
 }
 
 int main() {

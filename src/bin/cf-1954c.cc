@@ -1,6 +1,4 @@
-#ifdef ONLINE_JUDGE
 #pragma GCC optimize("Ofast")
-#endif
 /////////////////////////////////////////////////////////
 /**
  * Useful Macros
@@ -259,6 +257,24 @@ void dump() {}
 void prep() {}
 
 void solve() {
+    read(string, a, b);
+    int n = a.size();
+    int f = 0;
+    for (int i = 0; i < n; ++i) {
+        if (a[i] != b[i]) {
+            if (f == 0) {
+                if (a[i] > b[i]) {
+                    swap(a[i], b[i]);
+                }
+                f = 1;
+            } else {
+                if (a[i] < b[i]) {
+                    swap(a[i], b[i]);
+                }
+            }
+        }
+    }
+    cout << a << '\n' << b << '\n';
 }
 
 int main() {

@@ -1,6 +1,4 @@
-#ifdef ONLINE_JUDGE
 #pragma GCC optimize("Ofast")
-#endif
 /////////////////////////////////////////////////////////
 /**
  * Useful Macros
@@ -251,7 +249,7 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 512
 
 void dump() {}
@@ -259,6 +257,64 @@ void dump() {}
 void prep() {}
 
 void solve() {
+    read(int, n);
+    readvec(int, a, n);
+    vector<vector<int>> open(100010);
+    for (int i = 0; i < n; ++i) {
+        open[a[i]].push_back(i);
+    }
+    vector<int> cnt(100010);
+    vector<int> state(n, 1);
+    int curr = 1;
+    for (int i = 0; i <= 1e5; ++i) {
+        int prev = -2;
+        int left = -1, right = -1;
+        for (auto&& x : open[i]) {
+            if (x == prev + 1) {
+                right = x;
+            } else {
+                if (left != -1) {
+                    if (left == 0 || state[left - 1] == 0) {
+                        if (right == n - 1 || state[right + 1] == 0) {
+                            curr -= 1;
+                        }
+                    } else {
+                        if (right == n - 1 || state[right + 1] == 0) {
+                            ;;
+                        } else {
+                            curr += 1;
+                        }
+                    }
+                }
+                left = x;
+                right = x;
+            }
+            state[x] = 0;
+        }
+        if (left != -1) {
+            if (left == 0 || state[left - 1] == 0) {
+                if (right == n - 1 || state[right + 1] == 0) {
+                    curr -= 1;
+                }
+            } else {
+                if (right == n - 1 || state[right + 1] == 0) {
+                    ;;
+                } else {
+                    curr += 1;
+                }
+            }
+        }
+        cnt[i] = curr;
+    }
+    // debug(cnt);
+    int mx = *max_element(a.begin(), a.end());
+    for (int k = 1; k <= mx; ++k) {
+        ll res = 0;
+        for (int i = 0; i <= mx; i += k) {
+            res += cnt[i];
+        }
+        cout << res << " \n"[k == mx];
+    }
 }
 
 int main() {

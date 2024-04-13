@@ -1,6 +1,4 @@
-#ifdef ONLINE_JUDGE
 #pragma GCC optimize("Ofast")
-#endif
 /////////////////////////////////////////////////////////
 /**
  * Useful Macros
@@ -259,6 +257,27 @@ void dump() {}
 void prep() {}
 
 void solve() {
+    read(int, n);
+    readvec(int, a, n);
+    int target = a[0];
+    int mn = INF;
+    int cnt = 0;
+    for (int i = 0; i < n; ++i) {
+        if (a[i] != target) {
+            mn = min(mn, cnt);
+            cnt = 0;
+        } else {
+            cnt += 1;
+        }
+    }
+    if (cnt) {
+        mn = min(mn, cnt);
+    }
+    if (mn == INF || mn == n) {
+        cout << -1 << '\n';
+    } else {
+        cout << mn << '\n';
+    }
 }
 
 int main() {
