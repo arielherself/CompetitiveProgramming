@@ -20,15 +20,8 @@ constexpr void __() {}
 #define __as_typeof(container) decltype(container)::value_type
 
 /* type aliases */
-#ifdef ONLINE_JUDGE
 using ll = int64_t;
 using ull = uint64_t;
-#else
-using ll = long long;
-using ull = unsigned long long;
-#endif
-using int128 = __int128_t;
-using uint128 = __uint128_t;
 using pii = pair<int, int>;
 using pil = pair<int, ll>;
 using pli = pair<ll, int>;
@@ -41,10 +34,6 @@ constexpr ll MDL = 1e9 + 7;
 constexpr ll PRIME = 998'244'353;
 constexpr ll MDL1 = 8784491;
 constexpr ll MDL2 = PRIME;
-constexpr int128 INT128_MAX = numeric_limits<int128>::max();
-constexpr uint128 UINT128_MAX = numeric_limits<uint128>::max();
-constexpr int128 INT128_MIN = numeric_limits<int128>::min();
-constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
 
 /* random */
 
@@ -171,29 +160,6 @@ template<typename T> ostream& operator<<(ostream& out, const vector<T>& vec) {
     for (auto&& i : vec) out << i << ' ';
     return out;
 }
-std::ostream& operator<<(std::ostream& dest, const int128& value) {
-    // https://stackoverflow.com/a/25115163/23881100
-    std::ostream::sentry s( dest );
-    if ( s ) {
-        uint128 tmp = value < 0 ? -value : value;
-        char buffer[ 128 ];
-        char* d = std::end( buffer );
-        do {
-            -- d;
-            *d = "0123456789"[ tmp % 10 ];
-            tmp /= 10;
-        } while ( tmp != 0 );
-        if ( value < 0 ) {
-            -- d;
-            *d = '-';
-        }
-        int len = std::end( buffer ) - d;
-        if ( dest.rdbuf()->sputn( d, len ) != len ) {
-            dest.setstate( std::ios_base::badbit );
-        }
-    }
-    return dest;
-}
 
 /* pops */
 #define poptop(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.top(); q.pop();)
@@ -286,16 +252,115 @@ int period(string s) {  // find the length of shortest recurring period
 /////////////////////////////////////////////////////////
 
 // #define SINGLE_TEST_CASE
-// #define DUMP_TEST_CASE 7219
+// #define DUMP_TEST_CASE 512
 
 void dump() {}
 
-void dump_ignore() {}
-
 void prep() {}
 
+template<typename T>
+struct BIT {
+    int n;
+    vector<T> c;
+    BIT(size_t n) : n(n), c(n + 1) {}
+    void add(size_t i, const T& k) {
+        while (i <= n) {
+            c[i] += k;
+            i += lowbit(i);
+        }
+    }
+    T getsum(size_t i) {
+        T res = {};
+        while (i) {
+            res += c[i];
+            i -= lowbit(i);
+        }
+        return res;
+    }
+};
+
 void solve() {
-    
+    read(int, n, q);
+    adj(ch, n);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
+    }
+    vector<int> mp(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        read(int, x);
+        mp[x] = i;
+    }
+    BIT<int> tr(n);
+    vector<int> heavy(n + 1);
+    vector<vector<pair<int, pii>>> query(n + 1);
+    vector<int> res(q);
+    for (int i = 0; i < q; ++i) {
+        read(int, l, r, x);
+        query[x].emplace_back(i, make_pair(l, r));
+    }
+    auto cc = [&] (auto cc, int v, int pa) -> int {
+        int max_sz = 0, h = 0;
+        int tot_sz = 0;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            int sz = cc(cc, u, v);
+            tot_sz += sz;
+            if (sz > max_sz) {
+                max_sz = sz, h = u;
+            }
+        }
+        heavy[v] = h;
+        return tot_sz + 1;
+    };
+    cc(cc, 1, 0);
+    auto del = [&] (auto del, int v, int pa) -> void {
+        tr.add(mp[v], -1);
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            del(del, u, v);
+        }
+    };
+    auto dfs = [&] (auto dfs, int v, int pa, bool write, bool keep) -> void {
+        if (write) {
+            for (auto&& u : ch[v]) {
+                if (u == pa || u == heavy[v]) continue;
+                dfs(dfs, u, v, true, false);
+            }
+        }
+        if (heavy[v]) {
+            dfs(dfs, heavy[v], v, write, true);
+        }
+        for (auto&& u : ch[v]) {
+            if (u == pa || u == heavy[v]) continue;
+            dfs(dfs, u, v, false, true);
+        }
+        tr.add(mp[v], 1);
+        if (write) {
+            // debug(v);
+            // cerr << "tr: ";
+            // for (int i = 1; i <= n; ++i) {
+            //     cerr << tr.getsum(i) - tr.getsum(i - 1) << " \n"[i == n];
+            // }
+            for (auto&& [idx, rg] : query[v]) {
+                auto [l, r] = rg;
+                if (tr.getsum(r) - tr.getsum(l - 1)) {
+                    res[idx] = 1;
+                }
+            }
+        }
+        if (not keep) {
+            del(del, v, pa);
+        }
+    };
+    dfs(dfs, 1, 0, 1, 0);
+    for (auto&& x : res) {
+        if (x) {
+            cout << "YES\n";
+        } else {
+            cout << "NO\n";
+        }
+    }
 }
 
 int main() {
@@ -310,12 +375,10 @@ int main() {
     read(int, t);
     for (int i = 0; i < t; ++i) {
 #ifdef DUMP_TEST_CASE
-        if (t < (DUMP_TEST_CASE)) {
-            solve();
-        } else if (i + 1 == (DUMP_TEST_CASE)) {
+        if (i + 1 == (DUMP_TEST_CASE)) {
             dump();
         } else {
-            dump_ignore();
+            solve();
         }
 #else
         solve();

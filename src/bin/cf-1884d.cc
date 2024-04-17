@@ -295,7 +295,32 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
-    
+    read(ll, n);
+    readvec(int, a, n);
+    unordered_counter(a, ct);
+    unordered_map<int, ll, safe_hash> dp;
+    set<int, greater<>> st(a.begin(), a.end());
+    ll res = 0;
+    for (auto&& x : st) {
+        ll curr = 0;
+        for (ll y = x; y <= n; y += x) {
+            if (ct.count(y)) {
+                curr += ct[y];
+            }
+        }
+        curr = curr * (curr - 1) / 2;
+        for (ll y = x; y <= n; y += x) {
+            if (dp.count(y)) {
+                curr -= dp[y];
+            }
+        }
+        dp[x] = curr;
+        res += curr;
+    }
+    for (auto&& [x, y] : dp) {
+        cerr << "dp[" << x << "] = " << y << endl;
+    }
+    cout << n * (n - 1) / 2 - res << '\n';
 }
 
 int main() {
