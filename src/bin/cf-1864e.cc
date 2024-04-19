@@ -294,7 +294,113 @@ void dump_ignore() {}
 
 void prep() {}
 
+template <ll mdl> struct MLL {
+    ll val;
+    MLL(ll v = 0) : val(mod(v, mdl)) {}
+    friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
+    friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
+    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
+    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
+    friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
+    friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
+    friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
+    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
+    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
+    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
+    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
+    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
+};
+
+template <ll mdl>
+ostream& operator<<(ostream& out, const MLL<mdl>& num) {
+    return out << num.val;
+}
+
+template <ll mdl>
+istream& operator>>(istream& in, MLL<mdl>& num) {
+    return in >> num.val;
+}
+
 void solve() {
+    using ll = MLL<PRIME>;
+    auto get = [] (int x, int b) -> int {
+        return (x >> b) & 1;
+    };
+    vector<pair<array<int, 2>, int>> trie(1);
+    auto insert = [&] (int x) -> void {
+        int curr = 0;
+        vector<int> st;
+        for (int i = 29; ~i; --i) {
+            st.emplace_back(curr);
+            int bit = get(x, i);
+            if (!trie[curr].first[bit]) {
+                trie[curr].first[bit] = trie.size();
+                trie.push_back({});
+            }
+            curr = trie[curr].first[bit];
+        }
+        trie[curr].second += 1;
+        for (auto&& i : st) trie[i].second += 1;
+    };
+    auto query = [&] (int x, int b) -> int {
+        // differs at bit b. -1 for identical numbers.
+        int curr = 0;
+        for (int i = 29; i > b; --i) {
+            int bit = get(x, i);
+            if (!trie[curr].first[bit]) {
+                // debug(make_tuple(x, b, i));
+                return 0;
+            }
+            curr = trie[curr].first[bit];
+        }
+        // debug(make_pair(b, ~b));
+        if (~b) {
+            int bit = get(x, b);
+            if (!trie[curr].first[1 ^ bit]) {
+                return 0;
+            }
+            curr = trie[curr].first[1 ^ bit];
+        // } else {
+        //     debug(trie[curr].second);
+        }
+        // debug(curr);
+        return trie[curr].second;
+    };
+    read(int, n);
+    readvec(int, a, n);
+    ll p = 0, q = ll(n) * n;
+    for (int i = 0; i < n; ++i) insert(a[i]);
+    for (int i = 0; i < n; ++i) {
+        int prev_1 = 0;
+        for (int b = 29; b >= -1; --b) {
+            // debug(i), debug(b);
+            ll cnt = query(a[i], b);
+            ll steps = 0;
+            if (b == -1) {
+                steps = prev_1 + 1;
+            } else {
+                if (prev_1 % 2 == 0) {
+                    if (get(a[i], b)) {
+                        steps = prev_1 + 2;
+                    } else {
+                        steps = prev_1 + 1;
+                    }
+                } else {
+                    if (get(a[i], b)) {
+                        steps = prev_1 + 1;
+                    } else {
+                        steps = prev_1 + 2;
+                    }
+                }
+            }
+            p += steps * cnt;
+            // debug(p);
+            if (b != -1 && get(a[i], b)) {
+                prev_1 += 1;
+            }
+        }
+    }
+    cout << p / q << '\n';
 }
 
 int main() {

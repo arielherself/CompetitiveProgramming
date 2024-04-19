@@ -294,7 +294,65 @@ void dump_ignore() {}
 
 void prep() {}
 
+template<typename T>
+struct BIT {
+    int n;
+    vector<T> c;
+    BIT(size_t n) : n(n), c(n + 1) {}
+    void add(size_t i, const T& k) {
+        while (i <= n) {
+            c[i] += k;
+            i += lowbit(i);
+        }
+    }
+    T getsum(size_t i) {
+        T res = {};
+        while (i) {
+            res += c[i];
+            i -= lowbit(i);
+        }
+        return res;
+    }
+};
+
 void solve() {
+    read(int, q);
+    vector<vector<int>> ch(2);
+    vector<vector<pii>> ops(2);
+    vector<int> start_time(2);
+    BIT<ll> tr(q);
+    for (int t = 1; t <= q; ++t) {
+        read(int, op);
+        if (op == 1) {
+            read(int, v);
+            ch[v].push_back(ch.size());
+            ch.push_back({});
+            ops.push_back({});
+            start_time.push_back(t);
+        } else {
+            read(int, v, x);
+            ops[v].emplace_back(t, x);
+        }
+    }
+    int n = ch.size() - 1;
+    vector<ll> res(n + 1);
+    auto dfs = [&] (auto dfs, int v, int pa) -> void {
+        for (auto&& [t, x] : ops[v]) {
+            tr.add(t, x);
+        }
+        res[v] = tr.getsum(q) - tr.getsum(start_time[v]);
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            dfs(dfs, u, v);
+        }
+        for (auto&& [t, x] : ops[v]) {
+            tr.add(t, -x);
+        }
+    };
+    dfs(dfs, 1, 0);
+    for (int i = 1; i <= n; ++i) {
+        cout << res[i] << " \n"[i == n];
+    }
 }
 
 int main() {

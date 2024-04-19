@@ -284,41 +284,104 @@ int period(string s) {  // find the length of shortest recurring period
     return n;
 }
 /////////////////////////////////////////////////////////
+class quick_union {
+private:
+    vector<size_t> c;
+public:
+    quick_union(size_t n) : c(n) {
+        iota(c.begin(), c.end(), 0);
+    }
+    
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    
+    void merge(size_t i, size_t j) {
+        c[query(i)] = query(j);
+    }
 
-// #define SINGLE_TEST_CASE
-// #define DUMP_TEST_CASE 7219
-
-void dump() {}
-
-void dump_ignore() {}
-
-void prep() {}
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+};
 
 void solve() {
+    read(int, n, m);
+    read(ll, k);
+    // cerr << n << ' ' << m << ' ' << k << endl;
+    vector<vector<int>> ch(n + 1);
+    vector<int> ind(n + 1);
+    vector<ll> tm(n + 1);
+    for (int i = 1;  i<= n; ++i) {
+        cin >> tm[i];
+    }
+    int cnt_block = 0;
+    vector<int> block(n + 1);
+    quick_union qu(n + 1);
+    while (m--) {
+        int u, v; cin >> u >> v;
+        ch[u].emplace_back(v);
+        qu.merge(u, v);
+        ind[v] += 1;
+    }
+    unordered_map<int, int, safe_hash> mp;
+    for (int i = 1; i <= n; ++i) {
+        qu.query(i);
+    }
+    for (int i = 1; i <= n; ++i) {
+        int lt = qu.query(i);
+        if (!mp.count(lt)) {
+            mp[lt] = ++cnt_block;
+        }
+        block[i] = mp[lt];
+    }
+    deque<int> q;
+    for (int i = 1;  i<= n; ++i) {
+        if (ind[i] == 0) {
+            q.emplace_back(i);
+        }
+    }
+    vector<ll> dp(n + 1);
+    while (q.size()) {
+        int v = q.front(); q.pop_front();
+        if (dp[v] % k > tm[v]) {
+            dp[v] += k - (dp[v] % k) + tm[v];
+        } else {
+            dp[v] += tm[v] - (dp[v] % k);
+        }
+        for (auto&& u : ch[v]) {
+            dp[u] = max(dp[u], dp[v]);
+            if (--ind[u] == 0) {
+                q.emplace_back(u);
+            }
+        }
+    }
+    // debug(block);
+    vector<pll> mnmx(cnt_block + 1, {LLONG_MAX, LLONG_MIN});
+    for (int i = 1; i <= n; ++i) {
+        mnmx[block[i]].first = min(mnmx[block[i]].first, dp[i]);
+        mnmx[block[i]].second = max(mnmx[block[i]].second, dp[i]);
+    }
+    sort(mnmx.begin() + 1, mnmx.end());
+    // debug(mnmx);
+    ll res = LLONG_MAX;
+    vector<ll> ss(cnt_block + 1);
+    for (int i = cnt_block - 1; ~i; --i) {
+        ss[i] = max(ss[i + 1], mnmx[i + 1].second);
+    }
+    // debug(ss);
+    ll right_bound = 0;
+    for (int i = 1; i <= cnt_block; ++i) {
+        // select current as left bound
+        res = min(res, max(right_bound, ss[i - 1]) - mnmx[i].first);
+        // set right bound
+        right_bound = max(right_bound, mnmx[i].second + k);
+    }
+    cout << res << '\n';
 }
 
 int main() {
-#if __cplusplus < 201703L || defined(_MSC_VER) && !defined(__clang__)
-    assert(false && "incompatible compiler variant detected.");
-#endif
-    untie, cout.tie(NULL);
-    prep();
-#ifdef SINGLE_TEST_CASE
-    solve();
-#else
-    read(int, t);
-    for (int i = 0; i < t; ++i) {
-#ifdef DUMP_TEST_CASE
-        if (t < (DUMP_TEST_CASE)) {
-            solve();
-        } else if (i + 1 == (DUMP_TEST_CASE)) {
-            dump();
-        } else {
-            dump_ignore();
-        }
-#else
-        solve();
-#endif
-    }
-#endif
+    int t; cin >> t;
+    while (t--) solve();
 }

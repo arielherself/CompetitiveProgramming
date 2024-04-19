@@ -294,7 +294,205 @@ void dump_ignore() {}
 
 void prep() {}
 
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+    using size_type = uint64_t;
+    using info_type = Addable_Info_t;
+    using tag_type = Tag_t;
+    size_type _max;
+    vector<info_type> d;
+    vector<tag_type> b;
+
+    void pull(size_type p) {
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+
+    void push(size_type p, size_type left_len, size_type right_len) {
+        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
+        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+        b[p] = tag_type();
+    }
+
+    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+        if (s == t) {
+            d[p] = c;
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        if (s != t) push(p, m - s + 1, t - m);
+        if (x <= m) set(s, m, p * 2, x, c);
+        else set(m + 1, t, p * 2 + 1, x, c);
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+    
+    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+        if (l <= s && t <= r) {
+            d[p].apply(c, t - s + 1);
+            b[p].apply(c);
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        push(p, m - s + 1, t - m);
+        if (l <= m) range_apply(s, m, p * 2, l, r, c);
+        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
+        pull(p);
+    }
+
+    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+        if (l <= s && t <= r) {
+            return d[p];
+        }
+        size_type m = s + (t - s >> 1);
+        info_type res = {};
+        push(p, m - s + 1, t - m);
+        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+        return res;
+    }
+
+    void build(const Sequence& a, size_type s, size_type t, size_type p) {
+        if (s == t) {
+            d[p] = a[s];
+            return;
+        }
+        int m = s + (t - s >> 1);
+        build(a, s, m, p * 2);
+        build(a, m + 1, t, p * 2 + 1);
+        pull(p);
+    }
+public:
+    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+    segtree(const Sequence& a) : segtree(a.size()) {
+        build(a, {}, _max, 1);
+    }
+
+    void set(size_type i, const info_type& c) {
+        set({}, _max, 1, i, c);
+    }
+    
+    void range_apply(size_type l, size_type r, const tag_type& c) {
+        range_apply({}, _max, 1, l, r, c);
+    }
+
+    void apply(size_type i, const tag_type& c) {
+        range_apply(i, i, c);
+    }
+
+    info_type range_query(size_type l, size_type r) {
+        return range_query({}, _max, 1, l, r);
+    }
+
+    info_type query(size_type i) {
+        return range_query(i, i);
+    }
+
+    Sequence serialize() {
+        Sequence res = {};
+        for (size_type i = 0; i <= _max; ++i) {
+            res.push_back(query(i));
+        }
+        return res;
+    }
+
+    const vector<info_type>& get_d() {
+        return d;
+    }
+};
+
+struct String_Tag {
+    int val = 0;
+    void apply(const String_Tag& rhs) {
+        val += rhs.val;
+    }
+};
+
+struct String_Info {
+    int val = 0;
+    void apply(const String_Tag& rhs, size_t len) {
+        val = (val + rhs.val) % 26;
+    }
+};
+
+String_Info operator+(const String_Info &a, const String_Info &b) {
+    return {a.val + b.val};
+}
+
+struct Tag {
+    int val = -1;
+    void apply(const Tag& rhs) {
+        if (rhs.val != -1) val = rhs.val;
+    }
+};
+
+struct Info {
+    int val = 0;
+    void apply(const Tag& rhs, size_t len) {
+        if (rhs.val != -1) val = rhs.val;
+    }
+};
+
+Info operator+(const Info &a, const Info &b) {
+    return {a.val + b.val};
+}
+
 void solve() {
+    read(int, n, m);
+    segtree<String_Info, String_Tag> tr(n);
+    for (int i = 0; i < n; ++i) {
+        read(char, c);
+        tr.set(i, {c - 97});
+    }
+    segtree<Info, Tag> mk1(n), mk2(n - 1);
+    for (int i = 1; i < n - 1; ++i) {
+        mk1.set(i, {tr.query(i - 1).val == tr.query(i + 1).val});
+    }
+    for (int i = 0; i < n - 1; ++i) {
+        mk2.set(i, {tr.query(i).val == tr.query(i + 1).val});
+    }
+    while (m--) {
+        read(int, op, l, r);
+        --l, --r;
+        if (op == 1) {
+            read(int, x);
+            // debug(l), debug(r), debug(x % 26);
+            tr.range_apply(l, r, {x % 26});
+            if (l - 1 >= 0) {
+                mk2.set(l - 1, {tr.query(l - 1).val == tr.query(l).val});
+                if (l + 1 < n) {
+                    mk1.set(l, {tr.query(l - 1).val == tr.query(l + 1).val});
+                }
+            }
+            if (l - 2 >= 0) {
+                mk1.set(l - 1, {tr.query(l - 2).val == tr.query(l).val});
+            }
+            if (r + 1 < n) {
+                mk2.set(r, {tr.query(r).val == tr.query(r + 1).val});
+                if (r - 1 >= 0) {
+                    mk1.set(r, {tr.query(r - 1).val == tr.query(r + 1).val});
+                }
+            }
+            if (r + 2 < n) {
+                mk1.set(r + 1, {tr.query(r).val == tr.query(r + 2).val});
+            }
+        } else {
+            // for (auto&& x : tr.serialize()) {
+            //     cerr << x.val << ' ';
+            // }
+            // cerr << endl;
+            int f = 0;
+            if (l + 1 <= r - 1) {
+                f += mk1.range_query(l + 1, r - 1).val;
+            }
+            if (r - 1 >= l) {
+                f += mk2.range_query(l, r - 1).val;
+            }
+            if (!f) {
+                cout << "YES\n";
+            } else {
+                cout << "NO\n";
+            }
+        }
+    }
 }
 
 int main() {
