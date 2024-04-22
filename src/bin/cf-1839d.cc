@@ -285,93 +285,43 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
 
 void dump_ignore() {}
 
-template <ll mdl> struct MLL {
-    ll val;
-    MLL(ll v = 0) : val(mod(v, mdl)) {}
-    friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
-    friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
-    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
-    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
-    friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
-    friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
-    friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
-    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
-    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
-    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
-    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
-    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
-};
-
-template <ll mdl>
-ostream& operator<<(ostream& out, const MLL<mdl>& num) {
-    return out << num.val;
-}
-
-template <ll mdl>
-istream& operator>>(istream& in, MLL<mdl>& num) {
-    return in >> num.val;
-}
-
-constexpr int MAXN = 6e5 + 10;
-MLL<PRIME> fact[MAXN], pw[MAXN];
-void prep() {
-    fact[0] = 1, pw[0] = 1;
-    for (int i = 1; i < MAXN; ++i) {
-        fact[i] = fact[i - 1] * i;
-        pw[i] = pw[i - 1] * 2;
-    }
-}
+void prep() {}
 
 void solve() {
-    read(int, k);
-    int n = 1 << k;
-    vector<int> a(n, -1);
-    for (int i = 0; i < n; ++i) {
-        read(int, x);
-        if (x == -1) {
-            ;;
-        } else {
-            a[x - 1] = i;
+    read(int, n);
+    vector<int> a(n + 2);
+    for (int i = 1; i <= n; ++i) {
+        cin >> a[i];
+    }
+    a[n + 1] = INF;
+    vector<vector<int>> dp(n + 2, vector<int>(n + 1, INF));
+    dp[0][0] = 0;
+    for (int i = 1; i <= n + 1; ++i) {
+        if (a[i] > a[i - 1]) {
+            for (int k = 0; k <= n; ++k) {
+                dp[i][k] = min(dp[i][k], dp[i - 1][k]);
+            }
+        }
+        for (int j = i - 1; ~j; --j) {
+            for (int k = 0; k < n; ++k) {
+                if (a[i] > a[j]) {
+                    dp[i][k + 1] = min(dp[i][k + 1], dp[j][k] + i - j - 1);
+                }
+            }
         }
     }
-    MLL<PRIME> res = 1;
-    for (int i = 0; i < k; ++i) {
-        int tot = 1 << k - i;
-        unordered_set<int, safe_hash> left, right;
-        int cnt = 0;
-        for (int j = 0; j < tot / 2; ++j) {
-            if (a[j] == -1) continue;
-            if (left.count(a[j] >> i) or left.count((a[j] >> i) ^ 1)) {
-                cout << 0 << '\n';
-                return;
-            }
-            left.emplace(a[j] >> i);
-        }
-        for (int j = tot / 2; j < tot; ++j) {
-            if (a[j] == -1) continue;
-            if (left.count(a[j] >> i) or right.count(a[j] >> i) or right.count((a[j] >> i) ^ 1)) {
-                cout << 0 << '\n';
-                return;
-            }
-            right.emplace(a[j] >> i);
-            cnt += 1;
-        }
-        int to_swap = tot / 2;
-        for (int j = 0; j < tot / 2; ++j) {
-            if (left.count(j << 1) or left.count((j << 1) + 1) or right.count(j << 1) or right.count((j << 1) + 1)) {
-                to_swap -= 1;
-            }
-        }
-        res = (res * fact[tot / 2 - cnt]) * pw[to_swap];
+    int res = INF;
+    for (int i = 1; i <= n; ++i) {
+        res = min(res, dp[n + 1][i]);
+        cout << res << " \n"[i == n];
     }
-    cout << res << '\n';
 }
 
 int main() {
