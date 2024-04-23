@@ -285,58 +285,91 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
 
 void dump_ignore() {}
 
-void prep() {}
+template <ll mdl> struct MLL {
+    ll val;
+    MLL(ll v = 0) : val(mod(v, mdl)) {}
+    friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
+    friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
+    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
+    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
+    friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
+    friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
+    friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
+    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
+    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
+    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
+    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
+    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
+};
+
+template <ll mdl>
+ostream& operator<<(ostream& out, const MLL<mdl>& num) {
+    return out << num.val;
+}
+
+template <ll mdl>
+istream& operator>>(istream& in, MLL<mdl>& num) {
+    return in >> num.val;
+}
+
+constexpr int MAXN = 2e5 + 10;
+MLL<MDL> fact[MAXN];
+void prep() {
+    fact[0] = 1;
+    for (int i = 1; i < MAXN; ++i) {
+        fact[i] = fact[i - 1] * i;
+    }
+}
+
+MLL<MDL> comb(int n, int k) {
+    return n >= k ? fact[n] / fact[k] / fact[n - k] : 0;
+}
 
 void solve() {
-    read(int, n, m);
+    read(int, n, k);
     adj(ch, n);
-    while (m--) {
+    for (int i = 0 ; i < n - 1; ++i) {
         read(int, u, v);
-        if (u == 1) continue;
-        Edge(ch, v, u);
+        edge(ch, u, v);
     }
-    vector<int> bfn(n + 1);
-    deque<pii> q;
-    q.emplace_back(1, 1);
-    bfn[1] = 1;
-    while (q.size()) {
-        popfront(q, t, v);
+    vector<int> sz(n + 1);
+    auto get = [&] (auto get, int v, int pa) -> void {
+        sz[v] = 1;
         for (auto&& u : ch[v]) {
-            if (!bfn[u]) {
-                bfn[u] = t + 1;
-                q.emplace_back(t + 1, u);
-            }
+            if (u == pa) continue;
+            get(get, u, v);
+            sz[v] += sz[u];
         }
-    }
-    for (int i = 1; i <= n; ++i) {
-        if (!bfn[i]) {
-            cout << "INFINITE\n";
-            return;
+    };
+    get(get, 1, 0);
+    MLL<MDL> res = 0;
+    auto dfs = [&] (auto dfs, int v, int pa) -> void {
+        vector<MLL<MDL>> br;
+        MLL<MDL> sum = 0;
+        br.emplace_back(comb(sz[1] - sz[v], k / 2));
+        sum += comb(sz[1] - sz[v], k / 2);
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            sum += comb(sz[u], k / 2);
+            br.emplace_back(comb(sz[u], k / 2));
         }
-    }
-    cout << "FINITE\n";
-    vector<int> idx(n + 1);
-    iota(idx.begin(), idx.end(), 0);
-    sort(idx.begin(), idx.end(), [&] (int i, int j) { return bfn[i] > bfn[j]; });
-    vector<int> res;
-    while (bfn[idx[0]]) {
-        for (int i = 0; i < n; ++i) {
-            if (!bfn[idx[i]]) {
-                break;
-            }
-            bfn[idx[i]] -= 1;
-            res.emplace_back(idx[i]);
+        for (auto&& x : br) {
+            res += (sum - x) * x;
         }
-    }
-    cout << res.size() << '\n';
-    putvec(res);
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            dfs(dfs, u, v);
+        }
+    };
+    dfs(dfs,1, 0);
+    cout << res << '\n';
 }
 
 int main() {
