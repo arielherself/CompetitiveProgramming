@@ -120,23 +120,6 @@ struct pair_hash {
     }
 };
 
-uniform_int_distribution<mt19937::result_type> dist(PRIME);
-const size_t __array_hash_b = 31, __array_hash_mdl1 = dist(rd), __array_hash_mdl2 = dist(rd);
-struct array_hash {
-    template <typename Sequence>
-    size_t operator()(const Sequence& arr) const {
-        size_t pw1 = 1, pw2 = 1;
-        size_t res1 = 0, res2 = 0;
-        for (auto&& x : arr) {
-            res1 = (res1 + x * pw1) % __array_hash_mdl1;
-            res2 = (res2 + x * pw2) % __array_hash_mdl2;
-            pw1 = (pw1 * __array_hash_b) % __array_hash_mdl1;
-            pw2 = (pw2 * __array_hash_b) % __array_hash_mdl2;
-        }
-        return res1 + res2;
-    }
-};
-
 /* build data structures */
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
@@ -311,7 +294,180 @@ void dump_ignore() {}
 
 void prep() {}
 
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+    using size_type = uint64_t;
+    using info_type = Addable_Info_t;
+    using tag_type = Tag_t;
+    size_type _max;
+    vector<info_type> d;
+    vector<tag_type> b;
+
+    void pull(size_type p) {
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+
+    void push(size_type p, size_type left_len, size_type right_len) {
+        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
+        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+        b[p] = tag_type();
+    }
+
+    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+        if (s == t) {
+            d[p] = c;
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        if (s != t) push(p, m - s + 1, t - m);
+        if (x <= m) set(s, m, p * 2, x, c);
+        else set(m + 1, t, p * 2 + 1, x, c);
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+    
+    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+        if (l <= s && t <= r) {
+            d[p].apply(c, t - s + 1);
+            b[p].apply(c);
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        push(p, m - s + 1, t - m);
+        if (l <= m) range_apply(s, m, p * 2, l, r, c);
+        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
+        pull(p);
+    }
+
+    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+        if (l <= s && t <= r) {
+            return d[p];
+        }
+        size_type m = s + (t - s >> 1);
+        info_type res = {};
+        push(p, m - s + 1, t - m);
+        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+        return res;
+    }
+
+    void build(const Sequence& a, size_type s, size_type t, size_type p) {
+        if (s == t) {
+            d[p] = a[s];
+            return;
+        }
+        int m = s + (t - s >> 1);
+        build(a, s, m, p * 2);
+        build(a, m + 1, t, p * 2 + 1);
+        pull(p);
+    }
+public:
+    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+    segtree(const Sequence& a) : segtree(a.size()) {
+        build(a, {}, _max, 1);
+    }
+
+    void set(size_type i, const info_type& c) {
+        set({}, _max, 1, i, c);
+    }
+    
+    void range_apply(size_type l, size_type r, const tag_type& c) {
+        range_apply({}, _max, 1, l, r, c);
+    }
+
+    void apply(size_type i, const tag_type& c) {
+        range_apply(i, i, c);
+    }
+
+    info_type range_query(size_type l, size_type r) {
+        return range_query({}, _max, 1, l, r);
+    }
+
+    info_type query(size_type i) {
+        return range_query(i, i);
+    }
+
+    Sequence serialize() {
+        Sequence res = {};
+        for (size_type i = 0; i <= _max; ++i) {
+            res.push_back(query(i));
+        }
+        return res;
+    }
+
+    const vector<info_type>& get_d() {
+        return d;
+    }
+};
+
+struct Tag {
+    int val = -1;
+    void apply(const Tag& rhs) {
+        if (rhs.val != -1)
+        val = rhs.val;
+    }
+};
+
+struct Info {
+    int val = 0;
+    void apply(const Tag& rhs, size_t len) {
+        if (rhs.val != -1)
+        val = rhs.val * len;
+    }
+};
+
+Info operator+(const Info &a, const Info &b) {
+    return {max(a.val, b.val)};
+}
+
 void solve() {
+    read(int, n);
+    vector<pair<int, vector<int>>> data;
+    for (int i = 0; i < n; ++i) {
+        vector<int> curr;
+        read(int, k);
+        while (k--) {
+            read(int, x);
+            curr.emplace_back(x);
+        }
+        data.emplace_back(*max_element(curr.begin(), curr.end()), curr);
+    }
+    sort(data.begin(), data.end());
+    segtree<Info, Tag> dp(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        auto&& curr = data[i - 1].second;
+        int k = curr.size();
+        vector<pii> st;
+        for (int j = k - 1; ~j; --j) {
+            int curr_res = 0;
+            while (st.size() and st.back().first <= curr[j]) {
+                st.pop_back();
+            }
+            // binary search for max[t] < a[j], select max(dp[t])
+            {
+                int l = 0, r = i - 1;
+                while (l < r) {
+                    int mid = l + r + 1 >> 1;
+                    if (data[mid].first >= curr[j]) {
+                        r = mid - 1;
+                    } else {
+                        l = mid;
+                    }
+                }
+                if (data[l].first < curr[j]) {
+                    // debug(i), debug(j), debug(l), debug(dp.range_query(0, l).val), debug(st.size());
+                    curr_res = dp.range_query(1, l + 1).val + int(st.size()) + 1;
+                } else {
+                    curr_res = int(st.size()) + 1;
+                }
+            }
+            st.emplace_back(curr[j], curr_res);
+        }
+        dp.set(i, { max_element(st.begin(), st.end(), [] (const pii& a, const pii& b) { return a.second < b.second; })->second });
+        // for (auto&& x : dp.serialize()) {
+        //     cerr << x.val << ' ';
+        // }
+    }
+    cout << dp.range_query(0, n).val << '\n';
 }
 
 int main() {

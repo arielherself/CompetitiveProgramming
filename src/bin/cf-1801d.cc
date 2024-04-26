@@ -120,23 +120,6 @@ struct pair_hash {
     }
 };
 
-uniform_int_distribution<mt19937::result_type> dist(PRIME);
-const size_t __array_hash_b = 31, __array_hash_mdl1 = dist(rd), __array_hash_mdl2 = dist(rd);
-struct array_hash {
-    template <typename Sequence>
-    size_t operator()(const Sequence& arr) const {
-        size_t pw1 = 1, pw2 = 1;
-        size_t res1 = 0, res2 = 0;
-        for (auto&& x : arr) {
-            res1 = (res1 + x * pw1) % __array_hash_mdl1;
-            res2 = (res2 + x * pw2) % __array_hash_mdl2;
-            pw1 = (pw1 * __array_hash_b) % __array_hash_mdl1;
-            pw2 = (pw2 * __array_hash_b) % __array_hash_mdl2;
-        }
-        return res1 + res2;
-    }
-};
-
 /* build data structures */
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
@@ -312,6 +295,46 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
+    read(int, n, m, p);
+    vector<vector<pii>> e(n + 1);
+    vector<int> w(n + 1);
+    for (int i = 1; i <= n; ++i) cin >> w[i];
+    while (m--) {
+        read(int, u, v, s);
+        e[u].emplace_back(v, s);
+    }
+    vector<pll> res(n + 1, {INFLL, 0});
+    res[1] = {0, p};
+    vector<int> idx(n);
+    iota(idx.begin(), idx.end(), 1);
+    sort(idx.begin(), idx.end(), [&] (int i, int j) { return w[i] < w[j]; });
+    for (auto&& i : idx) {
+        auto [curr_times, curr_bal] = res[i];
+        priority_queue<pli, vector<pli>, greater<>> pq;
+        vector<bool> vis(n + 1);
+        vector<ll> dis(n + 1, INFLL);
+        pq.emplace(0, i);
+        while (pq.size()) {
+            poptop(pq, d, v);
+            continue_or(vis[v], 1);
+            for (auto&& [u, w] : e[v]) {
+                if (d + w < dis[u]) {
+                    dis[u] = d + w;
+                    pq.emplace(dis[u], u);
+                }
+            }
+        }
+        for (int j = 1; j <= n; ++j) {
+            if (dis[j] == INFLL) continue;
+            ll new_times = (max(ll(0), dis[j] - curr_bal) + w[i] - 1) / w[i];
+            ll times = curr_times + new_times;
+            ll bal = curr_bal + new_times * w[i] - dis[j];
+            if (times < res[j].first or times == res[j].first and bal > res[j].second) {
+                res[j] = {times, bal};
+            }
+        }
+    }
+    cout << (res[n].first == INFLL ? -1 : res[n].first) << '\n';
 }
 
 int main() {

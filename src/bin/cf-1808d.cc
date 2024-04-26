@@ -120,23 +120,6 @@ struct pair_hash {
     }
 };
 
-uniform_int_distribution<mt19937::result_type> dist(PRIME);
-const size_t __array_hash_b = 31, __array_hash_mdl1 = dist(rd), __array_hash_mdl2 = dist(rd);
-struct array_hash {
-    template <typename Sequence>
-    size_t operator()(const Sequence& arr) const {
-        size_t pw1 = 1, pw2 = 1;
-        size_t res1 = 0, res2 = 0;
-        for (auto&& x : arr) {
-            res1 = (res1 + x * pw1) % __array_hash_mdl1;
-            res2 = (res2 + x * pw2) % __array_hash_mdl2;
-            pw1 = (pw1 * __array_hash_b) % __array_hash_mdl1;
-            pw2 = (pw2 * __array_hash_b) % __array_hash_mdl2;
-        }
-        return res1 + res2;
-    }
-};
-
 /* build data structures */
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
@@ -302,7 +285,7 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -312,6 +295,69 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
+    read(int, n, k);
+    readvec(int, a, n);
+    array<int, int(2e5 + 10)> cnt {};
+    int j = 0;
+    int l = 2;  // [j, l)
+    ll res = 0;
+    cnt[a[j]] = 1;
+    for (int i = 0; i < n; i += 2) {
+        while (j < i or i - (k - (j - i + 1)) / 2 < 0) {
+            cnt[a[j]] -= 1;
+            j += 2;
+        }
+        while (j - 2 >= i and i - (k - (j - 2 - i + 1)) / 2 >= 0) {
+            j -= 2;
+            cnt[a[j]] += 1;
+        }
+        while (l < n and l - i + 1 <= k and (l <= j or l + (k - (l - i + 1)) / 2 < n)) {
+            cnt[a[l]] += 1;
+            l += 2;
+        }
+        while (l - 2 - i + 1 > k or (l - 2 > j and l - 2 + (k - (l - 2 - i + 1)) / 2 >= n)) {
+            l -= 2;
+            cnt[a[l]] -= 1;
+        }
+        if (l <= j) {
+            ;;
+        } else {
+            // debug(i), debug(j), debug(l);
+            // debug((l - j) / 2 - cnt[a[i]]);
+            res += (l - j) / 2 - cnt[a[i]];
+        }
+    }
+    if (n == 1) goto fi;
+    j = 1, l = 3;
+    cnt.fill(0);
+    cnt[a[j]] = 1;
+    for (int i = 1; i < n; i += 2) {
+        while (j < i or i - (k - (j - i + 1)) / 2 < 0) {
+            cnt[a[j]] -= 1;
+            j += 2;
+        }
+        while (j - 2 >= i and i - (k - (j - 2 - i + 1)) / 2 >= 0) {
+            j -= 2;
+            cnt[a[j]] += 1;
+        }
+        while (l < n and l - i + 1 <= k and (l <= j or l + (k - (l - i + 1)) / 2 < n)) {
+            cnt[a[l]] += 1;
+            l += 2;
+        }
+        while (l - 2 - i + 1 > k or (l - 2 > j and l - 2 + (k - (l - 2 - i + 1)) / 2 >= n)) {
+            l -= 2;
+            cnt[a[l]] -= 1;
+        }
+        if (l <= j) {
+            ;;
+        } else {
+            // debug(i), debug(j), debug(l);
+            // debug((l - j) / 2 - cnt[a[i]]);
+            res += (l - j) / 2 - cnt[a[i]];
+        }
+    }
+fi:
+    cout << res << '\n';
 }
 
 int main() {

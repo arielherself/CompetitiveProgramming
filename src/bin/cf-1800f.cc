@@ -302,7 +302,7 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -311,7 +311,42 @@ void dump_ignore() {}
 
 void prep() {}
 
+unordered_map<int, int, safe_hash> st[26];
+
 void solve() {
+    read(int, n);
+    readvec(string, a, n);
+    ll res = 0;
+    for (auto&& s : a) {
+        int not_mask = (1 << 26) - 1;
+        int curr = 0;
+        for (auto&& c : s) {
+            int x = c - 'a';
+            if ((not_mask >> x) & 1) {
+                not_mask ^= 1 << x;
+            }
+            curr ^= 1 << x;
+        }
+        int other = 0;
+        for (int i = 0; i < 26; ++i) {
+            if ((not_mask >> i) & 1) {
+                other |= 1 << i;
+            } else {
+                other |= (1 << i) ^ (curr & (1 << i));
+            }
+        }
+        for (int i = 0; i < 26; ++i) {
+            if ((not_mask >> i) & 1) {
+                res += st[i][other];
+            }
+        }
+        for (int i = 0; i < 26; ++i) {
+            if ((not_mask >> i) & 1) {
+                st[i][curr | 1 << i] += 1;
+            }
+        }
+    }
+    cout << res << '\n';
 }
 
 int main() {

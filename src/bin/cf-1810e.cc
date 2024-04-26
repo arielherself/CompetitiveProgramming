@@ -286,7 +286,7 @@ int period(string s) {  // find the length of shortest recurring period
 /////////////////////////////////////////////////////////
 
 // #define SINGLE_TEST_CASE
-// #define DUMP_TEST_CASE 7219
+// #define DUMP_TEST_CASE 1431
 
 void dump() {}
 
@@ -309,6 +309,7 @@ public:
     }
     
     void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
         sz[query(j)] += sz[query(i)];
         c[query(i)] = query(j);
     }
@@ -324,36 +325,44 @@ public:
 
 void solve() {
     read(int, n, m);
-    adj(cand, n);
+    adj(ch, n);
     vector<int> a(n + 1);
     for (int i = 1; i <= n; ++i) {
         cin >> a[i];
     }
     while (m--) {
         read(int, u, v);
-        edge(cand, u, v);
+        edge(ch, u, v);
     }
     vector<int> idx(n + 1);
     quick_union qu(n + 1);
     iota(idx.begin(), idx.end(), 0);
     sort(idx.begin() + 1, idx.end(), [&] (int u, int v) { return a[u] < a[v]; });
+    vector<bool> enable(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        for (auto&& j : ch[i]) {
+            if (a[i] == a[j]) {
+                qu.merge(i, j);
+            }
+        }
+    }
     for (int t = 1; t <= n; ++t) {
         int v = idx[t];
         int rest = a[v];
         int mx = 0;
         // debug(v), debug(rest);
-        for (auto&& u : cand[v]) {
-            if (a[u] > rest or qu.query_size(u) == 1 and a[u]) {
+        for (auto&& u : ch[v]) {
+            if (not enable[qu.query(u)]) {
                 continue;
             }
             mx = max(mx, int(qu.query_size(u)));
         }
         if (mx >= rest) {
-            for (auto&& u : cand[v]) {
-                if (a[u] > rest or qu.connected(u, v)) {
-                    continue;
-                }
-                // debug(curr_sz), debug(my_sz);
+            enable[qu.query(v)] = 1;
+        }
+        for (auto&& u : ch[v]) {
+            if (a[u] < rest) {
+                enable[qu.query(u)] = enable[qu.query(v)];
                 qu.merge(v, u);
             }
         }
@@ -361,9 +370,8 @@ void solve() {
     }
     int mx = 0;
     for (int i = 1; i <= n; ++i) {
-        int sz = qu.query_size(i);
-        if (not (sz == 1 and a[i])) {
-            mx = max(mx, sz);
+        if (enable[qu.query(i)]) {
+            mx = max(mx, int( qu.query_size(i) ));
         }
     }
     if (mx == n) {

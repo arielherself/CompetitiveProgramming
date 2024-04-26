@@ -312,6 +312,104 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
+    read(int, n);
+    vector<int> a(n), b(n);
+    int first_one = -1;
+    for (int i = 0; i < n; ++i) {
+        read(char, c);
+        a[i] = c - 48;
+        if (first_one == -1 and a[i]) {
+            first_one = i;
+        }
+    }
+    for (int i = 0; i < n; ++i) {
+        read(char, c);
+        b[i] = c - 48;
+    }
+    vector<int> seq;
+    auto apply = [&] (int op) {
+        seq.emplace_back(op);
+        vector<int> curr(n);
+        for (int j = 0; j < n; ++j) {
+            if (j + op >= 0 and j + op < n) {
+                curr[j] = a[j + op];
+            }
+        }
+        for (int j = 0; j < n; ++j) {
+            a[j] ^= curr[j];
+        }
+    };
+    if (first_one != -1) {
+        int start = 0;
+        while (start < n) {
+            if (a[start] or b[start]) {
+                break;
+            }
+            ++start;
+        }
+        if (start != n) {
+            if (a[start] == 0 and b[start] == 1) {
+                int next_one = -1;
+                for (int i = start + 1; i < n; ++i) {
+                    if (a[i] == 1) {
+                        next_one = i;
+                        break;
+                    }
+                }
+                if (next_one != -1) {
+                    apply(next_one - start);
+                    first_one = start;
+                } else {
+                    cout << -1 << '\n';
+                    return;
+                }
+            } else {
+                first_one = start;
+            }
+        } else {
+            cout << 0 << '\n';
+            return;
+        }
+        for (int i = start + 1; i < n; ++i) {
+            if (a[i] != b[i]) {
+                apply(first_one - i);
+            }
+        }
+        while (first_one != -1 and a[first_one] != b[first_one]) {
+            int last_one = -1;
+            for (int i = n - 1; i > first_one; --i) {
+                if (a[i]) {
+                    last_one = i;
+                    break;
+                }
+            }
+            if (last_one != -1) {
+                apply(last_one - first_one);
+                int new_first_one = -1;
+                for (int i = first_one - 1; i >= 0; --i) {
+                    if (a[i]) {
+                        new_first_one = i;
+                        break;
+                    }
+                }
+                first_one = new_first_one;
+            } else {
+                cout << -1 << '\n';
+                return;
+            }
+        }
+    }
+    // debug(a), debug(b);;
+    for (int i = 0; i < n; ++i) {
+        if (a[i] != b[i]) {
+            cout << -1 << '\n';
+            return;
+        }
+    }
+    cout << seq.size() << '\n';
+    if (seq.size()) {
+        putvec(seq);
+    }
 }
 
 int main() {
