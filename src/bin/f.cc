@@ -1,4 +1,6 @@
+#ifdef ONLINE_JUDGE
 #pragma GCC optimize("Ofast")
+#endif
 /////////////////////////////////////////////////////////
 /**
  * Useful Macros
@@ -18,8 +20,15 @@ constexpr void __() {}
 #define __as_typeof(container) decltype(container)::value_type
 
 /* type aliases */
+#if LONG_LONG_MAX != INT64_MAX
 using ll = int64_t;
 using ull = uint64_t;
+#else
+using ll = long long;
+using ull = unsigned long long;
+#endif
+using int128 = __int128_t;
+using uint128 = __uint128_t;
 using pii = pair<int, int>;
 using pil = pair<int, ll>;
 using pli = pair<ll, int>;
@@ -32,6 +41,10 @@ constexpr ll MDL = 1e9 + 7;
 constexpr ll PRIME = 998'244'353;
 constexpr ll MDL1 = 8784491;
 constexpr ll MDL2 = PRIME;
+constexpr int128 INT128_MAX = numeric_limits<int128>::max();
+constexpr uint128 UINT128_MAX = numeric_limits<uint128>::max();
+constexpr int128 INT128_MIN = numeric_limits<int128>::min();
+constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
 
 /* random */
 
@@ -107,6 +120,23 @@ struct pair_hash {
     }
 };
 
+uniform_int_distribution<mt19937::result_type> dist(PRIME);
+const size_t __array_hash_b = 31, __array_hash_mdl1 = dist(rd), __array_hash_mdl2 = dist(rd);
+struct array_hash {
+    template <typename Sequence>
+    size_t operator()(const Sequence& arr) const {
+        size_t pw1 = 1, pw2 = 1;
+        size_t res1 = 0, res2 = 0;
+        for (auto&& x : arr) {
+            res1 = (res1 + x * pw1) % __array_hash_mdl1;
+            res2 = (res2 + x * pw2) % __array_hash_mdl2;
+            pw1 = (pw1 * __array_hash_b) % __array_hash_mdl1;
+            pw2 = (pw2 * __array_hash_b) % __array_hash_mdl2;
+        }
+        return res1 + res2;
+    }
+};
+
 /* build data structures */
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
@@ -158,6 +188,29 @@ template<typename T> ostream& operator<<(ostream& out, const vector<T>& vec) {
     for (auto&& i : vec) out << i << ' ';
     return out;
 }
+std::ostream& operator<<(std::ostream& dest, const int128& value) {
+    // https://stackoverflow.com/a/25115163/23881100
+    std::ostream::sentry s( dest );
+    if ( s ) {
+        uint128 tmp = value < 0 ? -value : value;
+        char buffer[ 128 ];
+        char* d = std::end( buffer );
+        do {
+            -- d;
+            *d = "0123456789"[ tmp % 10 ];
+            tmp /= 10;
+        } while ( tmp != 0 );
+        if ( value < 0 ) {
+            -- d;
+            *d = '-';
+        }
+        int len = std::end( buffer ) - d;
+        if ( dest.rdbuf()->sputn( d, len ) != len ) {
+            dest.setstate( std::ios_base::badbit );
+        }
+    }
+    return dest;
+}
 
 /* pops */
 #define poptop(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.top(); q.pop();)
@@ -180,6 +233,22 @@ ll inverse(ll a, ll b) {
     ll x, y;
     __exgcd(a, b, x, y);
     return mod(x, b);
+}
+
+vector<tuple<int, int, ll>> decompose(ll x) {
+    vector<tuple<int, int, ll>> res;
+    for (int i = 2; i * i <= x; i++) {
+        if (x % i == 0) {
+            int cnt = 0;
+            ll pw = 1;
+            while (x % i == 0) ++cnt, x /= i, pw *= i;
+            res.emplace_back(i, cnt, pw);
+        }
+    }
+    if (x != 1) {
+        res.emplace_back(x, 1, x);
+    }
+    return res;
 }
 
 /* string algorithms */
@@ -233,65 +302,58 @@ int period(string s) {  // find the length of shortest recurring period
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
-// #define DUMP_TEST_CASE 512
+#define SINGLE_TEST_CASE
+// #define DUMP_TEST_CASE 7219
 
 void dump() {}
 
+void dump_ignore() {}
+
 void prep() {}
 
+template<typename T>
+struct BIT {
+    int n;
+    vector<T> c;
+    BIT(size_t n) : n(n), c(n + 1) {}
+    void add(size_t i, const T& k) {
+        while (i <= n) {
+            c[i] += k;
+            i += lowbit(i);
+        }
+    }
+    T getsum(size_t i) {
+        T res = {};
+        while (i) {
+            res += c[i];
+            i -= lowbit(i);
+        }
+        return res;
+    }
+};
+
 void solve() {
-    read(int, n, m, k);
-    readvec(ll, a, n);
-    int x = 1;
-    for (int i = 1; i < n; ++i) {
-        if (a[i] - a[i - 1] > a[x] - a[x - 1]) x = i;
+    read(int, n);
+    readvec(int, a, n);
+    set<int> st(a.begin(), a.end());
+    unordered_map<int, int, safe_hash> mp;
+    int N = 0;
+    for (auto&& x : st) mp[x] = ++N;
+    ll res = 0;
+    BIT<ll> tr(N);
+    BIT<ll> tr_cnt(N);
+    for (int i = 0; i < n; ++i) {
+        res += tr_cnt.getsum(mp[a[i]]) * a[i] - tr.getsum(mp[a[i]]);
+        tr.add(mp[a[i]], a[i]);
+        tr_cnt.add(mp[a[i]], 1);
     }
-    ll other = 0;
-    for (int i = 1; i < n; ++i) {
-        if (i != x) other = max(other, a[i] - a[i - 1]);
-    }
-    ll u = a[x - 1], v = a[x];
-    ll target = (v + u) / 2;
-    readvec(ll, b, m);
-    readvec(ll, c, k);
-    sort(b.begin(), b.end());
-    sort(c.begin(), c.end());
-    ll res = v - u;
-    for (int i = 0; i < m; ++i) {
-        {
-            int l = 0, r = k - 1;
-            while (l < r) {
-                int mid = l + r + 1 >> 1;
-                if (c[mid] + b[i] <= target) {
-                    l = mid;
-                } else {
-                    r = mid - 1;
-                }
-            }
-            if (r >= 0 && c[r] + b[i] <= v && c[r] + b[i] >= u) {
-                res = min(res, max(other, max(c[r] + b[i] - u, v - c[r] - b[i])));
-            }
-        }
-        {
-            int l = 0, r = k - 1;
-            while (l < r) {
-                int mid = l + r >> 1;
-                if (c[mid] + b[i] > target) {
-                    r = mid;
-                } else {
-                    l = mid + 1;
-                }
-            }
-            if (l < k && c[l] + b[i] <= v && c[l] + b[i] >= u) {
-                res = min(res, max(other, max(c[l] + b[i] - u, v - c[l] - b[i])));
-            }
-        }
-    }
-    cout << res << endl;
+    cout << res << '\n';
 }
 
 int main() {
+#if __cplusplus < 201703L || defined(_MSC_VER) && !defined(__clang__)
+    assert(false && "incompatible compiler variant detected.");
+#endif
     untie, cout.tie(NULL);
     prep();
 #ifdef SINGLE_TEST_CASE
@@ -300,10 +362,12 @@ int main() {
     read(int, t);
     for (int i = 0; i < t; ++i) {
 #ifdef DUMP_TEST_CASE
-        if (i + 1 == (DUMP_TEST_CASE)) {
+        if (t < (DUMP_TEST_CASE)) {
+            solve();
+        } else if (i + 1 == (DUMP_TEST_CASE)) {
             dump();
         } else {
-            solve();
+            dump_ignore();
         }
 #else
         solve();

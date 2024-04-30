@@ -300,9 +300,38 @@ int period(string s) {  // find the length of shortest recurring period
     }
     return n;
 }
+
+/* modular arithmetic */
+template <ll mdl> struct MLL {
+    ll val;
+    MLL(ll v = 0) : val(mod(v, mdl)) {}
+    MLL(const MLL<mdl>& other) : val(other.val) {}
+    friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
+    friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
+    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
+    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
+    friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
+    friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
+    friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
+    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
+    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
+    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
+    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
+    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
+};
+
+template <ll mdl>
+ostream& operator<<(ostream& out, const MLL<mdl>& num) {
+    return out << num.val;
+}
+
+template <ll mdl>
+istream& operator>>(istream& in, MLL<mdl>& num) {
+    return in >> num.val;
+}
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -312,18 +341,25 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
+    using ll = MLL<PRIME>;
     read(int, n);
-    readvec(int, a, n);
-    vector<int> q;
+    int target = 0;
+    read(string, a, b);
     for (int i = 0; i < n; ++i) {
-        q.emplace_back(a[i]);
-        while (q.size() > 1 and q[q.size() - 1] == q[q.size() - 2]) {
-            int nw = q.back() + 1;
-            q.pop_back(); q.pop_back();
-            q.emplace_back(nw);
+        if (a[i] != b[i]) {
+            target += 1;
         }
     }
-    cout << q.size() << '\n';
+    vector<ll> c(n + 1);
+    c[n] = 1;
+    for (int i = n - 1; i >= 0; --i) {
+        c[i] = ((n - i) * c[i + 1] + n) / i;
+    }
+    ll res = 0;
+    for (int i = 1; i <= target; ++i) {
+        res += c[i];
+    }
+    cout << res << '\n';
 }
 
 int main() {

@@ -1,4 +1,6 @@
+#ifdef ONLINE_JUDGE
 #pragma GCC optimize("Ofast")
+#endif
 /////////////////////////////////////////////////////////
 /**
  * Useful Macros
@@ -18,8 +20,15 @@ constexpr void __() {}
 #define __as_typeof(container) decltype(container)::value_type
 
 /* type aliases */
+#if LONG_LONG_MAX != INT64_MAX
 using ll = int64_t;
 using ull = uint64_t;
+#else
+using ll = long long;
+using ull = unsigned long long;
+#endif
+using int128 = __int128_t;
+using uint128 = __uint128_t;
 using pii = pair<int, int>;
 using pil = pair<int, ll>;
 using pli = pair<ll, int>;
@@ -32,6 +41,10 @@ constexpr ll MDL = 1e9 + 7;
 constexpr ll PRIME = 998'244'353;
 constexpr ll MDL1 = 8784491;
 constexpr ll MDL2 = PRIME;
+constexpr int128 INT128_MAX = numeric_limits<int128>::max();
+constexpr uint128 UINT128_MAX = numeric_limits<uint128>::max();
+constexpr int128 INT128_MIN = numeric_limits<int128>::min();
+constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
 
 /* random */
 
@@ -107,6 +120,23 @@ struct pair_hash {
     }
 };
 
+uniform_int_distribution<mt19937::result_type> dist(PRIME);
+const size_t __array_hash_b = 31, __array_hash_mdl1 = dist(rd), __array_hash_mdl2 = dist(rd);
+struct array_hash {
+    template <typename Sequence>
+    size_t operator()(const Sequence& arr) const {
+        size_t pw1 = 1, pw2 = 1;
+        size_t res1 = 0, res2 = 0;
+        for (auto&& x : arr) {
+            res1 = (res1 + x * pw1) % __array_hash_mdl1;
+            res2 = (res2 + x * pw2) % __array_hash_mdl2;
+            pw1 = (pw1 * __array_hash_b) % __array_hash_mdl1;
+            pw2 = (pw2 * __array_hash_b) % __array_hash_mdl2;
+        }
+        return res1 + res2;
+    }
+};
+
 /* build data structures */
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
@@ -157,6 +187,29 @@ decltype(auto) operator<<(std::basic_ostream<Char, Traits>& os, const std::tuple
 template<typename T> ostream& operator<<(ostream& out, const vector<T>& vec) {
     for (auto&& i : vec) out << i << ' ';
     return out;
+}
+std::ostream& operator<<(std::ostream& dest, const int128& value) {
+    // https://stackoverflow.com/a/25115163/23881100
+    std::ostream::sentry s( dest );
+    if ( s ) {
+        uint128 tmp = value < 0 ? -value : value;
+        char buffer[ 128 ];
+        char* d = std::end( buffer );
+        do {
+            -- d;
+            *d = "0123456789"[ tmp % 10 ];
+            tmp /= 10;
+        } while ( tmp != 0 );
+        if ( value < 0 ) {
+            -- d;
+            *d = '-';
+        }
+        int len = std::end( buffer ) - d;
+        if ( dest.rdbuf()->sputn( d, len ) != len ) {
+            dest.setstate( std::ios_base::badbit );
+        }
+    }
+    return dest;
 }
 
 /* pops */
@@ -250,71 +303,81 @@ int period(string s) {  // find the length of shortest recurring period
 /////////////////////////////////////////////////////////
 
 #define SINGLE_TEST_CASE
-// #define DUMP_TEST_CASE 512
+// #define DUMP_TEST_CASE 7219
 
 void dump() {}
 
+void dump_ignore() {}
+
 void prep() {}
+
+template<typename T>
+struct BIT {
+    int n;
+    vector<T> c;
+    BIT(size_t n) : n(n), c(n + 1) {}
+    void add(size_t i, const T& k) {
+        while (i <= n) {
+            c[i] += k;
+            i += lowbit(i);
+        }
+    }
+    T getsum(size_t i) {
+        T res = {};
+        while (i) {
+            res += c[i];
+            i -= lowbit(i);
+        }
+        return res;
+    }
+};
 
 void solve() {
     read(int, n);
-    readvec(int, a, n);
-    vector<vector<int>> open(100010);
+    set<ll> pos_st, neg_st;
+    vector<pll> a;
     for (int i = 0; i < n; ++i) {
-        open[a[i]].push_back(i);
+        read(ll, x, y);
+        pos_st.emplace(y - x);
+        neg_st.emplace(y + x);
+        a.emplace_back(x, y);
     }
-    vector<int> cnt(100010);
-    vector<int> state(n, 1);
-    int curr = 1;
-    for (int i = 0; i <= 1e5; ++i) {
-        int prev = -2;
-        int left = -1, right = -1;
-        for (auto&& x : open[i]) {
-            if (x == prev + 1) {
-                right = x;
-            } else {
-                if (left != -1) {
-                    if (left == 0 || state[left - 1] == 0) {
-                        if (right == n - 1 || state[right + 1] == 0) {
-                            curr -= 1;
-                        }
-                    } else {
-                        if (right == n - 1 || state[right + 1] == 0) {
-                            ;;
-                        } else {
-                            curr += 1;
-                        }
-                    }
-                }
-                left = x;
-                right = x;
-            }
-            state[x] = 0;
+    int N = 0, M = 0;
+    unordered_map<ll, int, safe_hash> pos_mp, neg_mp;
+    for (auto&& x : pos_st) pos_mp[x] = ++N;
+    for (auto&& x : neg_st) neg_mp[x] = ++M;
+    BIT<ll> tr_pos_2(N), tr_pos_2_cnt(N), tr_pos_1(N), tr_pos_1_cnt(N);
+    BIT<ll> tr_neg_2(M), tr_neg_2_cnt(M), tr_neg_1(M), tr_neg_1_cnt(M);
+    ll res = 0;
+    for (int i = n - 1; ~i; --i) {
+        auto&& [x, y] = a[i];
+        ll pos_id = y - x, neg_id = y + x;
+        ll curr = 0;
+        if (mod(pos_id, 2) == 1) {
+            curr += (tr_pos_1.getsum(N) - tr_pos_1.getsum(pos_mp[pos_id]) - (tr_pos_1_cnt.getsum(N) - tr_pos_1_cnt.getsum(pos_mp[pos_id])) * pos_id) / 2;
+            curr += (tr_pos_1_cnt.getsum(pos_mp[pos_id]) * pos_id - tr_pos_1.getsum(pos_mp[pos_id])) / 2;
+            tr_pos_1.add(pos_mp[pos_id], pos_id);
+            tr_pos_1_cnt.add(pos_mp[pos_id], 1);
+        } else {
+            curr += (tr_pos_2.getsum(N) - tr_pos_2.getsum(pos_mp[pos_id]) - (tr_pos_2_cnt.getsum(N) - tr_pos_2_cnt.getsum(pos_mp[pos_id])) * pos_id) / 2;
+            curr += (tr_pos_2_cnt.getsum(pos_mp[pos_id]) * pos_id - tr_pos_2.getsum(pos_mp[pos_id])) / 2;
+            tr_pos_2.add(pos_mp[pos_id], pos_id);
+            tr_pos_2_cnt.add(pos_mp[pos_id], 1);
         }
-        if (left != -1) {
-            if (left == 0 || state[left - 1] == 0) {
-                if (right == n - 1 || state[right + 1] == 0) {
-                    curr -= 1;
-                }
-            } else {
-                if (right == n - 1 || state[right + 1] == 0) {
-                    ;;
-                } else {
-                    curr += 1;
-                }
-            }
+        if (mod(neg_id, 2) == 1) {
+            curr += (tr_neg_1.getsum(M) - tr_neg_1.getsum(neg_mp[neg_id]) - (tr_neg_1_cnt.getsum(M) - tr_neg_1_cnt.getsum(neg_mp[neg_id])) * neg_id) / 2;
+            curr += (tr_neg_1_cnt.getsum(neg_mp[neg_id]) * neg_id - tr_neg_1.getsum(neg_mp[neg_id])) / 2;
+            tr_neg_1.add(neg_mp[neg_id], neg_id);
+            tr_neg_1_cnt.add(neg_mp[neg_id], 1);
+        } else {
+            curr += (tr_neg_2.getsum(M) - tr_neg_2.getsum(neg_mp[neg_id]) - (tr_neg_2_cnt.getsum(M) - tr_neg_2_cnt.getsum(neg_mp[neg_id])) * neg_id) / 2;
+            curr += (tr_neg_2_cnt.getsum(neg_mp[neg_id]) * neg_id - tr_neg_2.getsum(neg_mp[neg_id])) / 2;
+            tr_neg_2.add(neg_mp[neg_id], neg_id);
+            tr_neg_2_cnt.add(neg_mp[neg_id], 1);
         }
-        cnt[i] = curr;
+        res += curr;
     }
-    // debug(cnt);
-    int mx = *max_element(a.begin(), a.end());
-    for (int k = 1; k <= mx; ++k) {
-        ll res = 0;
-        for (int i = 0; i <= mx; i += k) {
-            res += cnt[i];
-        }
-        cout << res << " \n"[k == mx];
-    }
+    cout << res << '\n';
 }
 
 int main() {
@@ -329,10 +392,12 @@ int main() {
     read(int, t);
     for (int i = 0; i < t; ++i) {
 #ifdef DUMP_TEST_CASE
-        if (i + 1 == (DUMP_TEST_CASE)) {
+        if (t < (DUMP_TEST_CASE)) {
+            solve();
+        } else if (i + 1 == (DUMP_TEST_CASE)) {
             dump();
         } else {
-            solve();
+            dump_ignore();
         }
 #else
         solve();

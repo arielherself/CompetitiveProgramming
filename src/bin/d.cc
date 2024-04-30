@@ -1,4 +1,6 @@
+#ifdef ONLINE_JUDGE
 #pragma GCC optimize("Ofast")
+#endif
 /////////////////////////////////////////////////////////
 /**
  * Useful Macros
@@ -18,8 +20,15 @@ constexpr void __() {}
 #define __as_typeof(container) decltype(container)::value_type
 
 /* type aliases */
+#if LONG_LONG_MAX != INT64_MAX
 using ll = int64_t;
 using ull = uint64_t;
+#else
+using ll = long long;
+using ull = unsigned long long;
+#endif
+using int128 = __int128_t;
+using uint128 = __uint128_t;
 using pii = pair<int, int>;
 using pil = pair<int, ll>;
 using pli = pair<ll, int>;
@@ -32,6 +41,10 @@ constexpr ll MDL = 1e9 + 7;
 constexpr ll PRIME = 998'244'353;
 constexpr ll MDL1 = 8784491;
 constexpr ll MDL2 = PRIME;
+constexpr int128 INT128_MAX = numeric_limits<int128>::max();
+constexpr uint128 UINT128_MAX = numeric_limits<uint128>::max();
+constexpr int128 INT128_MIN = numeric_limits<int128>::min();
+constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
 
 /* random */
 
@@ -107,6 +120,23 @@ struct pair_hash {
     }
 };
 
+uniform_int_distribution<mt19937::result_type> dist(PRIME);
+const size_t __array_hash_b = 31, __array_hash_mdl1 = dist(rd), __array_hash_mdl2 = dist(rd);
+struct array_hash {
+    template <typename Sequence>
+    size_t operator()(const Sequence& arr) const {
+        size_t pw1 = 1, pw2 = 1;
+        size_t res1 = 0, res2 = 0;
+        for (auto&& x : arr) {
+            res1 = (res1 + x * pw1) % __array_hash_mdl1;
+            res2 = (res2 + x * pw2) % __array_hash_mdl2;
+            pw1 = (pw1 * __array_hash_b) % __array_hash_mdl1;
+            pw2 = (pw2 * __array_hash_b) % __array_hash_mdl2;
+        }
+        return res1 + res2;
+    }
+};
+
 /* build data structures */
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
@@ -157,6 +187,29 @@ decltype(auto) operator<<(std::basic_ostream<Char, Traits>& os, const std::tuple
 template<typename T> ostream& operator<<(ostream& out, const vector<T>& vec) {
     for (auto&& i : vec) out << i << ' ';
     return out;
+}
+std::ostream& operator<<(std::ostream& dest, const int128& value) {
+    // https://stackoverflow.com/a/25115163/23881100
+    std::ostream::sentry s( dest );
+    if ( s ) {
+        uint128 tmp = value < 0 ? -value : value;
+        char buffer[ 128 ];
+        char* d = std::end( buffer );
+        do {
+            -- d;
+            *d = "0123456789"[ tmp % 10 ];
+            tmp /= 10;
+        } while ( tmp != 0 );
+        if ( value < 0 ) {
+            -- d;
+            *d = '-';
+        }
+        int len = std::end( buffer ) - d;
+        if ( dest.rdbuf()->sputn( d, len ) != len ) {
+            dest.setstate( std::ios_base::badbit );
+        }
+    }
+    return dest;
 }
 
 /* pops */
@@ -250,71 +303,69 @@ int period(string s) {  // find the length of shortest recurring period
 /////////////////////////////////////////////////////////
 
 #define SINGLE_TEST_CASE
-// #define DUMP_TEST_CASE 512
+// #define DUMP_TEST_CASE 7219
 
 void dump() {}
 
+void dump_ignore() {}
+
 void prep() {}
 
-template <ll mdl> struct MLL {
-    ll val;
-    MLL(ll v = 0) : val(mod(v, mdl)) {}
-    friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
-    friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
-    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
-    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
-    friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
-    friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
-    friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
-    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
-    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
-    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
-    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
-    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
-};
-
-template <ll mdl>
-ostream& operator<<(ostream& out, const MLL<mdl>& num) {
-    return out << num.val;
-}
-
-template <ll mdl>
-istream& operator>>(istream& in, MLL<mdl>& num) {
-    return in >> num.val;
-}
-
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    sort(a.begin(), a.end());
-    array<vector<MLL<PRIME>>, 2> cnt = {vector<MLL<PRIME>>(10001), vector<MLL<PRIME>>(10001)};
+    read(int, n, m);
+    vector<vector<bool>> fix(n, vector<bool>(m));
+    auto mark = [&] (int i, int j) {
+        if (i >= 0 && i < n && j >= 0 && j < m) {
+            fix[i][j] = true;
+        }
+    };
+    vector<vector<bool>> hs(n, vector<bool>(m));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            read(char, c);
+            if (c == '#') {
+                mark(i - 1, j);
+                mark(i + 1, j);
+                mark(i, j - 1);
+                mark(i, j + 1);
+                hs[i][j] = 1;
+            }
+        }
+    }
+    auto serialize = [&] (int i, int j) {
+        return i * m + j;
+    };
+    vector<vector<int>> ch(n * m);
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            if (not fix[i][j]) {
+                if (i - 1 >= 0) ch[serialize(i, j)].emplace_back(serialize(i - 1, j));
+                if (i + 1 < n) ch[serialize(i, j)].emplace_back(serialize(i + 1, j));
+                if (j - 1 >= 0) ch[serialize(i, j)].emplace_back(serialize(i, j - 1));
+                if (j + 1 < m) ch[serialize(i, j)].emplace_back(serialize(i, j + 1));
+            }
+        }
+    }
+    int res = 1;
+    vector<bool> vis(n * m);
+    vector<int> fix_vis(n * m);
     int curr = 0;
-    cnt[curr][0] = 1;
-    for (auto&& x : a) {
-        curr ^= 1;
-        for (int i = 0; i <= 10000; ++i) {
-            cnt[curr][i] = cnt[1 ^ curr][i];
+    int tm = 0;
+    auto dfs = [&] (auto dfs, int v) -> void {
+        if (vis[v] or fix_vis[v] >= tm) return;
+        curr += 1;
+        if (fix[v / m][v % m]) fix_vis[v] = tm;
+        else vis[v] = 1;
+        for (auto&& u : ch[v]) {
+            dfs(dfs, u);
         }
-        for (int i = x; i <= 10000; ++i) {
-            cnt[curr][i] += cnt[1 ^ curr][i - x];
-        }
-    }
-    MLL<PRIME> res = 0;
-    MLL<PRIME> plus = 0, minus = 0;
-    for (auto&& x : a) {
-        for (int i = 0; i < x; ++i) {
-            res += cnt[curr][i] * x;
-            plus += cnt[curr][i] * x;
-            res -= cnt[curr][i] * ((x + i + 1) / 2);
-            minus += cnt[curr][i] * ((x + i + 1) / 2);
-            // cnt[curr][i] -= cnt[1 ^ curr][x - i];
-        }
-    }
-    // debug(res);
-    // debug(plus), debug(minus);
-    // debug(cnt[curr]);
-    for (int i = 1; i <= 5000; ++i) {
-        res += i * (cnt[curr][2 * i] + cnt[curr][2 * i - 1]);
+    };
+    for (int i = 0; i < n * m; ++i) {
+        if (hs[i / m][i % m] or fix[i / m][i % m] or vis[i]) continue;
+        ++tm;
+        curr = 0;
+        dfs(dfs, i);
+        res = max(res, curr);
     }
     cout << res << '\n';
 }
@@ -331,10 +382,12 @@ int main() {
     read(int, t);
     for (int i = 0; i < t; ++i) {
 #ifdef DUMP_TEST_CASE
-        if (i + 1 == (DUMP_TEST_CASE)) {
+        if (t < (DUMP_TEST_CASE)) {
+            solve();
+        } else if (i + 1 == (DUMP_TEST_CASE)) {
             dump();
         } else {
-            solve();
+            dump_ignore();
         }
 #else
         solve();
