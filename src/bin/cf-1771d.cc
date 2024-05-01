@@ -1,4 +1,6 @@
+#ifdef ONLINE_JUDGE
 #pragma GCC optimize("Ofast")
+#endif
 /////////////////////////////////////////////////////////
 /**
  * Useful Macros
@@ -336,29 +338,60 @@ void dump() {}
 
 void dump_ignore() {}
 
-constexpr int MAXN = 1e6 + 10;
-using mll = MLL<PRIME>;
-mll fact[MAXN];
-void prep() {
-    fact[0] = 1;
-    for (int i = 1; i < MAXN; ++i) {
-        fact[i] = fact[i - 1] * i;
-    }
-}
-
-mll comb(int n, int k) {
-    if (n < 0 or k < 0 or n < k) return 0;
-    return fact[n] / fact[k] / fact[n - k];
-}
+void prep() {}
 
 void solve() {
-    read(int, l, n);
-    mll res = 0;
-    for (int x = 0; 2 * x <= l - 2 * n; ++x) {
-        // select 2x positions
-        res += comb(x + n - 1, n - 1) * comb(l - 2 * n - 2 * x + n, n);
+    read(int, n);
+    vector<char> s(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        cin >> s[i];
     }
-    cout << (comb(l, 2 * n) - res) * 2 << '\n';
+    adj(ch, n);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
+    }
+    vector<vector<int>> to(n + 1, vector<int>(n + 1));
+    auto get = [&] (auto get, int v, int pa, int top, int sub) -> void {
+        to[v][top] = pa;
+        to[top][v] = sub;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            get(get, u, v, top, sub);
+        }
+    };
+    for (int i = 1; i <= n; ++i) {
+        for (auto&& u : ch[i]) {
+            get(get, u, i, i, u);
+        }
+    }
+    vector<vector<int>> dp(n + 1, vector<int>(n + 1, -1));
+    auto dfs = [&] (auto dfs, int u, int v) -> int {
+        tie(u, v) = minmax(+u, +v);
+        if (dp[u][v] != -1) {
+            return dp[u][v];
+        }
+        int ans;
+        if (u == v) {
+            ans = 1;
+        } else if (to[u][v] == v) {
+            ans = 1 + (s[u] == s[v]);
+        } else {
+            int ans1 = dfs(dfs, to[u][v], v);
+            int ans2 = dfs(dfs, u, to[v][u]);
+            int ans3 = dfs(dfs, to[u][v], to[v][u]) + 2 * (s[u] == s[v]);
+            ans = max(ans1, max(ans2, ans3));
+        }
+        dp[u][v] = ans;
+        return ans;
+    };
+    int res = 0;
+    for (int i = 1; i <= n; ++i) {
+        for (int j = i; j <= n; ++j) {
+            res = max(res, dfs(dfs, i, j));
+        }
+    }
+    cout << res << '\n';
 }
 
 int main() {

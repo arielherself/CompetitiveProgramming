@@ -336,9 +336,9 @@ void dump() {}
 
 void dump_ignore() {}
 
-constexpr int MAXN = 1e6 + 10;
+constexpr int MAXN = 2e5 + 10;
 using mll = MLL<PRIME>;
-mll fact[MAXN];
+mll fact[MAXN], k_up[MAXN];
 void prep() {
     fact[0] = 1;
     for (int i = 1; i < MAXN; ++i) {
@@ -346,19 +346,31 @@ void prep() {
     }
 }
 
-mll comb(int n, int k) {
-    if (n < 0 or k < 0 or n < k) return 0;
-    return fact[n] / fact[k] / fact[n - k];
-}
-
 void solve() {
-    read(int, l, n);
-    mll res = 0;
-    for (int x = 0; 2 * x <= l - 2 * n; ++x) {
-        // select 2x positions
-        res += comb(x + n - 1, n - 1) * comb(l - 2 * n - 2 * x + n, n);
+    read(int, n, k);
+    vector<mll> a(n + 1);
+    for (int i = 1; i <= n; ++i) cin >> a[i];
+    k_up[0] = 1;
+    for (int i = 1; i <= n; ++i) {
+        k_up[i] = k_up[i - 1] * (k + i - 1);
     }
-    cout << (comb(l, 2 * n) - res) * 2 << '\n';
+    vector<mll> res(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        int lsd = lsp(i);
+        int mask = ~((1 << lsd + 1) - 1);
+        int high_bits = i & mask;
+        mll curr = 0;
+        for (int j = 1; j < (1 << lsd); ++j) {
+            int p = lsd - lsp(j) + 2 - popcount(j) - 1;
+            // debug(make_tuple(i, j, p, k_up[p] / fact[p]));
+            int idx = j | high_bits;
+            curr -= (k_up[p] / fact[p]) * res[idx];
+        }
+        res[i] = curr + a[i];
+    }
+    for (int i = 1; i <= n; ++i) {
+        cout << res[i] << " \n"[i == n];
+    }
 }
 
 int main() {

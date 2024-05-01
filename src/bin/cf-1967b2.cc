@@ -336,29 +336,21 @@ void dump() {}
 
 void dump_ignore() {}
 
-constexpr int MAXN = 1e6 + 10;
-using mll = MLL<PRIME>;
-mll fact[MAXN];
-void prep() {
-    fact[0] = 1;
-    for (int i = 1; i < MAXN; ++i) {
-        fact[i] = fact[i - 1] * i;
-    }
-}
-
-mll comb(int n, int k) {
-    if (n < 0 or k < 0 or n < k) return 0;
-    return fact[n] / fact[k] / fact[n - k];
-}
+void prep() {}
 
 void solve() {
-    read(int, l, n);
-    mll res = 0;
-    for (int x = 0; 2 * x <= l - 2 * n; ++x) {
-        // select 2x positions
-        res += comb(x + n - 1, n - 1) * comb(l - 2 * n - 2 * x + n, n);
+    read(int, n, m);
+    int res = 0;
+    int nrt = sqrt(n), mrt = sqrt(m);
+    for (int p = 1; p <= nrt; ++p) {
+        for (int q = 1; q <= mrt; ++q) {
+            if (gcd(p, q) != 1) continue;
+            for (int g = p + q; g <= min(n / p, m / q); g += p + q) {
+                res += 1;
+            }
+        }
     }
-    cout << (comb(l, 2 * n) - res) * 2 << '\n';
+    cout << res << endl;
 }
 
 int main() {

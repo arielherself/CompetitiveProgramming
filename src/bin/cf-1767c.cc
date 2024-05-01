@@ -1,4 +1,6 @@
+#ifdef ONLINE_JUDGE
 #pragma GCC optimize("Ofast")
+#endif
 /////////////////////////////////////////////////////////
 /**
  * Useful Macros
@@ -329,36 +331,64 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
 
 void dump_ignore() {}
 
-constexpr int MAXN = 1e6 + 10;
-using mll = MLL<PRIME>;
-mll fact[MAXN];
-void prep() {
-    fact[0] = 1;
-    for (int i = 1; i < MAXN; ++i) {
-        fact[i] = fact[i - 1] * i;
-    }
-}
-
-mll comb(int n, int k) {
-    if (n < 0 or k < 0 or n < k) return 0;
-    return fact[n] / fact[k] / fact[n - k];
-}
+void prep() {}
 
 void solve() {
-    read(int, l, n);
-    mll res = 0;
-    for (int x = 0; 2 * x <= l - 2 * n; ++x) {
-        // select 2x positions
-        res += comb(x + n - 1, n - 1) * comb(l - 2 * n - 2 * x + n, n);
+    using ll = MLL<PRIME>;
+    read(int, n);
+    vector<vector<int>> a(n, vector<int>(n));
+    for (int i = 0; i < n; ++i) {
+        for (int j = i; j < n; ++j) {
+            cin >> a[i][j];
+        }
     }
-    cout << (comb(l, 2 * n) - res) * 2 << '\n';
+    vector<vector<array<ll, 2>>> dp(n + 1, vector<array<ll, 2>>(n + 1));
+    ll res = 0;
+    dp[n][n][1] = 1, dp[n][n][0] = 1;
+    for (int i = n - 1; ~i; --i) {
+        int last_1 = -1, first_2 = n;
+        for (int j = n - 1; j >= i; --j) {
+            if (a[i][j] == 1) {
+                last_1 = j;
+                break;
+            }
+        }
+        for (int j = i; j < n; ++j) {
+            if (a[i][j] == 2) {
+                first_2 = j;
+                break;
+            }
+        }
+        if (last_1 > first_2) {
+            goto fail;
+        }
+        for (int k = 0; k < 2; ++k) {
+            for (int j = max(i + 1, last_1 + 1); j <= first_2; ++j) {
+                if (j == i + 1 and j != n) {
+                    for (int l = j; l <= n; ++l) {
+                        dp[i][j][k] += dp[j][l][1 ^ k];
+                    }
+                }
+                dp[i][j][k] += dp[i + 1][j][k];
+            }
+        }
+    }
+    for (int i = 0; i <= n; ++i) {
+        for (int k = 0; k < 2; ++k) {
+            res += dp[0][i][k];
+        }
+    }
+    cout << res << '\n';
+    return;
+fail:
+    cout << 0 << '\n';
 }
 
 int main() {

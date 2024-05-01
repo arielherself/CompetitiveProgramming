@@ -331,47 +331,13 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
 
 /////////////////////////////////////////////////////////
 
-class Solution {
-public:
-    int numberOfStableArrays(int zero, int one, int limit) {
-        using ll = MLL<MDL>;
-        int n = zero + one;
-        vector<deque<ll>> dp(zero + 1);
-        vector<ll> rowsum(zero + 1);
-        for (int i = 0; i <= zero; ++i) {
-            for (int j = 0; j <= limit; ++j) {
-                if (i == 0 and j == 0) {
-                    dp[i].push_back(1);
-                } else {
-                    dp[i].push_back(0);                
-                }
-            }
-        }
-        ll curr = 0;
-        for (int i = 0; i < n; ++i) {
-            vector<ll> col;
-            for (int i = 1; i <= zero; ++i) {
-                col.push_back(rowsum[i - 1]);
-            }
-            for (int i = 0; i <= zero; ++i) {
-                rowsum[i] = rowsum[i] - dp[i].back();
-                dp[i].pop_back();
-                if (i == 0) continue;
-                dp[i].push_front(col[i - 1]);
-                rowsum[i] += col[i - 1];
-            }
-        }
-        ll res = 0;
-        for (int i = 0; i <= zero; ++i) {
-            while (dp[i].size()) {
-                res += dp[i].back();
-                dp[i].pop_back();
-            }
-        }
-        return res.val;
-    }
-};
-
 int main() {
-    cout << Solution().numberOfStableArrays(1, 1, 2);
+    using mll = MLL<PRIME>;
+    vector<mll> fact(1000), pw(1000);
+    fact[0] = 1, pw[0] = 1;
+    for (int i = 1; i < 1000; ++i) {
+        fact[i] = fact[i - 1] * i;
+        pw[i] = pw[i - 1] * 2;
+    }
+    cout << (fact[420] / fact[2 * 69] / fact[420 - 2 * 69] / pw[69]) << '\n';
 }
