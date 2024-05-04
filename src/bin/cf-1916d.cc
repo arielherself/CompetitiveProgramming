@@ -339,30 +339,28 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
-    read(int, x);
-    int sq = sqrt(x);
-    int res = 0, res_y = -1;
-    for (int i = 1; i <= sq; ++i) {
-        if (x % i == 0) {
-            if (x / i != x) {
-                int k = (x + x / i - 1) / (x / i) - 1;
-                int curr = (k + 1) * x / i;
-                if (curr > res) {
-                    res = curr;
-                    res_y = k * (x / i);
-                }
+    unordered_set<array<char, 3>, array_hash> choices = {{'1', '6', '9'}, {'9', '6', '1'}};
+    read(int, n);
+    if (n == 1) {
+        cout << 1 << '\n';
+    } else if (n == 3) {
+        cout << "169\n196\n961\n";
+    } else {
+        int zeros = n / 2 - 1;
+        int cnt = 0;
+        while (cnt < n and zeros >= 0) {
+            for (auto&& [x, y, z] : choices) {
+                if (cnt == n) break;
+                cout << x << string(zeros, '0') << y << string(zeros, '0') << z << string(n - 3 - 2 * zeros, '0') << '\n';
+                cnt += 1;
             }
-            if (i != x) {
-                int k = (x + i - 1) / i - 1;
-                int curr = (k + 1) * i;
-                if (curr > res) {
-                    res = curr;
-                    res_y = k * i;
-                }
-            } 
+            zeros -= 1;
+        }
+        if (cnt < n) {
+            assert(cnt == n - 1);
+            cout << "196" << string(n - 3, '0') << '\n';
         }
     }
-    cout << res_y << '\n';
 }
 
 int main() {

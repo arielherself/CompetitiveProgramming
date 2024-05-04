@@ -339,30 +339,25 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
-    read(int, x);
-    int sq = sqrt(x);
-    int res = 0, res_y = -1;
-    for (int i = 1; i <= sq; ++i) {
-        if (x % i == 0) {
-            if (x / i != x) {
-                int k = (x + x / i - 1) / (x / i) - 1;
-                int curr = (k + 1) * x / i;
-                if (curr > res) {
-                    res = curr;
-                    res_y = k * (x / i);
-                }
+    read(ll, n, k);
+    vector<int> res;
+    ll sum = 0;
+    while (sum < n) {
+        if (sum >= k - 1) {
+            res.emplace_back(max(k, sum) + 1);
+            sum += max(k, sum) + 1;
+        } else {
+            if (2 * sum + 1 >= k) {
+                res.emplace_back(k - 1 - sum);
+                sum += k - 1 - sum;
+            } else {
+                res.emplace_back(sum + 1);
+                sum += sum + 1;
             }
-            if (i != x) {
-                int k = (x + i - 1) / i - 1;
-                int curr = (k + 1) * i;
-                if (curr > res) {
-                    res = curr;
-                    res_y = k * i;
-                }
-            } 
         }
     }
-    cout << res_y << '\n';
+    cout << res.size() << '\n';
+    putvec(res);
 }
 
 int main() {

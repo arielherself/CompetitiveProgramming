@@ -338,31 +338,96 @@ void dump_ignore() {}
 
 void prep() {}
 
-void solve() {
-    read(int, x);
-    int sq = sqrt(x);
-    int res = 0, res_y = -1;
-    for (int i = 1; i <= sq; ++i) {
-        if (x % i == 0) {
-            if (x / i != x) {
-                int k = (x + x / i - 1) / (x / i) - 1;
-                int curr = (k + 1) * x / i;
-                if (curr > res) {
-                    res = curr;
-                    res_y = k * (x / i);
-                }
+template<typename _Tp, typename _Op = function<_Tp(const _Tp&, const _Tp&)>> struct sparse_table {
+    _Op op;
+    vector<vector<_Tp>> st;
+    template <typename ReverseIterator>
+    sparse_table(ReverseIterator __first, ReverseIterator __last, _Op&& __operation) {
+        op = __operation;
+        int n = distance(__first, __last);
+        st = vector<vector<_Tp>>(n, vector<_Tp>(int(log2(n) + 1)));
+        int i = n - 1;
+        for (auto it = __first; it != __last; ++it) {
+            st[i][0] = *it;
+            for (int j = 1; i + (1 << j) <= n; ++j) {
+                st[i][j] = op(st[i][j - 1], st[i + (1 << (j - 1))][j - 1]);
             }
-            if (i != x) {
-                int k = (x + i - 1) / i - 1;
-                int curr = (k + 1) * i;
-                if (curr > res) {
-                    res = curr;
-                    res_y = k * i;
-                }
-            } 
+            i -= 1;
         }
     }
-    cout << res_y << '\n';
+    _Tp query(size_t __start, size_t __end) {
+        int s = lg2(__end - __start + 1);
+        return op(st[__start][s], st[__end - (1 << s) + 1][s]);
+    }
+};
+
+auto u_min = [] (int x, int y) -> int { return min(x, y); };
+auto u_max = [] (int x, int y) -> int { return max(x, y); };
+void solve() {
+    read(int, n);
+    readvec(int, a, n);
+    readvec(int, b, n);
+    sparse_table<int> ST_min(b.rbegin(), b.rend(), u_min), ST_max(b.rbegin(), b.rend(), u_max);
+    vector<int> bk(n + 1, -1);
+    vector<bool> mark(n);
+    for (int i = 0; i < n; ++i) {
+        if (a[i] == b[i]) {
+            mark[i] = 1;
+            bk[b[i]] = i;
+        } else if (a[i] > b[i]) {
+            cout << "NO\n";
+            return;
+        } else {
+            if (bk[b[i]] != -1) {
+                int j = bk[b[i]];
+                int l = j, r = i;
+                while (l < r) {
+                    int mid = l + r >> 1;
+                    if (ST_min.query(mid, i) == b[i] and ST_max.query(mid, i) == b[i]) {
+                        r = mid;
+                    } else {
+                        l = mid + 1;
+                    }
+                }
+                if (l == j or ST_min.query(j, l - 1) >= b[i]) {
+                    mark[i] = 1;
+                }
+            }
+            bk[b[i]] = i;
+        }
+    }
+    bk.assign(n + 1, -1);
+    for (int i = n - 1; ~i; --i) {
+        if (a[i] == b[i]) {
+            mark[i] = 1;
+            bk[b[i]] = i;
+        } else if (a[i] > b[i]) {
+            cout << "NO\n";
+            return;
+        } else {
+            if (bk[b[i]] != -1) {
+                int j = bk[b[i]];
+                int l = i, r = j;
+                while (l < r) {
+                    int mid = l + r + 1 >> 1;
+                    if (ST_min.query(i, mid) == b[i] and ST_max.query(i, mid) == b[i]) {
+                        l = mid;
+                    } else {
+                        r = mid - 1;
+                    }
+                }
+                if (l == j or ST_min.query(l + 1, j) >= b[i]) {
+                    mark[i] = 1;
+                }
+            }
+            bk[b[i]] = i;
+        }
+    }
+    if (count(mark.begin(), mark.end(), 0)) {
+        cout << "NO\n";
+    } else {
+        cout << "YES\n";
+    }
 }
 
 int main() {

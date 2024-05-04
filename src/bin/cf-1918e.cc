@@ -339,30 +339,45 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
-    read(int, x);
-    int sq = sqrt(x);
-    int res = 0, res_y = -1;
-    for (int i = 1; i <= sq; ++i) {
-        if (x % i == 0) {
-            if (x / i != x) {
-                int k = (x + x / i - 1) / (x / i) - 1;
-                int curr = (k + 1) * x / i;
-                if (curr > res) {
-                    res = curr;
-                    res_y = k * (x / i);
+    int x = 0;
+    auto query = [&] (int i) -> int {
+        // -1 for less, 0 for equal, 1 for more
+        cout << "? " << i + 1 << endl;
+        read(char, c);
+        if (c == '<') {
+            x -= 1;
+            return -1;
+        } else if (c == '>') {
+            x += 1;
+            return 1;
+        } else {
+            return 0;
+        }
+    };
+    read(int, n);
+    vector<int> res(n, INT_MIN);
+    int f = 1;
+    while (f) {
+        f = 0;
+        for (int i = 0; i < n; ++i) {
+            if (res[i] == INT_MIN) {
+                int first = query(i);
+                if (f == 0 or first == 1) {
+                    while (query(i)) ;;
+                    res[i] = x;
+                } else if (first == 0) {
+                    res[i] = x;
                 }
+                f = 1;
             }
-            if (i != x) {
-                int k = (x + i - 1) / i - 1;
-                int curr = (k + 1) * i;
-                if (curr > res) {
-                    res = curr;
-                    res_y = k * i;
-                }
-            } 
         }
     }
-    cout << res_y << '\n';
+    int diff = 1 - *min_element(res.begin(), res.end());
+    cout << "! ";
+    for (int i = 0; i < n; ++i) {
+        cout << res[i] + diff << " ";
+    }
+    cout << endl;
 }
 
 int main() {

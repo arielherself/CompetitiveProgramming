@@ -1,6 +1,4 @@
-#ifdef ONLINE_JUDGE
 #pragma GCC optimize("Ofast")
-#endif
 /////////////////////////////////////////////////////////
 /**
  * Useful Macros
@@ -300,9 +298,38 @@ int period(string s) {  // find the length of shortest recurring period
     }
     return n;
 }
+
+/* modular arithmetic */
+template <ll mdl> struct MLL {
+    ll val;
+    MLL(ll v = 0) : val(mod(v, mdl)) {}
+    MLL(const MLL<mdl>& other) : val(other.val) {}
+    friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
+    friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
+    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
+    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
+    friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
+    friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
+    friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
+    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
+    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
+    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
+    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
+    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
+};
+
+template <ll mdl>
+ostream& operator<<(ostream& out, const MLL<mdl>& num) {
+    return out << num.val;
+}
+
+template <ll mdl>
+istream& operator>>(istream& in, MLL<mdl>& num) {
+    return in >> num.val;
+}
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -311,73 +338,9 @@ void dump_ignore() {}
 
 void prep() {}
 
-template<typename T>
-struct BIT {
-    int n;
-    vector<T> c;
-    BIT(size_t n) : n(n), c(n + 1) {}
-    void add(size_t i, const T& k) {
-        while (i <= n) {
-            c[i] += k;
-            i += lowbit(i);
-        }
-    }
-    T getsum(size_t i) {
-        T res = {};
-        while (i) {
-            res += c[i];
-            i -= lowbit(i);
-        }
-        return res;
-    }
-};
-
 void solve() {
     read(int, n);
-    set<ll> pos_st, neg_st;
-    vector<pll> a;
-    for (int i = 0; i < n; ++i) {
-        read(ll, x, y);
-        pos_st.emplace(y - x);
-        neg_st.emplace(y + x);
-        a.emplace_back(x, y);
-    }
-    int N = 0, M = 0;
-    unordered_map<ll, int, safe_hash> pos_mp, neg_mp;
-    for (auto&& x : pos_st) pos_mp[x] = ++N;
-    for (auto&& x : neg_st) neg_mp[x] = ++M;
-    BIT<ll> tr_pos_2(N), tr_pos_2_cnt(N), tr_pos_1(N), tr_pos_1_cnt(N);
-    BIT<ll> tr_neg_2(M), tr_neg_2_cnt(M), tr_neg_1(M), tr_neg_1_cnt(M);
-    ll res = 0;
-    for (int i = n - 1; ~i; --i) {
-        auto&& [x, y] = a[i];
-        ll pos_id = y - x, neg_id = y + x;
-        ll curr = 0;
-        if (mod(pos_id, 2) == 1) {
-            curr += (tr_pos_1.getsum(N) - tr_pos_1.getsum(pos_mp[pos_id]) - (tr_pos_1_cnt.getsum(N) - tr_pos_1_cnt.getsum(pos_mp[pos_id])) * pos_id) / 2;
-            curr += (tr_pos_1_cnt.getsum(pos_mp[pos_id]) * pos_id - tr_pos_1.getsum(pos_mp[pos_id])) / 2;
-            tr_pos_1.add(pos_mp[pos_id], pos_id);
-            tr_pos_1_cnt.add(pos_mp[pos_id], 1);
-        } else {
-            curr += (tr_pos_2.getsum(N) - tr_pos_2.getsum(pos_mp[pos_id]) - (tr_pos_2_cnt.getsum(N) - tr_pos_2_cnt.getsum(pos_mp[pos_id])) * pos_id) / 2;
-            curr += (tr_pos_2_cnt.getsum(pos_mp[pos_id]) * pos_id - tr_pos_2.getsum(pos_mp[pos_id])) / 2;
-            tr_pos_2.add(pos_mp[pos_id], pos_id);
-            tr_pos_2_cnt.add(pos_mp[pos_id], 1);
-        }
-        if (mod(neg_id, 2) == 1) {
-            curr += (tr_neg_1.getsum(M) - tr_neg_1.getsum(neg_mp[neg_id]) - (tr_neg_1_cnt.getsum(M) - tr_neg_1_cnt.getsum(neg_mp[neg_id])) * neg_id) / 2;
-            curr += (tr_neg_1_cnt.getsum(neg_mp[neg_id]) * neg_id - tr_neg_1.getsum(neg_mp[neg_id])) / 2;
-            tr_neg_1.add(neg_mp[neg_id], neg_id);
-            tr_neg_1_cnt.add(neg_mp[neg_id], 1);
-        } else {
-            curr += (tr_neg_2.getsum(M) - tr_neg_2.getsum(neg_mp[neg_id]) - (tr_neg_2_cnt.getsum(M) - tr_neg_2_cnt.getsum(neg_mp[neg_id])) * neg_id) / 2;
-            curr += (tr_neg_2_cnt.getsum(neg_mp[neg_id]) * neg_id - tr_neg_2.getsum(neg_mp[neg_id])) / 2;
-            tr_neg_2.add(neg_mp[neg_id], neg_id);
-            tr_neg_2_cnt.add(neg_mp[neg_id], 1);
-        }
-        res += curr;
-    }
-    cout << res << '\n';
+    unordered_map<int,  
 }
 
 int main() {

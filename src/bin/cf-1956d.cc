@@ -329,7 +329,7 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -339,30 +339,55 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
-    read(int, x);
-    int sq = sqrt(x);
-    int res = 0, res_y = -1;
-    for (int i = 1; i <= sq; ++i) {
-        if (x % i == 0) {
-            if (x / i != x) {
-                int k = (x + x / i - 1) / (x / i) - 1;
-                int curr = (k + 1) * x / i;
-                if (curr > res) {
-                    res = curr;
-                    res_y = k * (x / i);
-                }
+    read(int, n);
+    readvec(int, a, n);
+    unordered_map<pii, int, pair_hash> mp;
+    auto dfs = [&] (auto dfs, int l, int r) -> ll {
+        if (l > r) return 0;
+        int mx_pos = l;
+        for (int i = l; i <= r; ++i) {
+            if (a[i] > a[mx_pos]) {
+                mx_pos = i;
             }
-            if (i != x) {
-                int k = (x + i - 1) / i - 1;
-                int curr = (k + 1) * i;
-                if (curr > res) {
-                    res = curr;
-                    res_y = k * i;
-                }
-            } 
         }
-    }
-    cout << res_y << '\n';
+        ll keep = a[mx_pos] + dfs(dfs, l, mx_pos - 1) + dfs(dfs, mx_pos + 1, r);
+        ll not_keep = (r - l + 1) * (r - l + 1);
+        if (keep >= not_keep) {
+            mp[{l, r}] = mx_pos;
+        } else {
+            mp[{l, r}] = -1;
+        }
+        return max(keep, not_keep);
+    };
+    dfs(dfs, 0, n - 1);
+    ll res = 0;
+    vector<pii> seq;
+    auto send = [&] (auto send, int l, int r, bool beg) -> void {
+        if (r < l) return;
+        send(send, l, r - 1, beg);
+        if (beg and a[r] == r - l) {
+        } else {
+            seq.emplace_back(l, r);
+            send(send, l, r - 1, false);
+        }
+    };
+    auto cl = [&] (auto cl, int l, int r) -> void {
+        if (l > r) return;
+        // debug(make_tuple(l, r, mp[{l, r}]));
+        if (mp[{l, r}] != -1) {
+            cl(cl, l, mp[{l, r}] - 1);
+            cl(cl, mp[{l, r}] + 1, r);
+            res += a[mp[{l, r}]];
+        } else {
+            // change all to mex
+            send(send, l, r, 1);
+            seq.emplace_back(l, r);
+            res += (r - l + 1) * (r - l + 1);
+        }
+    };
+    cl(cl, 0, n - 1);
+    cout << res << ' ' << seq.size() << '\n';
+    for (auto&& [x, y] : seq) cout << x + 1 << ' ' << y + 1 << '\n';
 }
 
 int main() {

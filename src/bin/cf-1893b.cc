@@ -18,8 +18,15 @@ constexpr void __() {}
 #define __as_typeof(container) decltype(container)::value_type
 
 /* type aliases */
+#if LONG_LONG_MAX != INT64_MAX
 using ll = int64_t;
 using ull = uint64_t;
+#else
+using ll = long long;
+using ull = unsigned long long;
+#endif
+using int128 = __int128_t;
+using uint128 = __uint128_t;
 using pii = pair<int, int>;
 using pil = pair<int, ll>;
 using pli = pair<ll, int>;
@@ -28,10 +35,14 @@ using pll = pair<ll, ll>;
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
 constexpr ll INFLL = 0x3f3f3f3f3f3f3f3fLL;
-constexpr ull MDL = 1e9 + 7;
-constexpr ull PRIME = 998'244'353;
+constexpr ll MDL = 1e9 + 7;
+constexpr ll PRIME = 998'244'353;
 constexpr ll MDL1 = 8784491;
 constexpr ll MDL2 = PRIME;
+constexpr int128 INT128_MAX = numeric_limits<int128>::max();
+constexpr uint128 UINT128_MAX = numeric_limits<uint128>::max();
+constexpr int128 INT128_MIN = numeric_limits<int128>::min();
+constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
 
 /* random */
 
@@ -107,6 +118,23 @@ struct pair_hash {
     }
 };
 
+uniform_int_distribution<mt19937::result_type> dist(PRIME);
+const size_t __array_hash_b = 31, __array_hash_mdl1 = dist(rd), __array_hash_mdl2 = dist(rd);
+struct array_hash {
+    template <typename Sequence>
+    size_t operator()(const Sequence& arr) const {
+        size_t pw1 = 1, pw2 = 1;
+        size_t res1 = 0, res2 = 0;
+        for (auto&& x : arr) {
+            res1 = (res1 + x * pw1) % __array_hash_mdl1;
+            res2 = (res2 + x * pw2) % __array_hash_mdl2;
+            pw1 = (pw1 * __array_hash_b) % __array_hash_mdl1;
+            pw2 = (pw2 * __array_hash_b) % __array_hash_mdl2;
+        }
+        return res1 + res2;
+    }
+};
+
 /* build data structures */
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
@@ -115,6 +143,20 @@ struct pair_hash {
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
 #define Edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v);)
+template <typename T, typename Iterator> pair<size_t, map<T, size_t>> discretize(Iterator __first, Iterator __last) {
+    set<T> st(__first, __last);
+    size_t N = 0;
+    map<T, size_t> mp;
+    for (auto&& x : st) mp[x] = ++N;
+    return {N, mp};
+}
+template <typename T, typename Iterator> pair<size_t, unordered_map<T, size_t, safe_hash>> unordered_discretize(Iterator __first, Iterator __last) {
+    set<T> st(__first, __last);
+    size_t N = 0;
+    unordered_map<T, size_t, safe_hash> mp;
+    for (auto&& x : st) mp[x] = ++N;
+    return {N, mp};
+}
 
 /* io */
 #define untie __AS_PROCEDURE(ios_base::sync_with_stdio(0), cin.tie(NULL))
@@ -125,9 +167,47 @@ template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __
 #define putvec(a) __AS_PROCEDURE(for (auto&& x : a) cout << x << ' '; cout << endl;)
 #define debug(x) __AS_PROCEDURE(cerr << #x" = " << (x) << endl;)
 #define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : a) cerr << x << ' '; cerr << endl;)
-template<typename T> ostream& operator<<(ostream& out, vector<T> vec) {
+template<typename T, typename U> ostream& operator<<(ostream& out, const pair<T, U>& p) {
+    out << "{" << p.first << ", " << p.second << "}";
+    return out;
+}
+template<typename Char, typename Traits, typename Tuple, std::size_t... Index>
+void print_tuple_impl(std::basic_ostream<Char, Traits>& os, const Tuple& t, std::index_sequence<Index...>) {
+    using swallow = int[]; // guaranties left to right order
+    (void)swallow { 0, (void(os << (Index == 0 ? "" : ", ") << std::get<Index>(t)), 0)... };
+}
+template<typename Char, typename Traits, typename... Args>
+decltype(auto) operator<<(std::basic_ostream<Char, Traits>& os, const std::tuple<Args...>& t) {
+    os << "{";
+    print_tuple_impl(os, t, std::index_sequence_for<Args...>{});
+    return os << "}";
+}
+template<typename T> ostream& operator<<(ostream& out, const vector<T>& vec) {
     for (auto&& i : vec) out << i << ' ';
     return out;
+}
+std::ostream& operator<<(std::ostream& dest, const int128& value) {
+    // https://stackoverflow.com/a/25115163/23881100
+    std::ostream::sentry s( dest );
+    if ( s ) {
+        uint128 tmp = value < 0 ? -value : value;
+        char buffer[ 128 ];
+        char* d = std::end( buffer );
+        do {
+            -- d;
+            *d = "0123456789"[ tmp % 10 ];
+            tmp /= 10;
+        } while ( tmp != 0 );
+        if ( value < 0 ) {
+            -- d;
+            *d = '-';
+        }
+        int len = std::end( buffer ) - d;
+        if ( dest.rdbuf()->sputn( d, len ) != len ) {
+            dest.setstate( std::ios_base::badbit );
+        }
+    }
+    return dest;
 }
 
 /* pops */
@@ -151,6 +231,22 @@ ll inverse(ll a, ll b) {
     ll x, y;
     __exgcd(a, b, x, y);
     return mod(x, b);
+}
+
+vector<tuple<int, int, ll>> decompose(ll x) {
+    vector<tuple<int, int, ll>> res;
+    for (int i = 2; i * i <= x; i++) {
+        if (x % i == 0) {
+            int cnt = 0;
+            ll pw = 1;
+            while (x % i == 0) ++cnt, x /= i, pw *= i;
+            res.emplace_back(i, cnt, pw);
+        }
+    }
+    if (x != 1) {
+        res.emplace_back(x, 1, x);
+    }
+    return res;
 }
 
 /* string algorithms */
@@ -202,21 +298,82 @@ int period(string s) {  // find the length of shortest recurring period
     }
     return n;
 }
+
+/* modular arithmetic */
+template <ll mdl> struct MLL {
+    ll val;
+    MLL(ll v = 0) : val(mod(v, mdl)) {}
+    MLL(const MLL<mdl>& other) : val(other.val) {}
+    friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
+    friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
+    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
+    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
+    friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
+    friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
+    friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
+    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
+    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
+    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
+    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
+    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
+};
+
+template <ll mdl>
+ostream& operator<<(ostream& out, const MLL<mdl>& num) {
+    return out << num.val;
+}
+
+template <ll mdl>
+istream& operator>>(istream& in, MLL<mdl>& num) {
+    return in >> num.val;
+}
 /////////////////////////////////////////////////////////
 
-
 // #define SINGLE_TEST_CASE
-// #define DUMP_TEST_CASE 512
+// #define DUMP_TEST_CASE 7219
 
 void dump() {}
+
+void dump_ignore() {}
 
 void prep() {}
 
 void solve() {
-    
+    read(int, n, m);
+    readvec(int, a, n);
+    readvec(int, b, m);
+    sort(b.begin(), b.end(), greater<>());
+    vector<vector<int>> prepend(n);
+    vector<int> idx(n);
+    iota(idx.begin(), idx.end(), 0);
+    sort(idx.begin(), idx.end(), [&] (int i, int j) {
+        if (a[i] == a[j]) {
+            return i < j;
+        }
+        return a[i] > a[j];
+    });
+    int ptr = 0;
+    for (auto&& i : idx) {
+        while (ptr < m and b[ptr] >= a[i]) {
+            prepend[i].emplace_back(b[ptr]);
+            ptr += 1;
+        }
+    }
+    vector<int> res;
+    for (int i = 0; i < n; ++i) {
+        res.insert(res.end(), prepend[i].begin(), prepend[i].end());
+        res.emplace_back(a[i]);
+    }
+    while (ptr < m) {
+        res.emplace_back(b[ptr++]);
+    }
+    putvec(res);
 }
 
 int main() {
+#if __cplusplus < 201703L || defined(_MSC_VER) && !defined(__clang__)
+    assert(false && "incompatible compiler variant detected.");
+#endif
     untie, cout.tie(NULL);
     prep();
 #ifdef SINGLE_TEST_CASE
@@ -225,10 +382,12 @@ int main() {
     read(int, t);
     for (int i = 0; i < t; ++i) {
 #ifdef DUMP_TEST_CASE
-        if (i + 1 == (DUMP_TEST_CASE)) {
+        if (t < (DUMP_TEST_CASE)) {
+            solve();
+        } else if (i + 1 == (DUMP_TEST_CASE)) {
             dump();
         } else {
-        solve();
+            dump_ignore();
         }
 #else
         solve();

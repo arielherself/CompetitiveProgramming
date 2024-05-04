@@ -336,33 +336,56 @@ void dump() {}
 
 void dump_ignore() {}
 
-void prep() {}
+using mll = MLL<MDL>;
+constexpr int MAXN = 2e5 + 10;
+mll fact[MAXN];
+void prep() {
+    fact[0] = 1;
+    for (int i = 1; i < MAXN; ++i) {
+        fact[i] = fact[i - 1] * i;
+    }
+}
 
 void solve() {
-    read(int, x);
-    int sq = sqrt(x);
-    int res = 0, res_y = -1;
-    for (int i = 1; i <= sq; ++i) {
-        if (x % i == 0) {
-            if (x / i != x) {
-                int k = (x + x / i - 1) / (x / i) - 1;
-                int curr = (k + 1) * x / i;
-                if (curr > res) {
-                    res = curr;
-                    res_y = k * (x / i);
-                }
-            }
-            if (i != x) {
-                int k = (x + i - 1) / i - 1;
-                int curr = (k + 1) * i;
-                if (curr > res) {
-                    res = curr;
-                    res_y = k * i;
-                }
-            } 
-        }
+    auto permu = [&] (int n, int k) -> mll {
+        if (n < 0 or k < 0 or n < k) return 0;
+        return fact[n] / fact[n - k];
+    };
+    auto comb = [&] (int n, int k) -> mll {
+        if (n < 0 or k < 0 or n < k) return 0;
+        return fact[n] / fact[n - k] / fact[k];
+    };
+    read(int, n, m1, m2);
+    vector<int> a(m1), b(m2);
+    for (int i = 0; i < m1; ++i) {
+        read(int, x);
+        a[i] = x - 1;
     }
-    cout << res_y << '\n';
+    for (int i = 0; i < m2; ++i) {
+        read(int, x);
+        b[i] = x - 1;
+    }
+    if (*a.rbegin() != *b.begin() or *a.begin() != 0 or *b.rbegin() != n - 1) {
+        cout << 0 << '\n';
+        return;
+    }
+    int center = *a.rbegin();
+    reverse(a.begin(), a.end());
+    mll res = comb(n - 1, center);
+    // process the left part
+    int prev = center;
+    for (auto&& i : a) {
+        if (i == center) continue;
+        res *= permu(prev - 1, prev - i - 1);
+        prev = i;
+    }
+    prev = center;
+    for (auto&& i : b) {
+        if (i == center) continue;
+        res *= permu(n - prev - 2, i - prev - 1);
+        prev = i;
+    }
+    cout << res << '\n';
 }
 
 int main() {

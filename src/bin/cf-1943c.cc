@@ -327,6 +327,27 @@ template <ll mdl>
 istream& operator>>(istream& in, MLL<mdl>& num) {
     return in >> num.val;
 }
+
+/* zip */
+template <typename T, typename U> vector<pair<T, U>> zip(const vector<T>& a, const vector<U>& b) {
+    vector<pair<T, U>> res;
+    size_t n = a.size();
+    assert(n == b.size());
+    for (size_t i = 0; i < n; ++i) {
+        res.emplace_back(a[i], b[i]);
+    }
+    return res;
+}
+
+template <typename T, typename U> vector<pair<T, U>> cartesian_zip(const vector<T>& a, const vector<U>& b) {
+    vector<pair<T, U>> res;
+    for (auto&& x : a) {
+        for (auto&& y : b) {
+            res.emplace_back(x, y);
+        }
+    }
+    return res;
+}
 /////////////////////////////////////////////////////////
 
 // #define SINGLE_TEST_CASE
@@ -339,30 +360,56 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
-    read(int, x);
-    int sq = sqrt(x);
-    int res = 0, res_y = -1;
-    for (int i = 1; i <= sq; ++i) {
-        if (x % i == 0) {
-            if (x / i != x) {
-                int k = (x + x / i - 1) / (x / i) - 1;
-                int curr = (k + 1) * x / i;
-                if (curr > res) {
-                    res = curr;
-                    res_y = k * (x / i);
-                }
-            }
-            if (i != x) {
-                int k = (x + i - 1) / i - 1;
-                int curr = (k + 1) * i;
-                if (curr > res) {
-                    res = curr;
-                    res_y = k * i;
-                }
-            } 
-        }
+    read(int, n);
+    adj(ch, n);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
     }
-    cout << res_y << '\n';
+    vector<int> sz(n + 1);
+    auto get = [&] (auto get, int v, int pa) -> int {
+        sz[v] = 1;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            sz[v] += get(get, u, v);
+        }
+        return sz[v];
+    };
+    get(get, 1, 0);
+    vector<pii> centroid;
+    auto get2 = [&] (auto get2, int v, int pa) -> void {
+        int max_sz = n - sz[v];
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            get2(get2, u, v);
+            max_sz = max(max_sz, sz[u]);
+        }
+        if (max_sz <= n / 2) {
+            centroid.emplace_back(0, v);
+        }
+    };
+    get2(get2, 1, 0);
+    // debug(centroid);
+    int m = centroid.size();
+    assert(m > 0 and m < 3);
+    int mx = 0;
+    auto dfs = [&] (auto dfs, int v, int pa, int layer) -> void {
+        mx = max(mx, layer);
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            dfs(dfs, u, v, layer + 1);
+        }
+    };
+    for (int i = 0; i < m; ++i) {
+        mx = 0;
+        dfs(dfs, centroid[i].second, 0, 0);
+        centroid[i].first = mx;
+    }
+    sort(centroid.begin(), centroid.end());
+    cout << centroid[0].first + 1 << '\n';
+    for (int i = 0; i <= centroid[0].first; ++i) {
+        cout << centroid[0].second << ' ' << i << '\n';
+    }
 }
 
 int main() {

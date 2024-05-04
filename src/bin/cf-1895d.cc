@@ -329,7 +329,7 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -339,30 +339,61 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
-    read(int, x);
-    int sq = sqrt(x);
-    int res = 0, res_y = -1;
-    for (int i = 1; i <= sq; ++i) {
-        if (x % i == 0) {
-            if (x / i != x) {
-                int k = (x + x / i - 1) / (x / i) - 1;
-                int curr = (k + 1) * x / i;
-                if (curr > res) {
-                    res = curr;
-                    res_y = k * (x / i);
-                }
+    read(int, n);
+    const int sz = lg2(n) + 1;
+    vector<array<int, 2>> trie(1);
+    auto insert = [&] (int x) -> void {
+        int curr = 0;
+        for (int i = sz; ~i; --i) {
+            int bit = (x >> i) & 1;
+            if (not trie[curr][bit]) {
+                trie[curr][bit] = trie.size();
+                trie.push_back({});
             }
-            if (i != x) {
-                int k = (x + i - 1) / i - 1;
-                int curr = (k + 1) * i;
-                if (curr > res) {
-                    res = curr;
-                    res_y = k * i;
-                }
-            } 
+            curr = trie[curr][bit];
+        }
+    };
+    auto query = [&] (int x) -> int {
+        int curr = 0;
+        int res = 0;
+        for (int i = sz; ~i; --i) {
+            int bit = (x >> i) & 1;
+            if (trie[curr][1 ^ bit]) {
+                curr = trie[curr][1 ^ bit];
+                res = res << 1 | (1 ^ bit);
+            } else if (trie[curr][bit]) {
+                curr = trie[curr][bit];
+                res = res << 1 | bit;
+            } else {
+                debug(x);
+                assert(false);
+            }
+        }
+        return res;
+    };
+    int curr = 0;
+    vector<int> ps;
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, x);
+        curr ^= x;
+        insert(curr);
+        ps.emplace_back(curr);
+    }
+    for (int i = 0; i < n - 1; ++i) {
+        if ((i ^ query(i)) == n - 1) {
+            cout << i << ' ';
+            for (auto&& x : ps) {
+                cout << (i ^ x) << ' ';
+            }
+            cout << '\n';
+            return;
         }
     }
-    cout << res_y << '\n';
+    cout << n - 1 << ' ';
+    for (auto&& x : ps) {
+        cout << ((n - 1) ^ x) << ' ';
+    }
+    cout << '\n';
 }
 
 int main() {

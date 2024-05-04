@@ -336,33 +336,63 @@ void dump() {}
 
 void dump_ignore() {}
 
-void prep() {}
+using mll = MLL<PRIME>;
+constexpr int MAXN = 5e5 + 10;
+mll fact[MAXN];
+void prep() {
+    fact[0] = 1;
+    for (int i = 1; i < MAXN; ++i) {
+        fact[i] = fact[i - 1] * i;
+    }
+}
+
+struct node {
+    int l, r, val;
+};
 
 void solve() {
-    read(int, x);
-    int sq = sqrt(x);
-    int res = 0, res_y = -1;
-    for (int i = 1; i <= sq; ++i) {
-        if (x % i == 0) {
-            if (x / i != x) {
-                int k = (x + x / i - 1) / (x / i) - 1;
-                int curr = (k + 1) * x / i;
-                if (curr > res) {
-                    res = curr;
-                    res_y = k * (x / i);
+    auto comb = [&] (int n, int k) -> mll {
+        if (n < 0 or k < 0 or n < k) return 0;
+        return fact[n] / fact[k] / fact[n - k];
+    };
+    read(int, n, c);
+    vector<node> tr(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        read(int, l, r, val);
+        tr[i] = {l, r, val};
+    }
+    vector<int> a;
+    auto build = [&] (auto build, int v) -> void {
+        if (v == -1) return;
+        build(build, tr[v].l);
+        a.emplace_back(tr[v].val);
+        build(build, tr[v].r);
+    };
+    build(build, 1);
+    a.emplace_back(c);
+    int start = 0, prev = 1;
+    mll res = 1;
+    for (int i = 0; i <= n; ++i) {
+        if (a[i] == -1) {
+            ;;
+        } else {
+            int m = a[i] - prev + 1;
+            int l = i - start;
+            if (l > 0) {
+                mll curr = 0;
+                // calculate C(m, k) using dp
+                mll c1 = 1;
+                for (int k = 1; k <= min(m, l); ++k) {
+                    c1 = c1 * (m - k + 1) / k;
+                    curr += c1 * comb(l - 1, k - 1);
                 }
+                res *= curr;
             }
-            if (i != x) {
-                int k = (x + i - 1) / i - 1;
-                int curr = (k + 1) * i;
-                if (curr > res) {
-                    res = curr;
-                    res_y = k * i;
-                }
-            } 
+            start = i + 1;
+            prev = a[i];
         }
     }
-    cout << res_y << '\n';
+    cout << res << '\n';
 }
 
 int main() {

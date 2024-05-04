@@ -339,30 +339,118 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
-    read(int, x);
-    int sq = sqrt(x);
-    int res = 0, res_y = -1;
-    for (int i = 1; i <= sq; ++i) {
-        if (x % i == 0) {
-            if (x / i != x) {
-                int k = (x + x / i - 1) / (x / i) - 1;
-                int curr = (k + 1) * x / i;
-                if (curr > res) {
-                    res = curr;
-                    res_y = k * (x / i);
-                }
-            }
-            if (i != x) {
-                int k = (x + i - 1) / i - 1;
-                int curr = (k + 1) * i;
-                if (curr > res) {
-                    res = curr;
-                    res_y = k * i;
-                }
-            } 
+    read(int, n);
+    vector<int> state(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        read(char, c);
+        state[i] = c - '0';
+    }
+    vector<int> ch(n + 1);
+    vector<int> ind(n + 1);
+    for (int i = 1; i <= n; ++i)  {
+        read(int, u);
+        ch[i] = u;
+        ind[u] += 1;
+    }
+    deque<int> dq;
+    for (int i = 1; i <= n; ++i) {
+        if (ind[i] == 0) {
+            dq.emplace_back(i);
         }
     }
-    cout << res_y << '\n';
+    vector<int> seq;
+    vector<bool> vis(n + 1);
+    while (dq.size()) {
+        int v = dq.front();  dq.pop_front();
+        vis[v] = 1;
+        if (state[v]) {
+            seq.emplace_back(v);
+            state[v] = 0;
+            state[ch[v]] ^= 1;
+        }
+        if (--ind[ch[v]] == 0) {
+            dq.emplace_back(ch[v]);
+        }
+    }
+    int fail = 0;
+    vector<int> cycle;
+    auto dfs = [&] (auto dfs, int v) -> void {
+        if (vis[v]) {
+            return;
+        }
+        vis[v] = 1;
+        cycle.emplace_back(v);
+        dfs(dfs, ch[v]);
+    };
+    for (int i = 1; i <= n; ++i) {
+        if (not vis[i]) {
+            // debug(i);
+            int ptr = i;
+            while (state[ptr] == 0 and ch[ptr] != i) {
+                ptr = ch[ptr];
+            }
+            int ptr1 = ptr;
+            int open = 0, prev = -1;
+            vector<int> seq1;
+            while (1) {
+                if (state[ptr]) {
+                    if (open) {
+                        open = 0;
+                    } else {
+                        open = 1;
+                        prev = ptr;
+                        seq1.emplace_back(ptr);
+                    }
+                } else if (open) {
+                    seq1.emplace_back(ptr);
+                }
+                ptr = ch[ptr];
+                if (ptr == ptr1) break;
+            }
+            if (open) {
+                fail = 1;
+                break;
+            }
+            ptr = ch[ptr1];
+            while (state[ptr] == 0 and ch[ptr] != ch[ptr1]) {
+                ptr = ch[ptr];
+            }
+            int ptr2 = ptr;
+            open = 0, prev = -1;
+            vector<int> seq2;
+            while (1) {
+                if (state[ptr]) {
+                    if (open) {
+                        open = 0;
+                    } else {
+                        open = 1;
+                        prev = ptr;
+                        seq2.emplace_back(ptr);
+                    }
+                } else if (open) {
+                    seq2.emplace_back(ptr);
+                }
+                ptr = ch[ptr];
+                if (ptr == ptr2) break;
+            }
+            if (seq1.size() < seq2.size()) {
+                seq.insert(seq.end(), seq1.begin(), seq1.end());
+            } else {
+                seq.insert(seq.end(), seq2.begin(), seq2.end());
+            }
+            ptr = i;
+            do {
+                vis[ptr] = 1;
+                ptr = ch[ptr];
+            } while (ptr != i);
+        }
+    }
+    if (fail) {
+        cout << -1 << '\n';
+    } else {
+        cout << seq.size() << '\n';
+        putvec(seq);
+    }
 }
 
 int main() {
