@@ -339,24 +339,43 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
-    read(string, s);
-    int n = s.size();
-    if (n == 1) {
-        if ((s[0] - 48) % 4 == 0) {
-            cout << 0 << '\n';
-        } else {
-            cout << -1 << '\n';
+    read(int, n, t);
+    vector<unordered_map<int, vector<int>>> e(t + 1, unordered_map<int, vector<int>>());
+    for (int i = 1; i <= t; ++i) {
+        read(int, m);
+        while (m--) {
+            read(int, x, y);
+            edge(e[i], x, y);
         }
     }
-    for (int i = 0; i < n; ++i) {
-        int a = s[mod(n - 1 + i, n)], b = s[mod(n - 2 + i, n)];
-        int num = (b - '0') * 10 + (a - '0');
-        if (num % 4 == 0) {
-            cout << i << '\n';
-            return;
+    read(int, k);
+    readvec(int, a, k);
+    deque<pii> dq;
+    dq.emplace_back(1, 0);
+    unordered_set<pii, pair_hash> vis;
+    int res = INT_MAX;
+    while (dq.size()) {
+        popfront(dq, v, tm);
+        if (vis.count({v, a[tm]})) {
+            continue;
         }
+        vis.emplace(v, a[tm]);
+        // debug(make_pair(v, tm));
+        if (v == n) {
+            res = min(res, tm);
+            break;
+        }
+        if (tm == k) continue;
+        for (auto&& u : e[a[tm]][v]) {
+            dq.emplace_back(u, tm + 1);
+        }
+        dq.emplace_back(v, tm + 1);
     }
-    cout << -1 << '\n';
+    if (res == INT_MAX) {
+        cout << -1 << '\n';
+    } else {
+        cout << res << '\n';
+    }
 }
 
 int main() {

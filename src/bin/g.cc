@@ -18,8 +18,15 @@ constexpr void __() {}
 #define __as_typeof(container) decltype(container)::value_type
 
 /* type aliases */
+#if LONG_LONG_MAX != INT64_MAX
 using ll = int64_t;
 using ull = uint64_t;
+#else
+using ll = long long;
+using ull = unsigned long long;
+#endif
+using int128 = __int128_t;
+using uint128 = __uint128_t;
 using pii = pair<int, int>;
 using pil = pair<int, ll>;
 using pli = pair<ll, int>;
@@ -32,6 +39,10 @@ constexpr ll MDL = 1e9 + 7;
 constexpr ll PRIME = 998'244'353;
 constexpr ll MDL1 = 8784491;
 constexpr ll MDL2 = PRIME;
+constexpr int128 INT128_MAX = numeric_limits<int128>::max();
+constexpr uint128 UINT128_MAX = numeric_limits<uint128>::max();
+constexpr int128 INT128_MIN = numeric_limits<int128>::min();
+constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
 
 /* random */
 
@@ -107,6 +118,23 @@ struct pair_hash {
     }
 };
 
+uniform_int_distribution<mt19937::result_type> dist(PRIME);
+const size_t __array_hash_b = 31, __array_hash_mdl1 = dist(rd), __array_hash_mdl2 = dist(rd);
+struct array_hash {
+    template <typename Sequence>
+    size_t operator()(const Sequence& arr) const {
+        size_t pw1 = 1, pw2 = 1;
+        size_t res1 = 0, res2 = 0;
+        for (auto&& x : arr) {
+            res1 = (res1 + x * pw1) % __array_hash_mdl1;
+            res2 = (res2 + x * pw2) % __array_hash_mdl2;
+            pw1 = (pw1 * __array_hash_b) % __array_hash_mdl1;
+            pw2 = (pw2 * __array_hash_b) % __array_hash_mdl2;
+        }
+        return res1 + res2;
+    }
+};
+
 /* build data structures */
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
@@ -158,6 +186,29 @@ template<typename T> ostream& operator<<(ostream& out, const vector<T>& vec) {
     for (auto&& i : vec) out << i << ' ';
     return out;
 }
+std::ostream& operator<<(std::ostream& dest, const int128& value) {
+    // https://stackoverflow.com/a/25115163/23881100
+    std::ostream::sentry s( dest );
+    if ( s ) {
+        uint128 tmp = value < 0 ? -value : value;
+        char buffer[ 128 ];
+        char* d = std::end( buffer );
+        do {
+            -- d;
+            *d = "0123456789"[ tmp % 10 ];
+            tmp /= 10;
+        } while ( tmp != 0 );
+        if ( value < 0 ) {
+            -- d;
+            *d = '-';
+        }
+        int len = std::end( buffer ) - d;
+        if ( dest.rdbuf()->sputn( d, len ) != len ) {
+            dest.setstate( std::ios_base::badbit );
+        }
+    }
+    return dest;
+}
 
 /* pops */
 #define poptop(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.top(); q.pop();)
@@ -180,6 +231,22 @@ ll inverse(ll a, ll b) {
     ll x, y;
     __exgcd(a, b, x, y);
     return mod(x, b);
+}
+
+vector<tuple<int, int, ll>> decompose(ll x) {
+    vector<tuple<int, int, ll>> res;
+    for (int i = 2; i * i <= x; i++) {
+        if (x % i == 0) {
+            int cnt = 0;
+            ll pw = 1;
+            while (x % i == 0) ++cnt, x /= i, pw *= i;
+            res.emplace_back(i, cnt, pw);
+        }
+    }
+    if (x != 1) {
+        res.emplace_back(x, 1, x);
+    }
+    return res;
 }
 
 /* string algorithms */
@@ -231,31 +298,83 @@ int period(string s) {  // find the length of shortest recurring period
     }
     return n;
 }
+
+/* modular arithmetic */
+template <ll mdl> struct MLL {
+    ll val;
+    MLL(ll v = 0) : val(mod(v, mdl)) {}
+    MLL(const MLL<mdl>& other) : val(other.val) {}
+    friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
+    friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
+    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
+    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
+    friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
+    friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
+    friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
+    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
+    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
+    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
+    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
+    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
+};
+
+template <ll mdl>
+ostream& operator<<(ostream& out, const MLL<mdl>& num) {
+    return out << num.val;
+}
+
+template <ll mdl>
+istream& operator>>(istream& in, MLL<mdl>& num) {
+    return in >> num.val;
+}
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
-// #define DUMP_TEST_CASE 512
+#define SINGLE_TEST_CASE
+// #define DUMP_TEST_CASE 7219
 
 void dump() {}
 
-void prep() {}
+void dump_ignore() {}
+
+constexpr int MAXN = 3e5 + 10;
+using mll = MLL<PRIME>;
+mll fact[MAXN];
+void prep() {
+    fact[0] = 1;
+    for (int i = 1; i < MAXN; ++i) {
+        fact[i] = fact[i - 1] * i;
+    }
+}
 
 void solve() {
-    read(int, n, m);
-    unordered_map<int, vector<pii>, safe_hash> cl;
-    vector<vector< pii >> ch(n + 1);
-    for (int i = 0; i < m; ++i) {
-        read(int, u, v, c);
-        ch[u].emplace_back(v, c);
-        ch[v].emplace_back(u, c);
+    using mll = MLL<PRIME>;
+    auto comb = [&] (int n, int k) -> mll {
+        return fact[n] / fact[k];
+    };
+    read(int, n);
+    vector<int> a(n);
+    int m = 0;
+    for (int i = 0; i < n; ++i) {
+        cin >> a[i];
+        m += a[i];
     }
-    read(int, b, e);
-    unordered_set<int, safe_hash> b_open, e_open;
-    
-    assert(false);
+    vector<vector<int>> dp(n + 1, vector<int>(n + 1));
+    for (int i = 1; i <= n; ++i) {
+        for (int j = 1; j <= n; ++j) {
+            dp[i][j] = (a[i - 1] != 0 ? dp[i - 1][j - 1] + a[i - 1] : 0) + dp[i - 1][j];
+        }
+    }
+    mll res = 0;
+    for (int i = n; ~i; --i) {
+        res = 1 + (m - dp[n][i] / comb(n, i)) / (m - i) * res;
+    }
+    cout << res << '\n';
 }
 
 int main() {
+#if __cplusplus < 201703L || defined(_MSC_VER) && !defined(__clang__)
+    assert(false && "incompatible compiler variant detected.");
+#endif
     untie, cout.tie(NULL);
     prep();
 #ifdef SINGLE_TEST_CASE
@@ -264,10 +383,12 @@ int main() {
     read(int, t);
     for (int i = 0; i < t; ++i) {
 #ifdef DUMP_TEST_CASE
-        if (i + 1 == (DUMP_TEST_CASE)) {
+        if (t < (DUMP_TEST_CASE)) {
+            solve();
+        } else if (i + 1 == (DUMP_TEST_CASE)) {
             dump();
         } else {
-            solve();
+            dump_ignore();
         }
 #else
         solve();

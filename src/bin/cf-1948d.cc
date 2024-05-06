@@ -329,7 +329,7 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -341,22 +341,21 @@ void prep() {}
 void solve() {
     read(string, s);
     int n = s.size();
-    if (n == 1) {
-        if ((s[0] - 48) % 4 == 0) {
-            cout << 0 << '\n';
-        } else {
-            cout << -1 << '\n';
+    for (int i = n / 2; i >= 1; --i) {
+        int mx = 0;
+        for (int j = 0; j + i < n; ++j) {
+            if (s[j] == '?' or s[j + i] == '?' or s[j] == s[j + i]) {
+                mx += 1;
+                if (mx == i) {
+                    cout << 2 * i << '\n';
+                    return;
+                }
+            } else {
+                mx = 0;
+            }
         }
     }
-    for (int i = 0; i < n; ++i) {
-        int a = s[mod(n - 1 + i, n)], b = s[mod(n - 2 + i, n)];
-        int num = (b - '0') * 10 + (a - '0');
-        if (num % 4 == 0) {
-            cout << i << '\n';
-            return;
-        }
-    }
-    cout << -1 << '\n';
+    cout << 0 << '\n';
 }
 
 int main() {

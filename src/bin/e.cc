@@ -329,7 +329,7 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -338,9 +338,63 @@ void dump_ignore() {}
 
 void prep() {}
 
+class quick_union {
+private:
+    vector<size_t> c, sz;
+public:
+    quick_union(size_t n) : c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
+    }
+    
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] += sz[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_size(size_t i) {
+        return sz[query(i)];
+    }
+};
+
 void solve() {
-    read(int, n);
-    unordered_map<int,  
+    read(int, n, m);
+    quick_union qu(n + 1);
+    ll res = 0;
+    vector<pair<ll, vector<int>>> data;
+    while (m--) {
+        read(int, k, c);
+        readvec(int, a, k);
+        data.emplace_back(c, a);
+    }
+    sort(data.begin(), data.end());
+    for (auto&& [c, a] : data) {
+        vector<int> o;
+        for (auto&& x : a) {
+            o.emplace_back(qu.query(x));
+        }
+        sort(o.begin(), o.end());
+        ll l = unique(o.begin(), o.end()) - o.begin();
+        res += (l - 1) * c;
+        for (int i = 1; i < l; ++i) {
+            qu.merge(o[i - 1], o[i]);
+        }
+    }
+    for (int i = 1; i <= n; ++i) {
+        if (not qu.connected(i, 1)) {
+            cout << -1 << '\n';
+            return;
+        }
+    }
+    cout << res << '\n';
 }
 
 int main() {

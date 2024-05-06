@@ -329,7 +329,7 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -339,30 +339,14 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
-    read(int, x);
-    int sq = sqrt(x);
-    int res = 0, res_y = -1;
-    for (int i = 1; i <= sq; ++i) {
-        if (x % i == 0) {
-            if (x / i != x) {
-                int k = (x + x / i - 1) / (x / i) - 1;
-                int curr = (k + 1) * x / i;
-                if (curr > res) {
-                    res = curr;
-                    res_y = k * (x / i);
-                }
-            }
-            if (i != x) {
-                int k = (x + i - 1) / i - 1;
-                int curr = (k + 1) * i;
-                if (curr > res) {
-                    res = curr;
-                    res_y = k * i;
-                }
-            } 
-        }
+    read(int, n, x, y, z);
+    int res;
+    if (x < y) {
+        res = z > x and z < y;
+    } else {
+        res = z > y and z < x;
     }
-    cout << res_y << '\n';
+    cout << (res ? "Yes\n" : "No\n");
 }
 
 int main() {

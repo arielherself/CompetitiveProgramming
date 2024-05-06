@@ -329,7 +329,7 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -338,66 +338,162 @@ void dump_ignore() {}
 
 void prep() {}
 
-class quick_union {
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
 private:
-    vector<size_t> c, sz;
+    using size_type = uint64_t;
+    using info_type = Addable_Info_t;
+    using tag_type = Tag_t;
+    size_type _max;
+    vector<info_type> d;
+    vector<tag_type> b;
+    void pull(size_type p) {
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+    void push(size_type p, size_type left_len, size_type right_len) {
+        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
+        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+        b[p] = tag_type();
+    }
+    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+        if (s == t) {
+            d[p] = c;
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        if (s != t) push(p, m - s + 1, t - m);
+        if (x <= m) set(s, m, p * 2, x, c);
+        else set(m + 1, t, p * 2 + 1, x, c);
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+    
+    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+        if (l <= s && t <= r) {
+            d[p].apply(c, t - s + 1);
+            b[p].apply(c);
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        push(p, m - s + 1, t - m);
+        if (l <= m) range_apply(s, m, p * 2, l, r, c);
+        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
+        pull(p);
+    }
+    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+        if (l <= s && t <= r) {
+            return d[p];
+        }
+        size_type m = s + (t - s >> 1);
+        info_type res = {};
+        push(p, m - s + 1, t - m);
+        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+        return res;
+    }
+    void build(const Sequence& a, size_type s, size_type t, size_type p) {
+        if (s == t) {
+            d[p] = a[s];
+            return;
+        }
+        int m = s + (t - s >> 1);
+        build(a, s, m, p * 2);
+        build(a, m + 1, t, p * 2 + 1);
+        pull(p);
+    }
 public:
-    quick_union(size_t n) : c(n), sz(n) {
-        iota(c.begin(), c.end(), 0);
-        sz.assign(n, 1);
+    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+    segtree(const Sequence& a) : segtree(a.size()) {
+        build(a, {}, _max, 1);
+    }
+    void set(size_type i, const info_type& c) {
+        set({}, _max, 1, i, c);
     }
     
-    size_t query(size_t i) {
-        if (c[i] != i) c[i] = query(c[i]);
-        return c[i];
+    void range_apply(size_type l, size_type r, const tag_type& c) {
+        range_apply({}, _max, 1, l, r, c);
     }
-    
-    void merge(size_t i, size_t j) {
-        if (connected(i, j)) return;
-        sz[query(j)] += sz[query(i)];
-        c[query(i)] = query(j);
+    void apply(size_type i, const tag_type& c) {
+        range_apply(i, i, c);
     }
-    bool connected(size_t i, size_t j) {
-        return query(i) == query(j);
+    info_type range_query(size_type l, size_type r) {
+        return range_query({}, _max, 1, l, r);
     }
-    size_t query_size(size_t i) {
-        return sz[query(i)];
+    info_type query(size_type i) {
+        return range_query(i, i);
+    }
+    Sequence serialize() {
+        Sequence res = {};
+        for (size_type i = 0; i <= _max; ++i) {
+            res.push_back(query(i));
+        }
+        return res;
+    }
+    const vector<info_type>& get_d() {
+        return d;
     }
 };
+struct Tag {
+    ll val = 0;
+    void apply(const Tag& rhs) {
+        val = rhs.val;
+    }
+};
+struct Info {
+    ll val = 0;
+    void apply(const Tag& rhs, size_t len) {
+        val += rhs.val * len;
+    }
+};
+Info operator+(const Info &a, const Info &b) {
+    return {a.val + b.val};
+}
 
 void solve() {
-    read(ll, n, k);
-    read(int, sa, sb);
-    vector<int> nxt(n + 1);
-    for (int i = 1; i <= n; ++i) {
-        cin >> nxt[i];
+    read(int, n, q);
+    segtree<Info, Tag> a(n), b(n), c(n);
+    for (int i = 0; i < n; ++i) {
+        read(char, t);
+        int x = 0, y = 0, z = 0;
+        if (t == 'r') {
+            x = 1;
+        } else if (t == 'e') {
+            y = 1;
+        } else {
+            z = 1;
+        }
+        a.set(i, {x});
+        b.set(i, {y});
+        c.set(i, {z});
     }
-    vector<ll> a(n + 1);
-    for (int i = 1; i <= n; ++i) {
-        cin >> a[i];
-    }
-    ll mx = 0;
-    vector<bool> vis(n + 1);
-    auto dfs = [&] (auto dfs, int i, int past, ll acc) -> void {
-        if (vis[i] or past == k) return;
-        vis[i] = 1;
-        mx = max(mx, acc + (k - past) * a[i]);
-        dfs(dfs, nxt[i], past + 1, acc + a[i]);
-    };
-    // a
-    mx = 0, vis.assign(n + 1, false);
-    dfs(dfs, sa, 0, 0);
-    ll ra = mx;
-    // b
-    mx = 0, vis.assign(n + 1, false);
-    dfs(dfs, sb, 0, 0);
-    ll rb = mx;
-    if (ra > rb) {
-        cout << "Bodya\n";
-    } else if (ra < rb) {
-        cout << "Sasha\n";
-    } else {
-        cout << "Draw\n";
+    while (q--) {
+        read(int, l, r);
+        --l, --r;
+        int len = (r - l + 1) / 3;
+        if (r - l + 1 < 3) {
+            cout << 0 << '\n';
+            continue;
+        }
+        int rem = (r - l + 1) % 3;
+        int res = INT_MAX;
+        int left, right;
+        unordered_set<pii, pair_hash> mp;
+        if (rem == 0) {
+            mp.emplace(0, 0);
+        } else if (rem == 1) {
+            mp.emplace(0, 0), mp.emplace(0, 1), mp.emplace(1, 0);
+        } else {
+            mp.emplace(1, 0), mp.emplace(0, 1), mp.emplace(1, 1);
+        }
+        for (auto&& [i, j] : mp) {
+            int left = l + len + i - 1;
+            int right = r - (len + j) + 1;
+            if (left >= right) continue;
+            int left_need = (left - l + 1) - a.range_query(l, left).val;
+            int right_need = (r - right + 1) - c.range_query(right, r).val;
+            int mid_need = (right - left - 1) - b.range_query(left + 1, right - 1).val;
+            // cerr << i << ' ' << j << ' ' << left_need << ' ' << mid_need << ' ' << right_need << '\n';
+            res = min(res, left_need + mid_need + right_need);
+        }
+        cout << res << '\n';
     }
 }
 

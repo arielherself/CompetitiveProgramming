@@ -329,7 +329,7 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -339,20 +339,26 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
-    read(int, n, m);
-    read(string, a, b);
-    int i = 0, j = 0;
-    while (i < n) {
-        while (j < m and b[j] != a[i]) {
-            ++j;
-        }
-        if (j == m) {
-            cout << i << '\n';
-            return;
-        }
-        ++j, ++i;
+    read(int, n, k);
+    vector<int> pos(n + 1);
+    vector<int> a;
+    for (int i = 0; i < n; ++i) {
+        read(int, x);
+        a.emplace_back(x);
+        pos[x] = i;
     }
-    cout << n << '\n';
+    vector<int> res(n);
+    if (k > n or k == 1) {
+        cout << -1 << '\n';
+        return;
+    }
+    for (int i = 1; i <= k; ++i) {
+        res[pos[i % k + 1]] = i;
+    }
+    for (int i = k + 1; i <= n; ++i) {
+        res[pos[i]] = i;
+    }
+    putvec(res);
 }
 
 int main() {

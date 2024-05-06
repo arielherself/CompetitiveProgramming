@@ -329,7 +329,7 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -339,24 +339,49 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
-    read(string, s);
-    int n = s.size();
-    if (n == 1) {
-        if ((s[0] - 48) % 4 == 0) {
-            cout << 0 << '\n';
-        } else {
-            cout << -1 << '\n';
+    read(int, n, m, k);
+    assert(k == 2);
+    vector<vector<int>> open(n + 1), close(n + 1);
+    for (int i = 0; i < m; ++i) {
+        read(int, l, r);
+        open[l].emplace_back(i);
+        close[r].emplace_back(i);
+    }
+    unordered_map<pii, int, pair_hash> cnt2;
+    unordered_map<int, int, safe_hash> cnt1;
+    int cnt0 = 0;
+    set<int> st;
+    for (int i = 1; i <= n; ++i) {
+        for (auto&& j : open[i]) {
+            st.emplace(j);
+        }
+        if (st.size() == 2) {
+            cnt2[{*st.begin(), *st.rbegin()}] += 1;
+        } else if (st.size() == 1) {
+            cnt1[*st.begin()] += 1;
+        } else if (st.size() == 0) {
+            cnt0 += 1;
+        }
+        for (auto&& j : close[i]) {
+            st.erase(j);
         }
     }
-    for (int i = 0; i < n; ++i) {
-        int a = s[mod(n - 1 + i, n)], b = s[mod(n - 2 + i, n)];
-        int num = (b - '0') * 10 + (a - '0');
-        if (num % 4 == 0) {
-            cout << i << '\n';
-            return;
-        }
+    int res = 0;
+    vector<pii> cnt1_all(cnt1.begin(), cnt1.end());
+    sort(cnt1_all.begin(), cnt1_all.end(), [] (const pii& a, const pii& b) { return a.second > b.second; });
+    if (cnt1_all.size() >= 2) {
+        auto it = cnt1_all.begin();
+        res += it->second;
+        ++it;
+        res += it->second;
+    } else if (cnt1_all.size() == 1) {
+        res = cnt1_all.begin()->second;
     }
-    cout << -1 << '\n';
+    for (auto&& [k, v] : cnt2) {
+        auto [x, y] = k;
+        res = max(res, v + cnt1[x] + cnt1[y]);
+    }
+    cout << res + cnt0 << '\n';
 }
 
 int main() {

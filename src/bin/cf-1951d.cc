@@ -329,7 +329,7 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -339,24 +339,24 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
-    read(string, s);
-    int n = s.size();
-    if (n == 1) {
-        if ((s[0] - 48) % 4 == 0) {
-            cout << 0 << '\n';
-        } else {
-            cout << -1 << '\n';
-        }
+    read(ll, n, k);
+    vector<ll> res;
+    while (n >= k and k > n / 2 and k != n) {
+        ll curr = n / 2;
+        ll price = n / curr;
+        n %= price;
+        res.emplace_back(price);
+        k -= curr;
     }
-    for (int i = 0; i < n; ++i) {
-        int a = s[mod(n - 1 + i, n)], b = s[mod(n - 2 + i, n)];
-        int num = (b - '0') * 10 + (a - '0');
-        if (num % 4 == 0) {
-            cout << i << '\n';
+    if (k) {
+        if (n < k) {
+            cout << "NO\n";
             return;
         }
+        res.emplace_back(n / k);
     }
-    cout << -1 << '\n';
+    cout << "YES\n" << res.size() << '\n';
+    putvec(res);
 }
 
 int main() {

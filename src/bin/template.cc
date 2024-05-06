@@ -339,7 +339,6 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
-    
 }
 
 int main() {

@@ -329,7 +329,7 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -339,51 +339,89 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
-    read(int, n, q);
-    readvec(int, a, n);
-    vector<int> left(q), right(q);
-    vector<pii> qs;
-    vector<vector<pii>> ql(n + 1), qr(n + 1);
-    for (int i = 0; i < q; ++i) {
-        read(int, l, r);
-        qs.emplace_back(l, r);
-        ql[l].emplace_back(r, i);
-        qr[r].emplace_back(l, i);
-    }
-    vector<int> ps(n + 1);
+    read(int, n);
+    read(ll, l, r);
+    l = -l;
+    vector<bool> red(n + 1);
     for (int i = 1; i <= n; ++i) {
-        ps[i] = ps[i - 1] ^ a[i - 1];
-    }
-    unordered_map<int, int, safe_hash> mp;
-    for (int i = 0; i <= n; ++i) {
-        for (auto&& [l, j] : qr[i]) {
-            if (!mp.count(ps[l - 1])) {
-                left[j] = -1;
-            } else {
-                left[j] = mp[ps[l - 1]];
-            }
+        read(char, c);
+        if (c == 'R') {
+            red[i] = 1;
         }
-        mp[ps[i]] = i;
     }
-    mp.clear();
-    for (int i = n - 1; ~i; --i) {
-        for (auto&& [r, j] : ql[i + 1]) {
-            if (!mp.count(ps[r])) {
-                right[j] = INF;
-            } else {
-                right[j] = mp[ps[r]];
-            }
+    adj(ch, n);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
+    }
+    vector<int> sz(n + 1), pos(n + 1);
+    vector<int> seq;
+    auto dfs = [&] (auto dfs, int v, int pa) -> void {
+        sz[v] = 1;
+        pos[v] = seq.size();
+        seq.emplace_back(v);
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            dfs(dfs, u, v);
+            sz[v] += sz[u];
         }
-        mp[ps[i]] = i;
-    }
-    // debug(ps);
-    for (int i = 0; i < q; ++i) {
-        // debug(make_pair(left[i], right[i]));
-        if (left[i] < right[i] and ps[qs[i].second] ^ ps[qs[i].first - 1]) {
-            cout << "NO\n";
+    };
+    dfs(dfs, 1, 0);
+    vector<int> res(n + 1);
+    auto dfs1 = [&] (auto dfs1, int v, int pa) -> int {
+        int ignore = 0;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            ignore += dfs1(dfs1, u, v);
+        }
+        if (red[v]) {
+            int m = sz[v] - ignore;
+            ll mx = 0;
+            for (int i = 0; i <= m; ++i) {
+                ll curr = min(ll(1) * l * (m - i), ll(1) * r * i);
+                if (curr > mx) {
+                    mx = curr;
+                }
+            }
+            ll tot = 0;
+            int f = 1;
+            for (int j = 0; j < sz[v]; ++j) {
+                int i = pos[v] + j;
+                if (red[seq[i]] and seq[i] != v) {
+                    j += sz[seq[i]] - 1;
+                    continue;
+                }
+                if (f) {
+                    ll use = min(r, mx - tot);
+                    res[seq[i]] = use;
+                    tot += use;
+                    if (tot == mx) {
+                        f = 0;
+                    }
+                } else {
+                    ll use = min(tot, l);
+                    res[seq[i]] = -use;
+                    tot -= use;
+                }
+            }
+            return sz[v];
         } else {
-            cout << "YES\n";
+            return ignore;
         }
+    };
+    dfs1(dfs1, 1, 0);
+    if (not red[1]) {
+        for (int j = 0; j < sz[1]; ++j) {
+            int i = pos[1] + j;
+            if (red[seq[i]] and seq[i] != 1) {
+                j += sz[seq[i]] - 1;
+                continue;
+            }
+            res[seq[i]] = l > r ? (-l) : r;
+        }
+    }
+    for (int i = 1; i <= n; ++i) {
+        cout << res[i] << " \n"[i == n];
     }
 }
 
