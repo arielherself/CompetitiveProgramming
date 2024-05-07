@@ -31,8 +31,6 @@ using pii = pair<int, int>;
 using pil = pair<int, ll>;
 using pli = pair<ll, int>;
 using pll = pair<ll, ll>;
-template <typename T> using max_heap = priority_queue<T>;
-template <typename T> using min_heap = priority_queue<T, vector<T>, greater<>>;
 
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
@@ -340,34 +338,64 @@ void dump_ignore() {}
 
 void prep() {}
 
-pll intersect(ll l1, ll r1, ll l2, ll r2) {
-    ll l = max(l1, l2), r = min(r1, r2);
-    if (l > r) {
-        return {-1, -1};
-    }
-    return {l, r};
-}
-
 void solve() {
-    using mll = MLL<MDL>;
-    read(ll, a, b);
-    // enumerate y
-    mll res = 0;
-    for (int y = 2; y < 61; ++y) {
-        ll yz = 1;
-        auto [l, r] = intersect(ll(1) << y, (ll(1) << y + 1) - 1, a, b);
-        if (l == -1) {
-            continue;
+    read(int, n, m);
+    readvec(int, a, n - 1);
+    readvec(int, b, n);
+    sort(a.begin(), a.end());
+    sort(b.begin(), b.end());
+    vector<int> mp(n - 1);
+    vector<bool> mapped(n);
+    int r = 0;
+    int mx = -1;
+    int def = 0;
+    for (int i = 0; i < n - 1; ++i) {
+        while (r < n and a[i] >= b[r]) {
+            ++r;
         }
-        for (int z = 0; ; z += 1, yz *= y) {
-            auto [p, q] = intersect(l, r, yz, yz > 4e18 / y ? LLONG_MAX : yz * y - 1);
-            if (p != -1) {
-                res += mll(1) * (q - p + 1) * z;
+        mp[i] = r;
+        if (r < n) {
+            mx = r;
+            def += 1;
+            mapped[r] = 1;
+            r += 1;
+        }
+    }
+    def = n - def;
+    vector<int> ss(n + 1);
+    for (int i = n - 1; ~i; --i) {
+        ss[i] = ss[i + 1] + mapped[i];
+    }
+    ll res = 0;
+    int prev = 0;
+    for (int i = 0; i < n - 1; ++i) {
+        int x = min(m, a[i]);
+        if (prev == m or mp[i] == n) {
+            break;
+        }
+        if (mp[i] == 0 or i and mp[i - 1] == mp[i] - 1) {
+            if (ss[mp[i]] == n - mp[i]) {
+                res += ll(1) * def * (x - prev);
+            } else {
+                res += ll(1) * (def - 1) * (x - prev);
             }
-            if (yz > 4e18 / y) {
-                break;
+        } else {
+            int prev_max = min(x, b[mp[i] - 1] - 1);
+            res += ll(1) * (def - 1) * (prev_max - prev);
+            if (ss[mp[i]] == n - mp[i]) {
+                res += ll(1) * def * (x - prev_max);
+            } else {
+                res += ll(1) * (def - 1) * (x - prev_max);
             }
         }
+        prev = x;
+    }
+    if (mapped[n - 1]) {
+        res += ll(1) * def * (m - prev);
+    } else {
+        int mx = min(b[n - 1] - 1, m);
+        res += ll(1) * (def - 1) * (mx - prev);
+        res += ll(1) * def * (m - mx);
     }
     cout << res << '\n';
 }

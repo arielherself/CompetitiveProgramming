@@ -340,37 +340,54 @@ void dump_ignore() {}
 
 void prep() {}
 
-pll intersect(ll l1, ll r1, ll l2, ll r2) {
-    ll l = max(l1, l2), r = min(r1, r2);
-    if (l > r) {
-        return {-1, -1};
-    }
-    return {l, r};
-}
+
 
 void solve() {
-    using mll = MLL<MDL>;
-    read(ll, a, b);
-    // enumerate y
-    mll res = 0;
-    for (int y = 2; y < 61; ++y) {
-        ll yz = 1;
-        auto [l, r] = intersect(ll(1) << y, (ll(1) << y + 1) - 1, a, b);
-        if (l == -1) {
-            continue;
+    int left = 0, right = 0;
+    read(int, n, m);
+    vector<pii> rg;
+    for (int i = 0; i < n; ++i) {
+        read(int, l, r);
+        rg.emplace_back(l, r);
+    }
+    sort(rg.begin(), rg.end());
+    min_heap<pii> pq;
+    int res = 0;
+    for (int i = 0; i < n; ++i) {
+        while (pq.size() and pq.top().first < rg[i].first) {
+            if (pq.top().second == 1) left -= 1;
+            if (pq.top().first == m) right -= 1;
+            pq.pop();
         }
-        for (int z = 0; ; z += 1, yz *= y) {
-            auto [p, q] = intersect(l, r, yz, yz > 4e18 / y ? LLONG_MAX : yz * y - 1);
-            if (p != -1) {
-                res += mll(1) * (q - p + 1) * z;
-            }
-            if (yz > 4e18 / y) {
-                break;
-            }
-        }
+        pq.emplace(rg[i].second, rg[i].first);
+        if (rg[i].first == 1) left += 1;
+        if (rg[i].second == m) right += 1;
+        res = max(res, int(pq.size()) - min(left, right));
     }
     cout << res << '\n';
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 int main() {
 #if __cplusplus < 201703L || defined(_MSC_VER) && !defined(__clang__)

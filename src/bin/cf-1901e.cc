@@ -340,36 +340,88 @@ void dump_ignore() {}
 
 void prep() {}
 
-pll intersect(ll l1, ll r1, ll l2, ll r2) {
-    ll l = max(l1, l2), r = min(r1, r2);
-    if (l > r) {
-        return {-1, -1};
-    }
-    return {l, r};
-}
-
 void solve() {
-    using mll = MLL<MDL>;
-    read(ll, a, b);
-    // enumerate y
-    mll res = 0;
-    for (int y = 2; y < 61; ++y) {
-        ll yz = 1;
-        auto [l, r] = intersect(ll(1) << y, (ll(1) << y + 1) - 1, a, b);
-        if (l == -1) {
-            continue;
-        }
-        for (int z = 0; ; z += 1, yz *= y) {
-            auto [p, q] = intersect(l, r, yz, yz > 4e18 / y ? LLONG_MAX : yz * y - 1);
-            if (p != -1) {
-                res += mll(1) * (q - p + 1) * z;
-            }
-            if (yz > 4e18 / y) {
-                break;
-            }
-        }
+    read(int, n);
+    vector<ll> a(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        cin >> a[i];
     }
-    cout << res << '\n';
+    adj(ch, n);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
+    }
+    if (n == 2) {
+        ll res = max(max(max(ll(0), a[1]), a[2]), a[1] + a[2]);
+        cout << res << '\n';
+    } else {
+        ll res = 0;
+        vector<ll> dp(n + 1);
+        int root = 1;
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v);
+            }
+            int c = ch[v].size() - (v != root);
+            if (v != root) {
+                ll no_v = -INFLL, has_v = a[v];
+                vector<ll> son;
+                ll tot = 0;
+                if (c > 0) {
+                    for (auto&& u : ch[v]) {
+                        if (u == pa) continue;;
+                        no_v = max(no_v, dp[u]);
+                        son.emplace_back(-dp[u]);
+                        tot += dp[u];
+                    }
+                    if (c > 1) {
+                        sort(son.begin(), son.end(), greater<>());
+                        ll curr = 0;
+                        for (int i = 0; i < c - 2 and son[i] > 0; ++i) {
+                            curr += son[i];
+                        }
+                        has_v = max(has_v, a[v] + tot + curr);
+                    }
+                }
+                dp[v] = max(has_v, no_v);
+            }
+            ll no_v = 0, has_v = a[v];
+            vector<ll> son;
+            ll tot = 0;
+            if (c > 1) {
+                vector<ll> al;
+                for (auto&& u : ch[v]) {
+                    if (u == pa) continue;;
+                    al.emplace_back(dp[u]);
+                    son.emplace_back(-dp[u]);
+                    tot += dp[u];
+                }
+                sort(al.begin(), al.end(), greater<>());
+                if (al.size() >= 2) {
+                    for (int i = 0; i  < 2; ++i) {
+                        no_v += al[i];
+                    }
+                }
+                if (c > 2) {
+                    sort(son.begin(), son.end(), greater<>());
+                    ll curr = 0;
+                    for (int i = 0; i < c - 3 and son[i] > 0; ++i) {
+                        curr += son[i];
+                    }
+                    has_v = max(has_v, a[v] + tot + curr);
+                }
+            }
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                has_v = max(has_v, a[v] + dp[u]);
+            }
+            // debug(make_tuple(v, has_v, no_v, dp[v]));
+            res = max(res, max(has_v, no_v));
+        };
+        dfs(dfs, root, 0);
+        cout << res << '\n';
+    }
 }
 
 int main() {

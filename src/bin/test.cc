@@ -1,54 +1,43 @@
 #include <bits/stdc++.h>
+
 using namespace std;
 
-class Solution {
-public:
-    int cherryPickup(vector<vector<int>>& a) {
-        int n = a.size();
-        vector<vector<int>> dp(n, vector<int>(n));
-        vector<vector<int>> col_pos(n, vector<int>(n + 1)), col_neg(n, vector<int>(n + 1));
-        vector<vector<int>> row_pos(n, vector<int>(n + 1)), row_neg(n, vector<int>(n + 1));
-        for (int i = 0; i < n; ++i) {
-            for (int j = 1; j <= n; ++j) {
-                row_pos[i][j] = row_pos[i][j - 1] + (a[i][j - 1] == 1);
-                row_neg[i][j] = row_neg[i][j - 1] + (a[i][j - 1] == -1);
-            }
-        }
-        for (int i = 0; i < n; ++i) {
-            for (int j = 1; j <= n; ++j) {
-                col_pos[i][j] = col_pos[i][j - 1] + (a[j - 1][i] == 1);
-                col_neg[i][j] = col_neg[i][j - 1] + (a[j - 1][i] == -1);
-            }
-        }
-        dp[0][0] = (a[0][0] == 1);
-        for (int i = 0; i < n; ++i) {
-            for (int j = 0; j < n; ++j) {
-                for (int k = 0; k <= i; ++k) {
-                    for (int l = 0; l <= j; ++l) {
-                        if (k == i and l == j) continue;
-                        if (row_neg[i][j + 1] - row_neg[i][l] or row_neg[k][j + 1] - row_neg[k][l]) continue;
-                        if (col_neg[l][i + 1] - col_neg[l][k] or col_neg[j][i + 1] - col_neg[j][k]) continue;
-                        if (k == i) {
-                            dp[i][j] = max(dp[i][j], dp[k][l] + row_pos[i][j + 1] - row_pos[i][l + 1]);
-                        } else if (l == j) {
-                            dp[i][j] = max(dp[i][j], col_pos[j][i + 1] - col_pos[j][k + 1]);
-                        } else {
-                            dp[i][j] = max(dp[i][j], dp[k][l] + row_pos[k][j + 1] - row_pos[k][l] + col_pos[j][i + 1] - col_pos[j][k] + row_pos[i][j + 1] - row_pos[i][l] + col_pos[l][i + 1] - col_pos[l][k ] - 2 * (a[k][l] == 1) - (a[k][j] == 1) - (a[i][j] == 1) - (a[i][l] == 1));
-                        }
-                    }
-                }
-            }
-        }
-        // for (int i = 0; i < n; ++i) {
-        //     for (int j = 0; j < n; ++j) {
-        //         cerr << dp[i][j] << " \n"[j + 1 == n];
-        //     }
-        // }
-        return dp[n - 1][n - 1];
-    }
-};
+typedef long long ll;
+
+const int MAXN = 5e5 + 10;
+
+int t, n; ll a[MAXN], dp[MAXN], ans;
+
+vector<int> g[MAXN];
+
+void dfs(int u, int fa) {
+	ll x; vector<ll> d; dp[u] = a[u], ans = max(ans, dp[u]);
+	for (int v : g[u]) {
+		if (v == fa) continue; dfs(v, u), d.push_back(dp[v]);
+		ans = max(ans, a[u] + dp[v]), dp[u] = max(dp[u], dp[v]);
+	}
+	sort(d.begin(), d.end(), greater<ll>());
+	if (d.size() >= 2) {
+		x = d[0] + d[1], ans = max(ans, x);
+		for (int i = 2; i < d.size() && d[i] > 0; i++) x += d[i];
+		dp[u] = max(dp[u], a[u] + x);
+	}
+	if (d.size() >= 3) {
+		x = d[0] + d[1] + d[2];
+		for (int i = 3; i < d.size() && d[i] > 0; i++) x += d[i];
+		ans = max(ans, a[u] + x);
+	}
+}
 
 int main() {
-    vector<vector<int>> grid = {{0, 1, -1}, {1, 0, -1}, {1, 1, 1}};
-    cout << Solution().cherryPickup(grid);
+	for (scanf("%d", &t); t--;) {
+		scanf("%d", &n), ans = 0;
+		for (int i = 1; i <= n; i++) g[i].clear();
+		for (int i = 1; i <= n; i++) scanf("%lld", &a[i]);
+		for (int i = 1, u, v; i < n; i++) {
+			scanf("%d%d", &u, &v);
+			g[u].push_back(v), g[v].push_back(u);
+		}
+		dfs(1, 0), printf("%lld\n", ans);
+	}
 }

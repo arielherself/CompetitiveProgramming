@@ -340,36 +340,126 @@ void dump_ignore() {}
 
 void prep() {}
 
-pll intersect(ll l1, ll r1, ll l2, ll r2) {
-    ll l = max(l1, l2), r = min(r1, r2);
-    if (l > r) {
-        return {-1, -1};
-    }
-    return {l, r};
-}
+struct pt {
+    int i, x, y;
+};
 
 void solve() {
-    using mll = MLL<MDL>;
-    read(ll, a, b);
-    // enumerate y
-    mll res = 0;
-    for (int y = 2; y < 61; ++y) {
-        ll yz = 1;
-        auto [l, r] = intersect(ll(1) << y, (ll(1) << y + 1) - 1, a, b);
-        if (l == -1) {
-            continue;
-        }
-        for (int z = 0; ; z += 1, yz *= y) {
-            auto [p, q] = intersect(l, r, yz, yz > 4e18 / y ? LLONG_MAX : yz * y - 1);
-            if (p != -1) {
-                res += mll(1) * (q - p + 1) * z;
-            }
-            if (yz > 4e18 / y) {
-                break;
-            }
+    read(int, n);
+    vector<pt> a(n);
+    for (int i = 0; i < n; ++i) {
+        a[i].i = i;
+        cin >> a[i].x;
+    }
+    for (int i = 0; i < n; ++i) {
+        cin >> a[i].y;
+    }
+    read(int, m);
+    vector<pt> b(m);
+    for (int i = 0; i < m; ++i) {
+        b[i].i = i;
+        cin >> b[i].x;
+    }
+    for (int i = 0; i < m; ++i) {
+        cin >> b[i].y;
+    }
+    int b_indicator = max(lg2(n), lg2(m)) + 1;
+    // connect a to b
+    int tot = (1 << b_indicator | max(n, m)) + 1;
+    vector<int> ch(tot, -1);
+    sort(b.begin(), b.end(), [] (const pt& a, const pt& b) { return a.x < b.x; });
+    sort(a.begin(), a.end(), [] (const pt& a, const pt& b) { return a.x < b.x; });
+    vector<int> ss_b(m + 1);
+    ss_b[m] = m - 1;
+    for (int i = m - 1; ~i; --i) {
+        if (b[i].y > b[ss_b[i + 1]].y) {
+            ss_b[i] = i;
+        } else {
+            ss_b[i] = ss_b[i + 1];
         }
     }
-    cout << res << '\n';
+    // debug(ss_b);
+    for (int i = 0; i < n; ++i) {
+        int l = 0, r = m - 1;
+        while (l < r) {
+            int mid = l + r >> 1;
+            if (b[mid].x > a[i].y) {
+                r = mid;
+            } else {
+                l = mid + 1;
+            }
+        }
+        if (b[l].x > a[i].y) {
+            ch[i] = 1 << b_indicator | ss_b[l];
+        }
+    }
+    vector<int> ss_a(n + 1);
+    ss_a[n] = n - 1;
+    for (int i = n - 1; ~i; --i) {
+        if (a[i].y > a[ss_a[i + 1]].y) {
+            ss_a[i] = i;
+        } else {
+            ss_a[i] = ss_a[i + 1];
+        }
+    }
+    // debug(ss_a);
+    for (int i = 0; i < m; ++i) {
+        int l = 0, r = n - 1;
+        while (l < r) {
+            int mid = l + r >> 1;
+            if (a[mid].x > b[i].y) {
+                r = mid;
+            } else {
+                l = mid + 1;
+            }
+        }
+        if (a[l].x > b[i].y) {
+            // debug(make_pair(i, l));
+            ch[1 << b_indicator | i] = ss_a[l];
+        }
+    }
+    vector<int> type(tot);
+    vector<bool> vis(tot);
+    auto dfs = [&] (auto dfs, int v) -> void {
+        if (vis[v]) {
+            if (type[v] == 0) {
+                type[v] = -1;
+            }
+        } else {
+            vis[v] = 1;
+            if (ch[v] == -1) {
+                if (v >> b_indicator) {
+                    type[v] = 2;
+                } else {
+                    type[v] = 1;
+                }
+                if (v == 0) {
+                    // debug(type[v]);
+                }
+            } else {
+                dfs(dfs, ch[v]);
+                type[v] = type[ch[v]];
+            }
+        }
+    };
+    for (int i = 0; i < tot; ++i) {
+        if (not vis[i] and ((i >> b_indicator) == 0 and i < n or (i >> b_indicator) == 1 and (i ^ (1 << b_indicator)) < m)) {
+            dfs(dfs, i);
+        }
+    }
+    // debug(ch);
+    int win = 0, lose = 0, draw = 0;
+    // debug(type);
+    for (int i = 0; i < tot and not (i >> b_indicator); ++i) {
+        if (type[i] == 1) {
+            win += 1;
+        } else if (type[i] == 2) {
+            lose += 1;
+        } else if (type[i] == -1) {
+            draw += 1;
+        }
+    }
+    cout << win << ' ' << draw << ' ' << lose << '\n';
 }
 
 int main() {
