@@ -332,7 +332,7 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -342,22 +342,61 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
-    using mll = MLL<PRIME>;
     read(int, n);
-    readvec(int, a, n);
-    mll res = 0;
-    for (int b = 0; b < 31; ++b) {
-        array<int, 2> cnt {1, 0};
-        array<mll, 2> sum {0, 0};
-        int curr = 0;
-        for (int i = 1; i <= n; ++i) {
-            curr ^= (a[i - 1] >> b) & 1;
-            res += mll(1) * (1 << b) * (mll(1) * cnt[1 ^ curr] * i - sum[1 ^ curr]);
-            cnt[curr] += 1;
-            sum[curr] += i;
-        }
+    vector<int> a(n + 1);
+    for (int i = 1; i <= n; ++i) cin >> a[i];
+    vector<int> sz(n + 1);
+    adj(ch, n);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
     }
-    cout << res << '\n';
+    auto get = [&] (auto get, int v, int pa) -> void {
+        sz[v] = 1;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            get(get, u, v);
+            sz[v] += sz[u];
+        }
+    };
+    get(get, 1, 0);
+    vector<ll> in(n + 1), out(n + 1);
+    auto dfs = [&] (auto dfs, int v, int pa) -> void {
+        out[v] += ll(1) * sz[v] * (a[v] ^ a[pa]);
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            dfs(dfs, u, v);
+            in[u] += ll(1) * (n - sz[u]) * (a[v] ^ a[u]);
+        }
+    };
+    dfs(dfs, 1, 0);
+    // debug(in), debug(out);
+    vector<ll> res(n + 1);
+    vector<ll> subtree_out(n + 1);
+    auto dfs3 = [&] (auto dfs3, int v, int pa) -> ll {
+        subtree_out[v] = out[v];
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            subtree_out[v] += dfs3(dfs3, u, v);
+        }
+        return subtree_out[v];
+    };
+    dfs3(dfs3, 1, 0);
+    auto dfs2 = [&] (auto dfs2, int v, int pa, ll prev) -> void {
+        prev += in[v];
+        ll tot_out = 0;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            tot_out += subtree_out[u];
+        }
+        res[v] = prev + tot_out;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            dfs2(dfs2, u, v, prev + tot_out - subtree_out[u]);
+        }
+    };
+    dfs2(dfs2, 1, 0, 0);
+    for (int i = 1; i <= n; ++i) cout << res[i] << " \n"[i == n];
 }
 
 int main() {

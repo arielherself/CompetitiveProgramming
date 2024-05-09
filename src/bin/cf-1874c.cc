@@ -24,8 +24,8 @@ using ull = uint64_t;
 #else
 using ll = long long;
 using ull = unsigned long long;
-using ld = long double;
 #endif
+using ld = long double;
 using int128 = __int128_t;
 using uint128 = __uint128_t;
 using pii = pair<int, int>;
@@ -332,7 +332,7 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -342,22 +342,37 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
-    using mll = MLL<PRIME>;
-    read(int, n);
-    readvec(int, a, n);
-    mll res = 0;
-    for (int b = 0; b < 31; ++b) {
-        array<int, 2> cnt {1, 0};
-        array<mll, 2> sum {0, 0};
-        int curr = 0;
-        for (int i = 1; i <= n; ++i) {
-            curr ^= (a[i - 1] >> b) & 1;
-            res += mll(1) * (1 << b) * (mll(1) * cnt[1 ^ curr] * i - sum[1 ^ curr]);
-            cnt[curr] += 1;
-            sum[curr] += i;
+    read(int, n, m);
+    adj(ch, n);
+    vector<int> ind(n + 1);
+    while (m--) {
+        read(int, u, v);
+        Edge(ch, v, u);
+        ind[u] += 1;
+    }
+    vector<ld> dp(n + 1);
+    vector<vector<ld>> son(n + 1);
+    deque<int> q;
+    for (int i = 1; i <= n; ++i) {
+        if (ind[i] == 0) {
+            q.emplace_back(i);
         }
     }
-    cout << res << '\n';
+    while (q.size()) {
+        int v = q.front(); q.pop_front();
+        if (v == n) {
+            dp[v] = 1;
+        } else {
+            sort(son[v].begin(), son[v].end(), greater<>());
+            // greedily choose the greatest element
+            int l = son[v].size();
+            for (int i = 0; i < l; ++i) {
+                for (int j = 0; j <= l; ++j) {
+                    
+                }
+            }
+        }
+    }
 }
 
 int main() {

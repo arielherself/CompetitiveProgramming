@@ -332,32 +332,82 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
 
 void dump_ignore() {}
 
-void prep() {}
+void prep() {
+}
 
-void solve() {
-    using mll = MLL<PRIME>;
-    read(int, n);
-    readvec(int, a, n);
-    mll res = 0;
-    for (int b = 0; b < 31; ++b) {
-        array<int, 2> cnt {1, 0};
-        array<mll, 2> sum {0, 0};
-        int curr = 0;
-        for (int i = 1; i <= n; ++i) {
-            curr ^= (a[i - 1] >> b) & 1;
-            res += mll(1) * (1 << b) * (mll(1) * cnt[1 ^ curr] * i - sum[1 ^ curr]);
-            cnt[curr] += 1;
-            sum[curr] += i;
+vector<pii> decompose_prime(int N) {
+    // return (factor, count)
+    vector<pii> result;
+    for (int i = 2; i * i <= N; i++) {
+        if (N % i == 0) {
+            int cnt = 0;
+            while (N % i == 0) N /= i, ++cnt;
+            result.emplace_back(i, cnt);
         }
     }
-    cout << res << '\n';
+    if (N != 1) {
+        result.emplace_back(N, 1);
+    }
+    return result;
+}
+
+void solve() {
+    unordered_map<int, int, safe_hash> bk, raw_bk, set_tm;
+    read(int, n, q);
+    ll prod = 1;
+    // debugvec(decompose_prime(n));
+    for (auto&& [x, i] : decompose_prime(n)) {
+        prod *= i + 1;
+        raw_bk[x] = i;
+        bk[x] = i;
+    }
+    ll raw_prod = prod;
+    int last_tm = 0, tm = 0;
+    while (q--) {
+        tm += 1;
+        read(int, op);
+        if (op == 1) {
+            read(int, x);
+            for (auto&& [y, i] : decompose_prime(x)) {
+                if (set_tm[y] < last_tm) {
+                    bk[y] = raw_bk[y];
+                }
+                prod /= (bk[y] + 1);
+                bk[y] += i;
+                set_tm[y] = tm;
+                prod *= (bk[y] + 1);
+            }
+            int f = 1;
+            for (auto&& [y, i] : decompose_prime(prod)) {
+                if (set_tm[y] < last_tm) {
+                    bk[y] = raw_bk[y];
+                    set_tm[y] = tm;
+                }
+                if (i < bk[y]) {
+                    // f = 1;
+                } else if (i > bk[y]) {
+                    f = 0;
+                    break;
+                }
+            }
+            if (f) {
+                cout << "YES\n";
+            } else {
+                cout << "NO\n";
+            }
+        } else {
+            last_tm = tm;
+            prod = raw_prod;
+        }
+    }
+    cout << endl;
 }
 
 int main() {

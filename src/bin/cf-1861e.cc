@@ -332,32 +332,37 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
 
 void dump_ignore() {}
 
-void prep() {}
+constexpr int MAXN = 4090;
+using mll = MLL<PRIME>;
+mll fact[MAXN];
+void prep() {
+    fact[0] = 1;
+    for (int i = 1; i < MAXN; ++i) {
+        fact[i] = fact[i - 1] * i;
+    }
+}
+
+mll comb(int n, int k) {
+    if (n < 0 or k < 0 or n < k) return 0;
+    return fact[n] / fact[k] / fact[n - k];
+}
 
 void solve() {
-    using mll = MLL<PRIME>;
-    read(int, n);
-    readvec(int, a, n);
-    mll res = 0;
-    for (int b = 0; b < 31; ++b) {
-        array<int, 2> cnt {1, 0};
-        array<mll, 2> sum {0, 0};
-        int curr = 0;
-        for (int i = 1; i <= n; ++i) {
-            curr ^= (a[i - 1] >> b) & 1;
-            res += mll(1) * (1 << b) * (mll(1) * cnt[1 ^ curr] * i - sum[1 ^ curr]);
-            cnt[curr] += 1;
-            sum[curr] += i;
+    read(int, n, k);
+    vector<mll> cstr(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        mll curr = 0;
+        for (int j = 1; j <= n / k; ++j) {
+            
         }
     }
-    cout << res << '\n';
 }
 
 int main() {

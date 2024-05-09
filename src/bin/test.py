@@ -1,3 +1,4 @@
+from itertools import pairwise
 from random import shuffle, randint
 from os import system
 
@@ -8,22 +9,23 @@ def gen_tree(n):
         tree += f'{fa} {i}\n'
     return tree
 
+N = 10_000_000
+prime = []
+is_prime = [False] * N
+
+def Eratosthenes(n):
+    is_prime[0] = is_prime[1] = False
+    for i in range(2, n + 1):
+        is_prime[i] = True
+    for i in range(2, n + 1):
+        if is_prime[i]:
+            prime.append(i)
+            if i * i > n:
+                continue
+            for j in range(i * i, n + 1, i):
+                is_prime[j] = False
+
 if __name__ == '__main__':
-    while 1:
-        n = randint(2, 10)
-        tr = gen_tree(n)
-        val = ' '.join([str(randint(-10, 10)) for _ in range(n)])
-        content = '\n'.join((str(n), val, tr))
-        with open('std.in', 'w') as f:
-            f.write('1\n' + content)
-        system('./my.out < std.in > std.out')
-        with open('std.out') as f:
-            my_ans = f.read().strip()
-        system('./ans.out < std.in > std.out')
-        with open('std.out') as f:
-            his_ans = f.read().strip()
-        if my_ans != his_ans:
-            print(content)
-            print(my_ans)
-            print(his_ans)
-            break
+    print(1)
+    print(1000000)
+    print('8 6 ' * 500000)

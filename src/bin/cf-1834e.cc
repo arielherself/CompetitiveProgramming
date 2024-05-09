@@ -332,7 +332,7 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -342,22 +342,58 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
-    using mll = MLL<PRIME>;
     read(int, n);
-    readvec(int, a, n);
-    mll res = 0;
-    for (int b = 0; b < 31; ++b) {
-        array<int, 2> cnt {1, 0};
-        array<mll, 2> sum {0, 0};
-        int curr = 0;
-        for (int i = 1; i <= n; ++i) {
-            curr ^= (a[i - 1] >> b) & 1;
-            res += mll(1) * (1 << b) * (mll(1) * cnt[1 ^ curr] * i - sum[1 ^ curr]);
-            cnt[curr] += 1;
-            sum[curr] += i;
+    readvec(int, b, n);
+    vector<int> a;
+    bool has_1 = 0;
+    for (int i = 0; i < n; ++i) {
+        if (b[i] == 1) {
+            has_1 = 1;
+        } else {
+            a.emplace_back(b[i]);
         }
     }
-    cout << res << '\n';
+    int m = a.size();
+    vector<int> next(m);
+    vector<int> st;
+    for (int i = m - 1; ~i; --i) {
+        while (st.size() and gcd(a[i], a[st.back()]) == a[st.back()]) {
+            st.pop_back();
+        }
+        if (not st.size()) {
+            next[i] = m;
+        } else {
+            next[i] = st.back();
+        }
+        st.emplace_back(i);
+    }
+    int ub = 20 * m + 200;
+    vector<vector<ll>> ss_lcm(m);
+    vector<bool> has(ub);
+    if (has_1) has[1] = 1;
+    for (int i = m - 1; ~i; --i) {
+        if (a[i] >= ub) continue;
+        has[a[i]] = 1;
+        ss_lcm[i].emplace_back(a[i]);
+        if (next[i] == m) continue;
+        int prev = 0;
+        for (auto&& u : ss_lcm[next[i]]) {
+            ll curr = lcm(a[i], u);
+            if (curr >= ub) break;
+            if (curr != prev) {
+                has[curr] = 1;
+                ss_lcm[i].emplace_back(curr);
+                prev = curr;
+            }
+        }
+    }
+    for (int i = 1; i < ub; ++i) {
+        if (not has[i]) {
+            cout << i << '\n';
+            return;
+        }
+    }
+    assert(false);
 }
 
 int main() {

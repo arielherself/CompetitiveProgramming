@@ -332,7 +332,7 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -341,20 +341,79 @@ void dump_ignore() {}
 
 void prep() {}
 
+constexpr int MAXN = 10000;
+int trace[63], trace_n;
+int l[MAXN], trie[MAXN][2], trie_n;
+
+void insert(int x, int left) {
+    int curr = 0;
+    trace_n = 0;
+    trace[trace_n++] = 0;
+    for (int i = 13; ~i; --i) {
+        int bit = (x >> i) & 1;
+        if (not trie[curr][bit]) {
+            trie[curr][bit] = trie_n;
+            trie[trie_n][0] = 0, trie[trie_n][1] = 0, ++trie_n;
+        }
+        curr = trie[curr][bit];
+        trace[trace_n++] = curr;
+    }
+    for (int i = 0; i < trace_n; ++i) {
+        l[trace[i]] = max(l[trace[i]], left);
+    }
+}
+
+int range_max_xor(int x, int min_left) {
+    int curr = 0;
+    int res = 0;
+    for (int i = 13; ~i; --i) {
+        int o = 1 ^ ((x >> i) & 1);
+        int better = trie[curr][o], common = trie[curr][1 ^ o];
+        if (better and l[better] >= min_left) {
+            curr = better;
+            res |= o << i;
+        } else if (common and l[common] >= min_left){
+            curr = common;
+            res |= (1 ^ o) << i;
+        } else {
+            // no solution
+            return x;
+        }
+    }
+    return res;
+}
+
+int has[MAXN], mexs[MAXN];
+
 void solve() {
-    using mll = MLL<PRIME>;
     read(int, n);
     readvec(int, a, n);
-    mll res = 0;
-    for (int b = 0; b < 31; ++b) {
-        array<int, 2> cnt {1, 0};
-        array<mll, 2> sum {0, 0};
-        int curr = 0;
-        for (int i = 1; i <= n; ++i) {
-            curr ^= (a[i - 1] >> b) & 1;
-            res += mll(1) * (1 << b) * (mll(1) * cnt[1 ^ curr] * i - sum[1 ^ curr]);
-            cnt[curr] += 1;
-            sum[curr] += i;
+    int high = lg2(n) + 1;
+    int m = 1 << high;
+    vector<int> first_oc(m, -1);
+    first_oc[0] = -2;
+    int res = 0;
+    for (int i = 0; i < n; ++i) {
+        memset(has, 0, (n + 2) * sizeof(int));
+        memset(mexs, 0, (n + 2) * sizeof(int));
+        int ptr = 0;
+        for (int j = 0; j < trie_n; ++j) l[j] = 0;
+        trie_n = 1;
+        trie[0][0] = 0, trie[0][1] = 0;
+        for (int j = i; ~j; --j) {
+            has[a[j]] = 1;
+            while (has[ptr]) ++ptr;  // tot: O(n)
+            int curr_mex = ptr;
+            insert(curr_mex, j);  // PERF: O(logn)
+            mexs[curr_mex] = 1;
+        }
+        for (int j = 0; j < m; ++j) {
+            if (first_oc[j] == -1) continue;
+            int pos = first_oc[j];
+            int q = range_max_xor(j, pos + 1);  // PERF: O(logn)
+            res = max(res, j ^ q);
+        }
+        for (int j = 0; j < m; ++j) {
         }
     }
     cout << res << '\n';
