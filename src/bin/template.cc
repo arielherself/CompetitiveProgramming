@@ -28,10 +28,43 @@ using ld = long double;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
+using ld = long double;
 using pii = pair<int, int>;
 using pil = pair<int, ll>;
 using pli = pair<ll, int>;
 using pll = pair<ll, ll>;
+using pid = pair<int, ld>;
+using pdi = pair<ld, int>;
+using pld = pair<ll, ld>;
+using pdl = pair<ld, ll>;
+using pdd = pair<ld, ld>;
+using tlll = tuple<ll, ll, ll>;
+using tlld = tuple<ll, ll, ld>;
+using tlli = tuple<ll, ll, int>;
+using tldl = tuple<ll, ld, ll>;
+using tldd = tuple<ll, ld, ld>;
+using tldi = tuple<ll, ld, int>;
+using tlil = tuple<ll, int, ll>;
+using tlid = tuple<ll, int, ld>;
+using tlii = tuple<ll, int, int>;
+using tdll = tuple<ld, ll, ll>;
+using tdld = tuple<ld, ll, ld>;
+using tdli = tuple<ld, ll, int>;
+using tddl = tuple<ld, ld, ll>;
+using tddd = tuple<ld, ld, ld>;
+using tddi = tuple<ld, ld, int>;
+using tdil = tuple<ld, int, ll>;
+using tdid = tuple<ld, int, ld>;
+using tdii = tuple<ld, int, int>;
+using till = tuple<int, ll, ll>;
+using tild = tuple<int, ll, ld>;
+using tili = tuple<int, ll, int>;
+using tidl = tuple<int, ld, ll>;
+using tidd = tuple<int, ld, ld>;
+using tidi = tuple<int, ld, int>;
+using tiil = tuple<int, int, ll>;
+using tiid = tuple<int, int, ld>;
+using tiii = tuple<int, int, int>;
 template <typename T> using max_heap = priority_queue<T>;
 template <typename T> using min_heap = priority_queue<T, vector<T>, greater<>>;
 
@@ -145,7 +178,9 @@ struct array_hash {
 #define sa(a) __AS_PROCEDURE(__typeof(a) sa(a.size() + 1); {int n = a.size(); for (int i = n - 1; i >= 0; --i) sa[i] = sa[i + 1] + a[i];};)
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
+#define edgew(ch, u, v, w) __AS_PROCEDURE(ch[u].emplace_back(v, w), ch[v].emplace_back(u, w);)
 #define Edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v);)
+#define Edgew(ch, u, v, w) __AS_PROCEDURE(ch[u].emplace_back(v, w);)
 template <typename T, typename Iterator> pair<size_t, map<T, size_t>> discretize(Iterator __first, Iterator __last) {
     set<T> st(__first, __last);
     size_t N = 0;
@@ -346,6 +381,14 @@ ostream& operator<<(ostream& out, const MLL<mdl>& num) {
 template <ll mdl>
 istream& operator>>(istream& in, MLL<mdl>& num) {
     return in >> num.val;
+}
+
+// miscancellous
+template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
+    std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
+}
+template <typename Func, typename RandomIt, typename Compare> void sort_by_key(RandomIt first, RandomIt last, Func extractor, Compare comp) {
+    std::sort(first, last, [&] (auto&& a, auto&& b) { return comp(extractor(a), extractor(b)); });
 }
 /////////////////////////////////////////////////////////
 

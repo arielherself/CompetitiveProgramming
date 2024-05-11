@@ -28,10 +28,43 @@ using ld = long double;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
+using ld = long double;
 using pii = pair<int, int>;
 using pil = pair<int, ll>;
 using pli = pair<ll, int>;
 using pll = pair<ll, ll>;
+using pid = pair<int, ld>;
+using pdi = pair<ld, int>;
+using pld = pair<ll, ld>;
+using pdl = pair<ld, ll>;
+using pdd = pair<ld, ld>;
+using tlll = tuple<ll, ll, ll>;
+using tlld = tuple<ll, ll, ld>;
+using tlli = tuple<ll, ll, int>;
+using tldl = tuple<ll, ld, ll>;
+using tldd = tuple<ll, ld, ld>;
+using tldi = tuple<ll, ld, int>;
+using tlil = tuple<ll, int, ll>;
+using tlid = tuple<ll, int, ld>;
+using tlii = tuple<ll, int, int>;
+using tdll = tuple<ld, ll, ll>;
+using tdld = tuple<ld, ll, ld>;
+using tdli = tuple<ld, ll, int>;
+using tddl = tuple<ld, ld, ll>;
+using tddd = tuple<ld, ld, ld>;
+using tddi = tuple<ld, ld, int>;
+using tdil = tuple<ld, int, ll>;
+using tdid = tuple<ld, int, ld>;
+using tdii = tuple<ld, int, int>;
+using till = tuple<int, ll, ll>;
+using tild = tuple<int, ll, ld>;
+using tili = tuple<int, ll, int>;
+using tidl = tuple<int, ld, ll>;
+using tidd = tuple<int, ld, ld>;
+using tidi = tuple<int, ld, int>;
+using tiil = tuple<int, int, ll>;
+using tiid = tuple<int, int, ld>;
+using tiii = tuple<int, int, int>;
 template <typename T> using max_heap = priority_queue<T>;
 template <typename T> using min_heap = priority_queue<T, vector<T>, greater<>>;
 
@@ -145,7 +178,9 @@ struct array_hash {
 #define sa(a) __AS_PROCEDURE(__typeof(a) sa(a.size() + 1); {int n = a.size(); for (int i = n - 1; i >= 0; --i) sa[i] = sa[i + 1] + a[i];};)
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
+#define edgew(ch, u, v, w) __AS_PROCEDURE(ch[u].emplace_back(v, w), ch[v].emplace_back(u, w);)
 #define Edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v);)
+#define Edgew(ch, u, v, w) __AS_PROCEDURE(ch[u].emplace_back(v, w);)
 template <typename T, typename Iterator> pair<size_t, map<T, size_t>> discretize(Iterator __first, Iterator __last) {
     set<T> st(__first, __last);
     size_t N = 0;
@@ -237,6 +272,7 @@ ll inverse(ll a, ll b) {
 }
 
 vector<tuple<int, int, ll>> decompose(ll x) {
+    // return (factor, count, factor ** count)
     vector<tuple<int, int, ll>> res;
     for (int i = 2; i * i <= x; i++) {
         if (x % i == 0) {
@@ -250,6 +286,22 @@ vector<tuple<int, int, ll>> decompose(ll x) {
         res.emplace_back(x, 1, x);
     }
     return res;
+}
+
+vector<pii> decompose_prime(int N) {
+    // return (factor, count)
+    vector<pii> result;
+    for (int i = 2; i * i <= N; i++) {
+        if (N % i == 0) {
+            int cnt = 0;
+            while (N % i == 0) N /= i, ++cnt;
+            result.emplace_back(i, cnt);
+        }
+    }
+    if (N != 1) {
+        result.emplace_back(N, 1);
+    }
+    return result;
 }
 
 /* string algorithms */
@@ -330,73 +382,149 @@ template <ll mdl>
 istream& operator>>(istream& in, MLL<mdl>& num) {
     return in >> num.val;
 }
+
+// miscancellous
+template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
+    std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
+}
+template <typename Func, typename RandomIt, typename Compare> void sort_by_key(RandomIt first, RandomIt last, Func extractor, Compare comp) {
+    std::sort(first, last, [&] (auto&& a, auto&& b) { return comp(extractor(a), extractor(b)); });
+}
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
-// #define DUMP_TEST_CASE 7219
-
-void dump() {}
-
-void dump_ignore() {}
-
-void prep() {}
-
-void solve() {
-    read(int, n, m);
-    vector<vector<pil>> e(n + 1);
-    while (m--) {
-        read(int, u, v);
-        read(ll, w);
-        e[u].emplace_back(v, w * 2);
-        e[v].emplace_back(u, w * 2);
-    }
-    for (int i = 1; i <= n; ++i) {
-        read(ll, x);
-        e[0].emplace_back(i, x);
-        e[i].emplace_back(0, x);
-    }
-    min_heap<pli> pq;
-    pq.emplace(0, 0);
-    vector<bool> vis(n + 1);
-    vector<ll> dis(n + 1, INFLL);
-    while (pq.size()) {
-        poptop(pq, d, v);
-        continue_or(vis[v], 1);
-        dis[v] = d;
-        for (auto&& [u, w] : e[v]) {
-            if (d + w < dis[u]) {
-                dis[u] = d + w;
-                pq.emplace(dis[u], u);
+class Solution {
+public:
+    vector<int> findProductsOfElements(vector<vector<long long>>& queries) {
+        vector<int> rres;
+        for (auto&& v : queries) {
+            ll left = v[0] + 1, right = v[1] + 1, mdl = v[2];
+            vector<ll> dp(64);
+            vector<ll> cnt(64);
+            dp[1] = 1;
+            cnt[1] = 1;
+            for (int i = 2; i < 64; ++i) {
+                if (cnt[i - 1] > LLONG_MAX / 3) {
+                    cnt[i] = LLONG_MAX;
+                } else {
+                    cnt[i] = cnt[i - 1] * 3 + 1;
+                }
             }
+            unordered_map<ll, ll, safe_hash> cache;
+            cache[0] = 1;
+            auto pow = [&] (auto pow, ll b, ll m) -> ll {
+                if (cache[m]) return cache[m];
+                ll curr = pow(pow, b, m / 2);
+                cache[m] = ((((curr * curr) % mdl) * ((m & 1) ? (b % mdl) : 1)) % mdl);
+                return cache[m];
+            };
+            for (int i = 2; i < 64; ++i) {
+                if (cnt[i - 1] >= LLONG_MAX - 1) {
+                    dp[i] = -1;
+                } else {
+                    dp[i] = (dp[i - 1] * pow(pow, (1LL << i - 1) % mdl, cnt[i - 1] + 1)) % mdl;
+                }
+            }
+            auto query = [&] (ll r) -> ll {
+                int128 res = 0;
+                ll has = 0;
+                for (int b = 62; ~b; --b) {
+                    if ((r >> b) & 1) {
+                        if (cnt[b] >= LLONG_MAX - has * (1LL << b)) {
+                            return LLONG_MAX;
+                        }
+                        res += has * (1LL << b) + cnt[b];
+                        has += 1;
+                    }
+                }
+                return min(res + popcount(r), int128(LLONG_MAX));            
+            };
+            auto calc = [&] (ll r) {
+                ll res = 0;
+                ll has = 1;
+                for (int b = 62; ~b; --b) {
+                    if ((r >> b) & 1) {
+                        if ((r >> b) & 1) {
+                            res = (res + dp[b] * pow(pow, has, cnt[b])) % mdl;
+                            has = (has * (1LL << b)) % mdl;
+                        }
+                    }
+                }
+                return (res + has) % mdl;
+            };
+            ll lt, rt;
+            ll res = 0, keep = 1;
+            {
+                ll l = 0, r = INFLL;
+                while (l < r) {
+                    ll mid = l + r >> 1;
+                    if (query(mid) > left) {
+                        r = mid;
+                    } else {
+                        l = mid + 1;
+                    }
+                }
+                ll rd = query(l) - left;
+                for (int b = 63; ~b and rd > 0; --b) {
+                    if ((l - 1 >> b) & 1) {
+                        rd -= 1;
+                        keep = (keep * (1LL << b)) % mdl;
+                    }
+                }
+                lt = l;
+            }
+            {
+                ll l = 0, r = INFLL;
+                while (l < r) {
+                    ll mid = l + r + 1 >> 1;
+                    if (query(mid) < right) {
+                        l = mid;
+                    } else {
+                        r = mid - 1;
+                    }
+                }
+                ll rd = right - query(l);
+                for (int b = 0; b < 63 and rd > 0; ++b) {
+                    if ((l + 1 >> b) & 1) {
+                        rd -= 1;
+                        keep = (keep * (1LL << b)) % mdl;
+                    }
+                }
+                rt = l;
+            }
+            debug(lt), debug(rt);
+            auto check = [&] (ll idx) -> bool {
+                return query(idx) >= right and query(idx - 1) < left;
+            };
+            if (not (check(lt) or check(lt - 1))) {
+                rres.push_back(((lt <= rt ? mod(calc(rt) - calc(lt - 1), mdl) : 1) * keep) % mdl);
+            } else {
+                // lt is correct
+                if (check(lt - 1)) lt -= 1;
+                ll res = 1;
+                ll d1 = left - query(lt - 1);
+                ll rem = d1 - 1;
+                int b = 0;
+                for (; b < 63 and rem > 0; ++b) {
+                    if ((lt >> b) & 1) {
+                        --rem;
+                    }
+                }
+                rem = right - left + 1;
+                for (; b < 63 and rem > 0; ++b) {
+                    if ((lt >> b) & 1) {
+                        --rem;
+                        res = (res * (1LL << b)) % mdl;
+                    }
+                }
+                rres.push_back(res);
+            }
+            // rres.push_back(int(((lt <= rt ? (calc(rt) - calc(lt - 1)) : 1) * keep) % mdl));
         }
+        return rres;
     }
-    for (int i = 1; i <= n; ++i) {
-        cout << dis[i] << " \n"[i == n];
-    }
-}
+};
 
 int main() {
-#if __cplusplus < 201703L || defined(_MSC_VER) && !defined(__clang__)
-    assert(false && "incompatible compiler variant detected.");
-#endif
-    untie, cout.tie(NULL);
-    prep();
-#ifdef SINGLE_TEST_CASE
-    solve();
-#else
-    read(int, t);
-    for (int i = 0; i < t; ++i) {
-#ifdef DUMP_TEST_CASE
-        if (t < (DUMP_TEST_CASE)) {
-            solve();
-        } else if (i + 1 == (DUMP_TEST_CASE)) {
-            dump();
-        } else {
-            dump_ignore();
-        }
-#else
-        solve();
-#endif
-    }
-#endif
+    vector<vector<long long>> queries = {{0, 2, 11}};
+    cout << Solution().findProductsOfElements(queries) << endl;
 }

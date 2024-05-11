@@ -392,7 +392,7 @@ template <typename Func, typename RandomIt, typename Compare> void sort_by_key(R
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -401,45 +401,21 @@ void dump_ignore() {}
 
 void prep() {}
 
-template<typename T>
-struct BIT {
-    int n;
-    vector<T> c;
-    BIT(size_t n) : n(n), c(n + 1) {}
-    void add(size_t i, const T& k) {
-        while (i <= n) {
-            c[i] += k;
-            i += lowbit(i);
-        }
-    }
-    T getsum(size_t i) {
-        T res = {};
-        while (i) {
-            res += c[i];
-            i -= lowbit(i);
-        }
-        return res;
-    }
-};
-
 void solve() {
-    read(int, n);
-    readvec(ll, a, n);
-    auto [N, mp] = discretize<ll>(a.begin(), a.end());
-    BIT<int> tr(N);
-    ll res = 0;
-    ll sum = 0;
-    for (int i = n - 1; ~i; --i) {
-        res += a[i] * (n - 1 - i) + sum;
-        auto it = mp.lower_bound(100'000'000 - a[i]);
-        if (it != mp.end()) {
-            ll cnt = tr.getsum(N) - tr.getsum(max((unsigned long)0, it->second - 1));
-            res -= cnt * 100'000'000;
+    read(string, s);
+    int n = s.size();
+    int cnt = 0;
+    int has_01 = 0;
+    for (int i = 1; i < n; ++i) {
+        if (s[i] != s[i - 1]) {
+            if (s[i - 1] == '0') {
+                has_01 = 1;
+            }
+            cnt += 1;
         }
-        tr.add(mp[a[i]], 1);
-        sum += a[i];
     }
-    cout << res << '\n';
+    if (has_01) cnt = max(0, cnt - 1);
+    cout << cnt + 1 << '\n';
 }
 
 int main() {

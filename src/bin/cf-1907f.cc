@@ -392,7 +392,7 @@ template <typename Func, typename RandomIt, typename Compare> void sort_by_key(R
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -401,45 +401,61 @@ void dump_ignore() {}
 
 void prep() {}
 
-template<typename T>
-struct BIT {
-    int n;
-    vector<T> c;
-    BIT(size_t n) : n(n), c(n + 1) {}
-    void add(size_t i, const T& k) {
-        while (i <= n) {
-            c[i] += k;
-            i += lowbit(i);
-        }
-    }
-    T getsum(size_t i) {
-        T res = {};
-        while (i) {
-            res += c[i];
-            i -= lowbit(i);
-        }
-        return res;
-    }
-};
-
 void solve() {
     read(int, n);
-    readvec(ll, a, n);
-    auto [N, mp] = discretize<ll>(a.begin(), a.end());
-    BIT<int> tr(N);
-    ll res = 0;
-    ll sum = 0;
-    for (int i = n - 1; ~i; --i) {
-        res += a[i] * (n - 1 - i) + sum;
-        auto it = mp.lower_bound(100'000'000 - a[i]);
-        if (it != mp.end()) {
-            ll cnt = tr.getsum(N) - tr.getsum(max((unsigned long)0, it->second - 1));
-            res -= cnt * 100'000'000;
+    readvec(int, a, n);
+    // increasing
+    int res = INF;
+    {
+        int f = 1;
+        int tp = -1;;
+        for (int i = 1; i < n; ++i) {
+            if (a[i] < a[i - 1]) {
+                if (tp != -1) {
+                    f = 0;
+                    break;
+                } else {
+                    tp = i;
+                    // (i - 1, i)
+                }
+            }
         }
-        tr.add(mp[a[i]], 1);
-        sum += a[i];
+        if (f) {
+            if (tp == -1) {
+                res = 0;
+            } else {
+                if (a[n - 1] <= a[0]) {
+                    res = min(res, min(n - tp, 2 + tp));
+                }
+            }
+        }
     }
-    cout << res << '\n';
+    // increasing
+    {
+        int f = 1;
+        int tp = -1;;
+        for (int i = 1; i < n; ++i) {
+            if (a[i] > a[i - 1]) {
+                if (tp != -1) {
+                    f = 0;
+                    break;
+                } else {
+                    tp = i;
+                    // (i - 1, i)
+                }
+            }
+        }
+        if (f) {
+            if (tp == -1) {
+                res = min(res, 1);
+            } else {
+                if (a[n - 1] >= a[0]) {
+                    res = min(res, min(1 + n - tp, 1 + tp));
+                }
+            }
+        }
+    }
+    cout << (res == INF ? -1 : res) << '\n';
 }
 
 int main() {

@@ -392,7 +392,7 @@ template <typename Func, typename RandomIt, typename Compare> void sort_by_key(R
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -401,45 +401,48 @@ void dump_ignore() {}
 
 void prep() {}
 
-template<typename T>
-struct BIT {
-    int n;
-    vector<T> c;
-    BIT(size_t n) : n(n), c(n + 1) {}
-    void add(size_t i, const T& k) {
-        while (i <= n) {
-            c[i] += k;
-            i += lowbit(i);
+template<typename _Tp, typename _Op = function<_Tp(const _Tp&, const _Tp&)>> struct sparse_table {
+    _Op op;
+    vector<vector<_Tp>> st;
+    template <typename ReverseIterator>
+    sparse_table(ReverseIterator __first, ReverseIterator __last, _Op&& __operation) {
+        op = __operation;
+        int n = distance(__first, __last);
+        st = vector<vector<_Tp>>(n, vector<_Tp>(int(log2(n) + 1)));
+        int i = n - 1;
+        for (auto it = __first; it != __last; ++it) {
+            st[i][0] = *it;
+            for (int j = 1; i + (1 << j) <= n; ++j) {
+                st[i][j] = op(st[i][j - 1], st[i + (1 << (j - 1))][j - 1]);
+            }
+            i -= 1;
         }
     }
-    T getsum(size_t i) {
-        T res = {};
-        while (i) {
-            res += c[i];
-            i -= lowbit(i);
-        }
-        return res;
+    _Tp query(size_t __start, size_t __end) {
+        int s = lg2(__end - __start + 1);
+        return op(st[__start][s], st[__end - (1 << s) + 1][s]);
     }
 };
 
+auto u_min = [] (ll a, ll b) { return min(a, b); };
+
 void solve() {
     read(int, n);
-    readvec(ll, a, n);
-    auto [N, mp] = discretize<ll>(a.begin(), a.end());
-    BIT<int> tr(N);
-    ll res = 0;
-    ll sum = 0;
-    for (int i = n - 1; ~i; --i) {
-        res += a[i] * (n - 1 - i) + sum;
-        auto it = mp.lower_bound(100'000'000 - a[i]);
-        if (it != mp.end()) {
-            ll cnt = tr.getsum(N) - tr.getsum(max((unsigned long)0, it->second - 1));
-            res -= cnt * 100'000'000;
-        }
-        tr.add(mp[a[i]], 1);
-        sum += a[i];
+    readvec(int, a, n);
+    vector<ll> ps(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        ps[i] = ps[i - 1] + a[i - 1];
     }
-    cout << res << '\n';
+    sparse_table<ll> st(ps.rbegin(), ps.rend(), u_min);
+    ll delta = 0, var_delta = ps[n];
+    for (int i = 0; i < n; ++i) {
+        ll curr = st.query(i + 1, n) - ps[i];
+        if (curr < -delta) {
+            delta = -curr;
+            var_delta = ps[i];
+        }
+    }
+    cout << var_delta << '\n';
 }
 
 int main() {

@@ -382,17 +382,9 @@ template <ll mdl>
 istream& operator>>(istream& in, MLL<mdl>& num) {
     return in >> num.val;
 }
-
-// miscancellous
-template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
-    std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
-}
-template <typename Func, typename RandomIt, typename Compare> void sort_by_key(RandomIt first, RandomIt last, Func extractor, Compare comp) {
-    std::sort(first, last, [&] (auto&& a, auto&& b) { return comp(extractor(a), extractor(b)); });
-}
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -401,45 +393,39 @@ void dump_ignore() {}
 
 void prep() {}
 
-template<typename T>
-struct BIT {
-    int n;
-    vector<T> c;
-    BIT(size_t n) : n(n), c(n + 1) {}
-    void add(size_t i, const T& k) {
-        while (i <= n) {
-            c[i] += k;
-            i += lowbit(i);
-        }
-    }
-    T getsum(size_t i) {
-        T res = {};
-        while (i) {
-            res += c[i];
-            i -= lowbit(i);
-        }
-        return res;
-    }
-};
-
 void solve() {
     read(int, n);
-    readvec(ll, a, n);
-    auto [N, mp] = discretize<ll>(a.begin(), a.end());
-    BIT<int> tr(N);
-    ll res = 0;
-    ll sum = 0;
-    for (int i = n - 1; ~i; --i) {
-        res += a[i] * (n - 1 - i) + sum;
-        auto it = mp.lower_bound(100'000'000 - a[i]);
-        if (it != mp.end()) {
-            ll cnt = tr.getsum(N) - tr.getsum(max((unsigned long)0, it->second - 1));
-            res -= cnt * 100'000'000;
+    // 0 for less, 1 for greater
+    auto compare = [&] (int i, int j) -> bool {
+        cout << "? " << i << ' ' << j << endl;
+        read(ll, x);
+        ll y;
+        if (i + 1 == j) {
+            y = 0;
+        } else {
+            cout << "? " << i + 1 << ' ' << j << endl;
+            cin >> y;
         }
-        tr.add(mp[a[i]], 1);
-        sum += a[i];
-    }
-    cout << res << '\n';
+        if (x == y + j - i) {
+            return 1;
+        } else {
+            return 0;
+        }
+    };
+    auto dfs = [&] (auto dfs, int l, int r) -> int {
+        if (l == r) {
+            return l;
+        }
+        int mid = l + r >> 1;
+        int left = dfs(dfs, l, mid), right = dfs(dfs, mid + 1, r);
+        if (compare(left, right)) {
+            return left;
+        } else {
+            return right;
+        }
+    };
+    int res = dfs(dfs, 1, n);
+    cout << "! " << res << endl;
 }
 
 int main() {

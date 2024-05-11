@@ -392,7 +392,7 @@ template <typename Func, typename RandomIt, typename Compare> void sort_by_key(R
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -401,45 +401,79 @@ void dump_ignore() {}
 
 void prep() {}
 
-template<typename T>
-struct BIT {
-    int n;
-    vector<T> c;
-    BIT(size_t n) : n(n), c(n + 1) {}
-    void add(size_t i, const T& k) {
-        while (i <= n) {
-            c[i] += k;
-            i += lowbit(i);
-        }
+struct query {
+    int idx, u, v;
+    ll e;
+};
+
+class quick_union {
+private:
+    vector<size_t> c, sz;
+public:
+    quick_union(size_t n) : c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
     }
-    T getsum(size_t i) {
-        T res = {};
-        while (i) {
-            res += c[i];
-            i -= lowbit(i);
-        }
-        return res;
+    
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] += sz[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_size(size_t i) {
+        return sz[query(i)];
     }
 };
 
 void solve() {
-    read(int, n);
-    readvec(ll, a, n);
-    auto [N, mp] = discretize<ll>(a.begin(), a.end());
-    BIT<int> tr(N);
-    ll res = 0;
-    ll sum = 0;
-    for (int i = n - 1; ~i; --i) {
-        res += a[i] * (n - 1 - i) + sum;
-        auto it = mp.lower_bound(100'000'000 - a[i]);
-        if (it != mp.end()) {
-            ll cnt = tr.getsum(N) - tr.getsum(max((unsigned long)0, it->second - 1));
-            res -= cnt * 100'000'000;
-        }
-        tr.add(mp[a[i]], 1);
-        sum += a[i];
+    read(int, n, m);
+    vector<ll> h(n + 1);
+    for (int i = 1; i <= n; ++i) cin >> h[i];
+    vector<pii> edges;
+    for (int i = 0; i < m; ++i) {
+        read(int, u, v);
+        edges.emplace_back(u, v);
     }
-    cout << res << '\n';
+    sort_by_key(edges.begin(), edges.end(), [&] (const pii& a) { return max(h[a.first], h[a.second]); });
+    read(int, q);
+    vector<query> qs;
+    for (int i = 0; i < q; ++i) {
+        read(int, u, v, e);
+        qs.push_back({i, u, v, e});
+    }
+    sort_by_key(qs.begin(), qs.end(), [&] (const query& a) { return h[a.u] + a.e; });
+    ll curr_mn = 0;
+    int ptr = 0;
+    quick_union qu(n + 1);
+    vector<bool> res(q);
+    for (auto&& [u, v] : edges) {
+        curr_mn = max(curr_mn, max(h[u], h[v]));
+        while (ptr < q and h[qs[ptr].u] + qs[ptr].e < curr_mn) {
+            res[qs[ptr].idx] = qu.connected(qs[ptr].u, qs[ptr].v);
+            ++ptr;
+        }
+        qu.merge(u, v);
+    }
+    while (ptr < q) {
+        res[qs[ptr].idx] = qu.connected(qs[ptr].u, qs[ptr].v);
+        ++ptr;
+    }
+    for (int i = 0; i < q; ++i) {
+        if (res[i]) {
+            cout << "YES\n";
+        } else {
+            cout << "NO\n";
+        }
+    }
+    cout << endl;
 }
 
 int main() {

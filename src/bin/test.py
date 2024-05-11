@@ -1,31 +1,51 @@
-from itertools import pairwise
-from random import shuffle, randint
-from os import system
+# void solve() {
+#     read(ll, n, k, q);
+#     vector<ll> a(k + 1), b(k + 1);
+#     for (int i = 1; i <= k; ++i) cin >> a[i];
+#     for (int i = 1; i <= k; ++i) cin >> b[i];
+#     while (q--) {
+#         read(ll, d);
+#         int l = 0, r = k;
+#         while (l < r) {
+#             int mid = l + r + 1 >> 1;
+#             if (a[mid] <= d) {
+#                 l = mid;
+#             } else {
+#                 r = mid - 1;
+#             }
+#         }
+#         
+#         if (a[l] == d) {
+#             cout << b[l] << ' ';
+#         } else {
+#             ll res = double(1) * (d - a[l]) / (a[l + 1] - a[l]) * (b[l + 1] - b[l]);
+#             cout << b[l] + res << ' ';
+#         }
+#     }
+#     cout << endl;
+# }
 
-def gen_tree(n):
-    tree = ''
-    for i in range(2, n + 1):
-        fa = randint(1, i - 1)
-        tree += f'{fa} {i}\n'
-    return tree
-
-N = 10_000_000
-prime = []
-is_prime = [False] * N
-
-def Eratosthenes(n):
-    is_prime[0] = is_prime[1] = False
-    for i in range(2, n + 1):
-        is_prime[i] = True
-    for i in range(2, n + 1):
-        if is_prime[i]:
-            prime.append(i)
-            if i * i > n:
-                continue
-            for j in range(i * i, n + 1, i):
-                is_prime[j] = False
-
-if __name__ == '__main__':
-    print(1)
-    print(1000000)
-    print('8 6 ' * 500000)
+import sys
+input = sys.stdin.readline
+t = int(input())
+for _ in range(t):
+    n = int(input())
+    k = int(input())
+    q = int(input())
+    a = [0] * (k + 1)
+    b = [0] * (k + 1)
+    for _ in range(q):
+        d = int(input())
+        l = 0
+        r = k
+        while l < r:
+            mid = l + r + 1 >> 1
+            if a[mid] <= d:
+                l = mid
+            else:
+                r = mid - 1
+        if a[l] == d:
+            print(b[l], end=' ')
+        else:
+            res = (d - a[l]) / (a[l + 1] - a[l]) * (b[l + 1] - b[l])
+            print(b[l] + res)

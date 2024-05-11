@@ -24,13 +24,49 @@ using ull = uint64_t;
 #else
 using ll = long long;
 using ull = unsigned long long;
+using ld = long double;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
+using ld = long double;
 using pii = pair<int, int>;
 using pil = pair<int, ll>;
 using pli = pair<ll, int>;
 using pll = pair<ll, ll>;
+using pid = pair<int, ld>;
+using pdi = pair<ld, int>;
+using pld = pair<ll, ld>;
+using pdl = pair<ld, ll>;
+using pdd = pair<ld, ld>;
+using tlll = tuple<ll, ll, ll>;
+using tlld = tuple<ll, ll, ld>;
+using tlli = tuple<ll, ll, int>;
+using tldl = tuple<ll, ld, ll>;
+using tldd = tuple<ll, ld, ld>;
+using tldi = tuple<ll, ld, int>;
+using tlil = tuple<ll, int, ll>;
+using tlid = tuple<ll, int, ld>;
+using tlii = tuple<ll, int, int>;
+using tdll = tuple<ld, ll, ll>;
+using tdld = tuple<ld, ll, ld>;
+using tdli = tuple<ld, ll, int>;
+using tddl = tuple<ld, ld, ll>;
+using tddd = tuple<ld, ld, ld>;
+using tddi = tuple<ld, ld, int>;
+using tdil = tuple<ld, int, ll>;
+using tdid = tuple<ld, int, ld>;
+using tdii = tuple<ld, int, int>;
+using till = tuple<int, ll, ll>;
+using tild = tuple<int, ll, ld>;
+using tili = tuple<int, ll, int>;
+using tidl = tuple<int, ld, ll>;
+using tidd = tuple<int, ld, ld>;
+using tidi = tuple<int, ld, int>;
+using tiil = tuple<int, int, ll>;
+using tiid = tuple<int, int, ld>;
+using tiii = tuple<int, int, int>;
+template <typename T> using max_heap = priority_queue<T>;
+template <typename T> using min_heap = priority_queue<T, vector<T>, greater<>>;
 
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
@@ -142,7 +178,9 @@ struct array_hash {
 #define sa(a) __AS_PROCEDURE(__typeof(a) sa(a.size() + 1); {int n = a.size(); for (int i = n - 1; i >= 0; --i) sa[i] = sa[i + 1] + a[i];};)
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
+#define edgew(ch, u, v, w) __AS_PROCEDURE(ch[u].emplace_back(v, w), ch[v].emplace_back(u, w);)
 #define Edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v);)
+#define Edgew(ch, u, v, w) __AS_PROCEDURE(ch[u].emplace_back(v, w);)
 template <typename T, typename Iterator> pair<size_t, map<T, size_t>> discretize(Iterator __first, Iterator __last) {
     set<T> st(__first, __last);
     size_t N = 0;
@@ -234,6 +272,7 @@ ll inverse(ll a, ll b) {
 }
 
 vector<tuple<int, int, ll>> decompose(ll x) {
+    // return (factor, count, factor ** count)
     vector<tuple<int, int, ll>> res;
     for (int i = 2; i * i <= x; i++) {
         if (x % i == 0) {
@@ -247,6 +286,22 @@ vector<tuple<int, int, ll>> decompose(ll x) {
         res.emplace_back(x, 1, x);
     }
     return res;
+}
+
+vector<pii> decompose_prime(int N) {
+    // return (factor, count)
+    vector<pii> result;
+    for (int i = 2; i * i <= N; i++) {
+        if (N % i == 0) {
+            int cnt = 0;
+            while (N % i == 0) N /= i, ++cnt;
+            result.emplace_back(i, cnt);
+        }
+    }
+    if (N != 1) {
+        result.emplace_back(N, 1);
+    }
+    return result;
 }
 
 /* string algorithms */
@@ -327,6 +382,14 @@ template <ll mdl>
 istream& operator>>(istream& in, MLL<mdl>& num) {
     return in >> num.val;
 }
+
+// miscancellous
+template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
+    std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
+}
+template <typename Func, typename RandomIt, typename Compare> void sort_by_key(RandomIt first, RandomIt last, Func extractor, Compare comp) {
+    std::sort(first, last, [&] (auto&& a, auto&& b) { return comp(extractor(a), extractor(b)); });
+}
 /////////////////////////////////////////////////////////
 
 #define SINGLE_TEST_CASE
@@ -338,61 +401,39 @@ void dump_ignore() {}
 
 void prep() {}
 
-class quick_union {
-private:
-    vector<size_t> c, sz;
-public:
-    quick_union(size_t n) : c(n), sz(n) {
-        iota(c.begin(), c.end(), 0);
-        sz.assign(n, 1);
-    }
-    
-    size_t query(size_t i) {
-        if (c[i] != i) c[i] = query(c[i]);
-        return c[i];
-    }
-    
-    void merge(size_t i, size_t j) {
-        if (connected(i, j)) return;
-        sz[query(j)] += sz[query(i)];
-        c[query(i)] = query(j);
-    }
-    bool connected(size_t i, size_t j) {
-        return query(i) == query(j);
-    }
-    size_t query_size(size_t i) {
-        return sz[query(i)];
-    }
-};
-
 void solve() {
-    read(int, n, m);
-    quick_union qu(n + 1);
+    read(int, n);
+    readvec(string, a, n);
+    vector<pair<array<int, 26>, int>> trie(1);
+    auto insert = [&] (const string& s) -> void {
+        int curr = 0;
+        vector<int> trace;
+        for (auto&& x : s) {
+            if (not trie[curr].first[x - 97]) {
+                trie[curr].first[x - 97] = trie.size();
+                trie.push_back({});
+            }
+            curr = trie[curr].first[x - 97];
+            trace.emplace_back(curr);
+        }
+        for (auto&& i : trace) {
+            trie[i].second += 1;
+        }
+    };
+    auto query = [&] (const string& s) -> ll {
+        ll res = 0;
+        int curr = 0;
+        for (auto&& x : s) {
+            curr = trie[curr].first[x - 97];
+            if (not curr) break;
+            res += trie[curr].second;
+        }
+        return res;
+    };
     ll res = 0;
-    vector<pair<ll, vector<int>>> data;
-    while (m--) {
-        read(int, k, c);
-        readvec(int, a, k);
-        data.emplace_back(c, a);
-    }
-    sort(data.begin(), data.end());
-    for (auto&& [c, a] : data) {
-        vector<int> o;
-        for (auto&& x : a) {
-            o.emplace_back(qu.query(x));
-        }
-        sort(o.begin(), o.end());
-        ll l = unique(o.begin(), o.end()) - o.begin();
-        res += (l - 1) * c;
-        for (int i = 1; i < l; ++i) {
-            qu.merge(o[i - 1], o[i]);
-        }
-    }
-    for (int i = 1; i <= n; ++i) {
-        if (not qu.connected(i, 1)) {
-            cout << -1 << '\n';
-            return;
-        }
+    for (int i = n - 1; ~i; --i) {
+        res += query(a[i]);
+        insert(a[i]);
     }
     cout << res << '\n';
 }

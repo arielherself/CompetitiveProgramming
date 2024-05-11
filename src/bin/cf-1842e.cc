@@ -401,43 +401,176 @@ void dump_ignore() {}
 
 void prep() {}
 
-template<typename T>
-struct BIT {
-    int n;
-    vector<T> c;
-    BIT(size_t n) : n(n), c(n + 1) {}
-    void add(size_t i, const T& k) {
-        while (i <= n) {
-            c[i] += k;
-            i += lowbit(i);
-        }
+struct point {
+    int x, y, c;
+    point(int x, int y, int c) : x(x), y(y), c(c) {}
+};
+
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+    using size_type = uint64_t;
+    using info_type = Addable_Info_t;
+    using tag_type = Tag_t;
+    size_type _max;
+    vector<info_type> d;
+    vector<tag_type> b;
+    void pull(size_type p) {
+        d[p] = d[p * 2] + d[p * 2 + 1];
     }
-    T getsum(size_t i) {
-        T res = {};
-        while (i) {
-            res += c[i];
-            i -= lowbit(i);
+    void push(size_type p, size_type left_len, size_type right_len) {
+        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
+        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+        b[p] = tag_type();
+    }
+    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+        if (s == t) {
+            d[p] = c;
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        if (s != t) push(p, m - s + 1, t - m);
+        if (x <= m) set(s, m, p * 2, x, c);
+        else set(m + 1, t, p * 2 + 1, x, c);
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+    
+    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+        if (l <= s && t <= r) {
+            d[p].apply(c, t - s + 1);
+            b[p].apply(c);
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        push(p, m - s + 1, t - m);
+        if (l <= m) range_apply(s, m, p * 2, l, r, c);
+        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
+        pull(p);
+    }
+    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+        if (l <= s && t <= r) {
+            return d[p];
+        }
+        size_type m = s + (t - s >> 1);
+        info_type res = {};
+        push(p, m - s + 1, t - m);
+        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+        return res;
+    }
+    void build(const Sequence& a, size_type s, size_type t, size_type p) {
+        if (s == t) {
+            d[p] = a[s];
+            return;
+        }
+        int m = s + (t - s >> 1);
+        build(a, s, m, p * 2);
+        build(a, m + 1, t, p * 2 + 1);
+        pull(p);
+    }
+public:
+    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+    segtree(const Sequence& a) : segtree(a.size()) {
+        build(a, {}, _max, 1);
+    }
+    void set(size_type i, const info_type& c) {
+        set({}, _max, 1, i, c);
+    }
+    
+    void range_apply(size_type l, size_type r, const tag_type& c) {
+        range_apply({}, _max, 1, l, r, c);
+    }
+    void apply(size_type i, const tag_type& c) {
+        range_apply(i, i, c);
+    }
+    info_type range_query(size_type l, size_type r) {
+        return range_query({}, _max, 1, l, r);
+    }
+    info_type query(size_type i) {
+        return range_query(i, i);
+    }
+    Sequence serialize() {
+        Sequence res = {};
+        for (size_type i = 0; i <= _max; ++i) {
+            res.push_back(query(i));
         }
         return res;
     }
+    const vector<info_type>& get_d() {
+        return d;
+    }
 };
+struct Tag {
+    ll val = 0;
+    void apply(const Tag& rhs) {
+        val += rhs.val;
+    }
+};
+struct Info {
+    ll val = INFLL;
+    void apply(const Tag& rhs, size_t len) {
+        val += rhs.val;
+    }
+};
+Info operator+(const Info &a, const Info &b) {
+    return {min(a.val, b.val)};
+}
 
 void solve() {
-    read(int, n);
-    readvec(ll, a, n);
-    auto [N, mp] = discretize<ll>(a.begin(), a.end());
-    BIT<int> tr(N);
-    ll res = 0;
+    read(int, n, k, A);
+    vector<point> pts;
+    vector<vector<point>> open(k + 1);
+    for (int i = 0; i < n; ++i) {
+        read(int, x, y, c);
+        pts.emplace_back(x, y, c);
+        open[x].emplace_back(x, y, c);
+    }
+    segtree<Info, Tag> tr(k + 1);
+    for (int i = 0; i <= k; ++i) {
+        tr.set(i, {0});
+    }
+    auto cmp = [] (const point& a, const point& b) { return a.y < b.y; };
+    priority_queue<point, vector<point>, decltype(cmp)> stack(cmp);
     ll sum = 0;
-    for (int i = n - 1; ~i; --i) {
-        res += a[i] * (n - 1 - i) + sum;
-        auto it = mp.lower_bound(100'000'000 - a[i]);
-        if (it != mp.end()) {
-            ll cnt = tr.getsum(N) - tr.getsum(max((unsigned long)0, it->second - 1));
-            res -= cnt * 100'000'000;
+    ll res = INFLL;
+    ll prev_dp = 0;
+    for (int i = 0; i <= k; ++i) {
+        int x = i, y = k - x;
+        // debug(x);
+        ll dp = INFLL;
+        while (stack.size() and stack.top().y > y) {
+            auto [x, y, c] = stack.top();
+            stack.pop();
+            tr.range_apply(x, k, {c});
+            // cerr << "sum -= " << c << endl;
+            sum -= c;
         }
-        tr.add(mp[a[i]], 1);
-        sum += a[i];
+        ll me = 0;
+        for (auto&& [x, y, c] : open[x]) {
+            tr.range_apply(x, k, {-c});
+            stack.emplace(x, y, c);
+            sum += c;
+            // cerr << "sum += " << c << endl;
+            me += c;
+        }
+        dp = min(dp, me + prev_dp);
+        while (stack.size() and stack.top().y == y) {
+            auto [x, y, c] = stack.top();
+            stack.pop();
+            tr.range_apply(x, k, {c});
+            sum -= c;
+            // cerr << "sum -= " << c << endl;
+        }
+        if (x) {
+            // for (auto&& x : tr.serialize()) cerr << x.val << ' ';
+            // cerr << endl;
+            // debug(sum);
+            dp = min(dp, A * (x - 1) + tr.range_query(0, x - 1).val + sum);
+            dp = min(dp, A * x + sum);
+        }
+        // debug(dp);
+        tr.apply(x, {dp - A * x});
+        res = dp;
+        prev_dp = dp;
     }
     cout << res << '\n';
 }

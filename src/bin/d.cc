@@ -24,13 +24,49 @@ using ull = uint64_t;
 #else
 using ll = long long;
 using ull = unsigned long long;
+using ld = long double;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
+using ld = long double;
 using pii = pair<int, int>;
 using pil = pair<int, ll>;
 using pli = pair<ll, int>;
 using pll = pair<ll, ll>;
+using pid = pair<int, ld>;
+using pdi = pair<ld, int>;
+using pld = pair<ll, ld>;
+using pdl = pair<ld, ll>;
+using pdd = pair<ld, ld>;
+using tlll = tuple<ll, ll, ll>;
+using tlld = tuple<ll, ll, ld>;
+using tlli = tuple<ll, ll, int>;
+using tldl = tuple<ll, ld, ll>;
+using tldd = tuple<ll, ld, ld>;
+using tldi = tuple<ll, ld, int>;
+using tlil = tuple<ll, int, ll>;
+using tlid = tuple<ll, int, ld>;
+using tlii = tuple<ll, int, int>;
+using tdll = tuple<ld, ll, ll>;
+using tdld = tuple<ld, ll, ld>;
+using tdli = tuple<ld, ll, int>;
+using tddl = tuple<ld, ld, ll>;
+using tddd = tuple<ld, ld, ld>;
+using tddi = tuple<ld, ld, int>;
+using tdil = tuple<ld, int, ll>;
+using tdid = tuple<ld, int, ld>;
+using tdii = tuple<ld, int, int>;
+using till = tuple<int, ll, ll>;
+using tild = tuple<int, ll, ld>;
+using tili = tuple<int, ll, int>;
+using tidl = tuple<int, ld, ll>;
+using tidd = tuple<int, ld, ld>;
+using tidi = tuple<int, ld, int>;
+using tiil = tuple<int, int, ll>;
+using tiid = tuple<int, int, ld>;
+using tiii = tuple<int, int, int>;
+template <typename T> using max_heap = priority_queue<T>;
+template <typename T> using min_heap = priority_queue<T, vector<T>, greater<>>;
 
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
@@ -142,7 +178,9 @@ struct array_hash {
 #define sa(a) __AS_PROCEDURE(__typeof(a) sa(a.size() + 1); {int n = a.size(); for (int i = n - 1; i >= 0; --i) sa[i] = sa[i + 1] + a[i];};)
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
+#define edgew(ch, u, v, w) __AS_PROCEDURE(ch[u].emplace_back(v, w), ch[v].emplace_back(u, w);)
 #define Edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v);)
+#define Edgew(ch, u, v, w) __AS_PROCEDURE(ch[u].emplace_back(v, w);)
 template <typename T, typename Iterator> pair<size_t, map<T, size_t>> discretize(Iterator __first, Iterator __last) {
     set<T> st(__first, __last);
     size_t N = 0;
@@ -234,6 +272,7 @@ ll inverse(ll a, ll b) {
 }
 
 vector<tuple<int, int, ll>> decompose(ll x) {
+    // return (factor, count, factor ** count)
     vector<tuple<int, int, ll>> res;
     for (int i = 2; i * i <= x; i++) {
         if (x % i == 0) {
@@ -247,6 +286,22 @@ vector<tuple<int, int, ll>> decompose(ll x) {
         res.emplace_back(x, 1, x);
     }
     return res;
+}
+
+vector<pii> decompose_prime(int N) {
+    // return (factor, count)
+    vector<pii> result;
+    for (int i = 2; i * i <= N; i++) {
+        if (N % i == 0) {
+            int cnt = 0;
+            while (N % i == 0) N /= i, ++cnt;
+            result.emplace_back(i, cnt);
+        }
+    }
+    if (N != 1) {
+        result.emplace_back(N, 1);
+    }
+    return result;
 }
 
 /* string algorithms */
@@ -327,6 +382,14 @@ template <ll mdl>
 istream& operator>>(istream& in, MLL<mdl>& num) {
     return in >> num.val;
 }
+
+// miscancellous
+template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
+    std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
+}
+template <typename Func, typename RandomIt, typename Compare> void sort_by_key(RandomIt first, RandomIt last, Func extractor, Compare comp) {
+    std::sort(first, last, [&] (auto&& a, auto&& b) { return comp(extractor(a), extractor(b)); });
+}
 /////////////////////////////////////////////////////////
 
 #define SINGLE_TEST_CASE
@@ -338,163 +401,34 @@ void dump_ignore() {}
 
 void prep() {}
 
-template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
-private:
-    using size_type = uint64_t;
-    using info_type = Addable_Info_t;
-    using tag_type = Tag_t;
-    size_type _max;
-    vector<info_type> d;
-    vector<tag_type> b;
-    void pull(size_type p) {
-        d[p] = d[p * 2] + d[p * 2 + 1];
-    }
-    void push(size_type p, size_type left_len, size_type right_len) {
-        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
-        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
-        b[p] = tag_type();
-    }
-    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
-        if (s == t) {
-            d[p] = c;
-            return;
-        }
-        size_type m = s + (t - s >> 1);
-        if (s != t) push(p, m - s + 1, t - m);
-        if (x <= m) set(s, m, p * 2, x, c);
-        else set(m + 1, t, p * 2 + 1, x, c);
-        d[p] = d[p * 2] + d[p * 2 + 1];
-    }
-    
-    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
-        if (l <= s && t <= r) {
-            d[p].apply(c, t - s + 1);
-            b[p].apply(c);
-            return;
-        }
-        size_type m = s + (t - s >> 1);
-        push(p, m - s + 1, t - m);
-        if (l <= m) range_apply(s, m, p * 2, l, r, c);
-        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
-        pull(p);
-    }
-    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
-        if (l <= s && t <= r) {
-            return d[p];
-        }
-        size_type m = s + (t - s >> 1);
-        info_type res = {};
-        push(p, m - s + 1, t - m);
-        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
-        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
-        return res;
-    }
-    void build(const Sequence& a, size_type s, size_type t, size_type p) {
-        if (s == t) {
-            d[p] = a[s];
-            return;
-        }
-        int m = s + (t - s >> 1);
-        build(a, s, m, p * 2);
-        build(a, m + 1, t, p * 2 + 1);
-        pull(p);
-    }
-public:
-    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
-    segtree(const Sequence& a) : segtree(a.size()) {
-        build(a, {}, _max, 1);
-    }
-    void set(size_type i, const info_type& c) {
-        set({}, _max, 1, i, c);
-    }
-    
-    void range_apply(size_type l, size_type r, const tag_type& c) {
-        range_apply({}, _max, 1, l, r, c);
-    }
-    void apply(size_type i, const tag_type& c) {
-        range_apply(i, i, c);
-    }
-    info_type range_query(size_type l, size_type r) {
-        return range_query({}, _max, 1, l, r);
-    }
-    info_type query(size_type i) {
-        return range_query(i, i);
-    }
-    Sequence serialize() {
-        Sequence res = {};
-        for (size_type i = 0; i <= _max; ++i) {
-            res.push_back(query(i));
-        }
-        return res;
-    }
-    const vector<info_type>& get_d() {
-        return d;
-    }
-};
-struct Tag {
-    ll val = 0;
-    void apply(const Tag& rhs) {
-        val = rhs.val;
-    }
-};
-struct Info {
-    ll val = 0;
-    void apply(const Tag& rhs, size_t len) {
-        val += rhs.val * len;
-    }
-};
-Info operator+(const Info &a, const Info &b) {
-    return {a.val + b.val};
-}
-
 void solve() {
-    read(int, n, q);
-    segtree<Info, Tag> a(n), b(n), c(n);
-    for (int i = 0; i < n; ++i) {
-        read(char, t);
-        int x = 0, y = 0, z = 0;
-        if (t == 'r') {
-            x = 1;
-        } else if (t == 'e') {
-            y = 1;
-        } else {
-            z = 1;
-        }
-        a.set(i, {x});
-        b.set(i, {y});
-        c.set(i, {z});
+    using mll = MLL<PRIME>;
+    vector<mll> pw(20);
+    pw[0] = 1;
+    for (int i = 1; i < 20; ++i) {
+        pw[i] = pw[i - 1] * 10;
     }
-    while (q--) {
-        read(int, l, r);
-        --l, --r;
-        int len = (r - l + 1) / 3;
-        if (r - l + 1 < 3) {
-            cout << 0 << '\n';
-            continue;
+    read(int, n);
+    readvec(int, a, n);
+    array<int, 11> cnt {};
+    mll res = 0;
+    for (int i = n - 1; ~i; --i) {
+        for (int j = 1; j <= 10; ++j) {
+            res += a[i] * pw[j] * cnt[j];
         }
-        int rem = (r - l + 1) % 3;
-        int res = INT_MAX;
-        int left, right;
-        unordered_set<pii, pair_hash> mp;
-        if (rem == 0) {
-            mp.emplace(0, 0);
-        } else if (rem == 1) {
-            mp.emplace(0, 0), mp.emplace(0, 1), mp.emplace(1, 0);
+        res += mll(1) * a[i] * i;
+        int curr = 0;
+        if (a[i] == 0) {
+            curr = 1;
         } else {
-            mp.emplace(1, 0), mp.emplace(0, 1), mp.emplace(1, 1);
+            while (a[i]) {
+                curr += 1;
+                a[i] /= 10;
+            }
         }
-        for (auto&& [i, j] : mp) {
-            int left = l + len + i - 1;
-            int right = r - (len + j) + 1;
-            if (left >= right) continue;
-            int left_need = (left - l + 1) - a.range_query(l, left).val;
-            int right_need = (r - right + 1) - c.range_query(right, r).val;
-            int mid_need = (right - left - 1) - b.range_query(left + 1, right - 1).val;
-            // cerr << i << ' ' << j << ' ' << left_need << ' ' << mid_need << ' ' << right_need << '\n';
-            res = min(res, left_need + mid_need + right_need);
-        }
-        cout << res << '\n';
+        cnt[curr] += 1;
     }
+    cout << res << '\n';
 }
 
 int main() {

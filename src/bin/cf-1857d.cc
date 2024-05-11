@@ -177,6 +177,7 @@ struct array_hash {
 #define pa(a) __AS_PROCEDURE(__typeof(a) pa; pa.push_back({}); for (auto&&x : a) pa.push_back(pa.back() + x);)
 #define sa(a) __AS_PROCEDURE(__typeof(a) sa(a.size() + 1); {int n = a.size(); for (int i = n - 1; i >= 0; --i) sa[i] = sa[i + 1] + a[i];};)
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
+#define adjw(ch, n) __AS_PROCEDURE(vector<vector<pil>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
 #define edgew(ch, u, v, w) __AS_PROCEDURE(ch[u].emplace_back(v, w), ch[v].emplace_back(u, w);)
 #define Edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v);)
@@ -382,17 +383,9 @@ template <ll mdl>
 istream& operator>>(istream& in, MLL<mdl>& num) {
     return in >> num.val;
 }
-
-// miscancellous
-template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
-    std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
-}
-template <typename Func, typename RandomIt, typename Compare> void sort_by_key(RandomIt first, RandomIt last, Func extractor, Compare comp) {
-    std::sort(first, last, [&] (auto&& a, auto&& b) { return comp(extractor(a), extractor(b)); });
-}
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -401,43 +394,78 @@ void dump_ignore() {}
 
 void prep() {}
 
-template<typename T>
-struct BIT {
-    int n;
-    vector<T> c;
-    BIT(size_t n) : n(n), c(n + 1) {}
-    void add(size_t i, const T& k) {
-        while (i <= n) {
-            c[i] += k;
-            i += lowbit(i);
-        }
+class quick_union {
+private:
+    vector<size_t> c, sz;
+public:
+    quick_union(size_t n) : c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
     }
-    T getsum(size_t i) {
-        T res = {};
-        while (i) {
-            res += c[i];
-            i -= lowbit(i);
-        }
-        return res;
+    
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] += sz[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_size(size_t i) {
+        return sz[query(i)];
     }
 };
 
-void solve() {
-    read(int, n);
-    readvec(ll, a, n);
-    auto [N, mp] = discretize<ll>(a.begin(), a.end());
-    BIT<int> tr(N);
-    ll res = 0;
-    ll sum = 0;
-    for (int i = n - 1; ~i; --i) {
-        res += a[i] * (n - 1 - i) + sum;
-        auto it = mp.lower_bound(100'000'000 - a[i]);
-        if (it != mp.end()) {
-            ll cnt = tr.getsum(N) - tr.getsum(max((unsigned long)0, it->second - 1));
-            res -= cnt * 100'000'000;
+using mll = MLL<PRIME>;
+mll pow(mll a, ll b) {
+    mll res;
+    if (b == 0) {
+        res = 1;
+    } else if (b == 1) {
+        res = a;
+    } else {
+        res = pow(a, b / 2);
+        res = res * res;
+        if (b / 2 * 2 != b) {
+            res *= a;
         }
-        tr.add(mp[a[i]], 1);
-        sum += a[i];
+    }
+    return res;
+}
+
+void solve() {
+    using mll = MLL<PRIME>;
+    read(int, n, s);
+    vector<tiii> edges;
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v, w);
+        edges.emplace_back(w, u, v);
+    }
+    sort(edges.begin(), edges.end());
+    quick_union qu(n + 1);
+    vector<ll> cnt;
+    ll pre = 0;
+    for (auto&& [w, u, v] : edges) {
+        ll prev_u = qu.query_size(u), prev_v = qu.query_size(v);
+        qu.merge(u, v);
+        ll curr = prev_u * prev_v - 1;
+        cnt.emplace_back(curr);
+        pre = curr;
+    }
+    int prev = s;
+    mll opt = 1;
+    mll res = 1;
+    for (int i = n - 2; ~i; --i) {
+        ll curr = cnt[i];
+        int w = get<0>(edges[i]);
+        opt += max(0, prev - w);
+        if (curr) res *= pow(opt, curr);
+        prev = w;
     }
     cout << res << '\n';
 }

@@ -392,7 +392,7 @@ template <typename Func, typename RandomIt, typename Compare> void sort_by_key(R
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -401,45 +401,65 @@ void dump_ignore() {}
 
 void prep() {}
 
-template<typename T>
-struct BIT {
-    int n;
-    vector<T> c;
-    BIT(size_t n) : n(n), c(n + 1) {}
-    void add(size_t i, const T& k) {
-        while (i <= n) {
-            c[i] += k;
-            i += lowbit(i);
-        }
-    }
-    T getsum(size_t i) {
-        T res = {};
-        while (i) {
-            res += c[i];
-            i -= lowbit(i);
-        }
-        return res;
-    }
-};
-
 void solve() {
-    read(int, n);
-    readvec(ll, a, n);
-    auto [N, mp] = discretize<ll>(a.begin(), a.end());
-    BIT<int> tr(N);
-    ll res = 0;
-    ll sum = 0;
-    for (int i = n - 1; ~i; --i) {
-        res += a[i] * (n - 1 - i) + sum;
-        auto it = mp.lower_bound(100'000'000 - a[i]);
-        if (it != mp.end()) {
-            ll cnt = tr.getsum(N) - tr.getsum(max((unsigned long)0, it->second - 1));
-            res -= cnt * 100'000'000;
-        }
-        tr.add(mp[a[i]], 1);
-        sum += a[i];
+    read(int, n, k);
+    vector<vector<int>> a(k);
+    for (int i = 0; i < k; ++i) {
+        readvec(int, x, n);
+        a[i] = x;
     }
-    cout << res << '\n';
+    if (k == 1) {
+        cout << "YES\n";
+    } else if (k == 2) {
+        int x = a[0][0], y = a[1][0];
+        int f = 1;
+        int l = 0, r = 0;
+        while (l < n and r < n) {
+        }
+    } else {
+        int x = a[0][0], y = a[1][0];
+        int pre_x = -1, pre_y = -1;
+        for (int i = 1; i < n; ++i) {
+            if (a[0][i] == y) {
+                pre_y = i;
+            }
+        }
+        for (int i = 1; i < n; ++i) {
+            if (a[1][i] == x) {
+                pre_x = i;
+            }
+        }
+        vector<int> p;
+        int insert_pos = -1;
+        for (int i = 1; i < n; ++i) {
+            if (a[0][i] != x) {
+                p.emplace_back(a[0][i]);
+            }
+            if (a[0][i] == pre_x) {
+                insert_pos = i;
+                p.emplace_back(-1), p.emplace_back(-1);
+            }
+        }
+        if (pre_x == pre_y) {
+            // x y
+            int f = 0;
+            for (int i = 2; i < k; ++i) {
+                for (int j = 1; j < n; ++j) {
+                    if (minmax(a[i][j - 1], a[i][j]) == minmax(x, y)) {
+                        p[insert_pos] = a[i][j - 1];
+                        p[insert_pos + 1] = a[i][j];
+                        f = 1;
+                        break;
+                    }
+                }
+            }
+            if ((not f) and k != 2) {
+                cout << "NO\n";
+            } else {
+                
+            }
+        }
+    }
 }
 
 int main() {
