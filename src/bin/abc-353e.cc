@@ -67,7 +67,6 @@ using tiid = tuple<int, int, ld>;
 using tiii = tuple<int, int, int>;
 template <typename T> using max_heap = priority_queue<T>;
 template <typename T> using min_heap = priority_queue<T, vector<T>, greater<>>;
-template <typename T> using oi = ostream_iterator<T>;
 
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
@@ -403,6 +402,40 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
+    read(int, n);
+    readvec(string, a, n);
+    vector<pair<array<int, 26>, int>> trie(1);
+    auto insert = [&] (const string& s) -> void {
+        int curr = 0;
+        vector<int> trace;
+        for (auto&& x : s) {
+            if (not trie[curr].first[x - 97]) {
+                trie[curr].first[x - 97] = trie.size();
+                trie.push_back({});
+            }
+            curr = trie[curr].first[x - 97];
+            trace.emplace_back(curr);
+        }
+        for (auto&& i : trace) {
+            trie[i].second += 1;
+        }
+    };
+    auto query = [&] (const string& s) -> ll {
+        ll res = 0;
+        int curr = 0;
+        for (auto&& x : s) {
+            curr = trie[curr].first[x - 97];
+            if (not curr) break;
+            res += trie[curr].second;
+        }
+        return res;
+    };
+    ll res = 0;
+    for (int i = n - 1; ~i; --i) {
+        res += query(a[i]);
+        insert(a[i]);
+    }
+    cout << res << '\n';
 }
 
 int main() {

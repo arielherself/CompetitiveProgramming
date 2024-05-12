@@ -67,7 +67,6 @@ using tiid = tuple<int, int, ld>;
 using tiii = tuple<int, int, int>;
 template <typename T> using max_heap = priority_queue<T>;
 template <typename T> using min_heap = priority_queue<T, vector<T>, greater<>>;
-template <typename T> using oi = ostream_iterator<T>;
 
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
@@ -393,7 +392,7 @@ template <typename Func, typename RandomIt, typename Compare> void sort_by_key(R
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -402,7 +401,205 @@ void dump_ignore() {}
 
 void prep() {}
 
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+    using size_type = uint64_t;
+    using info_type = Addable_Info_t;
+    using tag_type = Tag_t;
+    size_type _max;
+    vector<info_type> d;
+    vector<tag_type> b;
+    void pull(size_type p) {
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+    void push(size_type p, size_type left_len, size_type right_len) {
+        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
+        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+        b[p] = tag_type();
+    }
+    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+        if (s == t) {
+            d[p] = c;
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        if (s != t) push(p, m - s + 1, t - m);
+        if (x <= m) set(s, m, p * 2, x, c);
+        else set(m + 1, t, p * 2 + 1, x, c);
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+    
+    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+        if (l <= s && t <= r) {
+            d[p].apply(c, t - s + 1);
+            b[p].apply(c);
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        push(p, m - s + 1, t - m);
+        if (l <= m) range_apply(s, m, p * 2, l, r, c);
+        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
+        pull(p);
+    }
+    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+        if (l <= s && t <= r) {
+            return d[p];
+        }
+        size_type m = s + (t - s >> 1);
+        info_type res = {};
+        push(p, m - s + 1, t - m);
+        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+        return res;
+    }
+    void build(const Sequence& a, size_type s, size_type t, size_type p) {
+        if (s == t) {
+            d[p] = a[s];
+            return;
+        }
+        int m = s + (t - s >> 1);
+        build(a, s, m, p * 2);
+        build(a, m + 1, t, p * 2 + 1);
+        pull(p);
+    }
+public:
+    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+    segtree(const Sequence& a) : segtree(a.size()) {
+        build(a, {}, _max, 1);
+    }
+    void set(size_type i, const info_type& c) {
+        set({}, _max, 1, i, c);
+    }
+    
+    void range_apply(size_type l, size_type r, const tag_type& c) {
+        range_apply({}, _max, 1, l, r, c);
+    }
+    void apply(size_type i, const tag_type& c) {
+        range_apply(i, i, c);
+    }
+    info_type range_query(size_type l, size_type r) {
+        return range_query({}, _max, 1, l, r);
+    }
+    info_type query(size_type i) {
+        return range_query(i, i);
+    }
+    Sequence serialize() {
+        Sequence res = {};
+        for (size_type i = 0; i <= _max; ++i) {
+            res.push_back(query(i));
+        }
+        return res;
+    }
+    const vector<info_type>& get_d() {
+        return d;
+    }
+};
+struct Tag {
+    ll val = 0;
+    void apply(const Tag& rhs) {
+        val += rhs.val;
+    }
+};
+struct Info {
+    ll val = 0;
+    void apply(const Tag& rhs, size_t len) {
+        val += rhs.val * len;
+    }
+};
+Info operator+(const Info &a, const Info &b) {
+    return {a.val + b.val};
+}
+
+struct Set_Tag {
+    ll val = -1;
+    void apply(const Set_Tag& rhs) {
+        if (rhs.val != -1)
+        val = rhs.val;
+    }
+};
+struct Set_Info {
+    ll val = 0;
+    void apply(const Set_Tag& rhs, size_t len) {
+        if (rhs.val != -1)
+        val = rhs.val;
+    }
+};
+Set_Info operator+(const Set_Info &a, const Set_Info &b) {
+    return {a.val + b.val};
+}
+
 void solve() {
+    read(int, n);
+    vector<vector<int>> close(n + 1);  // close after i
+    for (int i = 0; i < n; ++i) {
+        read(int, x);
+        close[n - x].emplace_back(i);
+    }
+    read(ll, m);
+    segtree<Set_Info, Set_Tag> left(n), right(n);
+    segtree<Info, Tag> sum(n + 1), cnt(n + 1);
+    for (int i = 0; i < n; ++i) {
+        left.set(i, {0});
+        right.set(i, {n - 1});
+    }
+    sum.set(n, {ll(1) * n * n});
+    cnt.set(n, {n});
+    ll res = 0;
+    for (int i = 0; i <= n; ++i) {
+        for (auto&& j : close[i]) {
+            int lj = left.query(j).val, rj = right.query(j).val;
+            if (rj - lj + 1 != 1) {
+                cnt.apply(rj - lj + 1, {-(n - i)});
+                sum.apply(rj - lj + 1, {-ll(1) * (n - i) * (rj - lj + 1)});
+            }
+            if (lj != j) {
+                right.range_apply(lj, j - 1, {j - 1});
+                left.set(j, {j});
+                if (j - lj != 1) {
+                    cnt.apply(j - lj, {n - i});
+                    sum.apply(j - lj, {ll(1) * (n - i) * (j - lj)});
+                }
+            }
+            if (rj != j) {
+                left.range_apply(j + 1, rj, {j + 1});
+                right.set(j, {j});
+                if (rj - j != 1) {
+                    cnt.apply(rj - j, {n - i});
+                    sum.apply(rj - j, {ll(1) * (n - i) * (rj - j)});
+                }
+            }
+        }
+    }
+    int l = 2, r = n;
+    while (l < r) {
+        int mid = l + r >> 1;
+        if (sum.range_query(mid, n).val <= m) {
+            r = mid;
+        } else {
+            l = mid + 1;
+        }
+    }
+    ll use = sum.range_query(l, n).val;
+    if (use > m) {
+        ll tar = n;
+        ll tm = m / tar;
+        res += (tar - 1) * tm;
+        m %= tar;
+        if (m - 1 > 0) res += m - 1;
+        m = 0;
+    } else {
+        res += sum.range_query(l, n).val - cnt.range_query(l, n).val;
+        m -= use;
+        if (l != 2) {
+            ll tar = l - 1;
+            ll tm = m / tar;
+            res += (tar - 1) * tm;
+            m %= tar;
+            if (m - 1 > 0) res += m - 1;
+            m = 0;
+        }
+    }
+    cout << res << '\n';
 }
 
 int main() {

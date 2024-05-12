@@ -67,7 +67,6 @@ using tiid = tuple<int, int, ld>;
 using tiii = tuple<int, int, int>;
 template <typename T> using max_heap = priority_queue<T>;
 template <typename T> using min_heap = priority_queue<T, vector<T>, greater<>>;
-template <typename T> using oi = ostream_iterator<T>;
 
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
@@ -403,6 +402,20 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
+    read(int, n, k);
+    readvec(int, a, n);
+    int ptr = 0;
+    int empty = k;
+    int cnt = 0;
+    while (ptr < n) {
+        if (empty < a[ptr]) {
+            cnt += 1;
+            empty = k;
+        } else {
+            empty -= a[ptr++];
+        }
+    }
+    cout << cnt + 1 << '\n';
 }
 
 int main() {

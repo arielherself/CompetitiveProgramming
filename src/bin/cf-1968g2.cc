@@ -393,7 +393,7 @@ template <typename Func, typename RandomIt, typename Compare> void sort_by_key(R
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -403,6 +403,8 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
+    read(int, n, l, r);
+    
 }
 
 int main() {

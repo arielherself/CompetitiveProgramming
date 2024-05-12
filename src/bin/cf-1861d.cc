@@ -67,7 +67,6 @@ using tiid = tuple<int, int, ld>;
 using tiii = tuple<int, int, int>;
 template <typename T> using max_heap = priority_queue<T>;
 template <typename T> using min_heap = priority_queue<T, vector<T>, greater<>>;
-template <typename T> using oi = ostream_iterator<T>;
 
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
@@ -208,6 +207,10 @@ template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __
 #define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : a) cerr << x << ' '; cerr << endl;)
 template<typename T, typename U> ostream& operator<<(ostream& out, const pair<T, U>& p) {
     out << "{" << p.first << ", " << p.second << "}";
+    return out;
+}
+template<int N, typename T> ostream& operator<<(ostream& out, const array<T, N>& v) {
+    for (auto&& x : v) out << x << ' ';
     return out;
 }
 template<typename Char, typename Traits, typename Tuple, std::size_t... Index>
@@ -393,7 +396,7 @@ template <typename Func, typename RandomIt, typename Compare> void sort_by_key(R
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 
 void dump() {}
@@ -403,6 +406,27 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
+    read(int, n);
+    readvec(int, a, n);
+    vector<array<int, 2>> dp(n);
+    dp[0][0] = 1, dp[0][1] = 0;
+    for (int i = 1; i < n; ++i) {
+        if (a[i] < a[i - 1]) {
+            dp[i][1] = min(dp[i - 1][0], dp[i - 1][1] + 1);
+            dp[i][0] = dp[i - 1][0];
+        } else if (a[i] > a[i - 1]) {
+            dp[i][1] = min(dp[i - 1][0], dp[i - 1][1]);
+            dp[i][0] = dp[i - 1][0] + 1;
+        } else {
+            dp[i][1] = min(dp[i - 1][0], dp[i - 1][1] + 1);
+            dp[i][0] = dp[i - 1][0] + 1;
+        }
+    }
+    // for (auto&& x : dp) {
+    //     copy(begin(x), end(x), ostream_iterator<int>(cerr, " "));
+    //     cerr << endl;
+    // }
+    cout << min(dp[n - 1][0], dp[n - 1][1]) << '\n';
 }
 
 int main() {

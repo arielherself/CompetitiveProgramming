@@ -67,7 +67,6 @@ using tiid = tuple<int, int, ld>;
 using tiii = tuple<int, int, int>;
 template <typename T> using max_heap = priority_queue<T>;
 template <typename T> using min_heap = priority_queue<T, vector<T>, greater<>>;
-template <typename T> using oi = ostream_iterator<T>;
 
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
@@ -403,6 +402,33 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
+    using mll = MLL<PRIME>;
+    vector<mll> pw(20);
+    pw[0] = 1;
+    for (int i = 1; i < 20; ++i) {
+        pw[i] = pw[i - 1] * 10;
+    }
+    read(int, n);
+    readvec(int, a, n);
+    array<int, 11> cnt {};
+    mll res = 0;
+    for (int i = n - 1; ~i; --i) {
+        for (int j = 1; j <= 10; ++j) {
+            res += a[i] * pw[j] * cnt[j];
+        }
+        res += mll(1) * a[i] * i;
+        int curr = 0;
+        if (a[i] == 0) {
+            curr = 1;
+        } else {
+            while (a[i]) {
+                curr += 1;
+                a[i] /= 10;
+            }
+        }
+        cnt[curr] += 1;
+    }
+    cout << res << '\n';
 }
 
 int main() {

@@ -392,139 +392,83 @@ template <typename Func, typename RandomIt, typename Compare> void sort_by_key(R
 }
 /////////////////////////////////////////////////////////
 
+vector<vector<vector<pair<int, pair<ll,vector<int>>>>>> dp(1 << 14, vector<vector<pair<int, pair<ll, vector<int>>>>>(14, vector<pair<int, pair<ll, vector<int>>>>(14, {INF, {}})));
+
 class Solution {
 public:
-    vector<int> findProductsOfElements(vector<vector<long long>>& queries) {
-        vector<int> rres;
-        for (auto&& v : queries) {
-            ll left = v[0] + 1, right = v[1] + 1, mdl = v[2];
-            vector<ll> dp(64);
-            vector<ll> cnt(64);
-            dp[1] = 1;
-            cnt[1] = 1;
-            for (int i = 2; i < 64; ++i) {
-                if (cnt[i - 1] > LLONG_MAX / 3) {
-                    cnt[i] = LLONG_MAX;
-                } else {
-                    cnt[i] = cnt[i - 1] * 3 + 1;
+    vector<int> findPermutation(vector<int>& nums) {
+        int n = nums.size();
+        for (int i = 0; i < (1 << n); ++i) {
+            for (int j = 0; j < n; ++j) {
+                for (int k = 0; k < n; ++k) {
+                    dp[i][j][k].first = INF;
+                    dp[i][j][k].second.first = 0;
+                    dp[i][j][k].second.second.clear();
                 }
             }
-            unordered_map<ll, ll, safe_hash> cache;
-            cache[0] = 1;
-            auto pow = [&] (auto pow, ll b, ll m) -> ll {
-                if (cache[m]) return cache[m];
-                ll curr = pow(pow, b, m / 2);
-                cache[m] = ((((curr * curr) % mdl) * ((m & 1) ? (b % mdl) : 1)) % mdl);
-                return cache[m];
-            };
-            for (int i = 2; i < 64; ++i) {
-                if (cnt[i - 1] >= LLONG_MAX - 1) {
-                    dp[i] = -1;
-                } else {
-                    dp[i] = (dp[i - 1] * pow(pow, (1LL << i - 1) % mdl, cnt[i - 1] + 1)) % mdl;
-                }
-            }
-            auto query = [&] (ll r) -> ll {
-                int128 res = 0;
-                ll has = 0;
-                for (int b = 62; ~b; --b) {
-                    if ((r >> b) & 1) {
-                        if (cnt[b] >= LLONG_MAX - has * (1LL << b)) {
-                            return LLONG_MAX;
-                        }
-                        res += has * (1LL << b) + cnt[b];
-                        has += 1;
-                    }
-                }
-                return min(res + popcount(r), int128(LLONG_MAX));            
-            };
-            auto calc = [&] (ll r) {
-                ll res = 0;
-                ll has = 1;
-                for (int b = 62; ~b; --b) {
-                    if ((r >> b) & 1) {
-                        if ((r >> b) & 1) {
-                            res = (res + dp[b] * pow(pow, has, cnt[b])) % mdl;
-                            has = (has * (1LL << b)) % mdl;
-                        }
-                    }
-                }
-                return (res + has) % mdl;
-            };
-            ll lt, rt;
-            ll res = 0, keep = 1;
-            {
-                ll l = 0, r = INFLL;
-                while (l < r) {
-                    ll mid = l + r >> 1;
-                    if (query(mid) > left) {
-                        r = mid;
-                    } else {
-                        l = mid + 1;
-                    }
-                }
-                ll rd = query(l) - left;
-                for (int b = 63; ~b and rd > 0; --b) {
-                    if ((l - 1 >> b) & 1) {
-                        rd -= 1;
-                        keep = (keep * (1LL << b)) % mdl;
-                    }
-                }
-                lt = l;
-            }
-            {
-                ll l = 0, r = INFLL;
-                while (l < r) {
-                    ll mid = l + r + 1 >> 1;
-                    if (query(mid) < right) {
-                        l = mid;
-                    } else {
-                        r = mid - 1;
-                    }
-                }
-                ll rd = right - query(l);
-                for (int b = 0; b < 63 and rd > 0; ++b) {
-                    if ((l + 1 >> b) & 1) {
-                        rd -= 1;
-                        keep = (keep * (1LL << b)) % mdl;
-                    }
-                }
-                rt = l;
-            }
-            debug(lt), debug(rt);
-            auto check = [&] (ll idx) -> bool {
-                return query(idx) >= right and query(idx - 1) < left;
-            };
-            if (not (check(lt) or check(lt - 1))) {
-                rres.push_back(((lt <= rt ? mod(calc(rt) - calc(lt - 1), mdl) : 1) * keep) % mdl);
-            } else {
-                // lt is correct
-                if (check(lt - 1)) lt -= 1;
-                ll res = 1;
-                ll d1 = left - query(lt - 1);
-                ll rem = d1 - 1;
-                int b = 0;
-                for (; b < 63 and rem > 0; ++b) {
-                    if ((lt >> b) & 1) {
-                        --rem;
-                    }
-                }
-                rem = right - left + 1;
-                for (; b < 63 and rem > 0; ++b) {
-                    if ((lt >> b) & 1) {
-                        --rem;
-                        res = (res * (1LL << b)) % mdl;
-                    }
-                }
-                rres.push_back(res);
-            }
-            // rres.push_back(int(((lt <= rt ? (calc(rt) - calc(lt - 1)) : 1) * keep) % mdl));
         }
-        return rres;
+        vector<pii> a;
+        for (int i = 0; i < n; ++i) {
+            a.emplace_back(nums[i], i);
+        }
+        for (int i = 0; i < n; ++i) {
+            dp[1 << i][a[i].first][a[i].second] = {abs(a[i].first - a[i].second), {a[i].second, {a[i].second}}};
+        }
+        for (int i = 2; i <= n; ++i) {
+            for (int mask = 0; mask < (1 << n); ++mask) {
+                if (popcount(mask) != i) continue;
+                for (int b = 0; b < n; ++b) {
+                    if (((mask >> b) & 1) == 0) {
+                        continue;
+                    }
+                    // use b
+                    int prev_mask = mask ^ (1 << b);
+
+                    for (int j = 0; j < n; ++j) {
+                        int use = 0; int cost = dp[mask][j][a[b].second].first;
+                        for (int k = 0; k < n; ++k) {
+                            int delta = -abs(j - k) + abs(k - a[b].first) + abs(j - a[b].second);
+                            if (dp[prev_mask][j][k].first + delta < cost or dp[prev_mask][j][k].first + delta == cost and dp[prev_mask][j][k].second.first < dp[prev_mask][j][use].second.first) {
+                                cost = dp[prev_mask][j][k].first + delta;
+                                use = k;
+                            }
+                        }
+                        if (cost != INF) {
+                            vector<int> new_vec = dp[prev_mask][j][use].second.second;
+                            ll new_hash = dp[prev_mask][j][use].second.first;
+                            new_vec.emplace_back(a[b].second);
+                            new_hash = new_hash * 14 + a[b].second;
+                            if (cost < dp[mask][j][a[b].second].first or cost == dp[mask][j][a[b].second].first and new_hash < dp[mask][j][a[b].second].second.first) {
+                                dp[mask][j][a[b].second].second.second = new_vec;
+                                dp[mask][j][a[b].second].second.first = new_hash;
+                                dp[mask][j][a[b].second].first = cost;
+                            }
+                        }                     
+                    }
+                }
+            }
+        }
+        int cost = INF;
+        ll hs = INFLL;
+        vector<int> res;
+        for (int j = 0; j < n; ++j) {
+            for (int k = 0; k < n; ++k) {
+                if (dp[(1 << n) - 1][j][k].first < INF and (dp[(1 << n) - 1][j][k].first < cost or dp[(1 << n) - 1][j][k].first == cost and dp[(1 << n) - 1][j][k].second.first < hs)) {
+                    res = dp[(1 << n) - 1][j][k].second.second;
+                    hs = dp[(1 << n) - 1][j][k].second.first;
+                    // putvec(res);
+                    
+                    cost = dp[(1 << n) - 1][j][k].first;
+                }
+            }
+        }
+        // cout << cost << endl;
+        return res;
     }
 };
 
 int main() {
-    vector<vector<long long>> queries = {{0, 2, 11}};
-    cout << Solution().findProductsOfElements(queries) << endl;
+    read(int, n);
+    readvec(int, a, n);
+    cout << Solution().findPermutation(a) << endl;
 }
