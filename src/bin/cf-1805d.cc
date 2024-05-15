@@ -203,7 +203,7 @@ template <typename T, typename Iterator> pair<size_t, unordered_map<T, size_t, s
 template<typename T> void __read(T& x) { cin >> x; }
 template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __read(args...); }
 #define read(type, ...) __AS_PROCEDURE(type __VA_ARGS__; __read(__VA_ARGS__);)
-#define readvec(type, a, n) __AS_PROCEDURE(vector<type> a(n); for (auto& x : a) cin >> x;)
+#define readvec(type, a, n) __AS_PROCEDURE(vector<type> a(n); copy_n(ii<type>(cin), (n), a.begin());)
 #define readvec1(type, a, n) __AS_PROCEDURE(vector<type> a((n) + 1); copy_n(ii<type>(cin), (n), a.begin() + 1);)
 #define putvec(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
 #define putvec1(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
@@ -211,9 +211,6 @@ template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __
 #define putvec1_eol(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
 #define debug(x) __AS_PROCEDURE(cerr << #x" = " << (x) << endl;)
 #define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : a) cerr << x << ' '; cerr << endl;)
-template<typename T, typename U> istream& operator>>(istream& in, pair<T, U>& p) {
-    return in >> p.first >> p.second;
-}
 template<typename T, typename U> ostream& operator<<(ostream& out, const pair<T, U>& p) {
     out << "{" << p.first << ", " << p.second << "}";
     return out;
@@ -447,6 +444,67 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
+    read(int, n);
+    adj(ch, n);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
+    }
+    vector<int> max_dist(n + 1), max_depth(n + 1);
+    auto get = [&] (auto get, int v, int pa) -> int {
+        int curr = 0;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            curr = max(curr, get(get, u, v) + 1);
+        }
+        max_depth[v] = curr;
+        return curr;
+    };
+    get(get, 1, 0);
+    // debug(max_depth);
+    auto dfs = [&] (auto dfs, int v, int pa, int up) -> void {
+        // debug(make_tuple(v, up));
+        max_dist[v] = max(max_depth[v], up);
+        int max_depth1 = -1, max_depth_u1 = -1;
+        int max_depth2 = -1, max_depth_u2 = -1;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            int curr_depth = max_depth[u];
+            // debug(make_tuple(u, curr_depth));
+            if (curr_depth > max_depth1) {
+                max_depth2 = max_depth1, max_depth_u2 = max_depth_u1;
+                max_depth1 = curr_depth, max_depth_u1 = u;
+            } else if (curr_depth > max_depth2) {
+                max_depth2 = curr_depth, max_depth_u2 = u;
+            }
+        }
+        // debug(make_tuple(max_depth1, max_depth2));
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            if (u == max_depth_u1) {
+                dfs(dfs, u, v, max(up, max_depth2 + 1) + 1);
+            } else {
+                dfs(dfs, u, v, max(up, max_depth1 + 1) + 1);
+            }
+        }
+    };
+    dfs(dfs, 1, 0, 0);
+    // debug(max_dist);
+    vector<int> diff(n + 2);
+    for (int i = 1; i <= n; ++i) {
+        diff[max_dist[i] + 1] += 1;
+    }
+    vector<int> res;
+    int curr = 0;
+    for (int i = 1; i <= n; ++i) {
+        curr += diff[i];
+        if (curr < n) {
+            res.emplace_back(1 + curr);
+        } else {
+            res.emplace_back(curr);
+        }
+    }
+    putvec(res);
 }
 
 int main() {

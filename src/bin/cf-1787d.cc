@@ -436,7 +436,7 @@ public:
 };
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -447,6 +447,62 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
+    read(int, n);
+    vector<int> ch(n + 1);
+    vector<vector<int>> hc(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        read(int, x);
+        if (i + x <= n and i + x > 0) {
+            ch[i] = i + x;
+            hc[i + x].emplace_back(i);
+        }
+    }
+    vector<int> choice(n + 1, -1);
+    vector<bool> vis(n + 1);
+    auto mark = [&] (auto mark, int v) -> int {
+        if (choice[v] != -1) return choice[v];
+        if (ch[v] == 0) {
+            choice[v] = 1;
+        } else if (vis[ch[v]]) {
+            choice[v] = 0;
+        } else {
+            vis[v] = 1;
+            choice[v] = mark(mark, ch[v]);
+            vis[v] = 0;
+        }
+        return choice[v];
+    };
+    for (int i = 1; i <= n; ++i) {
+        if (choice[i] == -1) {
+            mark(mark, i);
+        }
+    }
+    int choices = count(choice.begin(), choice.end(), 1);
+    vis.assign(n + 1, 0);
+    auto dfs2 = [&] (auto dfs2, int v) -> void {
+        if (not choice[v]) return;
+        choice[v] = 0, --choices;
+        for (auto&& u : hc[v]) {
+            dfs2(dfs2, u);
+        }
+    };
+    ll res = 0;
+    int cnt = 0;
+    // debug(choice);
+    auto dfs = [&] (auto dfs, int v) -> int {
+        if (vis[v]) return false;
+        if (v == 0) return true;
+        dfs2(dfs2, v);
+        // debug(make_tuple(v, choices));
+        res += n + 1 + choices;
+        vis[v] = 1;
+        cnt += 1;
+        return dfs(dfs, ch[v]);
+    };
+    if (dfs(dfs, 1)) {
+        res += ll(1) * (n - cnt) * (2 * n + 1);
+    }
+    cout << res << '\n';
 }
 
 int main() {

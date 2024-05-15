@@ -203,7 +203,7 @@ template <typename T, typename Iterator> pair<size_t, unordered_map<T, size_t, s
 template<typename T> void __read(T& x) { cin >> x; }
 template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __read(args...); }
 #define read(type, ...) __AS_PROCEDURE(type __VA_ARGS__; __read(__VA_ARGS__);)
-#define readvec(type, a, n) __AS_PROCEDURE(vector<type> a(n); for (auto& x : a) cin >> x;)
+#define readvec(type, a, n) __AS_PROCEDURE(vector<type> a(n); copy_n(ii<type>(cin), (n), a.begin());)
 #define readvec1(type, a, n) __AS_PROCEDURE(vector<type> a((n) + 1); copy_n(ii<type>(cin), (n), a.begin() + 1);)
 #define putvec(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
 #define putvec1(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
@@ -211,9 +211,6 @@ template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __
 #define putvec1_eol(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
 #define debug(x) __AS_PROCEDURE(cerr << #x" = " << (x) << endl;)
 #define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : a) cerr << x << ' '; cerr << endl;)
-template<typename T, typename U> istream& operator>>(istream& in, pair<T, U>& p) {
-    return in >> p.first >> p.second;
-}
 template<typename T, typename U> ostream& operator<<(ostream& out, const pair<T, U>& p) {
     out << "{" << p.first << ", " << p.second << "}";
     return out;
@@ -436,17 +433,67 @@ public:
 };
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
-// #define DUMP_TEST_CASE 7219
-// #define TOT_TEST_CASE 10000
+// #define SINGLE_TEST_CASE
+#define DUMP_TEST_CASE 1393
+#define TOT_TEST_CASE 10000
 
-void dump() {}
+void dump() {
+    read(int, n);
+    read(ll, k);
+    readvec(ll, left_vec, n);
+    readvec(ll, right_vec, n);
+    cout << n << ' ' << k << endl;
+    putvec(left_vec);
+    putvec(right_vec);
+}
 
-void dump_ignore() {}
+void dump_ignore() {
+    read(int, n);
+    read(ll, k);
+    readvec(ll, left_vec, n);
+    readvec(ll, right_vec, n);
+}
 
 void prep() {}
 
 void solve() {
+    read(int, n);
+    read(ll, k);
+    readvec(ll, left_vec, n);
+    readvec(ll, right_vec, n);
+    vector<pll> a = zip<ll, ll>(left_vec.begin(), left_vec.end(), right_vec.begin(), right_vec.end());
+    ll left = 0, right = -1;
+    vector<ll> length, lf, rf;
+    for (auto&& [l, r] : a) {
+        if (l > right + 1) {
+            if (right - left + 1 != 0) length.emplace_back(right - left + 1);
+            lf.emplace_back(l);
+            rf.emplace_back(r);
+            left = l;
+            right = r;
+        } else {
+            right = r;
+        }
+    }
+    length.emplace_back(right - left + 1);
+    int m = length.size();
+    ll res = INFLL;
+    int r = 0;
+    ll curr = 0;
+    ll cnt1 = 0;
+    for (int i = 0; i < m; ++i) {
+        while (r < m and curr < k) {
+            curr += length[r];
+            if (length[r] == 1) cnt1 += 1;
+            ++r;
+        }
+        if (curr < k) break;
+        ll use = max(ll(0), min(curr - k, cnt1));
+        res = min(res, rf[r - 1] - (curr - k) + use + (r - i - use) * 2);
+        curr -= length[i];
+        if (length[i] == 1) cnt1 -= 1;
+    }
+    cout << (res == INFLL ? -1 : res) << '\n';
 }
 
 int main() {

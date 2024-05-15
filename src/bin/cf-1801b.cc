@@ -436,7 +436,7 @@ public:
 };
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -447,6 +447,27 @@ void dump_ignore() {}
 void prep() {}
 
 void solve() {
+    read(int, n);
+    readvec(pll, a, n);
+    sort(a.begin(), a.end());
+    ll res = INFLL;
+    ll max_b = -INFLL;
+    set<pli> b;
+    for (int i = 0; i < n; ++i) b.emplace(a[i].second, i);
+    for (int i = n - 1; ~i; --i) {
+        auto [x, y] = a[i];
+        res = min(res, abs(x - max_b));
+        b.erase({y, i});
+        auto it = b.lower_bound({x, 0});
+        if (it != b.end()) {
+            res = min(res, abs(x - max(max_b, it->first)));
+        }
+        if (it != b.begin()) {
+            res = min(res, abs(x - max(max_b, (--it)->first)));
+        }
+        max_b = max(max_b, y);
+    }
+    cout << res << '\n';
 }
 
 int main() {
