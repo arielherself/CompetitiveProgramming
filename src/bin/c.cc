@@ -15,7 +15,7 @@ using namespace std;
 #define __DECOMPOSE_N(a, ...) auto [__VA_ARGS__] = a;
 constexpr void __() {}
 #define __AS_PROCEDURE(...) __(); __VA_ARGS__; __()
-#define __as_typeof(container) decltype(container)::value_type
+#define __as_typeof(container) remove_reference<decltype(container)>::type
 
 /* type aliases */
 #if LONG_LONG_MAX != INT64_MAX
@@ -67,6 +67,8 @@ using tiid = tuple<int, int, ld>;
 using tiii = tuple<int, int, int>;
 template <typename T> using max_heap = priority_queue<T>;
 template <typename T> using min_heap = priority_queue<T, vector<T>, greater<>>;
+template <typename T> using oi = ostream_iterator<T>;
+template <typename T> using ii = istream_iterator<T>;
 
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
@@ -201,10 +203,17 @@ template <typename T, typename Iterator> pair<size_t, unordered_map<T, size_t, s
 template<typename T> void __read(T& x) { cin >> x; }
 template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __read(args...); }
 #define read(type, ...) __AS_PROCEDURE(type __VA_ARGS__; __read(__VA_ARGS__);)
-#define readvec(type, a, n) __AS_PROCEDURE(vector<type> a(n); for (int i = 0; i < (n); ++i) cin >> a[i];)
-#define putvec(a) __AS_PROCEDURE(for (auto&& x : a) cout << x << ' '; cout << endl;)
+#define readvec(type, a, n) __AS_PROCEDURE(vector<type> a(n); for (auto& x : a) cin >> x;)
+#define readvec1(type, a, n) __AS_PROCEDURE(vector<type> a((n) + 1); copy_n(ii<type>(cin), (n), a.begin() + 1);)
+#define putvec(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
+#define putvec1(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
+#define putvec_eol(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
+#define putvec1_eol(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
 #define debug(x) __AS_PROCEDURE(cerr << #x" = " << (x) << endl;)
 #define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : a) cerr << x << ' '; cerr << endl;)
+template<typename T, typename U> istream& operator>>(istream& in, pair<T, U>& p) {
+    return in >> p.first >> p.second;
+}
 template<typename T, typename U> ostream& operator<<(ostream& out, const pair<T, U>& p) {
     out << "{" << p.first << ", " << p.second << "}";
     return out;
@@ -372,14 +381,39 @@ template <ll mdl> struct MLL {
     void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
     void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
 };
+struct MLLd {
+    ll val, mdl;
+    MLLd(ll mdl, ll v = 0) : mdl(mdl), val(mod(v, mdl)) {}
+    MLLd(const MLLd& other) : val(other.val) {}
+    friend MLLd operator+(const MLLd& lhs, const MLLd& rhs) { return mod(lhs.val + rhs.val, lhs.mdl); }
+    friend MLLd operator-(const MLLd& lhs, const MLLd& rhs) { return mod(lhs.val - rhs.val, lhs.mdl); }
+    friend MLLd operator*(const MLLd& lhs, const MLLd& rhs) { return mod(lhs.val * rhs.val, lhs.mdl); }
+    friend MLLd operator/(const MLLd& lhs, const MLLd& rhs) { return mod(lhs.val * mod(inverse(rhs.val, lhs.mdl), lhs.mdl), lhs.mdl); }
+    friend MLLd operator%(const MLLd& lhs, const MLLd& rhs) { return mod(lhs.val - (lhs / rhs).val, lhs.mdl); }
+    friend bool operator==(const MLLd& lhs, const MLLd& rhs) { return lhs.val == rhs.val; }
+    friend bool operator!=(const MLLd& lhs, const MLLd& rhs) { return lhs.val != rhs.val; }
+    void operator+=(const MLLd& rhs) { val = (*this + rhs).val; }
+    void operator-=(const MLLd& rhs) { val = (*this - rhs).val; }
+    void operator*=(const MLLd& rhs) { val = (*this * rhs).val; }
+    void operator/=(const MLLd& rhs) { val = (*this / rhs).val; }
+    void operator%=(const MLLd& rhs) { val = (*this % rhs).val; }
+};
 
 template <ll mdl>
 ostream& operator<<(ostream& out, const MLL<mdl>& num) {
     return out << num.val;
 }
 
+ostream& operator<<(ostream& out, const MLLd& num) {
+    return out << num.val;
+}
+
 template <ll mdl>
 istream& operator>>(istream& in, MLL<mdl>& num) {
+    return in >> num.val;
+}
+
+istream& operator>>(istream& in, MLLd& num) {
     return in >> num.val;
 }
 
@@ -390,56 +424,80 @@ template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, Ran
 template <typename Func, typename RandomIt, typename Compare> void sort_by_key(RandomIt first, RandomIt last, Func extractor, Compare comp) {
     std::sort(first, last, [&] (auto&& a, auto&& b) { return comp(extractor(a), extractor(b)); });
 }
+template <typename T, typename U, typename Iterator_T, typename Iterator_U>
+vector<pair<T, U>> zip(Iterator_T a_first, Iterator_T a_last, Iterator_U b_first, Iterator_U b_last) {
+    vector<pair<T, U>> res;
+    auto a_it = a_first;
+    auto b_it = b_first;
+    for (; a_it != a_last and b_it != b_last; ++a_it, ++b_it) {
+        res.emplace_back(*a_it, *b_it);
+    }
+    return res;
+}
+template <typename T, typename U, typename Iterator_T, typename Iterator_U>
+vector<pair<T, U>> zip_n(Iterator_T a_first, Iterator_U b_first, size_t n) {
+    vector<pair<T, U>> res;
+    if (n > 0) {
+        res.emplace_back(*a_first, *b_first);
+        for (size_t i = 1; i != n; ++i) {
+            res.emplace_back(*++a_first, *++b_first);
+        }
+    }
+    return res;
+}
+template <typename T>
+class ArithmeticIterator : bidirectional_iterator_tag {
+public:
+    using difference_type = ptrdiff_t;
+    using value_type = T;
+private:
+    value_type value;
+public:
+    ArithmeticIterator(const T& value) : value(value) {}
+    value_type operator*() const { return value; }
+    ArithmeticIterator<T>& operator++() { ++value; return *this; }
+    ArithmeticIterator<T>& operator--() { --value; return *this; }
+    bool operator==(const ArithmeticIterator<T>& rhs) const { return value == rhs.value; }
+};
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
+// #define TOT_TEST_CASE 10000
 
 void dump() {}
 
 void dump_ignore() {}
 
-void prep() {}
-
-template<typename T>
-struct BIT {
-    int n;
-    vector<T> c;
-    BIT(size_t n) : n(n), c(n + 1) {}
-    void add(size_t i, const T& k) {
-        while (i <= n) {
-            c[i] += k;
-            i += lowbit(i);
-        }
-    }
-    T getsum(size_t i) {
-        T res = {};
-        while (i) {
-            res += c[i];
-            i -= lowbit(i);
-        }
-        return res;
-    }
-};
+void prep() {
+}
 
 void solve() {
     read(int, n);
-    readvec(ll, a, n);
-    auto [N, mp] = discretize<ll>(a.begin(), a.end());
-    BIT<int> tr(N);
-    ll res = 0;
-    ll sum = 0;
-    for (int i = n - 1; ~i; --i) {
-        res += a[i] * (n - 1 - i) + sum;
-        auto it = mp.lower_bound(100'000'000 - a[i]);
-        if (it != mp.end()) {
-            ll cnt = tr.getsum(N) - tr.getsum(max((unsigned long)0, it->second - 1));
-            res -= cnt * 100'000'000;
+    readvec(int, a, n);
+    vector<int> pos;
+    for (int i = 1; i < n; i += 2) {
+        if (a[i] == 1) {
+            i += 1;
         }
-        tr.add(mp[a[i]], 1);
-        sum += a[i];
+        if (i == n) break;
+        pos.emplace_back(i);
     }
-    cout << res << '\n';
+    int target = n;
+    vector<int> res(n);
+    sort_by_key(pos.begin(), pos.end(), [&] (int i) { return a[i]; });
+    for (auto&& i : pos) {
+        res[i] = target--;
+    }
+    vector<int> rem;
+    for (int i = 0; i < n; ++i) {
+        if (not res[i]) rem.emplace_back(i);
+    }
+    sort_by_key(rem.begin(), rem.end(), [&] (int i) { return a[i]; });
+    for (auto&& i : rem) {
+        res[i] = target--;
+    }
+    putvec(res);
 }
 
 int main() {
@@ -454,7 +512,7 @@ int main() {
     read(int, t);
     for (int i = 0; i < t; ++i) {
 #ifdef DUMP_TEST_CASE
-        if (t < (DUMP_TEST_CASE)) {
+        if (t != (TOT_TEST_CASE)) {
             solve();
         } else if (i + 1 == (DUMP_TEST_CASE)) {
             dump();

@@ -473,6 +473,54 @@ void prep() {
 }
 
 void solve() {
+    read(int, n, k);
+    --k;
+    readvec(int, a, n);
+    vector<ll> ps(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        ps[i] = ps[i - 1] + a[i - 1];
+    }
+    {
+        int f = 1;
+        int l = k, max_l = k;
+        for (int i = k; i < n; ++i) {
+            if (ps[i + 1] - ps[max_l] < 0) {
+                f = 0;
+                break;
+            }
+            while (l - 1 >= 0 and ps[i + 1] >= ps[l - 1]) {
+                l -= 1;
+                if (ps[l] < ps[max_l]) {
+                    max_l = l;
+                }
+            }
+        }
+        if (f) {
+            cout << "YES\n";
+            return;
+        }
+    }
+    {
+        int f = 1;
+        int r = k + 1, max_r = k + 1;
+        for (int i = k; ~i; --i) {
+            if (ps[max_r] - ps[i] < 0) {
+                f = 0;
+                break;
+            }
+            while (r + 1 <= n and ps[r + 1] >= ps[i]) {
+                r += 1;
+                if (ps[r] >= ps[max_r]) {
+                    max_r = r;
+                }
+            }
+        }
+        if (f) {
+            cout << "YES\n";
+            return;
+        }
+    }
+    cout << "NO\n";
 }
 
 int main() {
@@ -487,7 +535,7 @@ int main() {
     read(int, t);
     for (int i = 0; i < t; ++i) {
 #ifdef DUMP_TEST_CASE
-        if (t != (TOT_TEST_CASE)) {
+        if (t < (TOT_TEST_CASE)) {
             solve();
         } else if (i + 1 == (DUMP_TEST_CASE)) {
             dump();

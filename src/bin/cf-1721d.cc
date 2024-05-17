@@ -473,6 +473,67 @@ void prep() {
 }
 
 void solve() {
+    read(int, n);
+    readvec(int, a, n);
+    readvec(int, b, n);
+    auto partition = [&] (int l, int r, int bit) -> void {
+        int j = l;
+        for (int i = l; i <= r; ++i) {
+            while (j + 1 <= i and (a[j] >> bit & 1) == 1) {
+                ++j;
+            }
+            if ((a[i] >> bit & 1) == 1 and (a[j] >> bit & 1) == 0) {
+                swap(a[i], a[j]);
+                ++j;
+            }
+        }
+        j = l;
+        for (int i = l; i <= r; ++i) {
+            while (j + 1 <= i and (b[j] >> bit & 1) == 0) {
+                ++j;
+            }
+            if ((b[i] >> bit & 1) == 0 and (b[j] >> bit & 1) == 1) {
+                swap(b[i], b[j]);
+                ++j;
+            }
+        }
+    };
+    unordered_set<int, safe_hash> bar = {n - 1};
+    for (int bit = 30; ~bit; --bit) {
+        int cnt_a = 0, cnt_b = 0;
+        int f = 1;
+        for (int i = 0; i < n; ++i) {
+            if ((a[i] >> bit & 1) == 1) cnt_a += 1;
+            if ((b[i] >> bit & 1) == 0) cnt_b += 1;
+            if (bar.count(i)) {
+                if (cnt_a != cnt_b) {
+                    f = 0;
+                    break;
+                }
+                cnt_a = 0, cnt_b = 0;
+            }
+        }
+        if (f) {
+            int prev = 0;
+            for (int i = 0; i < n; ++i) {
+                if (bar.count(i)) {
+                    partition(prev, i, bit);
+                    for (int j = prev; j <= i; ++j) {
+                        if ((a[j] >> bit & 1) == 0) {
+                            if (j != prev) bar.emplace(j - 1);
+                            break;
+                        }
+                    }
+                    prev = i + 1;
+                }
+            }
+        }
+    }
+    int res = ~0;
+    for (int i = 0; i < n; ++i) {
+        res &= a[i] ^ b[i];
+    }
+    cout << res << '\n';
 }
 
 int main() {
@@ -487,7 +548,7 @@ int main() {
     read(int, t);
     for (int i = 0; i < t; ++i) {
 #ifdef DUMP_TEST_CASE
-        if (t != (TOT_TEST_CASE)) {
+        if (t < (TOT_TEST_CASE)) {
             solve();
         } else if (i + 1 == (DUMP_TEST_CASE)) {
             dump();

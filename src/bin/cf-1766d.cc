@@ -469,10 +469,26 @@ void dump() {}
 
 void dump_ignore() {}
 
+constexpr int N = 1e7 + 10;
+int min_fact[N];
 void prep() {
+    for (int i = 2; i < N; ++i) {
+        for (int j = i; j < N; j += i) {
+            if (not min_fact[j]) min_fact[j] = i;
+        }
+    }
 }
 
 void solve() {
+    read(int, x, y);
+    int diff = abs(x - y);
+    int res = INF;
+    while (diff != 1) {
+        res = min(res, min_fact[diff] - x % min_fact[diff]);
+        diff /= min_fact[diff];
+    }
+    if (gcd(x, y) != 1) res = 0;
+    cout << (res == INF ? -1 : res) << '\n';
 }
 
 int main() {
@@ -487,7 +503,7 @@ int main() {
     read(int, t);
     for (int i = 0; i < t; ++i) {
 #ifdef DUMP_TEST_CASE
-        if (t != (TOT_TEST_CASE)) {
+        if (t < (TOT_TEST_CASE)) {
             solve();
         } else if (i + 1 == (DUMP_TEST_CASE)) {
             dump();

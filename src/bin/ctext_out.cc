@@ -381,14 +381,39 @@ template <ll mdl> struct MLL {
     void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
     void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
 };
+struct MLLd {
+    ll val, mdl;
+    MLLd(ll mdl, ll v = 0) : mdl(mdl), val(mod(v, mdl)) {}
+    MLLd(const MLLd& other) : val(other.val) {}
+    friend MLLd operator+(const MLLd& lhs, const MLLd& rhs) { return mod(lhs.val + rhs.val, lhs.mdl); }
+    friend MLLd operator-(const MLLd& lhs, const MLLd& rhs) { return mod(lhs.val - rhs.val, lhs.mdl); }
+    friend MLLd operator*(const MLLd& lhs, const MLLd& rhs) { return mod(lhs.val * rhs.val, lhs.mdl); }
+    friend MLLd operator/(const MLLd& lhs, const MLLd& rhs) { return mod(lhs.val * mod(inverse(rhs.val, lhs.mdl), lhs.mdl), lhs.mdl); }
+    friend MLLd operator%(const MLLd& lhs, const MLLd& rhs) { return mod(lhs.val - (lhs / rhs).val, lhs.mdl); }
+    friend bool operator==(const MLLd& lhs, const MLLd& rhs) { return lhs.val == rhs.val; }
+    friend bool operator!=(const MLLd& lhs, const MLLd& rhs) { return lhs.val != rhs.val; }
+    void operator+=(const MLLd& rhs) { val = (*this + rhs).val; }
+    void operator-=(const MLLd& rhs) { val = (*this - rhs).val; }
+    void operator*=(const MLLd& rhs) { val = (*this * rhs).val; }
+    void operator/=(const MLLd& rhs) { val = (*this / rhs).val; }
+    void operator%=(const MLLd& rhs) { val = (*this % rhs).val; }
+};
 
 template <ll mdl>
 ostream& operator<<(ostream& out, const MLL<mdl>& num) {
     return out << num.val;
 }
 
+ostream& operator<<(ostream& out, const MLLd& num) {
+    return out << num.val;
+}
+
 template <ll mdl>
 istream& operator>>(istream& in, MLL<mdl>& num) {
+    return in >> num.val;
+}
+
+istream& operator>>(istream& in, MLLd& num) {
     return in >> num.val;
 }
 
@@ -444,54 +469,35 @@ void dump() {}
 
 void dump_ignore() {}
 
-void prep() {}
+void prep() {
+}
 
 void solve() {
-    read(int, n, m);
-    vector<vector<int>> a(n, vector<int>(m + 1));
-    for (int i = 0; i < n; ++i) {
-        for (int j = 1; j <= m; ++j) {
-            cin >> a[i][j];
+    read(int, n);
+    readvec(int, a, n);
+    vector<int> pos;
+    for (int i = 1; i < n; i += 2) {
+        if (a[i] == 1) {
+            i += 1;
         }
+        if (i == n) break;
+        pos.emplace_back(i);
     }
+    int target = n;
     vector<int> res(n);
-    auto rev = [&] (const vector<int>& x) {
-        vector<int> res(m + 1);
-        for (int i = 0; i <= m; ++i) {
-            int curr = x[i];
-            res[curr] = i;
-        }
-        return res;
-    };
-    vector<array<int, 11>> trie(1);
-    auto insert = [&] (const vector<int>& x) -> void {
-        int curr = 0;
-        for (int i = 1; i <= m; ++i) {
-            // debug(i), debug(x[i]);
-            // debug(curr);
-            if (not trie[curr][x[i]]) {
-                trie[curr][x[i]] = trie.size();
-                trie.push_back({});
-            }
-            curr = trie[curr][x[i]];
-        }
-    };
-    auto query = [&] (const vector<int>& x) -> int {
-        int curr = 0;
-        for (int i = 1; i <= m; ++i) {
-            if (not trie[curr][x[i]]) {
-                return i - 1;
-            }
-            curr = trie[curr][x[i]];
-        }
-        return m;
-    };
-    for (int i = 0; i < n; ++i) {
-        insert(rev(a[i]));
+    sort_by_key(pos.begin(), pos.end(), [&] (int i) { return a[i]; });
+    for (auto&& i : pos) {
+        res[i] = target--;
     }
+    vector<int> rem;
     for (int i = 0; i < n; ++i) {
-        cout << query(a[i]) << " \n"[i + 1 == n];
+        if (not res[i]) rem.emplace_back(i);
     }
+    sort_by_key(rem.begin(), rem.end(), [&] (int i) { return a[i]; });
+    for (auto&& i : rem) {
+        res[i] = target--;
+    }
+    putvec(res);
 }
 
 int main() {
@@ -506,7 +512,7 @@ int main() {
     read(int, t);
     for (int i = 0; i < t; ++i) {
 #ifdef DUMP_TEST_CASE
-        if (t < (TOT_TEST_CASE)) {
+        if (t != (TOT_TEST_CASE)) {
             solve();
         } else if (i + 1 == (DUMP_TEST_CASE)) {
             dump();

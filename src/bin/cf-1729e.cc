@@ -461,7 +461,7 @@ public:
 };
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -473,6 +473,21 @@ void prep() {
 }
 
 void solve() {
+    for (int i = 2; i <= 1e18; ++i) {
+        cout << "? 1 " << i << endl;
+        read(ll, x);
+        cout << "? " << i << " 1" << endl;
+        read(ll, y);
+        if (x != y) {
+            cout << "! " << x + y << endl;
+            return;
+        }
+        if (x == -1) {
+            cout << "! " << i - 1 << endl;
+            return;
+        }
+    }
+    exit(825);
 }
 
 int main() {
@@ -487,7 +502,7 @@ int main() {
     read(int, t);
     for (int i = 0; i < t; ++i) {
 #ifdef DUMP_TEST_CASE
-        if (t != (TOT_TEST_CASE)) {
+        if (t < (TOT_TEST_CASE)) {
             solve();
         } else if (i + 1 == (DUMP_TEST_CASE)) {
             dump();

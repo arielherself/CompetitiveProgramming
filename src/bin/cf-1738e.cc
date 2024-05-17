@@ -473,6 +473,42 @@ void prep() {
 }
 
 void solve() {
+    read(int, n);
+    readvec(int, a, n);
+    int r = n - 1;  // next r
+    ll sum_l = 0, sum_r = 0;
+    vector<tlii> info;
+    int zero_cnt_l = 0, zero_cnt_r = 0;
+    for (int i = 0; i < n; ++i) {
+        if (a[i] == 0) {
+            if (zero_cnt_l == 0) {
+                while (a[r] == 0) {
+                    zero_cnt_r += 1;
+                    --r;
+                }
+            } else {
+                zero_cnt_l += 1;
+            }
+        } else {
+            if (zero_cnt_l > 0) {
+                info.emplace_back(0, zero_cnt_l, zero_cnt_r);
+                zero_cnt_l = 0;
+                zero_cnt_r = 0;
+            }
+            while (sum_r < sum_l) {
+                sum_r += a[r];
+                --r;
+            }
+            if (sum_l == sum_r) {
+                info.emplace_back(sum_l, 0, 0);
+            }
+        }
+    }
+    if (zero_cnt_l > 0) {
+        info.emplace_back(0, zero_cnt_l, zero_cnt_r);
+        zero_cnt_l = 0;
+        zero_cnt_r = 0;
+    }
 }
 
 int main() {

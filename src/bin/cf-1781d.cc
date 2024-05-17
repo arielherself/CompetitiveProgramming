@@ -473,6 +473,31 @@ void prep() {
 }
 
 void solve() {
+    read(int, n);
+    readvec(int, a, n);
+    vector<unordered_map<ll, int, safe_hash>> choices(n);
+    for (int i = 0; i < n; ++i) {
+        for (int j = i + 1; j < n; ++j) {
+            int diff = a[j] - a[i];
+            int sq = sqrt(diff);
+            for (int j = 1; j <= sq; ++j) {
+                if (diff % j == 0 and ((diff / j) & 1) == (j & 1)) {
+                    ll x = j, y = diff / j;
+                    ll q = x + y >> 1, p = y - q;
+                    if (p * p >= a[i]) {
+                        choices[i][p] += 1;
+                    }
+                }
+            }
+        }
+    }
+    int res = 0;
+    for (auto&& d : choices) {
+        for (auto&& [_, v] : d) {
+            res = max(res, v);
+        }
+    }
+    cout << res + 1 << '\n';
 }
 
 int main() {
@@ -487,7 +512,7 @@ int main() {
     read(int, t);
     for (int i = 0; i < t; ++i) {
 #ifdef DUMP_TEST_CASE
-        if (t != (TOT_TEST_CASE)) {
+        if (t < (TOT_TEST_CASE)) {
             solve();
         } else if (i + 1 == (DUMP_TEST_CASE)) {
             dump();

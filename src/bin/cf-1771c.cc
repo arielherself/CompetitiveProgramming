@@ -473,6 +473,8 @@ void prep() {
 }
 
 void solve() {
+    read(int, n);
+    
 }
 
 int main() {
@@ -487,7 +489,7 @@ int main() {
     read(int, t);
     for (int i = 0; i < t; ++i) {
 #ifdef DUMP_TEST_CASE
-        if (t != (TOT_TEST_CASE)) {
+        if (t < (TOT_TEST_CASE)) {
             solve();
         } else if (i + 1 == (DUMP_TEST_CASE)) {
             dump();

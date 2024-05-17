@@ -461,7 +461,7 @@ public:
 };
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,10 +469,37 @@ void dump() {}
 
 void dump_ignore() {}
 
+constexpr int MAXN = 1e6 + 10;
+using mll = MLL<MDL>;
+mll fact[MAXN], pw2[MAXN], pw3[MAXN], s[MAXN];
 void prep() {
+    fact[0] = 1, pw2[0] = 1, pw3[0] = 1, s[0] = 0;
+    for (int i = 1; i < MAXN; ++i) {
+        fact[i] = fact[i - 1] * i;
+        pw3[i] = pw3[i - 1] * 3;
+        pw2[i] = pw2[i - 1] * 2;
+        s[i] = 3 * s[i - 1] + 2 * pw3[i - 1];
+    }
+}
+
+mll comb(int n, int k) {
+    if (n < 0 or k < 0 or n < k) return 0;
+    return fact[n] / fact[k] / fact[n - k];
 }
 
 void solve() {
+    read(int, n, k);
+    if (k == 0) {
+        cout << pw3[n] << '\n';
+    } else {
+        mll res = 0;
+        int t = n - k;
+        for (int j = 0; j <= k; ++j) {
+            if (t - j < 0) continue;
+            res += pw3[t - j] * comb(t, j) / k * comb(k, j) * (k * pw3[k - j] - s[k - j]);
+        }
+        cout << res << '\n';
+    }
 }
 
 int main() {
@@ -487,7 +514,7 @@ int main() {
     read(int, t);
     for (int i = 0; i < t; ++i) {
 #ifdef DUMP_TEST_CASE
-        if (t != (TOT_TEST_CASE)) {
+        if (t < (TOT_TEST_CASE)) {
             solve();
         } else if (i + 1 == (DUMP_TEST_CASE)) {
             dump();

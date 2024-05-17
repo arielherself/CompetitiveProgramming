@@ -461,7 +461,7 @@ public:
 };
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -473,6 +473,74 @@ void prep() {
 }
 
 void solve() {
+    read(int, n);
+    unordered_map<int, unordered_map<int, int, safe_hash>, safe_hash> ch;
+    readvec1(int, a, n);
+    read(int, s, t);
+    deque<tuple<int, int, int>> q;
+    unordered_set<int, safe_hash> tar;
+    for (int i = 1; i <= n; ++i) {
+        auto f = decompose_prime(a[i]);
+        int m = f.size();
+        for (int j = 0; j < m; ++j) {
+            for (int k = j + 1; k < m; ++k) {
+                if (not ch[f[j].first].count(f[k].first) or t == i) ch[f[j].first][f[k].first] = i;
+                if (not ch[f[k].first].count(f[j].first) or t == i) ch[f[k].first][f[j].first] = i;
+            }
+        }
+        if (s == i) {
+            for (auto&& [x, _] : f) {
+                q.emplace_back(x, -1, -1);
+            }
+        }
+        if (t == i) {
+            for (auto&& [x, _] : f) {
+                tar.emplace(x);
+            }
+        }
+    }
+    if (s == t) {
+        cout << 1 << '\n';
+        cout << s << '\n';
+        return;
+    }
+    // if (gcd(a[s], a[t]) != 1) {
+    //     cout << 2 << '\n';
+    //     cout << s << ' ' << t << '\n';
+    //     return;
+    // }
+    int res = INF;
+    unordered_set<int, safe_hash> vis;
+    unordered_map<int, pii, safe_hash> father;
+    while (q.size()) {
+        popfront(q, v, f, e);
+        if (vis.count(v)) continue;
+        vis.emplace(v);
+        father[v] = {f, e};
+        if (tar.count(v)) {
+            res = v;
+            break;
+        }
+        for (auto&& [u, h] : ch[v]) {
+            q.emplace_back(u, v, h);
+        }
+    }
+    if (res == INF) {
+        cout << -1 << '\n';
+    } else {
+        vector<int> path;
+        if (father[res].second != t) {
+            path.emplace_back(t);
+        }
+        while (father[res].first != -1) {
+            path.emplace_back(father[res].second);
+            res = father[res].first;
+        }
+        path.emplace_back(s);
+        reverse(path.begin(), path.end());
+        cout << path.size() << '\n';
+        putvec(path);
+    }
 }
 
 int main() {
@@ -487,7 +555,7 @@ int main() {
     read(int, t);
     for (int i = 0; i < t; ++i) {
 #ifdef DUMP_TEST_CASE
-        if (t != (TOT_TEST_CASE)) {
+        if (t < (TOT_TEST_CASE)) {
             solve();
         } else if (i + 1 == (DUMP_TEST_CASE)) {
             dump();
