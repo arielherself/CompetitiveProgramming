@@ -429,7 +429,7 @@ vector<pair<T, U>> zip(Iterator_T a_first, Iterator_T a_last, Iterator_U b_first
     vector<pair<T, U>> res;
     auto a_it = a_first;
     auto b_it = b_first;
-    for (; a_it != a_last and b_it != b_last; ++a_it, ++b_it) {
+    for (; not (a_it == a_last) and not (b_it == b_last); ++a_it, ++b_it) {
         res.emplace_back(*a_it, *b_it);
     }
     return res;
@@ -459,9 +459,12 @@ public:
     ArithmeticIterator<T>& operator--() { --value; return *this; }
     bool operator==(const ArithmeticIterator<T>& rhs) const { return value == rhs.value; }
 };
+template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container) {
+    return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
+}
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,57 +472,95 @@ void dump() {}
 
 void dump_ignore() {}
 
+struct mcmf {
+    struct edge {
+        int to;
+        ll cap;
+        ll flow;
+        ll cost;
+        int rev;
+    };
+
+    vector<vector<edge>> edges;
+    vector<ll> dis;
+    vector<bool> vis;
+    ll ret;
+
+    mcmf(int n) : edges(n + 1), dis(n + 1), vis(n + 1) {}
+
+    void add_edge(int from, int to, ll cap, ll cost) {
+        edges[from].push_back({ to, cap, 0, cost, int(edges[to].size()) });
+        edges[to].push_back({ from, 0, 0, -cost, int(edges[from].size() - 1)});
+    }
+
+    bool sp(int s, int t) {
+        dis.assign(edges.size(), INFLL);
+        dis[s] = 0;
+        int n = edges.size();
+        int f = 1;
+        while (f) {
+            f = 0;
+            for (int i = 0; i < n; ++i) {
+                for (auto&& [to, cap, flow, cost, rev] : edges[i]) {
+                    if (cap > flow and dis[to] > dis[i] + cost) {
+                        dis[to] = dis[i] + cost;
+                        f = 1;
+                    }
+                }
+            }
+        }
+        return dis[t] != INFLL;
+    }
+
+    ll dfs(int s, int t, ll cap) {
+        if (vis[s]) {
+            return 0;
+        }
+        vis[s] = 1;
+        if (s == t) {
+            return cap;
+        }
+        ll res = 0;
+        int n = edges[s].size();
+        for (int i = 0; i < n; ++i) {
+            auto e = edges[s][i];
+            if (e.cap > e.flow and dis[e.to] == dis[s] + e.cost) {
+                ll nw = dfs(e.to, t, min(cap - res, e.cap - e.flow));
+                edges[s][i].flow += nw;
+                edges[e.to][e.rev].flow -= nw;
+                res += nw;
+                ret += nw * e.cost;
+                if (res == cap) {
+                    return res;
+                }
+            }
+        }
+        return res;
+    }
+
+    // returns: (flow, cost)
+    pll run(int s, int t) {
+        ll res = 0; ret = 0;
+        while (sp(s, t)) {
+            vis.assign(edges.size(), 0);
+            ll curr = dfs(s, t, LLONG_MAX);
+            res += curr;
+        }
+        return { res, ret };
+    }
+};
 void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int r = n - 1;  // next r
-    ll sum_l = 0, sum_r = 0;
-    vector<tlii> info;
-    int zero_cnt_l = 0, zero_cnt_r = 0;
-    for (int i = 0; i < n; ++i) {
-        if (i >= r) break;
-        if (a[i] == 0) {
-            if (zero_cnt_l == 0) {
-                while (a[r] == 0) {
-                    zero_cnt_r += 1;
-                    --r;
-                }
-            } else {
-                zero_cnt_l += 1;
-            }
-        } else {
-            if (zero_cnt_l > 0) {
-                info.emplace_back(0, zero_cnt_l, zero_cnt_r);
-                zero_cnt_l = 0;
-                zero_cnt_r = 0;
-            }
-            while (sum_r < sum_l) {
-                sum_r += a[r];
-                --r;
-            }
-            if (sum_l == sum_r) {
-                info.emplace_back(sum_l, 0, 0);
-            }
-        }
+    read(int, n, m);
+    mcmf net(n);
+    while (m--) {
+        read(int, u, v, c, w);
+        net.add_edge(u, v, c, w);
     }
-    if (zero_cnt_l > 0) {
-        info.emplace_back(0, zero_cnt_l, zero_cnt_r);
-        zero_cnt_l = 0;
-        zero_cnt_r = 0;
-    }
-    int m = info.size();
-    MLL<PRIME> res = 1;
-    for (int i = 0; i < m; ++i) {
-        auto [v, l, r] = info[i];
-        if (v == 0) {
-            if (i != 0 and i != m - 1) {
-                res = (res * pw2[l] * pw2[r]) + (res * pw3[])
-            }
-        }
-    }
+    auto [flow, cost] = net.run(1, n);
+    cout << flow << ' ' << cost << '\n';
 }
 
 int main() {

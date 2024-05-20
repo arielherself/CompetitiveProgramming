@@ -475,51 +475,22 @@ void prep() {
 void solve() {
     read(int, n);
     readvec(int, a, n);
-    int r = n - 1;  // next r
-    ll sum_l = 0, sum_r = 0;
-    vector<tlii> info;
-    int zero_cnt_l = 0, zero_cnt_r = 0;
-    for (int i = 0; i < n; ++i) {
-        if (i >= r) break;
-        if (a[i] == 0) {
-            if (zero_cnt_l == 0) {
-                while (a[r] == 0) {
-                    zero_cnt_r += 1;
-                    --r;
-                }
-            } else {
-                zero_cnt_l += 1;
-            }
-        } else {
-            if (zero_cnt_l > 0) {
-                info.emplace_back(0, zero_cnt_l, zero_cnt_r);
-                zero_cnt_l = 0;
-                zero_cnt_r = 0;
-            }
-            while (sum_r < sum_l) {
-                sum_r += a[r];
-                --r;
-            }
-            if (sum_l == sum_r) {
-                info.emplace_back(sum_l, 0, 0);
+    int mn_l = 1;
+    for (int b = 0; b < 20; ++b) {
+        int max_dist = 0;
+        int prev_1 = -1;
+        for (int i = 0; i < n; ++i) {
+            if (a[i] >> b & 1) {
+                max_dist = max(max_dist, i - prev_1);
+                prev_1 = i;
             }
         }
-    }
-    if (zero_cnt_l > 0) {
-        info.emplace_back(0, zero_cnt_l, zero_cnt_r);
-        zero_cnt_l = 0;
-        zero_cnt_r = 0;
-    }
-    int m = info.size();
-    MLL<PRIME> res = 1;
-    for (int i = 0; i < m; ++i) {
-        auto [v, l, r] = info[i];
-        if (v == 0) {
-            if (i != 0 and i != m - 1) {
-                res = (res * pw2[l] * pw2[r]) + (res * pw3[])
-            }
+        if (prev_1 != -1) {
+            max_dist = max(max_dist, n - prev_1);
+            mn_l = max(mn_l, max_dist);
         }
     }
+    cout << mn_l << '\n';
 }
 
 int main() {

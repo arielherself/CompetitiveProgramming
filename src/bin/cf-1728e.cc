@@ -461,7 +461,7 @@ public:
 };
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -472,52 +472,125 @@ void dump_ignore() {}
 void prep() {
 }
 
-void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int r = n - 1;  // next r
-    ll sum_l = 0, sum_r = 0;
-    vector<tlii> info;
-    int zero_cnt_l = 0, zero_cnt_r = 0;
-    for (int i = 0; i < n; ++i) {
-        if (i >= r) break;
-        if (a[i] == 0) {
-            if (zero_cnt_l == 0) {
-                while (a[r] == 0) {
-                    zero_cnt_r += 1;
-                    --r;
-                }
+namespace Exgcd {
+    template <typename T> T abs(T x) { return x < 0 ? -x : x; }
+    template <typename T>
+    struct exgcd_solution_t {
+        T x, y, gcd;
+    };
+    template <typename T>
+    struct diophantine_solution_t {
+        exgcd_solution_t<T> x_min, y_min;
+        T range;
+    };
+    // solve `ax + by = gcd(a, b)`
+    template <typename T>
+    optional<exgcd_solution_t<T>> exgcd(T a, T b) {
+        if (a < 0 || b < 0 || a == 0 && b == 0) return nullopt;
+        T x, y, g;
+        function<void(T, T)> __exgcd = [&__exgcd, &x, &y, &g] (T a, T b) -> void {
+            if (b == 0) {
+                g = a, x = 1, y = 0;
             } else {
-                zero_cnt_l += 1;
+                __exgcd(b, a % b);
+                swap(x, y);
+                y -= a / b * x;
             }
+        };
+        __exgcd(a, b);
+        return {{ x, y, g }};
+    };
+    template <typename T>
+    optional<T> inverse(T a, T b) {
+        auto raw = exgcd(a, b);
+        if (raw == nullopt || raw.value().gcd != 1) {
+            return nullopt;
         } else {
-            if (zero_cnt_l > 0) {
-                info.emplace_back(0, zero_cnt_l, zero_cnt_r);
-                zero_cnt_l = 0;
-                zero_cnt_r = 0;
-            }
-            while (sum_r < sum_l) {
-                sum_r += a[r];
-                --r;
-            }
-            if (sum_l == sum_r) {
-                info.emplace_back(sum_l, 0, 0);
-            }
+            return mod(raw.value().x, b);
         }
     }
-    if (zero_cnt_l > 0) {
-        info.emplace_back(0, zero_cnt_l, zero_cnt_r);
-        zero_cnt_l = 0;
-        zero_cnt_r = 0;
+    // solve { x = a_i (mod n_i) } if n_i's are coprime
+    template <typename T>
+    optional<T> crt(const vector<pair<T, T>>& equations) {
+        T prod = 1;
+        for (auto&& [a, n] : equations) {
+            prod *= n;
+        }
+        T res = 0;
+        for (auto&& [a, n] : equations) {
+            T m = prod / n;
+            auto m_rev = inverse(m, n);
+            if (m_rev == nullopt) return nullopt;
+            res = mod(res + a * mod(m * m_rev.value(), prod), prod);
+        }
+        return res;
     }
-    int m = info.size();
-    MLL<PRIME> res = 1;
-    for (int i = 0; i < m; ++i) {
-        auto [v, l, r] = info[i];
-        if (v == 0) {
-            if (i != 0 and i != m - 1) {
-                res = (res * pw2[l] * pw2[r]) + (res * pw3[])
+    // find minimal non-negative integral solutions of `ax + by = c`. It's not guaranteed that the other variable is non-negative.
+    template <typename T>
+    optional<diophantine_solution_t<T>> diophantine(T a, T b, T c, bool force_positive = false) {
+        if (a < 0 || b < 0 || a == 0 && b == 0) return nullopt;
+        auto raw = exgcd(a, b).value();
+        if (c % raw.gcd) {
+            return nullopt;
+        } else {
+            T x = raw.x * c / raw.gcd, y = raw.y * c / raw.gcd;
+            T kx = force_positive ? (x <= 0 ? (-x) * raw.gcd / b + 1 : 1 - (x + b / raw.gcd - 1) * raw.gcd / b) : (x <= 0 ? ((-x) + b / raw.gcd - 1) * raw.gcd / b : (- x * raw.gcd / b));
+            T ky = force_positive ? (y <= 0 ? (- 1 - (-y) * raw.gcd / a) : (y + a / raw.gcd - 1) * raw.gcd / a - 1) : (y <= 0 ? (- ((-y) + a / raw.gcd - 1) * raw.gcd / a) : y * raw.gcd / a);
+            return {{ { x + b * kx / raw.gcd , y - a * kx / raw.gcd , raw.gcd }, { x + b * ky / raw.gcd , y - a * ky / raw.gcd, raw.gcd }, abs(kx - ky) + 1 }};
+        }
+    }
+    // find the minimal non-negative integral solution of `ax = b (mod n)`
+    template <typename T>
+    optional<T> congruential(T a, T b, T n) {
+        if (a == 0) {
+            if (b != 0) return nullopt;
+            return 0;
+        }
+        if (a < 0 && a != LLONG_MIN && b != LLONG_MIN) a = -a, b = -b;
+        auto sol = diophantine(a, n, b);
+        if (sol == nullopt) {
+            return nullopt;
+        } else {
+            return sol.value().x_min.x;
+        }
+    }
+}
+
+void solve() {
+    read(ll, n);
+    readvec(pll, a, n);
+    sort_by_key(a.begin(), a.end(), [] (const pii& x) { return x.first - x.second; }, greater());
+    ll tot = 0;
+    for (int i = 0; i < n; ++i) {
+        tot += a[i].second;
+    }
+    vector<ll> val(n + 1);
+    val[0] = tot;
+    for (int i = 0; i < n; ++i) {
+        tot += a[i].first - a[i].second;
+        val[i + 1] = tot;
+    }
+    read(int, m);
+    while (m--) {
+        read(ll, p, q);
+        // xp+yq=n
+        auto sol = Exgcd::diophantine(p, q, n);
+        if (sol == nullopt or sol->x_min.y < 0) {
+            cout << -1 << '\n';
+        } else {
+            ll x0 = sol->x_min.x, y0 = sol->x_min.y, g = sol->x_min.gcd;
+            // binary search on k, s.t.
+            // x=x0+k*q/gcd, y=y0-k*p/gcd
+            ll l = 0, r = y0 * g / p;
+            while (l < r) {
+                ll mid = l + r + 1 >> 1;
+                if (mid - 1 >= 0 and val[(x0 + (mid - 1) * q / g) * p] >= val[(x0 + mid * q / g) * p]) {
+                    r = mid - 1;
+                } else {
+                    l = mid;
+                }
             }
+            cout << val[(x0 + l * q / g) * p] << '\n';
         }
     }
 }

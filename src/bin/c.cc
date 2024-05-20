@@ -429,7 +429,7 @@ vector<pair<T, U>> zip(Iterator_T a_first, Iterator_T a_last, Iterator_U b_first
     vector<pair<T, U>> res;
     auto a_it = a_first;
     auto b_it = b_first;
-    for (; a_it != a_last and b_it != b_last; ++a_it, ++b_it) {
+    for (; not (a_it == a_last) and not (b_it == b_last); ++a_it, ++b_it) {
         res.emplace_back(*a_it, *b_it);
     }
     return res;
@@ -459,9 +459,12 @@ public:
     ArithmeticIterator<T>& operator--() { --value; return *this; }
     bool operator==(const ArithmeticIterator<T>& rhs) const { return value == rhs.value; }
 };
+template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container) {
+    return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
+}
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -474,30 +477,29 @@ void prep() {
 
 void solve() {
     read(int, n);
-    readvec(int, a, n);
-    vector<int> pos;
-    for (int i = 1; i < n; i += 2) {
-        if (a[i] == 1) {
-            i += 1;
-        }
-        if (i == n) break;
-        pos.emplace_back(i);
-    }
-    int target = n;
-    vector<int> res(n);
-    sort_by_key(pos.begin(), pos.end(), [&] (int i) { return a[i]; });
-    for (auto&& i : pos) {
-        res[i] = target--;
-    }
-    vector<int> rem;
+    vector<tiii> a;
     for (int i = 0; i < n; ++i) {
-        if (not res[i]) rem.emplace_back(i);
+        read(int, x, y);
+        a.emplace_back(x, y, i);
     }
-    sort_by_key(rem.begin(), rem.end(), [&] (int i) { return a[i]; });
-    for (auto&& i : rem) {
-        res[i] = target--;
+    sort(a.begin(), a.end());
+    vector<bool> has(n, 1);
+    set<pii, greater<>> st;
+    for (int i = 0; i < n; ++i) {
+        auto [x, y, j] = a[i];
+        while (st.size() and st.begin()->first > y) {
+            has[st.begin()->second] = 0;
+            st.erase(st.begin());
+        }
+        st.emplace(y, j);
     }
-    putvec(res);
+    cout << count(has.begin(), has.end(), 1) << '\n';
+    for (int i = 0; i < n; ++i) {
+        if (has[i]) {
+            cout << i + 1 << ' ';
+        }
+    }
+    cout << endl;
 }
 
 int main() {

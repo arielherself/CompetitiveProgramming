@@ -429,7 +429,7 @@ vector<pair<T, U>> zip(Iterator_T a_first, Iterator_T a_last, Iterator_U b_first
     vector<pair<T, U>> res;
     auto a_it = a_first;
     auto b_it = b_first;
-    for (; a_it != a_last and b_it != b_last; ++a_it, ++b_it) {
+    for (; not (a_it == a_last) and not (b_it == b_last); ++a_it, ++b_it) {
         res.emplace_back(*a_it, *b_it);
     }
     return res;
@@ -459,9 +459,12 @@ public:
     ArithmeticIterator<T>& operator--() { --value; return *this; }
     bool operator==(const ArithmeticIterator<T>& rhs) const { return value == rhs.value; }
 };
+template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container) {
+    return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
+}
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -472,53 +475,201 @@ void dump_ignore() {}
 void prep() {
 }
 
-void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int r = n - 1;  // next r
-    ll sum_l = 0, sum_r = 0;
-    vector<tlii> info;
-    int zero_cnt_l = 0, zero_cnt_r = 0;
-    for (int i = 0; i < n; ++i) {
-        if (i >= r) break;
-        if (a[i] == 0) {
-            if (zero_cnt_l == 0) {
-                while (a[r] == 0) {
-                    zero_cnt_r += 1;
-                    --r;
+struct mcmf {
+    struct edge {
+        int to;
+        ll cap;
+        ll flow;
+        ll cost;
+        int rev;
+        int mark;
+    };
+    vector<vector<edge>> edges;
+    vector<ll> dis;
+    vector<bool> vis;
+    ll ret;
+    mcmf(int n) : edges(n + 1), dis(n + 1), vis(n + 1) {}
+    void add_edge(int from, int to, ll cap, ll cost, int mark = 0, int mark_rev = 0) {
+        edges[from].push_back({ to, cap, 0, cost, int(edges[to].size()), mark });
+        edges[to].push_back({ from, 0, 0, -cost, int(edges[from].size() - 1), mark_rev });
+    }
+    bool sp(int s, int t) {
+        dis.assign(edges.size(), INFLL);
+        dis[s] = 0;
+        int n = edges.size();
+        int f = 1;
+        while (f) {
+            f = 0;
+            for (int i = 0; i < n; ++i) {
+                for (auto&& [to, cap, flow, cost, rev, mark] : edges[i]) {
+                    if (cap > flow and dis[to] > dis[i] + cost) {
+                        dis[to] = dis[i] + cost;
+                        f = 1;
+                    }
                 }
-            } else {
-                zero_cnt_l += 1;
             }
+        }
+        return dis[t] != INFLL;
+    }
+    ll dfs(int s, int t, ll cap) {
+        if (vis[s]) {
+            return 0;
+        }
+        vis[s] = 1;
+        if (s == t) {
+            return cap;
+        }
+        ll res = 0;
+        int n = edges[s].size();
+        for (int i = 0; i < n; ++i) {
+            auto e = edges[s][i];
+            if (e.cap > e.flow and dis[e.to] == dis[s] + e.cost) {
+                ll nw = dfs(e.to, t, min(cap - res, e.cap - e.flow));
+                edges[s][i].flow += nw;
+                edges[e.to][e.rev].flow -= nw;
+                res += nw;
+                ret += nw * e.cost;
+                if (res == cap) {
+                    return res;
+                }
+            }
+        }
+        return res;
+    }
+    // returns: (flow, cost)
+    pll run(int s, int t) {
+        ll res = 0; ret = 0;
+        while (sp(s, t)) {
+            vis.assign(edges.size(), 0);
+            ll curr = dfs(s, t, LLONG_MAX);
+            res += curr;
+        }
+        return { res, ret };
+    }
+};
+
+struct bounded_mcmf {
+    int n, m, S, T;
+    mcmf net;
+    ll sum;
+    vector<ll> fl;
+    vector<ll> init;
+    vector<ll> costs;
+    bounded_mcmf(int n, int m) : sum(0), n(n), m(m), S(0), T(n + 1), net(n + 1), fl(m), init(n + 1), costs(m) {}
+    // handle negative loop case
+    void add_edge(int from, int to, ll low, ll high, ll cost, int edge_id = -1) {
+        if (cost < 0) {
+            __add_edge(from, to, high, high, cost, -1);
+            __add_edge(to, from, 0, high - low, -cost, edge_id);
         } else {
-            if (zero_cnt_l > 0) {
-                info.emplace_back(0, zero_cnt_l, zero_cnt_r);
-                zero_cnt_l = 0;
-                zero_cnt_r = 0;
-            }
-            while (sum_r < sum_l) {
-                sum_r += a[r];
-                --r;
-            }
-            if (sum_l == sum_r) {
-                info.emplace_back(sum_l, 0, 0);
+            __add_edge(from, to, low, high, cost, edge_id);
+        }
+        if (edge_id != -1) {
+            costs[edge_id] = cost;
+            if (cost < 0) {
+                fl[edge_id] += high;  // RealFlow = UpperBound - Flow
+            } else {
+                fl[edge_id] += low;   // RealFlow = LowerBound + Flow
             }
         }
     }
-    if (zero_cnt_l > 0) {
-        info.emplace_back(0, zero_cnt_l, zero_cnt_r);
-        zero_cnt_l = 0;
-        zero_cnt_r = 0;
+    void __add_edge(int from, int to, ll low, ll high, ll cost, int edge_id = -1) {
+        net.add_edge(from, to, high - low, cost, edge_id, -1);
+        init[to] += low, init[from] -= low;
     }
-    int m = info.size();
-    MLL<PRIME> res = 1;
+    void prep(int s, int t) {
+        for (int i = 1; i <= n; ++i) {
+            if (init[i] > 0) {
+                net.add_edge(S, i, init[i], 0, -1, -1);
+                sum += init[i];
+            } else if (init[i] < 0) {
+                net.add_edge(i, T, -init[i], 0, -1, -1);
+            }
+        }
+        net.add_edge(t, s, INFLL, 0, -1, -1);
+    }
+    // min-cost max-flow
+    optional<tuple<ll, ll, vector<ll>>> run_mcmf(int s, int t) {  // BUG: unchecked code
+        prep(s, t);
+        if (sum != net.run(S, T).first) {
+            return nullopt;
+        } else {
+            auto [res_flow, res_cost] = net.run(s, t);
+            for (int from = 1; from <= n; ++from) {
+                for (auto&& [to, cap, flow, cost, rev, mark] : net.edges[from]) {
+                    if (mark != -1) {
+                        if (costs[mark] < 0) {
+                            fl[mark] -= flow;
+                        } else {
+                            fl[mark] += flow;
+                        }
+                    }
+                }
+            }
+            return {{res_flow, res_cost, fl}};
+        }
+    }
+    // min-cost flow
+    optional<tuple<ll, ll, vector<ll>>> run_mcf(int s, int t) {
+        prep(s, t);
+        auto [res_flow, res_cost] = net.run(S, T);
+        if (sum != res_flow) {
+            return nullopt;
+        } else {
+            for (int from = 1; from <= n; ++from) {
+                for (auto&& [to, cap, flow, cost, rev, mark] : net.edges[from]) {
+                    if (mark != -1) {
+                        if (costs[mark] < 0) {
+                            fl[mark] -= flow;
+                        } else {
+                            fl[mark] += flow;
+                        }
+                    }
+                }
+            }
+            return {{res_flow, res_cost, fl}};
+        }
+    }
+};
+
+void solve() {
+    read(int, n, m);
+    bounded_mcmf net(n, m);
+    int S = 0, T = n + 1;
+    vector<int> init(n + 1);
+    vector<int> res(m);
     for (int i = 0; i < m; ++i) {
-        auto [v, l, r] = info[i];
-        if (v == 0) {
-            if (i != 0 and i != m - 1) {
-                res = (res * pw2[l] * pw2[r]) + (res * pw3[])
-            }
+        read(int, u, v, c, w);
+        if (c & 1) {
+            // set lower bound for edge
+            init[v] += 1;
+            init[u] -= 1;
+            res[i] += 1;
         }
+        net.add_edge(u, v, 0, c / 2, w, i);
+    }
+    for (int i = 1; i <= n; ++i) {
+        if (i == 1 or i == n) continue;
+        if (init[i] & 1) {  // TODO: why.
+            cout << "Impossible\n";
+            return;
+        }
+        if (init[i] > 0) {
+            net.add_edge(1, i, init[i] / 2, init[i] / 2, 0, -1);  // TODO: add_edge(S, i, ...)
+        } else if (init[i] < 0) {
+            net.add_edge(i, n, -init[i] / 2, -init[i] / 2, 0, -1);
+        }
+    }
+    auto ret = net.run_mcf(1, n);
+    if (ret == nullopt) {
+        cout << "Impossible\n";
+    } else {
+        cout << "Possible\n";
+        auto [flow, cost, fl] = ret.value();
+        for (int i = 0; i < m; ++i) {
+            res[i] += fl[i] * 2;
+        }
+        putvec(res);
     }
 }
 

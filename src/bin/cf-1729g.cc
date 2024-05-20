@@ -473,53 +473,49 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int r = n - 1;  // next r
-    ll sum_l = 0, sum_r = 0;
-    vector<tlii> info;
-    int zero_cnt_l = 0, zero_cnt_r = 0;
-    for (int i = 0; i < n; ++i) {
-        if (i >= r) break;
-        if (a[i] == 0) {
-            if (zero_cnt_l == 0) {
-                while (a[r] == 0) {
-                    zero_cnt_r += 1;
-                    --r;
-                }
-            } else {
-                zero_cnt_l += 1;
+    using mll = MLL<MDL>;
+    read(string, s);
+    read(string, t);
+    int n = s.size(), m = t.size();
+    vector<bool> mark(n);
+    for (int i = 0; i <= n - m; ++i) {
+        mark[i] = 1;
+        for (int j = 0; j < m; ++j) {
+            if (t[j] != s[i + j]) {
+                mark[i] = 0;
+                break;
             }
+        }
+    }
+    vector<array<pair<int, mll>, 2>> dp(n + 1, {make_pair(INF, 0), make_pair(INF, 0)});
+    dp[n][0] = {0, 1};
+    auto get = [] (const pair<int, mll>& a, const pair<int, mll>& b) -> pair<int, mll> {
+        if (b.first < a.first) {
+            return b;
+        } else if (b.first == a.first) {
+            return {a.first, a.second + b.second};
         } else {
-            if (zero_cnt_l > 0) {
-                info.emplace_back(0, zero_cnt_l, zero_cnt_r);
-                zero_cnt_l = 0;
-                zero_cnt_r = 0;
+            return a;
+        }
+    };
+    for (int i = n - 1; ~i; --i) {
+        if (mark[i]) {
+            for (int j = 1; j < m; ++j) {
+                dp[i][0] = get(dp[i][0], dp[i + j][1]);
             }
-            while (sum_r < sum_l) {
-                sum_r += a[r];
-                --r;
-            }
-            if (sum_l == sum_r) {
-                info.emplace_back(sum_l, 0, 0);
-            }
+            dp[i][1] = get({1 + dp[i + m][1].first, dp[i + m][1].second}, {1 + dp[i + m][0].first, dp[i + m][0].second});
+        } else {
+            dp[i][0] = get(dp[i + 1][0], dp[i + 1][1]);
         }
     }
-    if (zero_cnt_l > 0) {
-        info.emplace_back(0, zero_cnt_l, zero_cnt_r);
-        zero_cnt_l = 0;
-        zero_cnt_r = 0;
+    if (dp[0][0].first < dp[0][1].first) {
+        cout << dp[0][0].first << ' ' << dp[0][0].second << '\n';
+    } else if (dp[0][0].first == dp[0][1].first) {
+        cout << dp[0][0].first << ' ' << dp[0][0].second + dp[0][1].second << '\n';
+    } else {
+        cout << dp[0][1].first << ' ' << dp[0][1].second << '\n';
     }
-    int m = info.size();
-    MLL<PRIME> res = 1;
-    for (int i = 0; i < m; ++i) {
-        auto [v, l, r] = info[i];
-        if (v == 0) {
-            if (i != 0 and i != m - 1) {
-                res = (res * pw2[l] * pw2[r]) + (res * pw3[])
-            }
-        }
-    }
+    
 }
 
 int main() {

@@ -429,7 +429,7 @@ vector<pair<T, U>> zip(Iterator_T a_first, Iterator_T a_last, Iterator_U b_first
     vector<pair<T, U>> res;
     auto a_it = a_first;
     auto b_it = b_first;
-    for (; a_it != a_last and b_it != b_last; ++a_it, ++b_it) {
+    for (; not (a_it == a_last) and not (b_it == b_last); ++a_it, ++b_it) {
         res.emplace_back(*a_it, *b_it);
     }
     return res;
@@ -459,9 +459,12 @@ public:
     ArithmeticIterator<T>& operator--() { --value; return *this; }
     bool operator==(const ArithmeticIterator<T>& rhs) const { return value == rhs.value; }
 };
+template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container) {
+    return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
+}
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -474,23 +477,16 @@ void prep() {
 
 void solve() {
     read(int, n);
-    readvec(int, a, n);
-    int mn_l = 1;
-    for (int b = 0; b < 20; ++b) {
-        int max_dist = 0;
-        int prev_1 = -1;
-        for (int i = 0; i < n; ++i) {
-            if (a[i] >> b & 1) {
-                max_dist = max(max_dist, i - prev_1);
-                prev_1 = i;
-            }
-        }
-        if (prev_1 != -1) {
-            max_dist = max(max_dist, n - prev_1);
-            mn_l = max(mn_l, max_dist);
-        }
+    ll sum = 0;
+    vector<string> a;
+    for (int i = 0; i < n; ++i) {
+        read(string, s);
+        read(int, c);
+        a.emplace_back(s);
+        sum += c;
     }
-    cout << mn_l << '\n';
+    sort(a.begin(), a.end());
+    cout << a[sum % n] << '\n';
 }
 
 int main() {

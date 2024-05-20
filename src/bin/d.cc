@@ -429,7 +429,7 @@ vector<pair<T, U>> zip(Iterator_T a_first, Iterator_T a_last, Iterator_U b_first
     vector<pair<T, U>> res;
     auto a_it = a_first;
     auto b_it = b_first;
-    for (; a_it != a_last and b_it != b_last; ++a_it, ++b_it) {
+    for (; not (a_it == a_last) and not (b_it == b_last); ++a_it, ++b_it) {
         res.emplace_back(*a_it, *b_it);
     }
     return res;
@@ -459,9 +459,12 @@ public:
     ArithmeticIterator<T>& operator--() { --value; return *this; }
     bool operator==(const ArithmeticIterator<T>& rhs) const { return value == rhs.value; }
 };
+template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container) {
+    return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
+}
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -473,48 +476,32 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, k);
-    int mx = -1;
-    for (int i = 1; i <= n; ++i) {
-        cout << "? 1 " << ll(1) * i * n << endl;
-        read(int, r);
-        if (r == n) {
-            mx = i;
-            break;
+    read(ll, a, b, c, d);
+    ll area = 0, rem1 = 0, rem2 = 0, rem3 = 0, rem4 = 0, rem5 = 0, rem6 = 0;
+    if (mod(a, 4) == 0) {
+        area = 6, rem1 = 3, rem2 = 3, rem3 = 2, rem4 = 1, rem5 = 1, rem6 = 2;
+    } else if (mod(a, 4) == 1) {
+        area = 4, rem1 = 1, rem2 = 3, rem3 = 1, rem4 = 0, rem5 = 2, rem6 = 1;
+    } else if (mod(a, 4) == 2) {
+        area = 2, rem1 = 1, rem2 = 1, rem3 = 0, rem4 = 1, rem5 = 1, rem6 = 0;
+    } else {
+        area = 4, rem1 = 3, rem2 = 1, rem3 = 1, rem4 = 2, rem5 = 0, rem6 = 1;
+    }
+    ll res = 0;
+    res += (c - a) / 2 * (d - b) / 2 * area;
+    if ((d - b) & 1) {
+        if (b & 1) {
+            res += (c - a) / 2 * rem2;
+        } else {
+            res += (c - a) / 2 * rem1;
         }
     }
-    if (mx == -1) exit(825);
-    for (int i = n / k; i >= 1; --i) {
-        ll m = ll(1) * mx * i;
-        int prev = 1;
-        int f = 1;
-        for (int j = 1; j <= k; ++j) {
-            if (prev == n + 1) {
-                f = 0;
-                break;
+    if ((c - a) & 1) {
+        if ((a & 1) == 0) {
+            if ((b & 1) == 0) {
+                
             }
-            cout << "? " << prev << ' ' << m << endl;
-            read(int, r);
-            if (r == n + 1) {
-                f = 0;
-                break;
-            }
-            prev = r + 1;
         }
-        if (f and prev == n + 1) {
-            // ok
-            cout << "! " << m << endl;
-            read(int, stat);
-            if (stat == -1) {
-                exit(0);
-            }
-            return;
-        }
-    }
-    cout << "! -1" << endl;
-    read(int, stat);
-    if (stat == -1) {
-        exit(0);
     }
 }
 

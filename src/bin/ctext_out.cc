@@ -429,7 +429,7 @@ vector<pair<T, U>> zip(Iterator_T a_first, Iterator_T a_last, Iterator_U b_first
     vector<pair<T, U>> res;
     auto a_it = a_first;
     auto b_it = b_first;
-    for (; a_it != a_last and b_it != b_last; ++a_it, ++b_it) {
+    for (; not (a_it == a_last) and not (b_it == b_last); ++a_it, ++b_it) {
         res.emplace_back(*a_it, *b_it);
     }
     return res;
@@ -459,9 +459,12 @@ public:
     ArithmeticIterator<T>& operator--() { --value; return *this; }
     bool operator==(const ArithmeticIterator<T>& rhs) const { return value == rhs.value; }
 };
+template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container) {
+    return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
+}
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -472,32 +475,192 @@ void dump_ignore() {}
 void prep() {
 }
 
-void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    vector<int> pos;
-    for (int i = 1; i < n; i += 2) {
-        if (a[i] == 1) {
-            i += 1;
+struct dinic {
+    struct edge {
+        int to;
+        ll cap;
+        ll flow;
+        int rev;
+        int mark;
+    };
+    vector<vector<edge>> edges;
+    vector<int> layer;
+    vector<bool> vis;
+    dinic(int n) : edges(n + 1), layer(n + 1), vis(n + 1) {}
+    void add_edge(int from, int to, ll cap, int mark = 0, int mark_rev = 0) {
+        edges[from].push_back({ to, cap, 0, int(edges[to].size()), mark });
+        edges[to].push_back({ from, 0, 0, int(edges[from].size() - 1), mark_rev });
+    }
+    bool bfs(int s, int t) {
+        layer.assign(edges.size(), 0);
+        deque<pii> dq;
+        layer[s] = 1;
+        dq.emplace_back(s, 1);
+        while (dq.size()) {
+            popfront(dq, v, l);
+            for (auto&& e : edges[v]) {
+                if (layer[e.to] == 0 and e.cap > e.flow) {
+                    layer[e.to] = l + 1;
+                    dq.emplace_back(e.to, l + 1);
+                }
+            }
         }
-        if (i == n) break;
-        pos.emplace_back(i);
+        return layer[t] != 0;
     }
-    int target = n;
-    vector<int> res(n);
-    sort_by_key(pos.begin(), pos.end(), [&] (int i) { return a[i]; });
-    for (auto&& i : pos) {
-        res[i] = target--;
+    ll dfs(int s, int t, ll cap) {
+        if (vis[s]) {
+            return 0;
+        }
+        vis[s] = 1;
+        if (s == t) {
+            return cap;
+        }
+        ll res = 0;
+        int n = edges[s].size();
+        for (int i = 0; i < n; ++i) {
+            auto&& e = edges[s][i];
+            if (e.cap > e.flow and layer[e.to] == layer[s] + 1) {
+                ll nw = dfs(e.to, t, min(cap - res, e.cap - e.flow));
+                edges[s][i].flow += nw;
+                edges[e.to][e.rev].flow -= nw;
+                res += nw;
+                if (res == cap) {
+                    return res;
+                }
+            }
+        }
+        return res;
     }
-    vector<int> rem;
-    for (int i = 0; i < n; ++i) {
-        if (not res[i]) rem.emplace_back(i);
+    ll run(int s, int t) {
+        ll res = 0;
+        while (bfs(s, t)) {
+            vis.assign(edges.size(), 0);
+            res += dfs(s, t, LLONG_MAX);
+        }
+        return res;
     }
-    sort_by_key(rem.begin(), rem.end(), [&] (int i) { return a[i]; });
-    for (auto&& i : rem) {
-        res[i] = target--;
+};
+
+struct bounded_flow {
+    int n, m, S, T;
+    dinic net;
+    ll sum;
+    vector<ll> fl;
+    vector<ll> init;
+    bounded_flow(int n, int m) : sum(0), n(n), m(m), S(0), T(n + 1), net(n + 1), fl(m), init(n + 1) {}
+    void add_edge(int from, int to, ll low, ll high, int edge_id = -1) {
+        if (edge_id != -1) {
+            fl[edge_id] += low;
+        }
+        net.add_edge(from, to, high - low, edge_id, -1);
+        init[to] += low, init[from] -= low;
     }
-    putvec(res);
+    void prep(int s, int t) {
+        for (int i = 1; i <= n; ++i) {
+            if (init[i] > 0) {
+                net.add_edge(S, i, init[i], -1, -1);
+                sum += init[i];
+            } else if (init[i] < 0) {
+                net.add_edge(i, T, -init[i], -1, -1);
+            }
+        }
+        net.add_edge(t, s, INFLL, INF, -1);
+    }
+    optional<pair<ll, vector<ll>>> run_max_flow(int s, int t) {
+        prep(s, t);
+        if (sum != net.run(S, T)) {
+            return nullopt;
+        } else {
+            auto res_flow = net.run(s, t);
+            for (int from = 1; from <= n; ++from) {
+                for (auto&& [to, cap, flow, rev, mark] : net.edges[from]) {
+                    if (mark != -1 and mark != INF) {
+                        fl[mark] += flow;
+                    }
+                }
+            }
+            return {{res_flow, fl}};
+        }
+    }
+    optional<pair<ll, vector<ll>>> run_min_flow(int s, int t) {
+        prep(s, t);
+        if (sum != net.run(S, T)) {
+            return nullopt;
+        } else {
+            int curr;
+            for (int i = 0; i < m; ++i) {
+                if (net.edges[t][i].mark == INF) {
+                    net.edges[t][i].cap = 0;
+                    net.edges[net.edges[t][i].to][net.edges[t][i].rev].cap = 0;
+                    curr = net.edges[t][i].flow;  // WARN: real flow
+                    break;
+                }
+            }
+            curr -= net.run(t, s);
+            for (int from = 1; from <= n; ++from) {
+                for (auto&& [to, cap, flow, rev, mark] : net.edges[from]) {
+                    if (mark != -1 and mark != INF) {
+                        fl[mark] += flow;
+                    }
+                }
+            }
+            return {{curr, fl}};
+        }
+    }
+    optional<pair<ll, vector<ll>>> run_flow(int s, int t) {
+        prep(s, t);
+        auto res_flow = net.run(S, T);
+        if (sum != res_flow) {
+            return nullopt;
+        } else {
+            for (int from = 1; from <= n; ++from) {
+                for (auto&& [to, cap, flow, rev, mark] : net.edges[from]) {
+                    if (mark != -1 and mark != INF) {
+                        fl[mark] += flow;
+                    }
+                }
+            }
+            return {{res_flow, fl}};
+        }
+    }
+};
+
+void solve() {
+    read(int, n, m, s, t);
+    dinic net(n + 1);
+    int S = 0, T = n + 1;
+    vector<ll> init(n + 1);
+    for (int i = 0 ;i  < m; ++i) {
+        read(ll, u, v, lower, upper);
+        init[v] += lower;
+        init[u] -= lower;
+        net.add_edge(u, v, upper - lower);
+    }
+    ll sum = 0;
+    for (int i  =1; i <= n; ++i) {
+        if (init[i] > 0) {
+            net.add_edge(S, i, init[i]);
+            sum += init[i];
+        } else if (init[i] < 0) {
+            net.add_edge(i, T, -init[i]);
+        }
+    }
+    net.add_edge(t, s, INFLL, 1, 1);  // WARN: s->t is wrong
+    if (sum != net.run(S, T)) {
+        cout << "please go home to sleep\n";
+    } else {
+        int m = net.edges[t].size();
+        int curr;
+        for (int i = 0; i < m; ++i) {
+            if (net.edges[t][i].mark) {
+                net.edges[t][i].cap = 0;
+                net.edges[net.edges[t][i].to][net.edges[t][i].rev].cap = 0;
+                curr = net.edges[t][i].flow;  // WARN: real flow
+                break;
+            }
+        }
+        cout << curr - net.run(t, s) << '\n';
+    }
 }
 
 int main() {

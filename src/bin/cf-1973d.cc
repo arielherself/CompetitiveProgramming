@@ -473,52 +473,48 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int r = n - 1;  // next r
-    ll sum_l = 0, sum_r = 0;
-    vector<tlii> info;
-    int zero_cnt_l = 0, zero_cnt_r = 0;
-    for (int i = 0; i < n; ++i) {
-        if (i >= r) break;
-        if (a[i] == 0) {
-            if (zero_cnt_l == 0) {
-                while (a[r] == 0) {
-                    zero_cnt_r += 1;
-                    --r;
-                }
-            } else {
-                zero_cnt_l += 1;
-            }
-        } else {
-            if (zero_cnt_l > 0) {
-                info.emplace_back(0, zero_cnt_l, zero_cnt_r);
-                zero_cnt_l = 0;
-                zero_cnt_r = 0;
-            }
-            while (sum_r < sum_l) {
-                sum_r += a[r];
-                --r;
-            }
-            if (sum_l == sum_r) {
-                info.emplace_back(sum_l, 0, 0);
-            }
+    read(int, n, k);
+    int mx = -1;
+    for (int i = 1; i <= n; ++i) {
+        cout << "? 1 " << ll(1) * i * n << endl;
+        read(int, r);
+        if (r == n) {
+            mx = i;
+            break;
         }
     }
-    if (zero_cnt_l > 0) {
-        info.emplace_back(0, zero_cnt_l, zero_cnt_r);
-        zero_cnt_l = 0;
-        zero_cnt_r = 0;
-    }
-    int m = info.size();
-    MLL<PRIME> res = 1;
-    for (int i = 0; i < m; ++i) {
-        auto [v, l, r] = info[i];
-        if (v == 0) {
-            if (i != 0 and i != m - 1) {
-                res = (res * pw2[l] * pw2[r]) + (res * pw3[])
+    if (mx == -1) exit(825);
+    for (int i = n / k; i >= 1; --i) {
+        ll m = ll(1) * mx * i;
+        int prev = 1;
+        int f = 1;
+        for (int j = 1; j <= k; ++j) {
+            if (prev == n + 1) {
+                f = 0;
+                break;
             }
+            cout << "? " << prev << ' ' << m << endl;
+            read(int, r);
+            if (r == n + 1) {
+                f = 0;
+                break;
+            }
+            prev = r + 1;
         }
+        if (f and prev == n + 1) {
+            // ok
+            cout << "! " << m << endl;
+            read(int, stat);
+            if (stat == -1) {
+                exit(0);
+            }
+            return;
+        }
+    }
+    cout << "! -1" << endl;
+    read(int, stat);
+    if (stat == -1) {
+        exit(0);
     }
 }
 

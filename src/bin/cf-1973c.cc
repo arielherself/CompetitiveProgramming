@@ -475,51 +475,29 @@ void prep() {
 void solve() {
     read(int, n);
     readvec(int, a, n);
-    int r = n - 1;  // next r
-    ll sum_l = 0, sum_r = 0;
-    vector<tlii> info;
-    int zero_cnt_l = 0, zero_cnt_r = 0;
+    vector<int> pos;
+    for (int i = 1; i < n; i += 2) {
+        if (a[i] == 1) {
+            i += 1;
+        }
+        if (i == n) break;
+        pos.emplace_back(i);
+    }
+    int target = n;
+    vector<int> res(n);
+    sort_by_key(pos.begin(), pos.end(), [&] (int i) { return a[i]; });
+    for (auto&& i : pos) {
+        res[i] = target--;
+    }
+    vector<int> rem;
     for (int i = 0; i < n; ++i) {
-        if (i >= r) break;
-        if (a[i] == 0) {
-            if (zero_cnt_l == 0) {
-                while (a[r] == 0) {
-                    zero_cnt_r += 1;
-                    --r;
-                }
-            } else {
-                zero_cnt_l += 1;
-            }
-        } else {
-            if (zero_cnt_l > 0) {
-                info.emplace_back(0, zero_cnt_l, zero_cnt_r);
-                zero_cnt_l = 0;
-                zero_cnt_r = 0;
-            }
-            while (sum_r < sum_l) {
-                sum_r += a[r];
-                --r;
-            }
-            if (sum_l == sum_r) {
-                info.emplace_back(sum_l, 0, 0);
-            }
-        }
+        if (not res[i]) rem.emplace_back(i);
     }
-    if (zero_cnt_l > 0) {
-        info.emplace_back(0, zero_cnt_l, zero_cnt_r);
-        zero_cnt_l = 0;
-        zero_cnt_r = 0;
+    sort_by_key(rem.begin(), rem.end(), [&] (int i) { return a[i]; });
+    for (auto&& i : rem) {
+        res[i] = target--;
     }
-    int m = info.size();
-    MLL<PRIME> res = 1;
-    for (int i = 0; i < m; ++i) {
-        auto [v, l, r] = info[i];
-        if (v == 0) {
-            if (i != 0 and i != m - 1) {
-                res = (res * pw2[l] * pw2[r]) + (res * pw3[])
-            }
-        }
-    }
+    putvec(res);
 }
 
 int main() {
