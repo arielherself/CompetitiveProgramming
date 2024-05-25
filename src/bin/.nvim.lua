@@ -26,11 +26,13 @@ vim.keymap.set('n', '<leader>l', '<Cmd>40vs std.in<CR>')
 
 local function add_timestamp()
     local bufnr = vim.api.nvim_get_current_buf()
+    if vim.fs.basename(vim.api.nvim_buf_get_name(bufnr)) == "template.cc" then
+        return
+    end
     local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 
     local current_time = os.time()
     local current_time_str = os.date("%Y-%m-%d %H:%M:%S", current_time)
-    local comment_string
 
     local create_time_str = ""
     local elapsed_minutes = 0
@@ -49,7 +51,7 @@ local function add_timestamp()
         create_time_str = current_time_str
     end
 
-    comment_string = {
+    local comment_string = {
         "/**",
         " * Author:   subcrip",
         " * Created:  " .. create_time_str,
@@ -69,16 +71,10 @@ local function add_timestamp()
         end
     end
 
+    vim.cmd("undojoin")
     vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 end
 
-vim.api.nvim_create_autocmd(
-    "BufWritePost",
-    {
-        pattern = "*.cc",
-        callback = add_timestamp,
-    }
-)
 vim.api.nvim_create_autocmd(
     "BufWritePre",
     {
