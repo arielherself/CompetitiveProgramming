@@ -1,8 +1,8 @@
 /**
  * Author:   subcrip
- * Created:  2024-05-27 20:38:48
- * Modified: 2024-05-27 20:46:39
- * Elapsed:  7 minutes
+ * Created:  2024-05-27 00:45:58
+ * Modified: 2024-05-27 01:28:44
+ * Elapsed:  42 minutes
  */
 
 #pragma GCC optimize("Ofast")
@@ -484,49 +484,24 @@ void prep() {
 
 void solve() {
     read(int, n);
-    readvec(int, a, n);
-    sort(a.begin(), a.end());
-    int f = 1;
+    adj(ch, n);
     for (int i = 0; i < n - 1; ++i) {
-        if (a[n - 1] % a[i] != 0) {
-            f = 0;
-            break;
-        }
+        read(int, u, v);
+        edge(ch, u, v);
     }
-    if (not f) {
-        cout << n << '\n';
-    } else {
-        int sq = sqrt(a[n - 1]);
-        set<int> st;
-        for (int i = 1; i <= sq; ++i) {
-            if (a[n - 1] % i == 0) {
-                st.emplace(i);
-                st.emplace(a[n - 1] / i);
-            }
+    vector<int> res(n + 1);
+    auto dfs = [&] (auto dfs, int v, int pa, int up, int curr_ps) -> void {
+        // debug(make_tuple(v, pa, up, curr_ps));
+        int ch_cnt = ch[v].size() - !!pa;
+        res[v] = curr_ps - ch_cnt * up;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;;
+            dfs(dfs, u, v, curr_ps, up);
         }
-        int N = 0;
-        unordered_map<int, int, safe_hash> mp, rev;
-        for (auto&& x : st) mp[x] = ++N, rev[N] = x;
-        vector<vector<int>> dp(n + 1, vector<int>(N + 1));
-        for (int i = 1; i <= n; ++i) {
-            for (int j = 1; j <= N; ++j) {
-                dp[i][j] = dp[i - 1][j];
-            }
-            for (int j = 1; j <= N; ++j) {
-                if (dp[i - 1][j] != 0)
-                dp[i][mp[lcm(a[i - 1], rev[j])]] = max(dp[i][mp[lcm(a[i - 1], rev[j])]], dp[i - 1][j] + 1);
-            }
-            dp[i][mp[a[i - 1]]] = max(dp[i][mp[a[i - 1]]], 1);
-        }
-        unordered_set<int, safe_hash> nums(a.begin(), a.end());
-        int res = 0;
-        for (int j = 1; j <= N; ++j) {
-            if (not nums.count(rev[j])) {
-                res = max(res, dp[n][j]);
-            }
-        }
-        cout << res << '\n';
-    }
+    };
+    dfs(dfs, 1, 0, -1, 1);
+    res[1] = ch[1].size();
+    putvec1(res);
 }
 
 int main() {

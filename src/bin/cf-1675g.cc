@@ -1,8 +1,8 @@
 /**
  * Author:   subcrip
- * Created:  2024-05-27 20:38:48
- * Modified: 2024-05-27 20:46:39
- * Elapsed:  7 minutes
+ * Created:  2024-05-25 17:23:29
+ * Modified: 2024-05-25 20:39:58
+ * Elapsed:  196 minutes
  */
 
 #pragma GCC optimize("Ofast")
@@ -102,6 +102,7 @@ mt19937 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now
 
 /* arithmetic operations */
 #define mod(x, y) ((((x) % (y)) + (y)) % (y))
+#define between(x, a, b) ((x) >= min((a), (b)) and (x) <= max((a), (b)))
 
 /* fast pairs */
 #define upair ull
@@ -471,7 +472,7 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -483,50 +484,30 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
+    read(int, n, m);
     readvec(int, a, n);
-    sort(a.begin(), a.end());
-    int f = 1;
-    for (int i = 0; i < n - 1; ++i) {
-        if (a[n - 1] % a[i] != 0) {
-            f = 0;
-            break;
+    reverse(a.begin(), a.end());
+    vector<vector<int>> dp(2 * m + 1, vector<int>(m + 1, INF));
+    for (int i = 0; i <= m; ++i) {
+        dp[m][i] = 0;
+    }
+    for (int i = 1; i <= n; ++i) {
+        vector<vector<int>> diff(2 * m + 1, vector<int>(m + 1, INF));
+        for (int j = -m; j <= m; ++j) {
+            for (int k = 0; k <= m; ++k) {
+                if (not between(a[i - 1] + j - k, -m, m)) continue;
+                diff[a[i - 1] + j - k + m][k] = min(diff[a[i - 1] + j - k + m][k], dp[j + m][k] + abs(j));
+            }
+        }
+        for (int j = 0; j <= 2 * m; ++j) {
+            int curr = INF;
+            for (int k = 0; k <= m; ++k) {
+                curr = min(curr, diff[j][k]);
+                dp[j][k] = curr;
+            }
         }
     }
-    if (not f) {
-        cout << n << '\n';
-    } else {
-        int sq = sqrt(a[n - 1]);
-        set<int> st;
-        for (int i = 1; i <= sq; ++i) {
-            if (a[n - 1] % i == 0) {
-                st.emplace(i);
-                st.emplace(a[n - 1] / i);
-            }
-        }
-        int N = 0;
-        unordered_map<int, int, safe_hash> mp, rev;
-        for (auto&& x : st) mp[x] = ++N, rev[N] = x;
-        vector<vector<int>> dp(n + 1, vector<int>(N + 1));
-        for (int i = 1; i <= n; ++i) {
-            for (int j = 1; j <= N; ++j) {
-                dp[i][j] = dp[i - 1][j];
-            }
-            for (int j = 1; j <= N; ++j) {
-                if (dp[i - 1][j] != 0)
-                dp[i][mp[lcm(a[i - 1], rev[j])]] = max(dp[i][mp[lcm(a[i - 1], rev[j])]], dp[i - 1][j] + 1);
-            }
-            dp[i][mp[a[i - 1]]] = max(dp[i][mp[a[i - 1]]], 1);
-        }
-        unordered_set<int, safe_hash> nums(a.begin(), a.end());
-        int res = 0;
-        for (int j = 1; j <= N; ++j) {
-            if (not nums.count(rev[j])) {
-                res = max(res, dp[n][j]);
-            }
-        }
-        cout << res << '\n';
-    }
+    cout << *min_element(dp[m].begin(), dp[m].end()) << endl;
 }
 
 int main() {

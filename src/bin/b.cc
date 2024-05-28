@@ -1,3 +1,10 @@
+/**
+ * Author:   subcrip
+ * Created:  2024-05-27 20:25:18
+ * Modified: 2024-05-27 20:30:47
+ * Elapsed:  5 minutes
+ */
+
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -464,7 +471,7 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -476,21 +483,28 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    ll sum = 0;
-    vector<string> a;
-    for (int i = 0; i < n; ++i) {
-        read(string, s);
-        read(int, c);
-        a.emplace_back(s);
-        sum += c;
+    read(int, x);
+    vector<int> res;
+    int prev = 0;
+    for (int i = 0; i <= 31; ++i) {
+        int curr = x >> i & 1;
+        int carry = 0;
+        if (curr + prev == 1 and res.size() and res.back() == 1) {
+            carry = 1;
+            res.back() = -1;
+            res.emplace_back(0);
+        } else {
+            carry = (curr + prev) / 2;
+            res.emplace_back((curr + prev) % 2);
+        }
+        prev = carry;
     }
-    sort(a.begin(), a.end());
-    cout << a[sum % n] << '\n';
+    cout << res.size() << '\n';
+    putvec(res);
 }
 
 int main() {
-#if __cplusplus < 201703L || defined(_MSC_VER) && !defined(__clang__)
+#if __cplusplus < 201703L or defined(_MSC_VER) and not defined(__clang__)
     assert(false && "incompatible compiler variant detected.");
 #endif
     untie, cout.tie(NULL);

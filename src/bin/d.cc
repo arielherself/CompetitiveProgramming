@@ -1,3 +1,10 @@
+/**
+ * Author:   subcrip
+ * Created:  2024-05-27 21:39:24
+ * Modified: 2024-05-27 22:45:19
+ * Elapsed:  65 minutes
+ */
+
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -384,12 +391,12 @@ template <ll mdl> struct MLL {
 struct MLLd {
     ll val, mdl;
     MLLd(ll mdl, ll v = 0) : mdl(mdl), val(mod(v, mdl)) {}
-    MLLd(const MLLd& other) : val(other.val) {}
-    friend MLLd operator+(const MLLd& lhs, const MLLd& rhs) { return mod(lhs.val + rhs.val, lhs.mdl); }
-    friend MLLd operator-(const MLLd& lhs, const MLLd& rhs) { return mod(lhs.val - rhs.val, lhs.mdl); }
-    friend MLLd operator*(const MLLd& lhs, const MLLd& rhs) { return mod(lhs.val * rhs.val, lhs.mdl); }
-    friend MLLd operator/(const MLLd& lhs, const MLLd& rhs) { return mod(lhs.val * mod(inverse(rhs.val, lhs.mdl), lhs.mdl), lhs.mdl); }
-    friend MLLd operator%(const MLLd& lhs, const MLLd& rhs) { return mod(lhs.val - (lhs / rhs).val, lhs.mdl); }
+    MLLd(const MLLd& other) : mdl(other.mdl), val(other.val) {}
+    friend MLLd operator+(const MLLd& lhs, const MLLd& rhs) { return MLLd(lhs.mdl, mod(lhs.val + rhs.val, lhs.mdl)); }
+    friend MLLd operator-(const MLLd& lhs, const MLLd& rhs) { return MLLd(lhs.mdl, mod(lhs.val - rhs.val, lhs.mdl)); }
+    friend MLLd operator*(const MLLd& lhs, const MLLd& rhs) { return MLLd(lhs.mdl, mod(lhs.val * rhs.val, lhs.mdl)); }
+    friend MLLd operator/(const MLLd& lhs, const MLLd& rhs) { return MLLd(lhs.mdl, mod(lhs.val * mod(inverse(rhs.val, lhs.mdl), lhs.mdl), lhs.mdl)); }
+    friend MLLd operator%(const MLLd& lhs, const MLLd& rhs) { return MLLd(lhs.mdl, mod(lhs.val - (lhs / rhs).val, lhs.mdl)); }
     friend bool operator==(const MLLd& lhs, const MLLd& rhs) { return lhs.val == rhs.val; }
     friend bool operator!=(const MLLd& lhs, const MLLd& rhs) { return lhs.val != rhs.val; }
     void operator+=(const MLLd& rhs) { val = (*this + rhs).val; }
@@ -464,7 +471,7 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -475,38 +482,120 @@ void dump_ignore() {}
 void prep() {
 }
 
+static vector<MLL<MDL1>> power1;
+static vector<MLL<MDL2>> power2;
+static const ll b = rd();
+template <typename _Tp>
+struct hash_vec {
+    using hash_type = pll;
+    MLL<MDL1> hash1;
+    MLL<MDL2> hash2;
+    vector<_Tp> seq;
+    size_t size() {
+        return seq.size();
+    }
+    void push_back(const _Tp& x) {
+        hash1 = hash1 * b + x;
+        hash2 = hash2 * b + x;
+        seq.push_back(x);
+    }
+    void push_front(const _Tp& x) {
+        size_t length = size();
+        hash1 += x * power1[length];
+        hash2 += x * power2[length];
+        seq.push_front(x);
+    }
+    void pop_back() {
+        _Tp e = seq.back(); seq.pop_back();
+        hash1 = (hash1 - e) / b;
+        hash2 = (hash2 - e) / b;
+    }
+    void pop_front() {
+        _Tp e = seq.front(); seq.pop_front();
+        int length = seq.size();
+        hash1 -= e * power1[length];
+        hash2 -= e * power2[length];
+    }
+    void set(size_t pos, const _Tp& value) {
+        int length = seq.size();
+        int old_value = seq[pos];
+        hash1 += (value - old_value) * power1[length - 1 - pos];
+        hash2 += (value - old_value) * power2[length - 1 - pos];
+        seq[pos] = value;
+    }
+    const _Tp& operator[](size_t pos) {
+        return seq[pos];
+    }
+    hash_type hash() {
+        return {hash1.val, hash2.val};
+    }
+    void clear() {
+        hash1 = 0;
+        hash2 = 0;
+        seq.clear();
+    }
+    hash_vec(size_t maxn) {
+        clear();
+        MLL<MDL1> c1 = power1.size() ? power1.back() * b : 1;
+        MLL<MDL2> c2 = power2.size() ? power2.back() * b : 1;
+        for (int i = power1.size(); i < maxn; ++i) {
+            power1.push_back(c1);
+            power2.push_back(c2);
+            c1 *= b;
+            c2 *= b;
+        }
+    }
+    hash_vec(size_t maxn, const _Tp& init_value) : hash_vec(maxn) {
+        for (size_t i = 0; i != maxn; ++i) {
+            push_back(init_value);
+        }
+    }
+};
+
 void solve() {
-    read(ll, a, b, c, d);
-    ll area = 0, rem1 = 0, rem2 = 0, rem3 = 0, rem4 = 0, rem5 = 0, rem6 = 0;
-    if (mod(a, 4) == 0) {
-        area = 6, rem1 = 3, rem2 = 3, rem3 = 2, rem4 = 1, rem5 = 1, rem6 = 2;
-    } else if (mod(a, 4) == 1) {
-        area = 4, rem1 = 1, rem2 = 3, rem3 = 1, rem4 = 0, rem5 = 2, rem6 = 1;
-    } else if (mod(a, 4) == 2) {
-        area = 2, rem1 = 1, rem2 = 1, rem3 = 0, rem4 = 1, rem5 = 1, rem6 = 0;
-    } else {
-        area = 4, rem1 = 3, rem2 = 1, rem3 = 1, rem4 = 2, rem5 = 0, rem6 = 1;
-    }
-    ll res = 0;
-    res += (c - a) / 2 * (d - b) / 2 * area;
-    if ((d - b) & 1) {
-        if (b & 1) {
-            res += (c - a) / 2 * rem2;
-        } else {
-            res += (c - a) / 2 * rem1;
+    read(int, n, m);
+    vector<vector<int>> a(n, vector<int>(m));
+    for (int i = 0; i < n; ++i) {
+        for  (int j = 0; j < m; ++j) {
+            read(char, c);
+            a[i][j] = c == '1';
         }
     }
-    if ((c - a) & 1) {
-        if ((a & 1) == 0) {
-            if ((b & 1) == 0) {
-                
-            }
+    unordered_map<pll, pair<int, pair<int, int>>, pair_hash> dp;
+    for (int j = 0; j < m; ++j) {
+        hash_vec<int> v(n);
+        for (int i = 0; i < n; ++i) {
+            v.push_back(a[i][j]);
+        }
+        for (int i  =0; i < n; ++i) {
+            v.set(i, a[i][j] ^ 1);
+            dp[v.hash()] = {dp[v.hash()].first + 1, {j, i}};
+            v.set(i, a[i][j]);
         }
     }
+    int k = 0;
+    pair<int, int> v;
+    for (auto&& [k1, v1] : dp) {
+        if (v1.first > k) {
+            k = v1.first;
+            v = v1.second;
+        }
+    }
+    vector<int> res(n);
+    auto [q, p] = v;
+    for (int i = 0; i < n; ++i) {
+        res[i] = a[i][q];
+    }
+    res[p] = a[p][q] ^ 1;
+    cout << k << '\n';
+    for (int i = 0; i < n; ++i) {
+        cout << res[i];
+    }
+    cout << '\n';;
 }
 
 int main() {
-#if __cplusplus < 201703L || defined(_MSC_VER) && !defined(__clang__)
+#if __cplusplus < 201703L or defined(_MSC_VER) and not defined(__clang__)
     assert(false && "incompatible compiler variant detected.");
 #endif
     untie, cout.tie(NULL);

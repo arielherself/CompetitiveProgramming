@@ -1,10 +1,3 @@
-/**
- * Author:   subcrip
- * Created:  2024-05-27 20:38:48
- * Modified: 2024-05-27 20:46:39
- * Elapsed:  7 minutes
- */
-
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -482,55 +475,64 @@ void dump_ignore() {}
 void prep() {
 }
 
+int query(int i, int j) {
+    cout << "? " << i << ' ' << j << endl;
+    read(int, res);
+    if (res == -1) {
+        exit(0);
+    }
+    return res;
+}
+
+void claim(int x) {
+    cout << "! " << x << endl;
+}
+
 void solve() {
     read(int, n);
-    readvec(int, a, n);
-    sort(a.begin(), a.end());
-    int f = 1;
-    for (int i = 0; i < n - 1; ++i) {
-        if (a[n - 1] % a[i] != 0) {
-            f = 0;
-            break;
+    auto get = [] (const vector<int>& s) -> int {
+        int len = s.size();
+        if (len == 1) return s[0];
+        if (len >= 4) {
+            int init = query(s[1], s[3]);
+            if (init == 0) {
+                if (query(s[0], s[2]) == 1) return s[0];
+                else return s[2];
+            } else if (init == 1) {
+                if (query(s[1], s[2]) == 1) return s[1];
+                else return s[2];
+            } else {
+                if (query(s[0], s[3]) == 1) return s[0];
+                else return s[3];
+            }
+        } else {
+            int prev = s[0];
+            for (int i = 1; i < len; ++i) {
+                if (query(prev, s[i]) == 2) prev = s[i];
+            }
+            return prev;
         }
+    };
+    vector<int> a;
+    for (int i = 1; i <= (1 << n); ++i) a.emplace_back(i);
+    while (a.size() > 1) {
+        int m = a.size();
+        vector<int> nw;
+        vector<int> curr;
+        for (int i = 0; i < m; i += 4) {
+            curr.clear();
+            for (int j = 0; j < 4 and i + j < m; ++j) {
+                curr.emplace_back(a[i + j]);
+            }
+            nw.emplace_back(get(curr));
+        }
+        a = nw;
     }
-    if (not f) {
-        cout << n << '\n';
-    } else {
-        int sq = sqrt(a[n - 1]);
-        set<int> st;
-        for (int i = 1; i <= sq; ++i) {
-            if (a[n - 1] % i == 0) {
-                st.emplace(i);
-                st.emplace(a[n - 1] / i);
-            }
-        }
-        int N = 0;
-        unordered_map<int, int, safe_hash> mp, rev;
-        for (auto&& x : st) mp[x] = ++N, rev[N] = x;
-        vector<vector<int>> dp(n + 1, vector<int>(N + 1));
-        for (int i = 1; i <= n; ++i) {
-            for (int j = 1; j <= N; ++j) {
-                dp[i][j] = dp[i - 1][j];
-            }
-            for (int j = 1; j <= N; ++j) {
-                if (dp[i - 1][j] != 0)
-                dp[i][mp[lcm(a[i - 1], rev[j])]] = max(dp[i][mp[lcm(a[i - 1], rev[j])]], dp[i - 1][j] + 1);
-            }
-            dp[i][mp[a[i - 1]]] = max(dp[i][mp[a[i - 1]]], 1);
-        }
-        unordered_set<int, safe_hash> nums(a.begin(), a.end());
-        int res = 0;
-        for (int j = 1; j <= N; ++j) {
-            if (not nums.count(rev[j])) {
-                res = max(res, dp[n][j]);
-            }
-        }
-        cout << res << '\n';
-    }
+    claim(a[0]);
 }
 
 int main() {
-#if __cplusplus < 201703L or defined(_MSC_VER) and not defined(__clang__)
+#if __cplusplus < 201703L || defined(_MSC_VER) && !defined(__clang__)
     assert(false && "incompatible compiler variant detected.");
 #endif
     untie, cout.tie(NULL);

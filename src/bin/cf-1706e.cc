@@ -1,10 +1,3 @@
-/**
- * Author:   subcrip
- * Created:  2024-05-27 20:38:48
- * Modified: 2024-05-27 20:46:39
- * Elapsed:  7 minutes
- */
-
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -482,55 +475,292 @@ void dump_ignore() {}
 void prep() {
 }
 
-void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    sort(a.begin(), a.end());
-    int f = 1;
-    for (int i = 0; i < n - 1; ++i) {
-        if (a[n - 1] % a[i] != 0) {
-            f = 0;
-            break;
+class quick_union {
+private:
+    vector<size_t> c, sz;
+public:
+    quick_union(size_t n) : c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
+    }
+    
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] += sz[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_size(size_t i) {
+        return sz[query(i)];
+    }
+};
+
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+    using size_type = uint64_t;
+    using info_type = Addable_Info_t;
+    using tag_type = Tag_t;
+    size_type _max;
+    vector<info_type> d;
+    vector<tag_type> b;
+    void pull(size_type p) {
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+    void push(size_type p, size_type left_len, size_type right_len) {
+        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
+        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+        b[p] = tag_type();
+    }
+    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+        if (s == t) {
+            d[p] = c;
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        if (s != t) push(p, m - s + 1, t - m);
+        if (x <= m) set(s, m, p * 2, x, c);
+        else set(m + 1, t, p * 2 + 1, x, c);
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+    
+    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+        if (l <= s && t <= r) {
+            d[p].apply(c, t - s + 1);
+            b[p].apply(c);
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        push(p, m - s + 1, t - m);
+        if (l <= m) range_apply(s, m, p * 2, l, r, c);
+        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
+        pull(p);
+    }
+    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+        if (l <= s && t <= r) {
+            return d[p];
+        }
+        size_type m = s + (t - s >> 1);
+        info_type res = {};
+        push(p, m - s + 1, t - m);
+        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+        return res;
+    }
+    void build(const Sequence& a, size_type s, size_type t, size_type p) {
+        if (s == t) {
+            d[p] = a[s];
+            return;
+        }
+        int m = s + (t - s >> 1);
+        build(a, s, m, p * 2);
+        build(a, m + 1, t, p * 2 + 1);
+        pull(p);
+    }
+public:
+    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+    segtree(const Sequence& a) : segtree(a.size()) {
+        build(a, {}, _max, 1);
+    }
+    void set(size_type i, const info_type& c) {
+        set({}, _max, 1, i, c);
+    }
+    
+    void range_apply(size_type l, size_type r, const tag_type& c) {
+        range_apply({}, _max, 1, l, r, c);
+    }
+    void apply(size_type i, const tag_type& c) {
+        range_apply(i, i, c);
+    }
+    info_type range_query(size_type l, size_type r) {
+        return range_query({}, _max, 1, l, r);
+    }
+    info_type query(size_type i) {
+        return range_query(i, i);
+    }
+    Sequence serialize() {
+        Sequence res = {};
+        for (size_type i = 0; i <= _max; ++i) {
+            res.push_back(query(i));
+        }
+        return res;
+    }
+    const vector<info_type>& get_d() {
+        return d;
+    }
+};
+
+struct MaxTag {
+    ll val = LLONG_MIN;
+    void apply(const MaxTag& rhs) {
+        val = max(val, rhs.val);
+    }
+};
+struct MaxInfo {
+    ll val = LLONG_MIN;
+    void apply(const MaxTag& rhs, size_t len) {
+        val = max(val, rhs.val);
+    }
+};
+MaxInfo operator+(const MaxInfo &a, const MaxInfo &b) {
+    return {max(a.val, b.val)};
+}
+
+template <typename Info, typename Tag>
+struct HLD {
+    struct node_info {
+        int father, depth, hson, size, head, dfn = -1;
+    };
+
+    int n;
+    vector<int> seq;
+    vector<node_info> info;
+    segtree<Info, Tag> tr;
+
+    // returns: (dfs sequence, node info)
+    // node numbering starts from `1`
+    // if `dfn(v) == -1`, then node `v` is never accessed.
+    HLD(const vector<vector<int>>& ch, const vector<Info>& init, int root = 0) : n(ch.size() - 1), seq(), info(n + 1), tr(n + 1) {
+        vector<node_info> res(n + 1);
+        auto dfs1 = [&] (auto dfs1, int v, int pa) -> void {
+            res[v].father = pa;
+            res[v].depth = res[pa].depth + 1;
+            res[v].size = 1;
+            int mx = 0;
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                dfs1(dfs1, u, v);
+                res[v].size += res[u].size;
+                if (res[u].size > mx) {
+                    mx = res[u].size;
+                    res[v].hson = u;
+                }
+            }
+        };
+        dfs1(dfs1, root, root);
+        int tm = 0;
+        auto dfs2 = [&] (auto dfs2, int v, int head) -> void {
+            res[v].dfn = tm++;
+            seq.emplace_back(v);
+            res[v].head = head;
+            if (not res[v].hson) return;
+            dfs2(dfs2, res[v].hson, head);
+            for (auto&& u : ch[v]) {
+                if (u == res[v].father or u == res[v].hson) continue;
+                dfs2(dfs2, u, u);
+            }
+        };
+        dfs2(dfs2, root, root);
+        info = res;
+
+        for (int i = 1; i <= n; ++i) {
+            tr.set(info[i].dfn, init[i]);
         }
     }
-    if (not f) {
-        cout << n << '\n';
-    } else {
-        int sq = sqrt(a[n - 1]);
-        set<int> st;
-        for (int i = 1; i <= sq; ++i) {
-            if (a[n - 1] % i == 0) {
-                st.emplace(i);
-                st.emplace(a[n - 1] / i);
+
+    void set(int v, const Info& t) {
+        tr.set(info[v].dfn, t);
+    }
+
+    void apply(int v, const Tag& t) {
+        tr.apply(info[v].dfn, t);
+    }
+
+    Info query(int v) {
+        return tr.query(info[v].dfn);
+    }
+
+    void path_apply(int u, int v, const Tag& t) {
+        while (info[u].head != info[v].head) {
+            if (info[info[u].head].depth < info[info[v].head].depth) {
+                swap(u, v);
             }
+            tr.range_apply(info[info[u].head].dfn, info[u].dfn, t);
         }
-        int N = 0;
-        unordered_map<int, int, safe_hash> mp, rev;
-        for (auto&& x : st) mp[x] = ++N, rev[N] = x;
-        vector<vector<int>> dp(n + 1, vector<int>(N + 1));
-        for (int i = 1; i <= n; ++i) {
-            for (int j = 1; j <= N; ++j) {
-                dp[i][j] = dp[i - 1][j];
+        if (info[u].depth < info[v].depth) swap(u, v);
+        tr.range_apply(info[v].dfn, info[u].dfn);
+    }
+
+    Info path_query(int u, int v) {
+        Info res;
+        while (info[u].head != info[v].head) {
+            if (info[info[u].head].depth < info[info[v].head].depth) {
+                swap(u, v);
             }
-            for (int j = 1; j <= N; ++j) {
-                if (dp[i - 1][j] != 0)
-                dp[i][mp[lcm(a[i - 1], rev[j])]] = max(dp[i][mp[lcm(a[i - 1], rev[j])]], dp[i - 1][j] + 1);
-            }
-            dp[i][mp[a[i - 1]]] = max(dp[i][mp[a[i - 1]]], 1);
+            res = res + tr.range_query(info[info[u].head].dfn, info[u].dfn);
         }
-        unordered_set<int, safe_hash> nums(a.begin(), a.end());
-        int res = 0;
-        for (int j = 1; j <= N; ++j) {
-            if (not nums.count(rev[j])) {
-                res = max(res, dp[n][j]);
-            }
+        if (info[u].depth < info[v].depth) swap(u, v);
+        res = res + tr.range_query(info[v].dfn, info[u].dfn);
+        return res;
+    }
+
+    void subtree_apply(int v, const Tag& t) {
+        tr.range_apply(info[v].dfn, info[v].dfn + info[v].size - 1, t);
+    }
+
+    Info subtree_query(int v) {
+        return tr.range_query(info[v].dfn, info[v].dfn + info[v].size - 1);
+    }
+};
+
+
+
+void solve() {
+    read(int, n, m, q);
+    vector<tiii> edges, e;
+    for (int i = 1; i <= m ;++i) {
+        read(int, u, v);
+        edges.emplace_back(i, u, v);
+    }
+    quick_union qu(n + 1);
+    adj(ch, n);
+    for (auto&& [w, u, v] : edges) {
+        if (qu.connected(u, v)) continue;
+        edge(ch, u, v);
+        e.emplace_back(w, u, v);  // used edges
+        qu.merge(u, v);
+    }
+    HLD<MaxInfo, MaxTag> tr(ch, {}, 1);
+    segtree<MaxInfo, MaxTag> link(n);  // link[i] = (i, i + 1)
+    for (auto&& [w, u, v] : e) {
+        if (tr.info[u].depth < tr.info[v].depth) {
+            tr.set(v, {w});
+        } else {
+            tr.set(u, {w});
         }
-        cout << res << '\n';
+    }
+    for (int i = 1; i < n; ++i) {
+        int u = i, v = i + 1;
+        MaxInfo res;
+        while (info[u].head != info[v].head) {
+            if (info[info[u].head].depth < info[info[v].head].depth) {
+                swap(u, v);
+            }
+            res = res + tr.range_query(info[info[u].head].dfn, info[u].dfn);
+            u = info[info[u].head].father;
+        }
+        if (info[u].depth < info[v].depth) swap(u, v);
+        if (info[v].dfn + 1 <= info[u].dfn) res = res + tr.range_query(info[v].dfn + 1, info[u].dfn);
+        link.set(i, {res.val});
+    }
+    while (q--) {
+        read(int, l, r);
+        if (l == r) {
+            cout << 0 << " \n"[q == 0];
+        } else {
+            cout << link.range_query(l, r - 1).val << " \n"[q == 0];
+        }
     }
 }
 
 int main() {
-#if __cplusplus < 201703L or defined(_MSC_VER) and not defined(__clang__)
+#if __cplusplus < 201703L || defined(_MSC_VER) && !defined(__clang__)
     assert(false && "incompatible compiler variant detected.");
 #endif
     untie, cout.tie(NULL);

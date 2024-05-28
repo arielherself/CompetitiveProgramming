@@ -1,10 +1,3 @@
-/**
- * Author:   subcrip
- * Created:  2024-05-27 20:38:48
- * Modified: 2024-05-27 20:46:39
- * Elapsed:  7 minutes
- */
-
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -485,52 +478,40 @@ void prep() {
 void solve() {
     read(int, n);
     readvec(int, a, n);
-    sort(a.begin(), a.end());
-    int f = 1;
-    for (int i = 0; i < n - 1; ++i) {
-        if (a[n - 1] % a[i] != 0) {
-            f = 0;
-            break;
+    vector<int> cnt(n + 1);
+    vector<int> dp(n + 1, -INF);
+    dp[0] = 0;
+    int mx = 0;
+    for (int i = 1; i <= n; ++i) {
+        cnt.assign(n + 1, 0);
+        mx = 0;
+        for (int j = i - 1; ~j; --j) {
+            if ((i - j - 1) % 2 == 0 and mx <= (i - j - 1) / 2 and (j == 0 or a[j - 1] == a[i - 1])) {
+                dp[i] = max(dp[i], dp[j] + 1);
+            }
+            if (j != 0) {
+                cnt[a[j - 1]] += 1;
+                mx = max(mx, cnt[a[j - 1]]);
+            }
         }
     }
-    if (not f) {
-        cout << n << '\n';
-    } else {
-        int sq = sqrt(a[n - 1]);
-        set<int> st;
-        for (int i = 1; i <= sq; ++i) {
-            if (a[n - 1] % i == 0) {
-                st.emplace(i);
-                st.emplace(a[n - 1] / i);
-            }
+    int res = 0;
+    for (int i = 1; i <= n; ++i) {
+        cnt.assign(n + 1, 0);
+        mx = 0;
+        for (int j = i + 1; j <= n; ++j) {
+            cnt[a[j - 1]] += 1;
+            mx = max(mx, cnt[a[j - 1]]);
         }
-        int N = 0;
-        unordered_map<int, int, safe_hash> mp, rev;
-        for (auto&& x : st) mp[x] = ++N, rev[N] = x;
-        vector<vector<int>> dp(n + 1, vector<int>(N + 1));
-        for (int i = 1; i <= n; ++i) {
-            for (int j = 1; j <= N; ++j) {
-                dp[i][j] = dp[i - 1][j];
-            }
-            for (int j = 1; j <= N; ++j) {
-                if (dp[i - 1][j] != 0)
-                dp[i][mp[lcm(a[i - 1], rev[j])]] = max(dp[i][mp[lcm(a[i - 1], rev[j])]], dp[i - 1][j] + 1);
-            }
-            dp[i][mp[a[i - 1]]] = max(dp[i][mp[a[i - 1]]], 1);
+        if ((n - i) % 2 == 0 and mx <= (n - i) / 2) {
+            res = max(res, dp[i]);
         }
-        unordered_set<int, safe_hash> nums(a.begin(), a.end());
-        int res = 0;
-        for (int j = 1; j <= N; ++j) {
-            if (not nums.count(rev[j])) {
-                res = max(res, dp[n][j]);
-            }
-        }
-        cout << res << '\n';
     }
+    cout << res << '\n';
 }
 
 int main() {
-#if __cplusplus < 201703L or defined(_MSC_VER) and not defined(__clang__)
+#if __cplusplus < 201703L || defined(_MSC_VER) && !defined(__clang__)
     assert(false && "incompatible compiler variant detected.");
 #endif
     untie, cout.tie(NULL);

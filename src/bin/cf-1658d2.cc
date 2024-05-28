@@ -1,8 +1,8 @@
 /**
  * Author:   subcrip
- * Created:  2024-05-27 20:38:48
- * Modified: 2024-05-27 20:46:39
- * Elapsed:  7 minutes
+ * Created:  2024-05-26 17:41:14
+ * Modified: 2024-05-26 18:26:42
+ * Elapsed:  45 minutes
  */
 
 #pragma GCC optimize("Ofast")
@@ -483,50 +483,31 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
+    read(int, left, right);
+    int n = right - left + 1;
     readvec(int, a, n);
-    sort(a.begin(), a.end());
-    int f = 1;
-    for (int i = 0; i < n - 1; ++i) {
-        if (a[n - 1] % a[i] != 0) {
-            f = 0;
-            break;
+    int res = 0;
+    array<vector<int>, 17> tar;
+    for (int i = 0; i < 17; ++i) {
+        for (int j = left; j <= right; ++j) {
+            tar[i].emplace_back(j >> i);
+        }
+        sort(tar[i].begin(), tar[i].end());
+    }
+    for (int i = 16; ~i; --i) {
+        for (int t = 0; t < 2; ++t) {
+            res ^= 1 << i;
+            vector<int> nw;
+            for (int j = 0; j < n; ++j) {
+                nw.emplace_back((a[j] >> i) ^ (res >> i));
+            }
+            sort(nw.begin(), nw.end());
+            if (nw == tar[i]) {
+                break;
+            }
         }
     }
-    if (not f) {
-        cout << n << '\n';
-    } else {
-        int sq = sqrt(a[n - 1]);
-        set<int> st;
-        for (int i = 1; i <= sq; ++i) {
-            if (a[n - 1] % i == 0) {
-                st.emplace(i);
-                st.emplace(a[n - 1] / i);
-            }
-        }
-        int N = 0;
-        unordered_map<int, int, safe_hash> mp, rev;
-        for (auto&& x : st) mp[x] = ++N, rev[N] = x;
-        vector<vector<int>> dp(n + 1, vector<int>(N + 1));
-        for (int i = 1; i <= n; ++i) {
-            for (int j = 1; j <= N; ++j) {
-                dp[i][j] = dp[i - 1][j];
-            }
-            for (int j = 1; j <= N; ++j) {
-                if (dp[i - 1][j] != 0)
-                dp[i][mp[lcm(a[i - 1], rev[j])]] = max(dp[i][mp[lcm(a[i - 1], rev[j])]], dp[i - 1][j] + 1);
-            }
-            dp[i][mp[a[i - 1]]] = max(dp[i][mp[a[i - 1]]], 1);
-        }
-        unordered_set<int, safe_hash> nums(a.begin(), a.end());
-        int res = 0;
-        for (int j = 1; j <= N; ++j) {
-            if (not nums.count(rev[j])) {
-                res = max(res, dp[n][j]);
-            }
-        }
-        cout << res << '\n';
-    }
+    cout << res << '\n';
 }
 
 int main() {

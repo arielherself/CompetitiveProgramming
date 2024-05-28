@@ -1,10 +1,3 @@
-/**
- * Author:   subcrip
- * Created:  2024-05-27 20:38:48
- * Modified: 2024-05-27 20:46:39
- * Elapsed:  7 minutes
- */
-
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -469,6 +462,22 @@ public:
 template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container) {
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
+template <typename T, typename U, typename V, typename W>
+auto operator+(const pair<T, U>& a, const pair<V, W>& b) {
+    return make_pair(a.first + b.first, a.second + b.second);
+}
+template <typename T, typename U, typename V, typename W>
+auto operator-(const pair<T, U>& a, const pair<V, W>& b) {
+    return make_pair(a.first - b.first, a.second - b.second);
+}
+template <typename T, typename U, typename V, typename W>
+auto operator*(const pair<T, U>& a, const pair<V, W>& b) {
+    return make_pair(a.first * b.first, a.second * b.second);
+}
+template <typename T, typename U, typename V, typename W>
+auto operator/(const pair<T, U>& a, const pair<V, W>& b) {
+    return make_pair(a.first / b.first, a.second / b.second);
+}
 /////////////////////////////////////////////////////////
 
 // #define SINGLE_TEST_CASE
@@ -482,55 +491,231 @@ void dump_ignore() {}
 void prep() {
 }
 
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+    using size_type = uint64_t;
+    using info_type = Addable_Info_t;
+    using tag_type = Tag_t;
+    size_type _max;
+    vector<info_type> d;
+    vector<tag_type> b;
+    void pull(size_type p) {
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+    void push(size_type p, size_type left_len, size_type right_len) {
+        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
+        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+        b[p] = tag_type();
+    }
+    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+        if (s == t) {
+            d[p] = c;
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        if (s != t) push(p, m - s + 1, t - m);
+        if (x <= m) set(s, m, p * 2, x, c);
+        else set(m + 1, t, p * 2 + 1, x, c);
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+    
+    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+        if (l <= s && t <= r) {
+            d[p].apply(c, t - s + 1);
+            b[p].apply(c);
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        push(p, m - s + 1, t - m);
+        if (l <= m) range_apply(s, m, p * 2, l, r, c);
+        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
+        pull(p);
+    }
+    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+        if (l <= s && t <= r) {
+            return d[p];
+        }
+        size_type m = s + (t - s >> 1);
+        info_type res = {};
+        push(p, m - s + 1, t - m);
+        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+        return res;
+    }
+    void build(const Sequence& a, size_type s, size_type t, size_type p) {
+        if (s == t) {
+            d[p] = a[s];
+            return;
+        }
+        int m = s + (t - s >> 1);
+        build(a, s, m, p * 2);
+        build(a, m + 1, t, p * 2 + 1);
+        pull(p);
+    }
+public:
+    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+    segtree(const Sequence& a) : segtree(a.size()) {
+        build(a, {}, _max, 1);
+    }
+    void set(size_type i, const info_type& c) {
+        set({}, _max, 1, i, c);
+    }
+    
+    void range_apply(size_type l, size_type r, const tag_type& c) {
+        range_apply({}, _max, 1, l, r, c);
+    }
+    void apply(size_type i, const tag_type& c) {
+        range_apply(i, i, c);
+    }
+    info_type range_query(size_type l, size_type r) {
+        return range_query({}, _max, 1, l, r);
+    }
+    info_type query(size_type i) {
+        return range_query(i, i);
+    }
+    Sequence serialize() {
+        Sequence res = {};
+        for (size_type i = 0; i <= _max; ++i) {
+            res.push_back(query(i));
+        }
+        return res;
+    }
+    const vector<info_type>& get_d() {
+        return d;
+    }
+};
+struct Tag {
+    pll val = {};
+    void apply(const Tag& rhs) {
+        val = val + rhs.val;
+    }
+};
+struct Info {
+    pll val = {};
+    void apply(const Tag& rhs, size_t len) {
+        val = val + rhs.val;
+    }
+};
+
+struct MaxTag {
+    ll val = LLONG_MIN;
+    void apply(const MaxTag& rhs) {
+        val = max(val, rhs.val);
+    }
+};
+
+struct MaxInfo {
+    ll val = LLONG_MIN;
+    void apply(const MaxTag& rhs, size_t len) {
+        val = max(val, rhs.val);
+    }
+};
+Info operator+(const Info &a, const Info &b) {
+    return {a.val + b.val};
+}
+MaxInfo operator+(const MaxInfo &a, const MaxInfo &b) {
+    return {max(a.val, b.val)};
+}
+
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    sort(a.begin(), a.end());
-    int f = 1;
-    for (int i = 0; i < n - 1; ++i) {
-        if (a[n - 1] % a[i] != 0) {
-            f = 0;
-            break;
+    read(int, n, m);
+    unordered_map<ll, vector<pll>, safe_hash> raw_events;
+    set<ll> idc;
+    for (int i = 0; i < n; ++i) {
+        read(ll, x, p);
+        raw_events[x].emplace_back(p, i);
+        idc.emplace(x);
+    }
+    int N = 0;
+    map<ll, ll> mp, rev;
+    for (auto&& x : idc) mp[x] = ++N, rev[N] = x;
+    vector<ll> num(N + 1);
+    vector<vector<pll>> events(N + 1);
+    for (auto&& [i, v] : raw_events) {
+        for (auto&& x : v) {
+            events[mp[i]].emplace_back(x);
         }
     }
-    if (not f) {
-        cout << n << '\n';
-    } else {
-        int sq = sqrt(a[n - 1]);
-        set<int> st;
-        for (int i = 1; i <= sq; ++i) {
-            if (a[n - 1] % i == 0) {
-                st.emplace(i);
-                st.emplace(a[n - 1] / i);
-            }
+    segtree<Info, Tag> tr(N + 1);
+    for (int i = 1; i <= N; ++i) {
+        ll raw_i = rev[i];
+        for (auto&& [x, _] : events[i]) {
+            auto it = mp.lower_bound(raw_i - x);  // raw_i - x < raw_i
+            ll left = i, right = i;
+            left = it->second;
+            if (left <= right) tr.range_apply(left, right, {{x - raw_i, 1}});
         }
-        int N = 0;
-        unordered_map<int, int, safe_hash> mp, rev;
-        for (auto&& x : st) mp[x] = ++N, rev[N] = x;
-        vector<vector<int>> dp(n + 1, vector<int>(N + 1));
-        for (int i = 1; i <= n; ++i) {
-            for (int j = 1; j <= N; ++j) {
-                dp[i][j] = dp[i - 1][j];
-            }
-            for (int j = 1; j <= N; ++j) {
-                if (dp[i - 1][j] != 0)
-                dp[i][mp[lcm(a[i - 1], rev[j])]] = max(dp[i][mp[lcm(a[i - 1], rev[j])]], dp[i - 1][j] + 1);
-            }
-            dp[i][mp[a[i - 1]]] = max(dp[i][mp[a[i - 1]]], 1);
-        }
-        unordered_set<int, safe_hash> nums(a.begin(), a.end());
-        int res = 0;
-        for (int j = 1; j <= N; ++j) {
-            if (not nums.count(rev[j])) {
-                res = max(res, dp[n][j]);
-            }
-        }
-        cout << res << '\n';
     }
+    for (int i = 1; i <= N; ++i) {
+        auto [sum, cnt] = tr.query(i).val;
+        num[i] += sum + rev[i] * cnt;
+    }
+    for (int i = 1; i <= N; ++i) {
+        tr.set(i, {{0, 0}});
+    }
+    for (int i = 1; i <= N; ++i) {
+        ll raw_i = rev[i];
+        for (auto&& [x, _] : events[i]) {
+            auto it = mp.upper_bound(raw_i + x);
+            ll left = i + 1, right = i;
+            if (it != mp.begin()) {
+                --it;
+                right = it->second;
+            }
+            if (left <= right) tr.range_apply(left, right, {{x + raw_i, 1}});
+        }
+    }
+    for (int i = 1; i <= N; ++i) {
+        auto [sum, cnt] = tr.query(i).val;
+        num[i] += sum - rev[i] * cnt;
+    }
+    vector<bool> res(n);
+    segtree<MaxInfo, MaxTag> left(N + 1), right(N + 1), num_tr(N + 1);
+    for (int i = 1; i <= N; ++i) {
+        left.set(i, {num[i] - rev[i]});
+    }
+    for (int i = N; i; --i) {
+        right.set(i, {num[i] + rev[i]});
+    }
+    for (int i = 1; i <= N; ++i) {
+         num_tr.set(i, {num[i]});
+    }
+    for (int i = 1; i <= N; ++i) {
+        ll raw_i = rev[i];
+        for (auto&& [x, idx] : events[i]) {
+            ll mx = LLONG_MIN;
+            {
+                // affect left
+                auto it = mp.lower_bound(raw_i - x);
+                ll l = it->second;
+                mx = max(mx, (l <= i ? left.range_query(l, i).val : 0) - x + raw_i);
+                mx = max(mx, num_tr.range_query(0, max(ll(0), l - 1)).val);
+            }
+            {
+                // affect right
+                auto it = mp.upper_bound(raw_i + x);
+                if (it != mp.begin()) {
+                    --it;
+                    ll r = it->second;
+                    mx = max(mx, (i <= r ? right.range_query(i, r).val : 0) - x - raw_i);
+                    if (r + 1 <= N) mx = max(mx, num_tr.range_query(r + 1, N).val);
+                } else {
+                    if (i + 1 <= N) mx = max(mx, num_tr.range_query(i + 1, N).val);
+                }
+            }
+            if (mx <= m) {
+                res[idx] = 1;
+            }
+        }
+    }
+    for (int i = 0; i < n; ++i) {
+        cout << res[i];
+    }
+    cout << endl;
 }
 
 int main() {
-#if __cplusplus < 201703L or defined(_MSC_VER) and not defined(__clang__)
+#if __cplusplus < 201703L || defined(_MSC_VER) && !defined(__clang__)
     assert(false && "incompatible compiler variant detected.");
 #endif
     untie, cout.tie(NULL);

@@ -1,10 +1,3 @@
-/**
- * Author:   subcrip
- * Created:  2024-05-27 20:38:48
- * Modified: 2024-05-27 20:46:39
- * Elapsed:  7 minutes
- */
-
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -482,55 +475,64 @@ void dump_ignore() {}
 void prep() {
 }
 
+unordered_map<string, vector<pii>> seq = {
+    {"R", {{1, 7}, {3, 15}, {7, 21}, {15, 23}, {9, 8}, {17, 9}, {16, 17}, {8, 16}, {10, 3}, {18, 1}, {21, 18}, {23, 10}}},
+    {"U", {{1, 0}, {0, 2}, {2, 3}, {3, 1}, {4, 6}, {5, 7}, {6, 8}, {7, 9}, {8, 10}, {9, 11}, {10, 4}, {11, 5}}},
+    {"F", {{7, 6}, {15, 7}, {14, 15}, {6, 14}, {2, 13}, {3, 5}, {8, 2}, {16, 3}, {21, 8}, {20, 16}, {13, 21}, {5, 20}}},
+    {"L", {{6, 0}, {14, 2}, {20, 6}, {22, 14}, {19, 20}, {11, 22}, {0, 19}, {2, 11}, {5, 4}, {13, 5}, {12, 13}, {4, 12}}},
+    {"D", {{14, 12}, {15, 13}, {16, 14}, {17, 15}, {18, 16}, {19, 17}, {12, 18}, {13, 19}, {21, 20}, {23, 21}, {22, 23}, {20, 22}}},
+    {"B", {{0, 12}, {1, 4}, {9, 0}, {17, 1}, {23, 9}, {22, 17}, {4, 22}, {12, 23}, {11, 10}, {19, 11}, {18, 19}, {10, 18}}},
+};
+
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    sort(a.begin(), a.end());
-    int f = 1;
-    for (int i = 0; i < n - 1; ++i) {
-        if (a[n - 1] % a[i] != 0) {
-            f = 0;
-            break;
+    vector<int> cube = {1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 6, 6};
+    auto work = [&] (string op) {
+        vector<int> new_cube = cube;
+        if (*op.rbegin() == 39) {
+            for (auto&& [from, to] : seq[op.substr(0, op.size() - 1)]) {
+                new_cube[to] = cube[from];
+            }
+        } else {
+            for (auto&& [to, from] : seq[op]) {
+                new_cube[to] = cube[from];
+            }
+        }
+        cube = new_cube;
+    };
+    auto check = [&] () {
+        return cube[0] == cube[1] and cube[1] == cube[2] and cube[2] == cube[3]
+           and cube[4] == cube[5] and cube[5] == cube[12] and cube[12] == cube[13]
+           and cube[6] == cube[7] and cube[7] == cube[14] and cube[14] == cube[15]
+           and cube[8] == cube[9] and cube[9] == cube[16] and cube[16] == cube[17]
+           and cube[10] == cube[11] and cube[11] == cube[18] and cube[18] == cube[19]
+           and cube[20] == cube[21] and cube[21] == cube[22] and cube[22] == cube[23];
+    };
+    read(string, s);
+    string tmp;
+    for (auto&& c : s) {
+        if (c >= 'A' and c <= 'Z') {
+            if (tmp.size()) {
+                work(tmp);
+                tmp.clear();
+            }
+            tmp += c;
+        } else if (c == 39) {
+            tmp += c;
+        } else if (c == '2') {
+            work(tmp), work(tmp);
+            tmp.clear();
         }
     }
-    if (not f) {
-        cout << n << '\n';
+    if (tmp.size()) work(tmp);
+    if (check()) {
+        cout << "YES\n";
     } else {
-        int sq = sqrt(a[n - 1]);
-        set<int> st;
-        for (int i = 1; i <= sq; ++i) {
-            if (a[n - 1] % i == 0) {
-                st.emplace(i);
-                st.emplace(a[n - 1] / i);
-            }
-        }
-        int N = 0;
-        unordered_map<int, int, safe_hash> mp, rev;
-        for (auto&& x : st) mp[x] = ++N, rev[N] = x;
-        vector<vector<int>> dp(n + 1, vector<int>(N + 1));
-        for (int i = 1; i <= n; ++i) {
-            for (int j = 1; j <= N; ++j) {
-                dp[i][j] = dp[i - 1][j];
-            }
-            for (int j = 1; j <= N; ++j) {
-                if (dp[i - 1][j] != 0)
-                dp[i][mp[lcm(a[i - 1], rev[j])]] = max(dp[i][mp[lcm(a[i - 1], rev[j])]], dp[i - 1][j] + 1);
-            }
-            dp[i][mp[a[i - 1]]] = max(dp[i][mp[a[i - 1]]], 1);
-        }
-        unordered_set<int, safe_hash> nums(a.begin(), a.end());
-        int res = 0;
-        for (int j = 1; j <= N; ++j) {
-            if (not nums.count(rev[j])) {
-                res = max(res, dp[n][j]);
-            }
-        }
-        cout << res << '\n';
+        cout << "NO\n";
     }
 }
 
 int main() {
-#if __cplusplus < 201703L or defined(_MSC_VER) and not defined(__clang__)
+#if __cplusplus < 201703L || defined(_MSC_VER) && !defined(__clang__)
     assert(false && "incompatible compiler variant detected.");
 #endif
     untie, cout.tie(NULL);

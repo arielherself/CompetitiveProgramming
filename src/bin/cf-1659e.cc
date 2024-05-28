@@ -1,8 +1,8 @@
 /**
  * Author:   subcrip
- * Created:  2024-05-27 20:38:48
- * Modified: 2024-05-27 20:46:39
- * Elapsed:  7 minutes
+ * Created:  2024-05-26 13:23:22
+ * Modified: 2024-05-26 15:16:02
+ * Elapsed:  112 minutes
  */
 
 #pragma GCC optimize("Ofast")
@@ -471,7 +471,7 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -482,50 +482,110 @@ void dump_ignore() {}
 void prep() {
 }
 
+class quick_union {
+private:
+    vector<size_t> c, sz;
+    vector<int> en;
+public:
+    quick_union(size_t n) : c(n), sz(n), en(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
+    }
+    
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] += sz[query(i)];
+        en[query(j)] += en[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_size(size_t i) {
+        return sz[query(i)];
+    }
+
+    bool query_en(size_t i) {
+        return en[query(i)];
+    }
+
+    void set_en(size_t i, int tar) {
+        en[query(i)] = tar;
+    }
+};
+
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    sort(a.begin(), a.end());
-    int f = 1;
-    for (int i = 0; i < n - 1; ++i) {
-        if (a[n - 1] % a[i] != 0) {
-            f = 0;
-            break;
+    read(int, n, m);
+    vector<quick_union> qu(30, quick_union(n + 1));
+    vector<vector<vector<int>>> ch(30, vector<vector<int>>(n + 1));
+    vector<vector<pii>> e(n + 1);
+    while (m--) {
+        read(int, u, v, w);
+        for (int b = 0; b < 30; ++b) {
+            if (((w >> b) & 1) == 1) {
+                qu[b].merge(u, v);
+                ch[b][u].emplace_back(v);
+                ch[b][v].emplace_back(u);
+            }
+            e[u].emplace_back(v, w);
+            e[v].emplace_back(u, w);
         }
     }
-    if (not f) {
-        cout << n << '\n';
-    } else {
-        int sq = sqrt(a[n - 1]);
-        set<int> st;
-        for (int i = 1; i <= sq; ++i) {
-            if (a[n - 1] % i == 0) {
-                st.emplace(i);
-                st.emplace(a[n - 1] / i);
+    vector<bool> vis(n + 1);
+    int curr_branch;
+    auto dfs = [&] (auto dfs, int v) -> void {
+        if (vis[v]) return;
+        vis[v] = 1;
+        for (auto&& [u, w] : e[v]) {
+            if (not qu[0].connected(u, v) and (w & 1) == 0) {
+                qu[curr_branch].set_en(v, 1);
+                break;
             }
         }
-        int N = 0;
-        unordered_map<int, int, safe_hash> mp, rev;
-        for (auto&& x : st) mp[x] = ++N, rev[N] = x;
-        vector<vector<int>> dp(n + 1, vector<int>(N + 1));
+        for (auto&& u : ch[curr_branch][v]) {
+            if (not vis[u]) {
+                dfs(dfs, u);
+            }
+        }
+    };
+    for (int b = 0; b < 30; ++b) {
+        curr_branch = b;
+        vis.assign(n + 1, 0);
         for (int i = 1; i <= n; ++i) {
-            for (int j = 1; j <= N; ++j) {
-                dp[i][j] = dp[i - 1][j];
-            }
-            for (int j = 1; j <= N; ++j) {
-                if (dp[i - 1][j] != 0)
-                dp[i][mp[lcm(a[i - 1], rev[j])]] = max(dp[i][mp[lcm(a[i - 1], rev[j])]], dp[i - 1][j] + 1);
-            }
-            dp[i][mp[a[i - 1]]] = max(dp[i][mp[a[i - 1]]], 1);
-        }
-        unordered_set<int, safe_hash> nums(a.begin(), a.end());
-        int res = 0;
-        for (int j = 1; j <= N; ++j) {
-            if (not nums.count(rev[j])) {
-                res = max(res, dp[n][j]);
+            if (not vis[i]) {
+                dfs(dfs, i);
             }
         }
-        cout << res << '\n';
+    }
+    read(int, q);
+    while (q--) {
+        read(int, u, v);
+        // continue;
+        int f = 0;
+        for (int b = 0; b < 30; ++b) {
+            if (qu[b].connected(u, v)) {
+                cout << 0 << '\n';
+                f = 1;
+                break;
+            }
+        }
+        if (not f) {
+            for (int b = 2; b < 30; ++b) {
+                if (qu[b].query_en(u)) {
+                    cout << 1 << '\n';
+                    f = 1;
+                    break;
+                }
+            }
+            if (not f) {
+                cout << 2 << '\n';
+            }
+        }
     }
 }
 

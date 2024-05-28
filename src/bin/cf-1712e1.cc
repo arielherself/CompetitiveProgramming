@@ -1,10 +1,3 @@
-/**
- * Author:   subcrip
- * Created:  2024-05-27 20:38:48
- * Modified: 2024-05-27 20:46:39
- * Elapsed:  7 minutes
- */
-
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -479,58 +472,69 @@ void dump() {}
 
 void dump_ignore() {}
 
+constexpr int MAXN = 2e5 + 10;
+vector<int> raw[MAXN];
 void prep() {
+    for (int i = 1; i < MAXN; ++i) {
+        for (ll j = i; j < MAXN; j += i) {
+            raw[j].emplace_back(i);
+        }
+    }
 }
 
+ll select2(ll x) {
+    return x * (x - 1) / 2;
+}
+
+vector<int> fact, ev;
+
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    sort(a.begin(), a.end());
-    int f = 1;
-    for (int i = 0; i < n - 1; ++i) {
-        if (a[n - 1] % a[i] != 0) {
-            f = 0;
-            break;
+    read(ll, l, r);
+    ll res = 0;
+    for (ll i = l; i <= r; ++i) {
+        ll tot = select2(i - l);
+        fact.clear();
+        for (auto&& x : raw[i]) {
+            if (x >= l and x < i) fact.emplace_back(x);
         }
+        tot -= select2(fact.size());
+        ev.clear();
+        int r = 0;
+        for (auto&& x : raw[i]) {
+            while (r < raw[i].size() and raw[i][r] < 2 * x) ++r;
+            if (2 * x >= l and 2 * x < i and raw[i][r] != 2 * x) ev.emplace_back(2 * x);
+        }
+        tot -= select2(ev.size()) + ev.size() * fact.size();
+        // include odd + even
+        int m = fact.size(), k = ev.size();;
+        r = 0;
+        for (auto&& x : ev) {
+            while (r < m and fact[r] < x and fact[r] + x <= i) ++r;
+            while (r - 1 >= 0 and (fact[r - 1] >= x or fact[r - 1] + x > i)) --r;
+            tot += r;
+        }
+        // include even + odd
+        r = 0;
+        for (auto&& x : fact) {
+            while (r < k and ev[r] < x and ev[r] + x <= i) ++r;
+            while (r - 1 >= 0 and (ev[r - 1] >= x or ev[r - 1] + x > i)) --r;
+            tot += r;
+        }
+        // include even + even
+        r = 0;
+        for (auto&& x : ev) {
+            while (r < k and ev[r] < x and ev[r] + x <= i) ++r;
+            while (r - 1 >= 0 and (ev[r - 1] >= x or ev[r - 1] + x > i)) --r;
+            tot += r;
+        }
+        // debug(make_tuple(i, tot));
+        res += tot;
     }
-    if (not f) {
-        cout << n << '\n';
-    } else {
-        int sq = sqrt(a[n - 1]);
-        set<int> st;
-        for (int i = 1; i <= sq; ++i) {
-            if (a[n - 1] % i == 0) {
-                st.emplace(i);
-                st.emplace(a[n - 1] / i);
-            }
-        }
-        int N = 0;
-        unordered_map<int, int, safe_hash> mp, rev;
-        for (auto&& x : st) mp[x] = ++N, rev[N] = x;
-        vector<vector<int>> dp(n + 1, vector<int>(N + 1));
-        for (int i = 1; i <= n; ++i) {
-            for (int j = 1; j <= N; ++j) {
-                dp[i][j] = dp[i - 1][j];
-            }
-            for (int j = 1; j <= N; ++j) {
-                if (dp[i - 1][j] != 0)
-                dp[i][mp[lcm(a[i - 1], rev[j])]] = max(dp[i][mp[lcm(a[i - 1], rev[j])]], dp[i - 1][j] + 1);
-            }
-            dp[i][mp[a[i - 1]]] = max(dp[i][mp[a[i - 1]]], 1);
-        }
-        unordered_set<int, safe_hash> nums(a.begin(), a.end());
-        int res = 0;
-        for (int j = 1; j <= N; ++j) {
-            if (not nums.count(rev[j])) {
-                res = max(res, dp[n][j]);
-            }
-        }
-        cout << res << '\n';
-    }
+    cout << res << '\n';
 }
 
 int main() {
-#if __cplusplus < 201703L or defined(_MSC_VER) and not defined(__clang__)
+#if __cplusplus < 201703L || defined(_MSC_VER) && !defined(__clang__)
     assert(false && "incompatible compiler variant detected.");
 #endif
     untie, cout.tie(NULL);

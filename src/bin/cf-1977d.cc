@@ -1,8 +1,8 @@
 /**
  * Author:   subcrip
- * Created:  2024-05-27 20:38:48
- * Modified: 2024-05-27 20:46:39
- * Elapsed:  7 minutes
+ * Created:  2024-05-27 21:39:24
+ * Modified: 2024-05-28 08:04:21
+ * Elapsed:  624 minutes
  */
 
 #pragma GCC optimize("Ofast")
@@ -391,12 +391,12 @@ template <ll mdl> struct MLL {
 struct MLLd {
     ll val, mdl;
     MLLd(ll mdl, ll v = 0) : mdl(mdl), val(mod(v, mdl)) {}
-    MLLd(const MLLd& other) : val(other.val) {}
-    friend MLLd operator+(const MLLd& lhs, const MLLd& rhs) { return mod(lhs.val + rhs.val, lhs.mdl); }
-    friend MLLd operator-(const MLLd& lhs, const MLLd& rhs) { return mod(lhs.val - rhs.val, lhs.mdl); }
-    friend MLLd operator*(const MLLd& lhs, const MLLd& rhs) { return mod(lhs.val * rhs.val, lhs.mdl); }
-    friend MLLd operator/(const MLLd& lhs, const MLLd& rhs) { return mod(lhs.val * mod(inverse(rhs.val, lhs.mdl), lhs.mdl), lhs.mdl); }
-    friend MLLd operator%(const MLLd& lhs, const MLLd& rhs) { return mod(lhs.val - (lhs / rhs).val, lhs.mdl); }
+    MLLd(const MLLd& other) : mdl(other.mdl), val(other.val) {}
+    friend MLLd operator+(const MLLd& lhs, const MLLd& rhs) { return MLLd(lhs.mdl, mod(lhs.val + rhs.val, lhs.mdl)); }
+    friend MLLd operator-(const MLLd& lhs, const MLLd& rhs) { return MLLd(lhs.mdl, mod(lhs.val - rhs.val, lhs.mdl)); }
+    friend MLLd operator*(const MLLd& lhs, const MLLd& rhs) { return MLLd(lhs.mdl, mod(lhs.val * rhs.val, lhs.mdl)); }
+    friend MLLd operator/(const MLLd& lhs, const MLLd& rhs) { return MLLd(lhs.mdl, mod(lhs.val * mod(inverse(rhs.val, lhs.mdl), lhs.mdl), lhs.mdl)); }
+    friend MLLd operator%(const MLLd& lhs, const MLLd& rhs) { return MLLd(lhs.mdl, mod(lhs.val - (lhs / rhs).val, lhs.mdl)); }
     friend bool operator==(const MLLd& lhs, const MLLd& rhs) { return lhs.val == rhs.val; }
     friend bool operator!=(const MLLd& lhs, const MLLd& rhs) { return lhs.val != rhs.val; }
     void operator+=(const MLLd& rhs) { val = (*this + rhs).val; }
@@ -482,51 +482,116 @@ void dump_ignore() {}
 void prep() {
 }
 
+static vector<MLL<MDL1>> power1;
+static vector<MLL<MDL2>> power2;
+static const ll b = rd();
+template <typename _Tp>
+struct hash_vec {
+    using hash_type = pll;
+    MLL<MDL1> hash1;
+    MLL<MDL2> hash2;
+    vector<_Tp> seq;
+    size_t size() {
+        return seq.size();
+    }
+    void push_back(const _Tp& x) {
+        hash1 = hash1 * b + x;
+        hash2 = hash2 * b + x;
+        seq.push_back(x);
+    }
+    void push_front(const _Tp& x) {
+        size_t length = size();
+        hash1 += x * power1[length];
+        hash2 += x * power2[length];
+        seq.push_front(x);
+    }
+    void pop_back() {
+        _Tp e = seq.back(); seq.pop_back();
+        hash1 = (hash1 - e) / b;
+        hash2 = (hash2 - e) / b;
+    }
+    void pop_front() {
+        _Tp e = seq.front(); seq.pop_front();
+        int length = seq.size();
+        hash1 -= e * power1[length];
+        hash2 -= e * power2[length];
+    }
+    void set(size_t pos, const _Tp& value) {
+        int length = seq.size();
+        int old_value = seq[pos];
+        hash1 += (value - old_value) * power1[length - 1 - pos];
+        hash2 += (value - old_value) * power2[length - 1 - pos];
+        seq[pos] = value;
+    }
+    const _Tp& operator[](size_t pos) {
+        return seq[pos];
+    }
+    hash_type hash() {
+        return {hash1.val, hash2.val};
+    }
+    void clear() {
+        hash1 = 0;
+        hash2 = 0;
+        seq.clear();
+    }
+    hash_vec(size_t maxn) {
+        clear();
+        MLL<MDL1> c1 = power1.size() ? power1.back() * b : 1;
+        MLL<MDL2> c2 = power2.size() ? power2.back() * b : 1;
+        for (int i = power1.size(); i < maxn; ++i) {
+            power1.push_back(c1);
+            power2.push_back(c2);
+            c1 *= b;
+            c2 *= b;
+        }
+    }
+    hash_vec(size_t maxn, const _Tp& init_value) : hash_vec(maxn) {
+        for (size_t i = 0; i != maxn; ++i) {
+            push_back(init_value);
+        }
+    }
+};
+
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    sort(a.begin(), a.end());
-    int f = 1;
-    for (int i = 0; i < n - 1; ++i) {
-        if (a[n - 1] % a[i] != 0) {
-            f = 0;
-            break;
+    read(int, n, m);
+    vector<vector<int>> a(n, vector<int>(m));
+    for (int i = 0; i < n; ++i) {
+        for  (int j = 0; j < m; ++j) {
+            read(char, c);
+            a[i][j] = c == '1';
         }
     }
-    if (not f) {
-        cout << n << '\n';
-    } else {
-        int sq = sqrt(a[n - 1]);
-        set<int> st;
-        for (int i = 1; i <= sq; ++i) {
-            if (a[n - 1] % i == 0) {
-                st.emplace(i);
-                st.emplace(a[n - 1] / i);
-            }
+    unordered_map<pll, pair<int, pair<int, int>>, pair_hash> dp;
+    for (int j = 0; j < m; ++j) {
+        hash_vec<int> v(n);
+        for (int i = 0; i < n; ++i) {
+            v.push_back(a[i][j]);
         }
-        int N = 0;
-        unordered_map<int, int, safe_hash> mp, rev;
-        for (auto&& x : st) mp[x] = ++N, rev[N] = x;
-        vector<vector<int>> dp(n + 1, vector<int>(N + 1));
-        for (int i = 1; i <= n; ++i) {
-            for (int j = 1; j <= N; ++j) {
-                dp[i][j] = dp[i - 1][j];
-            }
-            for (int j = 1; j <= N; ++j) {
-                if (dp[i - 1][j] != 0)
-                dp[i][mp[lcm(a[i - 1], rev[j])]] = max(dp[i][mp[lcm(a[i - 1], rev[j])]], dp[i - 1][j] + 1);
-            }
-            dp[i][mp[a[i - 1]]] = max(dp[i][mp[a[i - 1]]], 1);
+        for (int i  =0; i < n; ++i) {
+            v.set(i, a[i][j] ^ 1);
+            dp[v.hash()] = {dp[v.hash()].first + 1, {j, i}};
+            v.set(i, a[i][j]);
         }
-        unordered_set<int, safe_hash> nums(a.begin(), a.end());
-        int res = 0;
-        for (int j = 1; j <= N; ++j) {
-            if (not nums.count(rev[j])) {
-                res = max(res, dp[n][j]);
-            }
-        }
-        cout << res << '\n';
     }
+    int k = 0;
+    pair<int, int> v;
+    for (auto&& [k1, v1] : dp) {
+        if (v1.first > k) {
+            k = v1.first;
+            v = v1.second;
+        }
+    }
+    vector<int> res(n);
+    auto [q, p] = v;
+    for (int i = 0; i < n; ++i) {
+        res[i] = a[i][q];
+    }
+    res[p] = a[p][q] ^ 1;
+    cout << k << '\n';
+    for (int i = 0; i < n; ++i) {
+        cout << res[i];
+    }
+    cout << '\n';;
 }
 
 int main() {

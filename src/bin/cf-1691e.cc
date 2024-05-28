@@ -1,10 +1,3 @@
-/**
- * Author:   subcrip
- * Created:  2024-05-27 20:38:48
- * Modified: 2024-05-27 20:46:39
- * Elapsed:  7 minutes
- */
-
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -482,55 +475,81 @@ void dump_ignore() {}
 void prep() {
 }
 
+struct segment {
+    int color, left, right, idx;
+};
+
+class quick_union {
+private:
+    vector<size_t> c, sz;
+public:
+    quick_union(size_t n) : c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
+    }
+    
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] += sz[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_size(size_t i) {
+        return sz[query(i)];
+    }
+};
+
 void solve() {
     read(int, n);
-    readvec(int, a, n);
-    sort(a.begin(), a.end());
-    int f = 1;
-    for (int i = 0; i < n - 1; ++i) {
-        if (a[n - 1] % a[i] != 0) {
-            f = 0;
-            break;
-        }
+    vector<segment> a;
+    for (int i = 0; i < n; ++i) {
+        read(int, c, l, r);
+        a.push_back({c, l, r, i});
     }
-    if (not f) {
-        cout << n << '\n';
-    } else {
-        int sq = sqrt(a[n - 1]);
-        set<int> st;
-        for (int i = 1; i <= sq; ++i) {
-            if (a[n - 1] % i == 0) {
-                st.emplace(i);
-                st.emplace(a[n - 1] / i);
+    sort_by_key(a.begin(), a.end(), [] (const segment& x) { return x.left; });
+    auto cmp = [&] (const segment& i, const segment& j) {
+        if (i.right == j.right) return i.idx < j.idx;
+        return i.right < j.right;
+    };
+    array<set<segment, decltype(cmp)>, 2> bk = {set<segment, decltype(cmp)>(cmp), set<segment, decltype(cmp)>(cmp)};
+    quick_union qu(n);
+    for (auto&& [c, l, r, i] : a) {
+        // debug(make_tuple(c, l, r, i));
+        for (int j = 0; j < 2; ++j) {
+            while (bk[j].size() and bk[j].begin()->right < l) {
+                bk[j].erase(bk[j].begin());
             }
         }
-        int N = 0;
-        unordered_map<int, int, safe_hash> mp, rev;
-        for (auto&& x : st) mp[x] = ++N, rev[N] = x;
-        vector<vector<int>> dp(n + 1, vector<int>(N + 1));
-        for (int i = 1; i <= n; ++i) {
-            for (int j = 1; j <= N; ++j) {
-                dp[i][j] = dp[i - 1][j];
+        if (bk[1 ^ c].size()) {
+            for (auto&& [c1, l1, r1, i1] : bk[1 ^ c]) {
+                qu.merge(i, i1);
             }
-            for (int j = 1; j <= N; ++j) {
-                if (dp[i - 1][j] != 0)
-                dp[i][mp[lcm(a[i - 1], rev[j])]] = max(dp[i][mp[lcm(a[i - 1], rev[j])]], dp[i - 1][j] + 1);
-            }
-            dp[i][mp[a[i - 1]]] = max(dp[i][mp[a[i - 1]]], 1);
-        }
-        unordered_set<int, safe_hash> nums(a.begin(), a.end());
-        int res = 0;
-        for (int j = 1; j <= N; ++j) {
-            if (not nums.count(rev[j])) {
-                res = max(res, dp[n][j]);
+            int cnt = bk[1 ^ c].size() - 1;
+            while (cnt--) {
+                bk[1 ^ c].erase(bk[1 ^ c].begin());
             }
         }
-        cout << res << '\n';
+        bk[c].insert({c, l, r, i});
     }
+    int res = 0;
+    for (int i = 0; i < n; ++i) {
+        if (qu.query(i) == i) res += 1;
+    }
+    // for (int i = 0; i < n; ++i) {
+    //     cerr << qu.query(i) << " \n"[i + 1 == n];
+    // }
+    cout << res << '\n';
 }
 
 int main() {
-#if __cplusplus < 201703L or defined(_MSC_VER) and not defined(__clang__)
+#if __cplusplus < 201703L || defined(_MSC_VER) && !defined(__clang__)
     assert(false && "incompatible compiler variant detected.");
 #endif
     untie, cout.tie(NULL);

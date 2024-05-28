@@ -1,10 +1,3 @@
-/**
- * Author:   subcrip
- * Created:  2024-05-27 20:38:48
- * Modified: 2024-05-27 20:46:39
- * Elapsed:  7 minutes
- */
-
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -479,58 +472,60 @@ void dump() {}
 
 void dump_ignore() {}
 
-void prep() {
+vector<int> soe(int n) {
+    vector<bool> not_prime(n + 1);
+    vector<int> res;
+    for (int i = 2; i <= n; ++i) {
+        if (not not_prime[i]) {
+            res.emplace_back(i);
+        }
+        for (auto&& x : res) {
+            if (i * x > n) break;
+            not_prime[i * x] = 1;
+            if (i % x == 0) break;
+        }
+    }
+    return res;
 }
+
+constexpr int N = 2e6 + 10;
+int dp[N];
+void prep() {
+    auto res = soe(N);
+    set<int> primes(res.begin(), res.end());
+    dp[1] = 1;
+    for (int i = 2; i < N; ++i) {
+        auto lb = primes.lower_bound(2 * i);
+        if (lb == primes.end()) {
+            dp[i] = INF;
+        } else {
+            dp[i] = *lb - 2 * i;
+        }
+    }
+}
+
 
 void solve() {
     read(int, n);
-    readvec(int, a, n);
-    sort(a.begin(), a.end());
-    int f = 1;
-    for (int i = 0; i < n - 1; ++i) {
-        if (a[n - 1] % a[i] != 0) {
-            f = 0;
-            break;
+    int curr = n;
+    stringstream out;
+    while (curr >= 1) {
+        if (dp[curr] == INF) {
+            cout << -1 << '\n';
+            return;
         }
+        int prev = (dp[curr] + 1) / 2;
+        int m = curr - prev + 1;
+        for (int i = 0; i < m; ++i) {
+            out << 2 * (prev + i) - 1 << ' ' << 2 * (curr - i) << '\n';
+        }
+        curr = prev - 1;
     }
-    if (not f) {
-        cout << n << '\n';
-    } else {
-        int sq = sqrt(a[n - 1]);
-        set<int> st;
-        for (int i = 1; i <= sq; ++i) {
-            if (a[n - 1] % i == 0) {
-                st.emplace(i);
-                st.emplace(a[n - 1] / i);
-            }
-        }
-        int N = 0;
-        unordered_map<int, int, safe_hash> mp, rev;
-        for (auto&& x : st) mp[x] = ++N, rev[N] = x;
-        vector<vector<int>> dp(n + 1, vector<int>(N + 1));
-        for (int i = 1; i <= n; ++i) {
-            for (int j = 1; j <= N; ++j) {
-                dp[i][j] = dp[i - 1][j];
-            }
-            for (int j = 1; j <= N; ++j) {
-                if (dp[i - 1][j] != 0)
-                dp[i][mp[lcm(a[i - 1], rev[j])]] = max(dp[i][mp[lcm(a[i - 1], rev[j])]], dp[i - 1][j] + 1);
-            }
-            dp[i][mp[a[i - 1]]] = max(dp[i][mp[a[i - 1]]], 1);
-        }
-        unordered_set<int, safe_hash> nums(a.begin(), a.end());
-        int res = 0;
-        for (int j = 1; j <= N; ++j) {
-            if (not nums.count(rev[j])) {
-                res = max(res, dp[n][j]);
-            }
-        }
-        cout << res << '\n';
-    }
+    cout << out.str();
 }
 
 int main() {
-#if __cplusplus < 201703L or defined(_MSC_VER) and not defined(__clang__)
+#if __cplusplus < 201703L || defined(_MSC_VER) && !defined(__clang__)
     assert(false && "incompatible compiler variant detected.");
 #endif
     untie, cout.tie(NULL);
