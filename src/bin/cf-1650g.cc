@@ -1,8 +1,16 @@
+/**
+ * Author:   subcrip
+ * Created:  2024-05-29 11:18:42
+ * Modified: 2024-05-29 12:02:15
+ * Elapsed:  43 minutes
+ */
+
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
- * This code should require C++14.
- * However, it's only been tested with C++17.
+ * Useful Macros
+ *   by subcrip
+ * (requires C++17)
  */
 
 #include<bits/stdc++.h>
@@ -173,7 +181,6 @@ struct array_hash {
 };
 
 /* build data structures */
-#define faster(um) __AS_PROCEDURE((um).reserve(1024); (um).max_load_factor(0.25);)
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
 #define pa(a) __AS_PROCEDURE(__typeof(a) pa; pa.push_back({}); for (auto&&x : a) pa.push_back(pa.back() + x);)
@@ -487,10 +494,69 @@ void prep() {
 }
 
 void solve() {
+    using mll = MLL<MDL>;
+    read(int, n, m);
+    read(int, s, t);
+    adj(ch, n);
+    vector<pii> edges;
+    while (m--) {
+        read(int, u, v);
+        edge(ch, u, v);
+        edges.emplace_back(u, v);
+    }
+    vector<int> dis(n + 1, INF);
+    vector<int> disrev(n + 1, INF);
+    vector<mll> cnt(n + 1), cntrev(n + 1);
+    vector<bool> vis(n + 1);
+    deque<pii> q;
+    q.emplace_back(0, s);
+    dis[s] = 0, cnt[s] = 1;
+    while (q.size()) {
+        popfront(q, d, v);
+        continue_or(vis[v], 1);
+        for (auto&& u : ch[v]) {
+            if (d + 1 < dis[u]) {
+                dis[u] = d + 1;
+                cnt[u] = cnt[v];
+                q.emplace_back(d + 1, u);
+            } else if (d + 1 == dis[u]) {
+                cnt[u] += cnt[v];
+            }
+        }
+    }
+    vis.assign(n + 1, 0);
+    q.clear();
+    q.emplace_back(0, t);
+    disrev[t] = 0, cntrev[t] = 1;
+    while (q.size()) {
+        popfront(q, d, v);
+        continue_or(vis[v], 1);
+        for (auto&& u : ch[v]) {
+            if (d + 1 < disrev[u]) {
+                disrev[u] = d + 1;
+                cntrev[u] = cntrev[v];
+                q.emplace_back(d + 1, u);
+            } else if (d + 1 == disrev[u]) {
+                cntrev[u] += cntrev[v];
+            }
+        }
+    }
+    mll res = 0;
+    for (auto&& [u, v] : edges) {
+        if (dis[u] == dis[v]) {
+            if (dis[v] + disrev[v] == dis[t]) {
+                res += cnt[u] * cntrev[v];
+            }
+            if (dis[u] + disrev[u] == dis[t]) {
+                res += cnt[v] * cntrev[u];
+            }
+        }
+    }
+    cout << res + cnt[t] << '\n';
 }
 
 int main() {
-#if __cplusplus < 201402L or defined(_MSC_VER) and not defined(__clang__)
+#if __cplusplus < 201703L or defined(_MSC_VER) and not defined(__clang__)
     assert(false && "incompatible compiler variant detected.");
 #endif
     untie, cout.tie(NULL);

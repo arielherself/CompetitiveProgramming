@@ -1,3 +1,10 @@
+/**
+ * Author:   subcrip
+ * Created:  2024-05-30 10:30:13
+ * Modified: 2024-05-30 10:41:55
+ * Elapsed:  11 minutes
+ */
+
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -173,7 +180,6 @@ struct array_hash {
 };
 
 /* build data structures */
-#define faster(um) __AS_PROCEDURE((um).reserve(1024); (um).max_load_factor(0.25);)
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
 #define pa(a) __AS_PROCEDURE(__typeof(a) pa; pa.push_back({}); for (auto&&x : a) pa.push_back(pa.back() + x);)
@@ -475,7 +481,7 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -487,6 +493,34 @@ void prep() {
 }
 
 void solve() {
+    read(int, n, m);
+    vector<bool> mark(n + 1);
+    while (m--) {
+        read(int, x);
+        mark[x] = 1;
+    }
+    vector<int> res;
+    int cand = 0;
+    if (mark[1]) {
+        cout << -1 << '\n';
+        return;
+    }
+    for (int i = 1; i <= n; ++i) {
+        if (mark[i] and not mark[i - 1]) {
+            cand = i;
+        } else {
+            res.emplace_back(i);
+        }
+        if (not mark[i] and cand) {
+            res.emplace_back(cand);
+            cand = 0;
+        }
+    }
+    if (cand) {
+        cout << -1 << '\n';
+        return;
+    }
+    putvec(res);
 }
 
 int main() {

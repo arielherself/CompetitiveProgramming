@@ -1,3 +1,10 @@
+/**
+ * Author:   subcrip
+ * Created:  2024-05-29 20:27:37
+ * Modified: 2024-05-30 10:28:54
+ * Elapsed:  841 minutes
+ */
+
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -173,7 +180,6 @@ struct array_hash {
 };
 
 /* build data structures */
-#define faster(um) __AS_PROCEDURE((um).reserve(1024); (um).max_load_factor(0.25);)
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
 #define pa(a) __AS_PROCEDURE(__typeof(a) pa; pa.push_back({}); for (auto&&x : a) pa.push_back(pa.back() + x);)
@@ -475,7 +481,7 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -487,6 +493,27 @@ void prep() {
 }
 
 void solve() {
+    read(ll, n, m);
+    int t = lg2(n) + 1, N = m * t;
+    vector<bool> vis(N + 1);
+    vector<int> cnt(t + 1);
+    for (ll i = 2; i <= t; ++i) {
+        for (ll j = 1; j <= m; ++j) {
+            if (j * i > m and not vis[j * i]) cnt[i] += 1;
+            vis[j * i] = 1;
+        }
+    }
+    ll res = 0;
+    vector<bool> mark(n + 1);
+    for (ll i = 2; i <= n; ++i) {
+        if (mark[i]) continue;
+        for (ll j = 2, x = i * i; x <= n; ++j, x *= i) {
+            mark[x] = 1;
+            res += cnt[j];
+        }
+        res += m;
+    }
+    cout << res + 1 << '\n';
 }
 
 int main() {

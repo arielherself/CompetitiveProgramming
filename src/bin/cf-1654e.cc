@@ -1,8 +1,16 @@
+/**
+ * Author:   subcrip
+ * Created:  2024-05-28 23:03:59
+ * Modified: 2024-05-29 00:56:11
+ * Elapsed:  112 minutes
+ */
+
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
- * This code should require C++14.
- * However, it's only been tested with C++17.
+ * Useful Macros
+ *   by subcrip
+ * (requires C++17)
  */
 
 #include<bits/stdc++.h>
@@ -173,7 +181,6 @@ struct array_hash {
 };
 
 /* build data structures */
-#define faster(um) __AS_PROCEDURE((um).reserve(1024); (um).max_load_factor(0.25);)
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
 #define pa(a) __AS_PROCEDURE(__typeof(a) pa; pa.push_back({}); for (auto&&x : a) pa.push_back(pa.back() + x);)
@@ -475,7 +482,7 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -486,11 +493,90 @@ void dump_ignore() {}
 void prep() {
 }
 
+template <typename Val, int LOG = 20>
+struct HashMapLL {
+  int N;
+  ll* keys;
+  Val* vals;
+  vector<int> IDS;
+  bitset<1 << LOG> used;
+  const int shift;
+  const uint64_t r = 11995408973635179863ULL;
+  HashMapLL()
+      : N(1 << LOG), keys(new ll[N]), vals(new Val[N]), shift(64 - __lg(N)) {}
+  int hash(ll x) {
+    static const uint64_t FIXED_RANDOM
+        = std::chrono::steady_clock::now().time_since_epoch().count();
+    return (uint64_t(x + FIXED_RANDOM) * r) >> shift;
+  }
+ 
+  int index(const ll& key) {
+    int i = 0;
+    for (i = hash(key); used[i] && keys[i] != key; (i += 1) &= (N - 1)) {}
+    return i;
+  }
+ 
+  Val& operator[](const ll& key) {
+    int i = index(key);
+    if (!used[i]) IDS.emplace_back(i), used[i] = 1, keys[i] = key, vals[i] = Val{};
+    return vals[i];
+  }
+  bool contain(const ll& key) {
+    int i = index(key);
+    return used[i] && keys[i] == key;
+  }
+ 
+  void reset(){
+    for(auto&& i : IDS) used[i] = 0;
+    IDS.clear();
+  }
+};
+
+HashMapLL<int> cnt, bk;
+HashMapLL<bool> has;
+
+int __solve(int n, const vector<int>& a) {
+    cnt.reset();
+    bk.reset();
+    // d <= sqrt(n)
+    constexpr int N = 1e5 + 10;
+    int sq = sqrt(N);
+    int res = 1;
+    for (int i = 0; i < n; ++i) {
+        for (ll k = 0; k <= sq; ++k) {
+            ll curr = a[i] - k * i;
+            cnt[imake(k, curr)] += 1;
+            res = max(res, cnt[imake(k, curr)]);
+        }
+    }
+    // d > sqrt(n)
+    for (int i = 0; i < n; ++i) {
+        has.reset();
+        for (int j = max(0, i - N / sq - 1); j < i; ++j) {
+            if ((a[i] - a[j]) % (i - j)) continue;
+            ll diff = (a[i] - a[j]) / (i - j);
+            ll start = a[i] - diff * i;
+            if (not has.contain(imake(diff, start))) {
+                bk[imake(diff, start)] += 1;
+                has[imake(diff, start)] = 1;
+                res = max(res, bk[imake(diff, start)] + 1);
+            }
+        }
+    }
+    return res;
+}
+
 void solve() {
+    read(int, n);
+    readvec(int, a, n);
+    int res1 = __solve(n, a);
+    reverse(a.begin(), a.end());
+    int res2 = __solve(n, a);
+    cout << n - max(res1, res2) << endl;
 }
 
 int main() {
-#if __cplusplus < 201402L or defined(_MSC_VER) and not defined(__clang__)
+#if __cplusplus < 201703L or defined(_MSC_VER) and not defined(__clang__)
     assert(false && "incompatible compiler variant detected.");
 #endif
     untie, cout.tie(NULL);

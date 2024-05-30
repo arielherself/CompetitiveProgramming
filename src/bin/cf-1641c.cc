@@ -1,3 +1,10 @@
+/**
+ * Author:   subcrip
+ * Created:  2024-05-30 18:43:44
+ * Modified: 2024-05-30 20:44:48
+ * Elapsed:  121 minutes
+ */
+
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -173,7 +180,6 @@ struct array_hash {
 };
 
 /* build data structures */
-#define faster(um) __AS_PROCEDURE((um).reserve(1024); (um).max_load_factor(0.25);)
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
 #define pa(a) __AS_PROCEDURE(__typeof(a) pa; pa.push_back({}); for (auto&&x : a) pa.push_back(pa.back() + x);)
@@ -475,7 +481,7 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -486,7 +492,189 @@ void dump_ignore() {}
 void prep() {
 }
 
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+    using size_type = uint64_t;
+    using info_type = Addable_Info_t;
+    using tag_type = Tag_t;
+    size_type _max;
+    vector<info_type> d;
+    vector<tag_type> b;
+    void pull(size_type p) {
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+    void push(size_type p, size_type left_len, size_type right_len) {
+        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
+        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+        b[p] = tag_type();
+    }
+    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+        if (s == t) {
+            d[p] = c;
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        if (s != t) push(p, m - s + 1, t - m);
+        if (x <= m) set(s, m, p * 2, x, c);
+        else set(m + 1, t, p * 2 + 1, x, c);
+        pull(p);
+    }
+    
+    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+        if (l <= s && t <= r) {
+            d[p].apply(c, t - s + 1);
+            b[p].apply(c);
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        push(p, m - s + 1, t - m);
+        if (l <= m) range_apply(s, m, p * 2, l, r, c);
+        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
+        pull(p);
+    }
+    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+        if (l <= s && t <= r) {
+            return d[p];
+        }
+        size_type m = s + (t - s >> 1);
+        info_type res = {};
+        push(p, m - s + 1, t - m);
+        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+        return res;
+    }
+    void build(const Sequence& a, size_type s, size_type t, size_type p) {
+        if (s == t) {
+            d[p] = a[s];
+            return;
+        }
+        int m = s + (t - s >> 1);
+        build(a, s, m, p * 2);
+        build(a, m + 1, t, p * 2 + 1);
+        pull(p);
+    }
+public:
+    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+    segtree(const Sequence& a) : segtree(a.size()) {
+        build(a, {}, _max, 1);
+    }
+    void set(size_type i, const info_type& c) {
+        set({}, _max, 1, i, c);
+    }
+    
+    void range_apply(size_type l, size_type r, const tag_type& c) {
+        range_apply({}, _max, 1, l, r, c);
+    }
+    void apply(size_type i, const tag_type& c) {
+        range_apply(i, i, c);
+    }
+    info_type range_query(size_type l, size_type r) {
+        return range_query({}, _max, 1, l, r);
+    }
+    info_type query(size_type i) {
+        return range_query(i, i);
+    }
+    Sequence serialize() {
+        Sequence res = {};
+        for (size_type i = 0; i <= _max; ++i) {
+            res.push_back(query(i));
+        }
+        return res;
+    }
+    const vector<info_type>& get_d() {
+        return d;
+    }
+};
+struct Tag {
+    ll val = INFLL;
+    void apply(const Tag& rhs) {
+        val = min(val, rhs.val);
+    }
+};
+struct Info {
+    ll val = -INFLL, loc = -1, inf_cnt = 0;
+    void apply(const Tag& rhs, size_t len) {
+        val = min(val, rhs.val);
+        // when the segment is not a leaf:
+        // set val according to the time of the operation removing all INFLL's
+        if (inf_cnt and rhs.val != INFLL) inf_cnt = 0, val = rhs.val;
+    }
+};
+Info operator+(const Info &a, const Info &b) {
+    // if the current Info is empty:
+    if (a.val == -INFLL) {
+        return b;
+    }
+    if (b.val == -INFLL) {
+        return a;
+    }
+    // merge two segments
+    if (not a.inf_cnt and not b.inf_cnt) {
+        return {
+            max(a.val, b.val),
+            a.loc,  // choose arbitrarily since no segment has INFLL
+            0,
+        };
+    } else if (a.inf_cnt) {
+        // the case of:
+        //   1. both segments have INFLL => { INFLL, [[invalid]], inf_cnt }
+        //   2. only the left one has
+        return {
+            // edge case: left segment only has one element
+            a.val == INFLL ? b.val : max(a.val, b.val),
+            a.loc,
+            a.inf_cnt + b.inf_cnt,
+        };
+    } else {
+        return {
+            // edge case: right segment only has one element
+            b.val == INFLL ? a.val : max(a.val, b.val),
+            b.loc,
+            a.inf_cnt + b.inf_cnt,
+        };
+    }
+}
+
 void solve() {
+    read(int, n, q);
+    segtree<Info, Tag> tr(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        tr.set(i, {INFLL, i, 1});
+    }
+    vector<pii> queries;
+    vector<tiii> segments;  // "1" segments
+    for (int i = 0; i < q; ++i) {
+        read(int, op);
+        if (op == 0) {
+            read(int, l, r, x);
+            if (x == 0) {
+                tr.range_apply(l, r, {i});
+            } else {
+                segments.emplace_back(l, r, i);
+            }
+        } else {
+            read(int, j);
+            queries.emplace_back(j, i);
+        }
+    }
+    vector<int> one(n + 1, INF);  // when the status of point i is determined
+    for (auto&& [l, r, i] : segments) {
+        auto res = tr.range_query(l, r);
+        if (res.inf_cnt != 1) continue;
+        // edge case: l == r
+        if (l == r) one[res.loc] = min(one[res.loc], i);
+        // count in both the current "1" segment and all "0" segments.
+        else one[res.loc] = min(one[res.loc], max(i, int(res.val)));
+    }
+    for (auto&& [j, i] : queries) {
+        if (one[j] < i) {
+            cout << "YES\n";
+        } else if (tr.query(j).val < i) {
+            cout << "NO\n";
+        } else {
+            cout << "N/A\n";
+        }
+    }
 }
 
 int main() {

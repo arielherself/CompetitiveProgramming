@@ -1,3 +1,10 @@
+/**
+ * Author:   subcrip
+ * Created:  2024-05-30 21:46:13
+ * Modified: 2024-05-30 22:30:38
+ * Elapsed:  44 minutes
+ */
+
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -173,7 +180,6 @@ struct array_hash {
 };
 
 /* build data structures */
-#define faster(um) __AS_PROCEDURE((um).reserve(1024); (um).max_load_factor(0.25);)
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
 #define pa(a) __AS_PROCEDURE(__typeof(a) pa; pa.push_back({}); for (auto&&x : a) pa.push_back(pa.back() + x);)
@@ -475,7 +481,7 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -487,6 +493,89 @@ void prep() {
 }
 
 void solve() {
+    read(int, n, m);
+    vector<vector<pii>> edges(n + 1);
+    while (m--) {
+        read(int, w, u, v);
+        edgew(edges, u, v, w);
+    }
+    vector<int> sq;
+    vector<int> direction(n + 1, -1);
+    vector<int> ind(n + 1);
+    adj(ch, n);
+    int f = 1;
+    auto dfs = [&] (auto dfs, int v, int di) -> void {
+        if (direction[v] != -1) {
+            if (direction[v] != di) f = 0;
+            return;
+        }
+        direction[v] = di;
+        for (auto&& [u, type] : edges[v]) {
+            if (type == 1) {
+                // irrelevant
+                if (di == 1) {
+                    // right
+                    Edge(ch, u, v);
+                    ind[v] += 1;
+                } else {
+                    Edge(ch, v, u);
+                    ind[u] += 1;
+                }
+            } else {
+                // destined
+                if (di == 1) {
+                    Edge(ch, v, u);
+                    ind[u] += 1;
+                } else {
+                    Edge(ch, u, v);
+                    ind[v] += 1;
+                }
+            }
+            dfs(dfs, u, 1 ^ di);
+        }
+    };
+    for (int i = 1; i <= n ;++i) {
+        if (direction[i] == -1) {
+            dfs(dfs, i, 0);
+        }
+    }
+    if (f == 0) {
+        cout << "NO\n";
+        return;
+    }
+    deque<int> q;
+    for (int i = 1; i <= n; ++i) {
+        if (ind[i] == 0) {
+            q.emplace_back(i);
+        }
+    }
+    while (q.size()) {
+        int v = q.front(); q.pop_front();
+        sq.emplace_back(v);
+        for (auto&& u : ch[v]) {
+            if (--ind[u] == 0) {
+                q.emplace_back(u);
+            }
+        }
+    }
+    if (sq.size() != n) {
+        cout << "NO\n";
+        return;
+    }
+    vector<int> num(n + 1);
+    for (auto&& [i, x] : enumerate(sq)) {
+        num[x] = i;
+    }
+    cout << "YES\n";
+    for (int i = 1; i <= n; ++i) {
+        if (direction[i] == 1) {
+            // right
+            cout << "R ";
+        } else {
+            cout << "L ";
+        }
+        cout << num[i] << '\n';
+    }
 }
 
 int main() {

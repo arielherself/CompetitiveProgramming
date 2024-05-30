@@ -1,3 +1,10 @@
+/**
+ * Author:   subcrip
+ * Created:  2024-05-29 17:05:56
+ * Modified: 2024-05-29 17:58:20
+ * Elapsed:  52 minutes
+ */
+
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -173,7 +180,6 @@ struct array_hash {
 };
 
 /* build data structures */
-#define faster(um) __AS_PROCEDURE((um).reserve(1024); (um).max_load_factor(0.25);)
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
 #define pa(a) __AS_PROCEDURE(__typeof(a) pa; pa.push_back({}); for (auto&&x : a) pa.push_back(pa.back() + x);)
@@ -487,6 +493,54 @@ void prep() {
 }
 
 void solve() {
+    read(int, n, m);
+    readvec(int, a, n);
+    vector<vector<tuple<ll, int, int>>> events(n);
+    for (int k = 1; k <= m; ++k) {
+        read(int, i, time, percent);
+        events[--i].emplace_back(time, percent, k);
+    }
+    ll start = 0;
+    vector<int> res;
+    for (int i = 0; i < n; ++i) {
+        int m = events[i].size();
+        vector<vector<pli>> dp(m + 1, vector<pli>(101));
+        for (int i = 0; i <= m; ++i) {
+            for (int j = 0; j <= 100; ++j) {
+                dp[i][j] = {INF, j};
+            }
+        }
+        dp[0][0] = {0, 0};
+        for (int j = 1; j <= m; ++j) {
+            auto [t, p, idx] = events[i][j - 1];
+            for (int k = 0; k <= 100; ++k) {
+                dp[j][k] = dp[j - 1][k];
+            }
+            for (int k = 0; k <= 100; ++k) {
+                int new_percent = min(100, dp[j - 1][k].second + p);
+                if (dp[j][new_percent].first > dp[j - 1][k].first + t) {
+                    dp[j][new_percent] = {dp[j - 1][k].first + t, dp[j - 1][k].second + p};
+                }
+            }
+        }
+        ll tm = dp[m][100].first;
+        if (tm + start > a[i]) {
+            cout << -1 << '\n';
+            return;
+        } else {
+            int k = dp[m][100].second;
+            for (int j = m; j >= 1; --j) {
+                auto [t, p, idx] = events[i][j - 1];
+                if (dp[j][min(100, k)] < dp[j - 1][min(100, k)]) {
+                    k -= p;
+                    res.emplace_back(idx);
+                }
+            }
+            start += tm;
+        }
+    }
+    cout << res.size() << '\n';
+    putvec(res);
 }
 
 int main() {
