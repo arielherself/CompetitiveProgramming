@@ -1,10 +1,3 @@
-/**
- * Author:   subcrip
- * Created:  2024-05-29 19:36:48
- * Modified: 2024-05-29 19:41:14
- * Elapsed:  4 minutes
- */
-
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -479,6 +472,9 @@ public:
 template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container) {
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
+#define functor(func) [&](auto&&... val) \
+noexcept(noexcept(func(std::forward<decltype(val)>(val)...))) -> decltype(auto) \
+{return func(std::forward<decltype(val)>(val)...);}
 /////////////////////////////////////////////////////////
 
 // #define SINGLE_TEST_CASE
@@ -517,6 +513,7 @@ vector<int> factcount(int n) {
 }
 
 void solve() {
+    cout << functor(std::min<int>)(1, 2);
 }
 
 int main() {

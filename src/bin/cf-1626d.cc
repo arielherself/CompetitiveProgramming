@@ -1,8 +1,8 @@
 /**
  * Author:   subcrip
- * Created:  2024-05-31 23:31:18
- * Modified: 2024-06-01 00:53:27
- * Elapsed:  82 minutes
+ * Created:  2024-05-31 21:47:28
+ * Modified: 2024-05-31 22:57:53
+ * Elapsed:  70 minutes
  */
 
 #pragma GCC optimize("Ofast")
@@ -496,177 +496,46 @@ void dump_ignore() {}
 void prep() {
 }
 
-template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
-private:
-    using size_type = uint64_t;
-    using info_type = Addable_Info_t;
-    using tag_type = Tag_t;
-    size_type _max;
-    vector<info_type> d;
-    vector<tag_type> b;
-    void pull(size_type p) {
-        d[p] = d[p * 2] + d[p * 2 + 1];
+int calc(int x) {
+    if (x == 0) return 1;
+    int ret = lg2(x);
+    if ((1 << ret) == x) {
+        return 0;
+    } else {
+        return (1 << ret + 1) - x;
     }
-    void push(size_type p, size_type left_len, size_type right_len) {
-        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
-        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
-        b[p] = tag_type();
-    }
-    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
-        if (s == t) {
-            d[p] = c;
-            return;
-        }
-        size_type m = s + (t - s >> 1);
-        if (s != t) push(p, m - s + 1, t - m);
-        if (x <= m) set(s, m, p * 2, x, c);
-        else set(m + 1, t, p * 2 + 1, x, c);
-        pull(p);
-    }
-    
-    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
-        if (l <= s && t <= r) {
-            d[p].apply(c, t - s + 1);
-            b[p].apply(c);
-            return;
-        }
-        size_type m = s + (t - s >> 1);
-        push(p, m - s + 1, t - m);
-        if (l <= m) range_apply(s, m, p * 2, l, r, c);
-        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
-        pull(p);
-    }
-    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
-        if (l <= s && t <= r) {
-            return d[p];
-        }
-        size_type m = s + (t - s >> 1);
-        info_type res = {};
-        push(p, m - s + 1, t - m);
-        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
-        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
-        return res;
-    }
-    void build(const Sequence& a, size_type s, size_type t, size_type p) {
-        if (s == t) {
-            d[p] = a[s];
-            return;
-        }
-        int m = s + (t - s >> 1);
-        build(a, s, m, p * 2);
-        build(a, m + 1, t, p * 2 + 1);
-        pull(p);
-    }
-public:
-    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
-    segtree(const Sequence& a) : segtree(a.size()) {
-        build(a, {}, _max, 1);
-    }
-    void set(size_type i, const info_type& c) {
-        set({}, _max, 1, i, c);
-    }
-    
-    void range_apply(size_type l, size_type r, const tag_type& c) {
-        range_apply({}, _max, 1, l, r, c);
-    }
-    void apply(size_type i, const tag_type& c) {
-        range_apply(i, i, c);
-    }
-    info_type range_query(size_type l, size_type r) {
-        return range_query({}, _max, 1, l, r);
-    }
-    info_type query(size_type i) {
-        return range_query(i, i);
-    }
-    Sequence serialize() {
-        Sequence res = {};
-        for (size_type i = 0; i <= _max; ++i) {
-            res.push_back(query(i));
-        }
-        return res;
-    }
-    const vector<info_type>& get_d() {
-        return d;
-    }
-};
-struct MaxTag {
-    ll val = -INFLL;
-    void apply(const MaxTag& rhs) {
-        if (rhs.val != -INFLL)
-        val = rhs.val;
-    }
-};
-struct MaxInfo {
-    ll val = -INFLL;
-    void apply(const MaxTag& rhs, size_t len) {
-        if (rhs.val != -INFLL)
-        val = rhs.val * len;
-    }
-};
-MaxInfo operator+(const MaxInfo &a, const MaxInfo &b) {
-    return {max(a.val, b.val)};
 }
 
 void solve() {
-    read(int, n, m, k);
-    readvec1(ll, a, n);
-    vector<map<int, vector<tiii>>> raw_ld(n + 1);
-    vector<int> sz(n + 1);
-    vector<set<int>> st(n + 1);
-    vector<unordered_map<int, int, safe_hash>> mp(n + 1);
-    while (k--) {
-        read(int, x1, y1, x2, y2, c);
-        raw_ld[x2][y2].emplace_back(x1, y1, c);
-        st[x1].emplace(y1);
-        st[x2].emplace(y2);
+    read(int, n);
+    vector<int> a(n);
+    for (int i = 0; i < n; ++i) {
+        read(int, x);
+        --x;
+        a[x] += 1;
     }
-    st[1].emplace(1);
-    // tuple(y, x', y', profit)
-    vector<vector<pair<int, vector<tiii>>>> ld(n + 1);
-    vector<segtree<MaxInfo, MaxTag>> right_tr = {{0}}, left_tr = {{0}};
+    vector<int> ps(n + 1);
     for (int i = 1; i <= n; ++i) {
-        for (auto&& [y, v] : raw_ld[i]) {
-            ld[i].emplace_back(y, v);
+        ps[i] = ps[i - 1] + a[i - 1];
+    }
+    set<int> st;
+    int m = lg2(n) + 1;
+    vector<int> d(n + 1, INF);
+    st.emplace(0);
+    for (int i = 1; i <= n; ++i) {
+        for (int j = 0; j <= m; ++j) {
+            auto it = st.lower_bound(ps[i] - (1 << j));
+            if (it == st.end()) continue;
+            int old_ps = *it;
+            d[i] = min(d[i], calc(old_ps) + calc(ps[i] - old_ps));
         }
-        int N = 0;
-        for (auto&& x : st[i]) mp[i][x] = ++N;
-        sz[i] = N;
-        right_tr.push_back(segtree<MaxInfo, MaxTag>(sz[i] + 1));
-        left_tr.push_back(segtree<MaxInfo, MaxTag>(sz[i] + 1));
+        st.emplace(ps[i]);
     }
-    left_tr[1].set(1, {a[1]});
-    right_tr[1].set(1, {-a[1]});
-    ll res = -INFLL;
-    for (int i = 2; i <= n; ++i) {
-        for (auto&& [y, v] : ld[i]) {
-            ll mx = -INFLL;
-            for (auto&& [x1, y1, profit] : v) {
-                // left
-                ll left = left_tr[x1].range_query(0, mp[x1][y1]).val;
-                if (left != -INFLL) {
-                    mx = max(mx, left - a[x1] * y1 + profit);
-                }
-                // right
-                ll right = right_tr[x1].range_query(mp[x1][y1], sz[x1]).val;
-                if (right != -INFLL) {
-                    mx = max(mx, right + a[x1] * y1 + profit);
-                }
-            }
-            if (mx == -INFLL) continue;
-            ll raw_left = left_tr[i].query(mp[i][y]).val;
-            left_tr[i].set(mp[i][y], {max(raw_left, mx + y * a[i])});
-            ll raw_right = right_tr[i].query(mp[i][y]).val;
-            right_tr[i].set(mp[i][y], {max(raw_right, mx - y * a[i])});
-            if (i == n) {
-                res = max(res, mx - (m - y) * a[i]);
-            }
-        }
+    int res = INF;
+    for (int i = 0; i <= n; ++i) {
+        res = min(res, d[i] + calc(ps[n] - ps[i]));
     }
-    if (res == -INFLL) {
-        cout << "NO ESCAPE\n";
-    } else {
-        cout << -res << '\n';
-    }
+    cout << res << '\n';
 }
 
 int main() {
