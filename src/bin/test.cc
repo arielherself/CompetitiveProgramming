@@ -1,3 +1,10 @@
+/**
+ * Author:   subcrip
+ * Created:  2024-06-01 13:45:49
+ * Modified: 2024-06-01 15:48:33
+ * Elapsed:  122 minutes
+ */
+
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -173,6 +180,7 @@ struct array_hash {
 };
 
 /* build data structures */
+#define faster(um) __AS_PROCEDURE((um).reserve(1024); (um).max_load_factor(0.25);)
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
 #define pa(a) __AS_PROCEDURE(__typeof(a) pa; pa.push_back({}); for (auto&&x : a) pa.push_back(pa.back() + x);)
@@ -428,6 +436,9 @@ istream& operator>>(istream& in, MLLd& num) {
 }
 
 // miscancellous
+#define functor(func) [&](auto&&... val) \
+noexcept(noexcept(func(std::forward<decltype(val)>(val)...))) -> decltype(auto) \
+{return func(std::forward<decltype(val)>(val)...);}
 template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
     std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
 }
@@ -472,12 +483,9 @@ public:
 template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container) {
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
-#define functor(func) [&](auto&&... val) \
-noexcept(noexcept(func(std::forward<decltype(val)>(val)...))) -> decltype(auto) \
-{return func(std::forward<decltype(val)>(val)...);}
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -488,32 +496,121 @@ void dump_ignore() {}
 void prep() {
 }
 
-vector<int> factcount(int n) {
-    vector<bool> not_prime(n + 1);
-    vector<int> res(n + 1), num(n + 1);
-    res[1] = 1;
-    for (int i = 2; i <= n; ++i) {
-        if (not not_prime[i]) {
-            res[i] = 2;
-            num[i] = 1;
-        }
-        for (auto&& x : res) {
-            if (i * x > n) break;
-            not_prime[i * x] = 1;
-            if (i % x == 0) {
-                num[i * x] = num[i] + 1;
-                res[i * x] = res[i] / num[i * x] * (num[i * x] + 1);
-                break;
-            }
-            num[i * x] = 1;
-            res[i * x] = res[i] * 2;
+void solve() {
+    read(int, n, m, k);
+    vector<vector<short>> grid(n + 1, vector<short>(m + 1));
+    vector<vector<short>> x_diff(n + 1, vector<short>(m + 2)), y_diff(m + 1, vector<short>(n + 2));
+    while (k--) {
+        read(short, x1, y1, x2, y2);
+        if (x1 == x2) {
+            if (y1 > y2) swap(y1, y2);
+            x_diff[x1][y1] += 1;
+            x_diff[x1][y2 + 1] -= 1;
+        } else if (y1 == y2) {
+            if (x1 > x2) swap(x1, x2);
+            y_diff[y1][x1] += 1;
+            y_diff[y1][x2 + 1] -= 1;
         }
     }
-    return res;
-}
-
-void solve() {
-    cout << functor(std::min<int>)(1, 2);
+    for (int i = 1; i <= n; ++i) {
+        int curr = 0;
+        for (int j = 1; j <= m; ++j) {
+            curr += x_diff[i][j];
+            if (curr) grid[i][j] = 1;
+        }
+    }
+    for (int i = 1; i <= m; ++i) {
+        int curr = 0;
+        for (int j = 1; j <= n; ++j) {
+            curr += y_diff[i][j];
+            if (curr) grid[j][i] = 1;
+        }
+    }
+    // for (int i = 1; i <= n; ++i) {
+    //     for (int j = 1; j <= m; ++j) {
+    //         cerr << grid[i][j] << " \n"[j == m];
+    //     }
+    // }
+    // cerr << endl;
+    read(short, sx, sy);
+    grid[sx][sy] = 2;
+    deque<pair<short, short>> q, nq;
+    q.emplace_back(sx, sy);
+    vector<vector<short>> t(n + 1, vector<short>(m + 1));
+    vector<vector<bool>> v(n + 1, vector<bool>(m + 1));
+    while (1) {
+        int f = 0;
+        // debug(endl);
+        while (q.size()) {
+            popfront(q, x, y);
+            // debug(make_tuple(x, y));
+            grid[x][y] = 2;
+            if (x - 1 >= 1) {
+                if (v[x - 1][y] == 0) {
+                    if (grid[x - 1][y] == 0) {
+                        q.emplace_back(x - 1, y);
+                    } else if (grid[x - 1][y] == 1) {
+                        nq.emplace_back(x - 1, y);
+                    }
+                    v[x - 1][y] = 1;
+                }
+            } else {
+                f = 1;
+            }
+            if (x + 1 <= n) {
+                if (v[x + 1][y] == 0) {
+                    if (grid[x + 1][y] == 0) {
+                        q.emplace_back(x + 1, y);
+                    } else if (grid[x + 1][y] == 1) {
+                        nq.emplace_back(x + 1, y);
+                    }
+                    v[x + 1][y] = 1;
+                }
+            } else {
+                f = 1;
+            }
+            if (y + 1 <= m) {
+                if (v[x][y + 1] == 0) {
+                    if (grid[x][y + 1] == 0) {
+                        q.emplace_back(x, y + 1);
+                    } else if (grid[x][y + 1] == 1) {
+                        nq.emplace_back(x, y + 1);
+                    }
+                    v[x][y + 1] = 1;
+                }
+            } else {
+                f = 1;
+            }
+            if (y - 1 >= 1) {
+                if (v[x][y - 1] == 0) {
+                    if (grid[x][y - 1] == 0) {
+                        q.emplace_back(x, y - 1);
+                    } else if (grid[x][y - 1] == 1) {
+                        nq.emplace_back(x, y - 1);
+                    }
+                    v[x][y - 1] = 1;
+                }
+            } else {
+                f = 1;
+            }
+            
+        }
+        if (f) {
+            break;
+        } else {
+            swap(q, nq);
+        }
+    }
+    int res = 0;
+    for (int i = 1; i <= n; ++i) {
+        for (int j = 1; j <= m; ++j) {
+            // cerr << grid[i][j] << " \n"[j == m];
+            if (grid[i][j] == 0) {
+                res += 1;
+            }
+        }
+    }
+    cout << res << '\n';
 }
 
 int main() {

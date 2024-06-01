@@ -496,7 +496,7 @@ int main() {
 #if __cplusplus < 201402L or defined(_MSC_VER) and not defined(__clang__)
     assert(false && "incompatible compiler variant detected.");
 #endif
-    untie, cout.tie(NULL);
+    untie;
     prep();
 #ifdef SINGLE_TEST_CASE
     solve();
