@@ -1,8 +1,8 @@
 /**
  * Author:   subcrip
- * Created:  2024-06-02 19:04:46
- * Modified: 2024-06-02 19:52:13
- * Elapsed:  47 minutes
+ * Created:  2024-06-02 16:23:11
+ * Modified: 2024-06-02 18:09:02
+ * Elapsed:  105 minutes
  */
 
 #pragma GCC optimize("Ofast")
@@ -496,160 +496,140 @@ void dump_ignore() {}
 void prep() {
 }
 
-template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
-private:
-    using size_type = uint64_t;
-    using info_type = Addable_Info_t;
-    using tag_type = Tag_t;
-    size_type _max;
-    vector<info_type> d;
-    vector<tag_type> b;
-    void pull(size_type p) {
-        d[p] = d[p * 2] + d[p * 2 + 1];
-    }
-    void push(size_type p, size_type left_len, size_type right_len) {
-        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
-        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
-        b[p] = tag_type();
-    }
-    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
-        if (s == t) {
-            d[p] = c;
-            return;
+template<typename T>
+struct BIT {
+    int n;
+    vector<T> c;
+    BIT(size_t n) : n(n), c(n + 1) {}
+    void add(size_t i, const T& k) {
+        while (i <= n) {
+            c[i] += k;
+            i += lowbit(i);
         }
-        size_type m = s + (t - s >> 1);
-        if (s != t) push(p, m - s + 1, t - m);
-        if (x <= m) set(s, m, p * 2, x, c);
-        else set(m + 1, t, p * 2 + 1, x, c);
-        pull(p);
     }
-    
-    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
-        if (l <= s && t <= r) {
-            d[p].apply(c, t - s + 1);
-            b[p].apply(c);
-            return;
-        }
-        size_type m = s + (t - s >> 1);
-        push(p, m - s + 1, t - m);
-        if (l <= m) range_apply(s, m, p * 2, l, r, c);
-        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
-        pull(p);
-    }
-    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
-        if (l <= s && t <= r) {
-            return d[p];
-        }
-        size_type m = s + (t - s >> 1);
-        info_type res = {};
-        push(p, m - s + 1, t - m);
-        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
-        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
-        return res;
-    }
-    void build(const Sequence& a, size_type s, size_type t, size_type p) {
-        if (s == t) {
-            d[p] = a[s];
-            return;
-        }
-        int m = s + (t - s >> 1);
-        build(a, s, m, p * 2);
-        build(a, m + 1, t, p * 2 + 1);
-        pull(p);
-    }
-public:
-    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
-    segtree(const Sequence& a) : segtree(a.size()) {
-        build(a, {}, _max, 1);
-    }
-    void set(size_type i, const info_type& c) {
-        set({}, _max, 1, i, c);
-    }
-    
-    void range_apply(size_type l, size_type r, const tag_type& c) {
-        range_apply({}, _max, 1, l, r, c);
-    }
-    void apply(size_type i, const tag_type& c) {
-        range_apply(i, i, c);
-    }
-    info_type range_query(size_type l, size_type r) {
-        return range_query({}, _max, 1, l, r);
-    }
-    info_type query(size_type i) {
-        return range_query(i, i);
-    }
-    Sequence serialize() {
-        Sequence res = {};
-        for (size_type i = 0; i <= _max; ++i) {
-            res.push_back(query(i));
+    T getsum(size_t i) {
+        T res = {};
+        while (i) {
+            res += c[i];
+            i -= lowbit(i);
         }
         return res;
     }
-    const vector<info_type>& get_d() {
-        return d;
+};
+
+template<typename _Tp, typename _Op = function<_Tp(const _Tp&, const _Tp&)>> struct sparse_table {
+    _Op op;
+    vector<vector<_Tp>> st;
+    template <typename ReverseIterator>
+    sparse_table(ReverseIterator __first, ReverseIterator __last, _Op&& __operation) {
+        op = __operation;
+        int n = distance(__first, __last);
+        st = vector<vector<_Tp>>(n, vector<_Tp>(int(log2(n) + 1)));
+        int i = n - 1;
+        for (auto it = __first; it != __last; ++it) {
+            st[i][0] = *it;
+            for (int j = 1; i + (1 << j) <= n; ++j) {
+                st[i][j] = op(st[i][j - 1], st[i + (1 << (j - 1))][j - 1]);
+            }
+            i -= 1;
+        }
+    }
+    _Tp query(size_t __start, size_t __end) {
+        int s = lg2(__end - __start + 1);
+        return op(st[__start][s], st[__end - (1 << s) + 1][s]);
     }
 };
-struct Tag {
-    int val = 0;
-    void apply(const Tag& rhs) {
-        val = rhs.val;
-    }
-};
-struct Info {
-    int val = 0;
-    void apply(const Tag& rhs, size_t len) {
-        val += rhs.val * len;
-    }
-};
-Info operator+(const Info &a, const Info &b) {
-    return {a.val + b.val};
-}
 
 void solve() {
-    read(int, n);
-    read(string, s, t);
-    array<vector<int>, 26> bk;
-    for (int i = n - 1; ~i; --i) {
-        bk[s[i] - 'a'].emplace_back(i);
-    }
-    ll res = INFLL;
-    ll cnt = 0;
-    vector<int> mark(n);
-    segtree<Info, Tag> tr(n);
-    auto get = [&] (int i) -> int {
-        return i + (i + 1 > n - 1 ? 0 : tr.range_query(i + 1, n - 1).val);
-    };
-    int ptr = 0;
-    for (int i = 0; i < n; ++i) {
-        while (mark[ptr]) ++ptr;
-        assert(ptr < n);
-        int x = s[ptr] - 'a', y = t[i] - 'a';
-        if (x < y) {
-            res = min(res, cnt);
+    read(int, n, m);
+    readvec(int, a, n);
+    int max_prof = *max_element(a.begin(), a.end());
+    BIT<int> prof(max_prof);
+    for (auto&& x : a) prof.add(x, 1);
+    vector<tuple<int, ll, vector<int>>> b(m);
+    for (int i = 0; i < m; ++i) {
+        read(int, k);
+        ll sum = 0;
+        for (int j = 0; j < k; ++j) {
+            read(int, x);
+            sum += x;
+            get<2>(b[i]).emplace_back(x);
         }
-        int f = 0;
-        for (int j = 0; j < 26; ++j) {
-            while (bk[j].size() and (mark[bk[j].back()] or get(bk[j].back()) < i)) {
-                bk[j].pop_back();
+        get<1>(b[i]) = sum;
+        get<0>(b[i]) = i;
+    }
+    auto get = [] (const tuple<int, ll, vector<int>>& x) -> int {
+        return (std::get<1>(x) + std::get<2>(x).size() - 1) / std::get<2>(x).size();
+    };
+    sort_by_key(b.begin(), b.end(), get);
+    // for (auto&& x : b) {
+    //     cerr << get(x) << ' ';
+    // }
+    // cerr << endl;
+    vector<int> c(m);
+    for (int i = 0; i < m; ++i) {
+        int avg = get(b[i]);
+        c[i] = prof.getsum(max_prof) - prof.getsum(min(max_prof, avg - 1)) - (m - i);
+    }
+    // debug(c);
+    sparse_table<int> st(c.rbegin(), c.rend(), functor(min));
+    vector<vector<int>> res(m);
+    for (int i = 0; i < m; ++i) {
+        // debug(i);
+        auto&& [idx, s, v] = b[i];
+        // debug(get(b[i]));
+        for (auto&& x : v) {
+            int nw_avg = v.size() == 1 ? 0 : (s - x + v.size() - 2) / (v.size() - 1);
+            // debug(nw_avg);
+            int pos;
+            {
+                int l = 0, r = m - 1;
+                while (l < r) {
+                    int mid = l + r + 1 >> 1;
+                    if (get(b[mid]) <= nw_avg) {
+                        l = mid;
+                    } else {
+                        r = mid - 1;
+                    }
+                }
+                pos = l;
             }
-            if (bk[j].size()) {
-                if (j < y) {
-                    res = min(res, cnt + get(bk[j].back()) - i);
-                } else if (j == y) {
-                    f = 1;
-                    mark[bk[j].back()] = 1;
-                    tr.set(bk[j].back(), {1});
-                    cnt += get(bk[j].back()) - i;
+            if (get(b[pos]) <= nw_avg) ++pos;
+            // debug(pos);
+            if (pos > i) {
+                // debug(make_tuple(prof.getsum(max_prof) - prof.getsum(min(max_prof, max(0, nw_avg - 1))), m - pos + 1));
+                // debug(st.query(pos, m - 1));
+                // debug(true);
+                if ((i + 1 > pos - 1 or st.query(i + 1, pos - 1) >= 1) and (0 > i - 1 or st.query(0, i - 1) >= 0)
+                    and (pos > m - 1 or st.query(pos, m - 1) >= 0)
+                    and prof.getsum(max_prof) - prof.getsum(min(max_prof, max(0, nw_avg - 1))) >= m - pos + 1) {
+                    // debug("asdf");
+                    res[idx].emplace_back(1);
+                } else {
+                    res[idx].emplace_back(0);
+                }
+            } else {
+                // debug(false);
+                if ((0 > pos - 1 or st.query(0, pos - 1) >= 0) and (pos > i - 1 or st.query(pos, i - 1) >= -1)
+                    and (i + 1 > m - 1 or st.query(i + 1, m - 1) >= 0)
+                    and prof.getsum(max_prof) - prof.getsum(min(max_prof, max(0, nw_avg - 1))) >= m - pos) {
+                    res[idx].emplace_back(1);
+                } else {
+                    res[idx].emplace_back(0);
                 }
             }
         }
-        if (f == 0) break;
     }
-    if (res == INFLL) {
-        cout << -1 << '\n';
-    } else {
-        cout << res << '\n';
+    for (auto&& v : res) {
+        for (auto&& x : v) {
+            if (x) {
+                cout << 1;
+            } else {
+                cout << 0;
+            }
+        }
     }
+    cout << '\n';
 }
 
 int main() {

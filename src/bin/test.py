@@ -4,12 +4,8 @@ from os import system
 import io
 
 if __name__ == '__main__':
-    n = 8
-    m = 8
-    st = set()
-    for i in range(1, n + 1):
-        for j in range(1, m + 1):
-            print(i ** j, end='\t')
-            st.add(i ** j)
-        print()
-    print(len(st))
+    n = 5000
+    m = 10000
+    t = 200000
+    print(n, m)
+    for _ in range(m):

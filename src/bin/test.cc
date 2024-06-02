@@ -1,8 +1,8 @@
 /**
  * Author:   subcrip
  * Created:  2024-06-01 13:45:49
- * Modified: 2024-06-01 15:48:33
- * Elapsed:  122 minutes
+ * Modified: 2024-06-02 12:33:56
+ * Elapsed:  1368 minutes
  */
 
 #pragma GCC optimize("Ofast")
@@ -496,121 +496,185 @@ void dump_ignore() {}
 void prep() {
 }
 
+constexpr int MAXN = 5010;
+int low[MAXN], dfn[MAXN], dfs_clock;
+bool isbridge[MAXN];
+vector<int> ch[MAXN];
+int cnt_bridge;
+int father[MAXN];
+
+void tarjan(int u, int fa) {
+  father[u] = fa;
+  low[u] = dfn[u] = ++dfs_clock;
+  for (int i = 0; i < ch[u].size(); i++) {
+    int v = ch[u][i];
+    if (!dfn[v]) {
+      tarjan(v, u);
+      low[u] = min(low[u], low[v]);
+      if (low[v] > dfn[u]) {
+        isbridge[v] = true;
+        ++cnt_bridge;
+      }
+    } else if (dfn[v] < dfn[u] && v != fa) {
+      low[u] = min(low[u], dfn[v]);
+    }
+  }
+}
+
+struct LCA {
+    vector<int> depth;
+    vector<vector<int>> pa;
+    LCA(const vector<vector<tiii>>& g, int root = 1) {
+        int n = g.size() - 1;
+        int m = 32 - __builtin_clz(n);
+        depth.resize(n + 1);
+        pa.resize(n + 1, vector<int>(m, -1));
+        function<void(int, int)> dfs = [&](int x, int fa) {
+            pa[x][0] = fa;
+            for (auto&& [y, _, ___] : g[x]) {
+                if (y != fa) {
+                    depth[y] = depth[x] + 1;
+                    dfs(y, x);
+                }
+            }
+        };
+        dfs(root, 0);
+
+        for (int i = 0; i < m - 1; i++)
+            for (int x = 1; x <= n; x++)
+                if (int p = pa[x][i]; p != -1)
+                    pa[x][i + 1] = pa[p][i];
+    }
+
+    int get_kth_ancestor(int node, int k) {
+        for (; k; k &= k - 1)
+            node = pa[node][__builtin_ctz(k)];
+        return node;
+    }
+
+    int query(int x, int y) {
+        if (depth[x] > depth[y])
+            swap(x, y);
+        y = get_kth_ancestor(y, depth[y] - depth[x]);
+        if (y == x)
+            return x;
+        for (int i = pa[x].size() - 1; i >= 0; i--) {
+            int px = pa[x][i], py = pa[y][i];
+            if (px != py) {
+                x = px;
+                y = py;
+            }
+        }
+        return pa[x][0];
+    }
+};
+
+
 void solve() {
-    read(int, n, m, k);
-    vector<vector<short>> grid(n + 1, vector<short>(m + 1));
-    vector<vector<short>> x_diff(n + 1, vector<short>(m + 2)), y_diff(m + 1, vector<short>(n + 2));
-    while (k--) {
-        read(short, x1, y1, x2, y2);
-        if (x1 == x2) {
-            if (y1 > y2) swap(y1, y2);
-            x_diff[x1][y1] += 1;
-            x_diff[x1][y2 + 1] -= 1;
-        } else if (y1 == y2) {
-            if (x1 > x2) swap(x1, x2);
-            y_diff[y1][x1] += 1;
-            y_diff[y1][x2 + 1] -= 1;
-        }
+    read(int, n, m);
+    vector<pii> edges;
+    unordered_set<pii, pair_hash> oc;
+    while (m--){
+        read(int, x, y);
+        if (x == y or oc.count(minmax(x, y))) continue;
+        oc.insert(minmax(x, y));
+        edges.emplace_back(x, y);
+        edge(ch, x, y);
     }
-    for (int i = 1; i <= n; ++i) {
-        int curr = 0;
-        for (int j = 1; j <= m; ++j) {
-            curr += x_diff[i][j];
-            if (curr) grid[i][j] = 1;
-        }
-    }
-    for (int i = 1; i <= m; ++i) {
-        int curr = 0;
-        for (int j = 1; j <= n; ++j) {
-            curr += y_diff[i][j];
-            if (curr) grid[j][i] = 1;
-        }
-    }
+    tarjan(1, 0);
     // for (int i = 1; i <= n; ++i) {
-    //     for (int j = 1; j <= m; ++j) {
-    //         cerr << grid[i][j] << " \n"[j == m];
-    //     }
+    //     debug(isbridge[i]);
     // }
-    // cerr << endl;
-    read(short, sx, sy);
-    grid[sx][sy] = 2;
-    deque<pair<short, short>> q, nq;
-    q.emplace_back(sx, sy);
-    vector<vector<short>> t(n + 1, vector<short>(m + 1));
-    vector<vector<bool>> v(n + 1, vector<bool>(m + 1));
-    while (1) {
-        int f = 0;
-        // debug(endl);
-        while (q.size()) {
-            popfront(q, x, y);
-            // debug(make_tuple(x, y));
-            grid[x][y] = 2;
-            if (x - 1 >= 1) {
-                if (v[x - 1][y] == 0) {
-                    if (grid[x - 1][y] == 0) {
-                        q.emplace_back(x - 1, y);
-                    } else if (grid[x - 1][y] == 1) {
-                        nq.emplace_back(x - 1, y);
-                    }
-                    v[x - 1][y] = 1;
-                }
-            } else {
-                f = 1;
-            }
-            if (x + 1 <= n) {
-                if (v[x + 1][y] == 0) {
-                    if (grid[x + 1][y] == 0) {
-                        q.emplace_back(x + 1, y);
-                    } else if (grid[x + 1][y] == 1) {
-                        nq.emplace_back(x + 1, y);
-                    }
-                    v[x + 1][y] = 1;
-                }
-            } else {
-                f = 1;
-            }
-            if (y + 1 <= m) {
-                if (v[x][y + 1] == 0) {
-                    if (grid[x][y + 1] == 0) {
-                        q.emplace_back(x, y + 1);
-                    } else if (grid[x][y + 1] == 1) {
-                        nq.emplace_back(x, y + 1);
-                    }
-                    v[x][y + 1] = 1;
-                }
-            } else {
-                f = 1;
-            }
-            if (y - 1 >= 1) {
-                if (v[x][y - 1] == 0) {
-                    if (grid[x][y - 1] == 0) {
-                        q.emplace_back(x, y - 1);
-                    } else if (grid[x][y - 1] == 1) {
-                        nq.emplace_back(x, y - 1);
-                    }
-                    v[x][y - 1] = 1;
-                }
-            } else {
-                f = 1;
-            }
-            
-        }
-        if (f) {
+    adj(sp, n);
+    for (auto&& [u, v] : edges) {
+        if (isbridge[u] and minmax(u, v) == minmax(father[u], u)) continue;
+        if (isbridge[v] and minmax(u, v) == minmax(father[v], v)) continue;
+        // debug(make_tuple(u, v));
+        edge(sp, u, v);
+    }
+    // debugvec(sp);
+    vector<bool> vis(n + 1);
+    int N = 0;
+    vector<int> col(n + 1);
+    vector<int> sz(1);
+    vector<int> no(n + 1);
+    auto dfs = [&] (auto dfs, int v) -> void {
+        if (vis[v]) return;
+        vis[v] = 1;
+        col[v] = N;
+        no[v] = sz[N];
+        sz[N] += 1;
+        for (auto&& u : sp[v]) {
+            if (vis[u]) continue;
+            dfs(dfs, u);
             break;
-        } else {
-            swap(q, nq);
         }
-    }
-    int res = 0;
+    };
     for (int i = 1; i <= n; ++i) {
-        for (int j = 1; j <= m; ++j) {
-            // cerr << grid[i][j] << " \n"[j == m];
-            if (grid[i][j] == 0) {
-                res += 1;
+        if (vis[i]) continue;
+        ++N;
+        sz.emplace_back(0);
+        dfs(dfs, i);
+    }
+    // debug(col);
+    vector<vector<tiii>> nch(N + 1);
+    for (auto&& [u, v] : edges) {
+        if (col[u] == col[v]) continue;
+        nch[col[u]].emplace_back(col[v], u, v);
+        nch[col[v]].emplace_back(col[u], v, u);
+    }
+    vector<vector<int>> branch(N + 1, vector<int>(N + 1));
+    vector<int> branch_up(N + 1);
+    auto dfs2 = [&] (auto dfs2, int v, int pa) -> vector<int> {
+        vector<int> chs = {v};
+        for (auto&& [u, from, to] : nch[v]) {
+            if (u == pa) continue;
+            branch_up[u] = to;
+            // debug(make_tuple(u, to));
+            vector<int> curr = dfs2(dfs2, u, v);
+            chs.insert(chs.end(), curr.begin(), curr.end());
+            for (auto&& x : curr) {
+                branch[v][x] = from;
             }
         }
+        return chs;
+    };
+    dfs2(dfs2, 1, 0);
+    LCA lca(nch);
+    auto query_dist = [&] (int v, int u) -> int {
+        // debug(make_tuple(u, v));
+        assert(col[v] == col[u]);
+        if (no[v] > no[u]) swap(u, v);
+        // debug(min(no[u] - no[v], no[v] - no[u] + sz[col[v]]));
+        return min(no[u] - no[v], no[v] - no[u] + sz[col[v]]);
+    };
+    auto query = [&] (int v, int u) -> int {
+        if (col[v] == col[u]) {
+            return query_dist(u, v);
+        }
+        int p = lca.query(col[u], col[v]);
+        // debug(make_tuple(v, u));
+        if (p == col[u]) {
+            // debug(1);
+            // return lca.depth[col[v]] - lca.depth[col[u]] + query_dist(u, branch[col[u]][col[v]]) + query_dist(v, branch_up[col[v]]);
+            return lca.depth[col[v]] - lca.depth[col[u]] + query_dist(v, branch_up[col[v]]);
+        } else if (p == col[v]) {
+            // return lca.depth[col[u]] - lca.depth[col[v]] + query_dist(v, branch[col[v]][col[u]]) + query_dist(u, branch_up[col[u]]);
+            return lca.depth[col[u]] - lca.depth[col[v]] + query_dist(v, branch[col[v]][col[u]]);
+        }else {
+            // debug(make_tuple(p, col[v], col[u]));
+            // debug(lca.depth[col[u]] - lca.depth[p]);
+            return lca.depth[col[v]] - lca.depth[p] + lca.depth[col[u]] - lca.depth[p]
+                 + query_dist(v, branch_up[col[v]]);// + query_dist(u, branch_up[col[u]]);
+        }
+    };
+    read(int, t);
+    int prev = 1;
+    while (t--) {
+        read(int, v);
+        cout << query(prev, v) << " \n"[t == 0];
+        prev = v;
     }
-    cout << res << '\n';
 }
 
 int main() {

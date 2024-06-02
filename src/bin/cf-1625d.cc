@@ -1,8 +1,8 @@
 /**
  * Author:   subcrip
- * Created:  2024-06-02 19:04:46
- * Modified: 2024-06-02 19:52:13
- * Elapsed:  47 minutes
+ * Created:  2024-06-02 15:06:25
+ * Modified: 2024-06-02 16:02:11
+ * Elapsed:  55 minutes
  */
 
 #pragma GCC optimize("Ofast")
@@ -485,7 +485,7 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -496,160 +496,86 @@ void dump_ignore() {}
 void prep() {
 }
 
-template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
-private:
-    using size_type = uint64_t;
-    using info_type = Addable_Info_t;
-    using tag_type = Tag_t;
-    size_type _max;
-    vector<info_type> d;
-    vector<tag_type> b;
-    void pull(size_type p) {
-        d[p] = d[p * 2] + d[p * 2 + 1];
-    }
-    void push(size_type p, size_type left_len, size_type right_len) {
-        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
-        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
-        b[p] = tag_type();
-    }
-    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
-        if (s == t) {
-            d[p] = c;
-            return;
-        }
-        size_type m = s + (t - s >> 1);
-        if (s != t) push(p, m - s + 1, t - m);
-        if (x <= m) set(s, m, p * 2, x, c);
-        else set(m + 1, t, p * 2 + 1, x, c);
-        pull(p);
-    }
-    
-    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
-        if (l <= s && t <= r) {
-            d[p].apply(c, t - s + 1);
-            b[p].apply(c);
-            return;
-        }
-        size_type m = s + (t - s >> 1);
-        push(p, m - s + 1, t - m);
-        if (l <= m) range_apply(s, m, p * 2, l, r, c);
-        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
-        pull(p);
-    }
-    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
-        if (l <= s && t <= r) {
-            return d[p];
-        }
-        size_type m = s + (t - s >> 1);
-        info_type res = {};
-        push(p, m - s + 1, t - m);
-        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
-        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
-        return res;
-    }
-    void build(const Sequence& a, size_type s, size_type t, size_type p) {
-        if (s == t) {
-            d[p] = a[s];
-            return;
-        }
-        int m = s + (t - s >> 1);
-        build(a, s, m, p * 2);
-        build(a, m + 1, t, p * 2 + 1);
-        pull(p);
-    }
-public:
-    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
-    segtree(const Sequence& a) : segtree(a.size()) {
-        build(a, {}, _max, 1);
-    }
-    void set(size_type i, const info_type& c) {
-        set({}, _max, 1, i, c);
-    }
-    
-    void range_apply(size_type l, size_type r, const tag_type& c) {
-        range_apply({}, _max, 1, l, r, c);
-    }
-    void apply(size_type i, const tag_type& c) {
-        range_apply(i, i, c);
-    }
-    info_type range_query(size_type l, size_type r) {
-        return range_query({}, _max, 1, l, r);
-    }
-    info_type query(size_type i) {
-        return range_query(i, i);
-    }
-    Sequence serialize() {
-        Sequence res = {};
-        for (size_type i = 0; i <= _max; ++i) {
-            res.push_back(query(i));
-        }
-        return res;
-    }
-    const vector<info_type>& get_d() {
-        return d;
-    }
-};
-struct Tag {
-    int val = 0;
-    void apply(const Tag& rhs) {
-        val = rhs.val;
-    }
-};
-struct Info {
-    int val = 0;
-    void apply(const Tag& rhs, size_t len) {
-        val += rhs.val * len;
-    }
-};
-Info operator+(const Info &a, const Info &b) {
-    return {a.val + b.val};
-}
-
 void solve() {
-    read(int, n);
-    read(string, s, t);
-    array<vector<int>, 26> bk;
-    for (int i = n - 1; ~i; --i) {
-        bk[s[i] - 'a'].emplace_back(i);
-    }
-    ll res = INFLL;
-    ll cnt = 0;
-    vector<int> mark(n);
-    segtree<Info, Tag> tr(n);
-    auto get = [&] (int i) -> int {
-        return i + (i + 1 > n - 1 ? 0 : tr.range_query(i + 1, n - 1).val);
-    };
-    int ptr = 0;
-    for (int i = 0; i < n; ++i) {
-        while (mark[ptr]) ++ptr;
-        assert(ptr < n);
-        int x = s[ptr] - 'a', y = t[i] - 'a';
-        if (x < y) {
-            res = min(res, cnt);
+    read(int, n, k);
+    readvec(int, a, n);
+    if (k == 0) {
+        cout << n << '\n';
+        for (int i = 1; i <= n; ++i) {
+            cout << i << " \n"[i == n];
         }
-        int f = 0;
-        for (int j = 0; j < 26; ++j) {
-            while (bk[j].size() and (mark[bk[j].back()] or get(bk[j].back()) < i)) {
-                bk[j].pop_back();
+        return;
+    }
+    int b = msp(k);
+    unordered_map<int, vector<pii>, safe_hash> bk;
+    for (int i = 0; i < n; ++i) {
+        bk[a[i] >> b + 1].emplace_back(i, a[i] & ((1 << b + 1) - 1));
+    }
+    vector<int> res;
+    for (auto&& [head, v] : bk) {
+        int one = -1, zero = -1, both = 0;
+        vector<pair<array<int, 2>, int>> trie = {{array<int, 2>(), -1}};
+        auto insert = [&] (int x, int mark) -> void {
+            int ptr = 0;
+            for (int i = 30; ~i; --i) {
+                int bit = x >> i & 1;
+                if (not trie[ptr].first[bit]) {
+                    trie[ptr].first[bit] = trie.size();
+                    trie.emplace_back(array<int, 2>(), -1);
+                }
+                ptr = trie[ptr].first[bit];
             }
-            if (bk[j].size()) {
-                if (j < y) {
-                    res = min(res, cnt + get(bk[j].back()) - i);
-                } else if (j == y) {
-                    f = 1;
-                    mark[bk[j].back()] = 1;
-                    tr.set(bk[j].back(), {1});
-                    cnt += get(bk[j].back()) - i;
+            trie[ptr].second = mark;
+        };
+        auto query_max = [&] (int x) -> pii {
+            int ptr = 0;
+            int num = 0;
+            for (int i = 30; ~i; --i) {
+                int bit = x >> i & 1;
+                if (trie[ptr].first[1 ^ bit]) {
+                    num |= 1 << i;
+                    ptr = trie[ptr].first[1 ^ bit];
+                } else {
+                    ptr = trie[ptr].first[bit];
+                }
+            }
+            return {trie[ptr].second, num};
+        };
+        for (auto&& [i, x] : v) {
+            if ((x & 1 << b) == 0) {
+                insert(x, i);
+                zero = i;
+            } else {
+                one = i;
+            }
+        }
+        for (auto&& [i, x] : v) {
+            if (x & 1 << b) {
+                auto [idx, num] = query_max(x);
+                // debug(make_tuple(idx, num));
+                if (idx != -1 and num >= k) {
+                    both = 1;
+                    zero = idx;
+                    one = i;
+                    break;
                 }
             }
         }
-        if (f == 0) break;
+        if (both) {
+            res.emplace_back(one), res.emplace_back(zero);
+        } else if (one != -1) {
+            res.emplace_back(one);
+        } else if (zero != -1) {
+            res.emplace_back(zero);
+        }
     }
-    if (res == INFLL) {
+    if (res.size() < 2) {
         cout << -1 << '\n';
-    } else {
-        cout << res << '\n';
+        return;
     }
+    cout << res.size() << '\n';
+    for (auto&& i : res) cout << i + 1 << ' ';
+    cout << endl;
 }
 
 int main() {
