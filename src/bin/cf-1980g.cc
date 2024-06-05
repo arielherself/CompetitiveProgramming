@@ -1,8 +1,8 @@
 /**
  * Author:   subcrip
- * Created:  2024-06-03 23:04:55
- * Modified: 2024-06-03 23:17:23
- * Elapsed:  12 minutes
+ * Created:  2024-06-04 21:12:25
+ * Modified: 2024-06-04 23:19:38
+ * Elapsed:  127 minutes
  */
 
 #pragma GCC optimize("Ofast")
@@ -496,37 +496,134 @@ void dump_ignore() {}
 void prep() {
 }
 
-void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    auto check = [&] (int idx) -> bool {
-        int prev_num = idx == 0 ? a[1] : a[0];
-        int prev_gcd = -INF;
-        for (int i = idx == 0 ? 2 : 1; i < n; ++i) {
-            if (i == idx) continue;
-            int curr_gcd = gcd(a[i], prev_num);
-            if (curr_gcd < prev_gcd) {
-                return false;
+template <int N, typename DataT = int>
+struct binary_trie {
+    vector<tuple<array<int, 2>, DataT, array<int, 2>>> tr;
+    binary_trie() : tr(1) {}
+    void emplace(ll x, const DataT& data = {}) {
+        int ptr = 0;
+        for (int i = N - 1; ~i; --i) {
+            int bit = x >> i & 1;
+            if (not std::get<0>(tr[ptr])[bit]) {
+                std::get<0>(tr[ptr])[bit] = tr.size();
+                tr.emplace_back();
             }
-            prev_gcd = curr_gcd;
-            prev_num = a[i];
+            std::get<2>(tr[ptr])[bit] += 1;
+            ptr = std::get<0>(tr[ptr])[bit];
         }
-        return true;
-    };
-    int prev_gcd = -INF;
-    for (int i = 1; i < n; ++i) {
-        int curr_gcd = gcd(a[i], a[i - 1]);
-        if (curr_gcd < prev_gcd) {
-            if ((i - 2 >= 0 and check(i - 2)) or check(i - 1) or check(i)) {
-                cout << "YES\n";
-            } else {
-                cout << "NO\n";
-            }
-            return;
-        }
-        prev_gcd = curr_gcd;
+        std::get<1>(tr[ptr]) = data;
     }
-    cout << "YES\n";
+
+    /// WARN: Don't try to erase a non-existent element!
+    void erase(ll x) {
+        int ptr = 0;
+        vector<pii> st;
+        for (int i = N - 1; ~i; --i) {
+            int bit = x >> i & 1;
+            st.emplace_back(ptr, bit);
+            ptr = std::get<0>(tr[ptr])[bit];
+        }
+        while (st.size() and std::get<2>(tr[st.back().first])[st.back().second] == 1) {
+            std::get<0>(tr[st.back().first])[st.back().second] = 0;
+            std::get<2>(tr[st.back().first])[st.back().second] = 0;
+            st.pop_back();
+        }
+        tr[ptr] = {};
+    }
+
+    optional<DataT> get(ll x) {
+        int ptr = 0;
+        for (int i = N - 1; ~i; --i) {
+            int bit = x >> i & 1;
+            if (not std::get<0>(tr[ptr])[bit]) return {};
+            ptr = std::get<0>(tr[ptr])[bit];
+        }
+        return { std::get<1>(tr[ptr]) };
+    }
+
+    int count_prefix(ll x, int bits = N) {
+        int ptr = 0;
+        int res = 0;
+        for (int i = N - 1; i > max(-1, N - 1 - bits); --i) {
+            int bit = x >> 1 & 1;
+            if (not std::get<0>(tr[ptr])[bit]) return 0;
+            ptr = std::get<0>(tr[ptr])[bit];
+            res = std::get<2>(tr[ptr])[bit];
+        }
+        return res;
+    }
+
+    optional<pair<ll, DataT&>> get_max_xor(ll x) {
+        int ptr = 0;
+        ll res = 0;
+        for (int i = N - 1; ~i; --i) {
+            int bit = x >> i & 1;
+            if (std::get<0>(tr[ptr])[1 ^ bit]) {
+                ptr = std::get<0>(tr[ptr])[1 ^ bit];
+                res |= (1 ^ bit) << i;
+            } else if (std::get<0>(tr[ptr])[bit]) {
+                ptr = std::get<0>(tr[ptr])[bit];
+                res |= bit << i;
+            } else {
+                return {};
+            }
+        }
+        return {{ res, std::get<1>(tr[ptr]) }};
+    }
+};
+
+void solve() {
+    read(int, n, m);
+    vector<vector<pii>> e(n + 1);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v, w);
+        edgew(e, u, v, w);
+    }
+    array<binary_trie<31>, 2> trie;
+    vector<bool> l(n + 1);
+    vector<int> pre(n + 1);
+    auto dfs = [&] (auto dfs, int v, int pa, int layer, int pf) -> void {
+        l[v] = layer;
+        pre[v] = pf;
+        if (trie[layer].count_prefix(pf)) {
+            trie[layer].emplace(pf, trie[layer].get(pf).value() + 1);
+        } else {
+            trie[layer].emplace(pf, 1);
+        }
+        for (auto&& [u, w] : e[v]) {
+            if (u == pa) continue;
+            dfs(dfs, u, v, 1 ^ layer, pf ^ w);
+        }
+    };
+    dfs(dfs, 1, 0, 0, 0);
+    int acc = 0;
+    while (m--) {
+        read(char, op);
+        if (op == '^') {
+            read(int, y);
+            acc ^= y;
+        } else {
+            read(int, v, x);
+            int prev_val = pre[v];
+            int q = trie[l[v]].get(prev_val).value();
+            if (q == 1) {
+                trie[l[v]].erase(prev_val);
+            } else {
+                trie[l[v]].emplace(prev_val, q - 1);
+            }
+            int v_pf = l[v] == 1 ? pre[v] ^ acc : pre[v];
+            ll res = 0;
+            // process the odd part
+            auto u_odd_pf = trie[1].get_max_xor(v_pf ^ acc ^ x);
+            if (u_odd_pf != nullopt) res = max(res, u_odd_pf->first ^ v_pf ^ acc ^ x);
+            // process the even part
+            auto u_even_pf = trie[0].get_max_xor(v_pf ^ x);
+            if (u_even_pf != nullopt) res = max(res, u_even_pf->first ^ v_pf ^ x);
+            cout << res << ' ';
+            trie[l[v]].emplace(prev_val, q);
+        }
+    }
+    cout << '\n';
 }
 
 int main() {

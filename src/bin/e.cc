@@ -1,9 +1,15 @@
+/**
+ * Author:   subcrip
+ * Created:  2024-06-03 23:18:29
+ * Modified: 2024-06-03 23:35:27
+ * Elapsed:  16 minutes
+ */
+
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
- * Useful Macros
- *   by subcrip
- * (requires C++17)
+ * This code should require C++14.
+ * However, it's only been tested with C++17.
  */
 
 #include<bits/stdc++.h>
@@ -15,7 +21,7 @@ using namespace std;
 #define __DECOMPOSE_N(a, ...) auto [__VA_ARGS__] = a;
 constexpr void __() {}
 #define __AS_PROCEDURE(...) __(); __VA_ARGS__; __()
-#define __as_typeof(container) decltype(container)::value_type
+#define __as_typeof(container) remove_reference<decltype(container)>::type
 
 /* type aliases */
 #if LONG_LONG_MAX != INT64_MAX
@@ -67,6 +73,8 @@ using tiid = tuple<int, int, ld>;
 using tiii = tuple<int, int, int>;
 template <typename T> using max_heap = priority_queue<T>;
 template <typename T> using min_heap = priority_queue<T, vector<T>, greater<>>;
+template <typename T> using oi = ostream_iterator<T>;
+template <typename T> using ii = istream_iterator<T>;
 
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
@@ -172,6 +180,7 @@ struct array_hash {
 };
 
 /* build data structures */
+#define faster(um) __AS_PROCEDURE((um).reserve(1024); (um).max_load_factor(0.25);)
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
 #define pa(a) __AS_PROCEDURE(__typeof(a) pa; pa.push_back({}); for (auto&&x : a) pa.push_back(pa.back() + x);)
@@ -201,10 +210,17 @@ template <typename T, typename Iterator> pair<size_t, unordered_map<T, size_t, s
 template<typename T> void __read(T& x) { cin >> x; }
 template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __read(args...); }
 #define read(type, ...) __AS_PROCEDURE(type __VA_ARGS__; __read(__VA_ARGS__);)
-#define readvec(type, a, n) __AS_PROCEDURE(vector<type> a(n); for (int i = 0; i < (n); ++i) cin >> a[i];)
-#define putvec(a) __AS_PROCEDURE(for (auto&& x : a) cout << x << ' '; cout << endl;)
+#define readvec(type, a, n) __AS_PROCEDURE(vector<type> a(n); for (auto& x : a) cin >> x;)
+#define readvec1(type, a, n) __AS_PROCEDURE(vector<type> a((n) + 1); copy_n(ii<type>(cin), (n), a.begin() + 1);)
+#define putvec(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
+#define putvec1(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
+#define putvec_eol(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
+#define putvec1_eol(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
 #define debug(x) __AS_PROCEDURE(cerr << #x" = " << (x) << endl;)
 #define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : a) cerr << x << ' '; cerr << endl;)
+template<typename T, typename U> istream& operator>>(istream& in, pair<T, U>& p) {
+    return in >> p.first >> p.second;
+}
 template<typename T, typename U> ostream& operator<<(ostream& out, const pair<T, U>& p) {
     out << "{" << p.first << ", " << p.second << "}";
     return out;
@@ -254,6 +270,17 @@ std::ostream& operator<<(std::ostream& dest, const int128& value) {
 #define popfront(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.front();q.pop_front();)
 
 /* math */
+template <typename return_t>
+return_t qpow(ll b, ll p) {
+    if (b == 0 and p != 0) return 0;
+    if (p == 0) return 1;
+    return_t half = qpow<return_t>(b, p / 2);
+    if (p % 2 == 1) return half * half * b;
+    else return half * half;
+}
+
+#define comb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] / fact[k] / fact[(n) - (k)])
+
 constexpr inline int lg2(ll x) { return x == 0 ? -1 : sizeof(ll) * 8 - 1 - __builtin_clzll(x); }
 
 void __exgcd(ll a, ll b, ll& x, ll& y) {
@@ -372,9 +399,30 @@ template <ll mdl> struct MLL {
     void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
     void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
 };
+struct MLLd {
+    ll val, mdl;
+    MLLd(ll mdl, ll v = 0) : mdl(mdl), val(mod(v, mdl)) {}
+    MLLd(const MLLd& other) : mdl(other.mdl), val(other.val) {}
+    friend MLLd operator+(const MLLd& lhs, const MLLd& rhs) { return MLLd(lhs.mdl, mod(lhs.val + rhs.val, lhs.mdl)); }
+    friend MLLd operator-(const MLLd& lhs, const MLLd& rhs) { return MLLd(lhs.mdl, mod(lhs.val - rhs.val, lhs.mdl)); }
+    friend MLLd operator*(const MLLd& lhs, const MLLd& rhs) { return MLLd(lhs.mdl, mod(lhs.val * rhs.val, lhs.mdl)); }
+    friend MLLd operator/(const MLLd& lhs, const MLLd& rhs) { return MLLd(lhs.mdl, mod(lhs.val * mod(inverse(rhs.val, lhs.mdl), lhs.mdl), lhs.mdl)); }
+    friend MLLd operator%(const MLLd& lhs, const MLLd& rhs) { return MLLd(lhs.mdl, mod(lhs.val - (lhs / rhs).val, lhs.mdl)); }
+    friend bool operator==(const MLLd& lhs, const MLLd& rhs) { return lhs.val == rhs.val; }
+    friend bool operator!=(const MLLd& lhs, const MLLd& rhs) { return lhs.val != rhs.val; }
+    void operator+=(const MLLd& rhs) { val = (*this + rhs).val; }
+    void operator-=(const MLLd& rhs) { val = (*this - rhs).val; }
+    void operator*=(const MLLd& rhs) { val = (*this * rhs).val; }
+    void operator/=(const MLLd& rhs) { val = (*this / rhs).val; }
+    void operator%=(const MLLd& rhs) { val = (*this % rhs).val; }
+};
 
 template <ll mdl>
 ostream& operator<<(ostream& out, const MLL<mdl>& num) {
+    return out << num.val;
+}
+
+ostream& operator<<(ostream& out, const MLLd& num) {
     return out << num.val;
 }
 
@@ -383,66 +431,216 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
     return in >> num.val;
 }
 
+istream& operator>>(istream& in, MLLd& num) {
+    return in >> num.val;
+}
+
 // miscancellous
+#define functor(func) [&](auto&&... val) \
+noexcept(noexcept(func(std::forward<decltype(val)>(val)...))) -> decltype(auto) \
+{return func(std::forward<decltype(val)>(val)...);}
 template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
     std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
 }
 template <typename Func, typename RandomIt, typename Compare> void sort_by_key(RandomIt first, RandomIt last, Func extractor, Compare comp) {
     std::sort(first, last, [&] (auto&& a, auto&& b) { return comp(extractor(a), extractor(b)); });
 }
+template <typename T, typename U, typename Iterator_T, typename Iterator_U>
+vector<pair<T, U>> zip(Iterator_T a_first, Iterator_T a_last, Iterator_U b_first, Iterator_U b_last) {
+    vector<pair<T, U>> res;
+    auto a_it = a_first;
+    auto b_it = b_first;
+    for (; not (a_it == a_last) and not (b_it == b_last); ++a_it, ++b_it) {
+        res.emplace_back(*a_it, *b_it);
+    }
+    return res;
+}
+template <typename T, typename U, typename Iterator_T, typename Iterator_U>
+vector<pair<T, U>> zip_n(Iterator_T a_first, Iterator_U b_first, size_t n) {
+    vector<pair<T, U>> res;
+    if (n > 0) {
+        res.emplace_back(*a_first, *b_first);
+        for (size_t i = 1; i != n; ++i) {
+            res.emplace_back(*++a_first, *++b_first);
+        }
+    }
+    return res;
+}
+template <typename T>
+class ArithmeticIterator : bidirectional_iterator_tag {
+public:
+    using difference_type = ptrdiff_t;
+    using value_type = T;
+private:
+    value_type value;
+public:
+    ArithmeticIterator(const T& value) : value(value) {}
+    value_type operator*() const { return value; }
+    ArithmeticIterator<T>& operator++() { ++value; return *this; }
+    ArithmeticIterator<T>& operator--() { --value; return *this; }
+    bool operator==(const ArithmeticIterator<T>& rhs) const { return value == rhs.value; }
+};
+template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container) {
+    return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
+}
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
+// #define TOT_TEST_CASE 10000
 
 void dump() {}
 
 void dump_ignore() {}
 
-void prep() {}
+void prep() {
+}
+
+static vector<MLL<MDL1>> power1;
+static vector<MLL<MDL2>> power2;
+static const ll b = rd();
+template <typename _Tp>
+struct hash_vec {
+    using hash_type = pll;
+    MLL<MDL1> hash1;
+    MLL<MDL2> hash2;
+    vector<_Tp> seq;
+    size_t size() {
+        return seq.size();
+    }
+    void push_back(const _Tp& x) {
+        hash1 = hash1 * b + x;
+        hash2 = hash2 * b + x;
+        seq.push_back(x);
+    }
+    void push_front(const _Tp& x) {
+        size_t length = size();
+        hash1 += x * power1[length];
+        hash2 += x * power2[length];
+        seq.push_front(x);
+    }
+    void pop_back() {
+        _Tp e = seq.back(); seq.pop_back();
+        hash1 = (hash1 - e) / b;
+        hash2 = (hash2 - e) / b;
+    }
+    void pop_front() {
+        _Tp e = seq.front(); seq.pop_front();
+        int length = seq.size();
+        hash1 -= e * power1[length];
+        hash2 -= e * power2[length];
+    }
+    void set(size_t pos, const _Tp& value) {
+        int length = seq.size();
+        int old_value = seq[pos];
+        hash1 += (value - old_value) * power1[length - 1 - pos];
+        hash2 += (value - old_value) * power2[length - 1 - pos];
+        seq[pos] = value;
+    }
+    const _Tp& operator[](size_t pos) {
+        return seq[pos];
+    }
+    hash_type hash() {
+        return {hash1.val, hash2.val};
+    }
+    void clear() {
+        hash1 = 0;
+        hash2 = 0;
+        seq.clear();
+    }
+    hash_vec(size_t maxn) {
+        clear();
+        MLL<MDL1> c1 = power1.size() ? power1.back() * b : 1;
+        MLL<MDL2> c2 = power2.size() ? power2.back() * b : 1;
+        for (int i = power1.size(); i < maxn; ++i) {
+            power1.push_back(c1);
+            power2.push_back(c2);
+            c1 *= b;
+            c2 *= b;
+        }
+    }
+    hash_vec(size_t maxn, const _Tp& init_value) : hash_vec(maxn) {
+        for (size_t i = 0; i != maxn; ++i) {
+            push_back(init_value);
+        }
+    }
+};
 
 void solve() {
-    read(int, n);
-    readvec(string, a, n);
-    vector<pair<array<int, 26>, int>> trie(1);
-    auto insert = [&] (const string& s) -> void {
-        int curr = 0;
-        vector<int> trace;
-        for (auto&& x : s) {
-            if (not trie[curr].first[x - 97]) {
-                trie[curr].first[x - 97] = trie.size();
-                trie.push_back({});
-            }
-            curr = trie[curr].first[x - 97];
-            trace.emplace_back(curr);
+    read(int, n, m);
+    vector<vector<int>> a(n, vector<int>(m)), b(n, vector<int>(m));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            cin >> a[i][j];
         }
-        for (auto&& i : trace) {
-            trie[i].second += 1;
-        }
-    };
-    auto query = [&] (const string& s) -> ll {
-        ll res = 0;
-        int curr = 0;
-        for (auto&& x : s) {
-            curr = trie[curr].first[x - 97];
-            if (not curr) break;
-            res += trie[curr].second;
-        }
-        return res;
-    };
-    ll res = 0;
-    for (int i = n - 1; ~i; --i) {
-        res += query(a[i]);
-        insert(a[i]);
     }
-    cout << res << '\n';
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            cin >> b[i][j];
+        }
+    }
+    unordered_map<hash_vec<int>::hash_type, vector<int>, pair_hash> b_row;
+    hash_vec<int> hs(max(n, m) + 1);
+    for (int i = 0; i < n; ++i) {
+        vector<int> r = b[i];
+        sort(r.begin(), r.end());
+        hs.clear();
+        for (int j = 0; j < m; ++j) {
+            hs.push_back(r[j]);
+        }
+        b_row[hs.hash()].emplace_back(i);
+    }
+    vector<int> row_mapping(n);
+    for (int i = 0; i < n; ++i) {
+        hs.clear();
+        vector<int> r = a[i];
+        sort(r.begin(), r.end());
+        for (int j = 0; j < m; ++j) {
+            hs.push_back(r[j]);
+        }
+        if (not b_row.count(hs.hash())) {
+            cout << "NO\n";
+            return;
+        }
+        row_mapping[i] = b_row[hs.hash()].back();
+        b_row[hs.hash()].pop_back();
+        if (b_row[hs.hash()].size() == 0) {
+            b_row.erase(hs.hash());
+        }
+    }
+    vector<vector<int>> new_a(n, vector<int>(m));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            new_a[row_mapping[i]][j] = a[i][j];
+        }
+    }
+    unordered_map<hash_vec<int>::hash_type, int, pair_hash> b_col;
+    for (int j = 0; j < m; ++j) {
+        hs.clear();
+        for (int i = 0; i < n; ++i) {
+            hs.push_back(b[i][j]);
+        }
+        b_col[hs.hash()] += 1;
+    }
+    for (int j = 0; j < m; ++j) {
+        hs.clear();
+        for (int i = 0; i < n; ++i) {
+            hs.push_back(new_a[i][j]);
+        }
+        if (b_col[hs.hash()] == 0) {
+            cout << "NO\n";
+            return;
+        }
+        b_col[hs.hash()] -= 1;
+    }
+    cout << "YES\n";
 }
 
 int main() {
-#if __cplusplus < 201703L || defined(_MSC_VER) && !defined(__clang__)
+#if __cplusplus < 201402L or defined(_MSC_VER) and not defined(__clang__)
     assert(false && "incompatible compiler variant detected.");
 #endif
-    untie, cout.tie(NULL);
+    untie;
     prep();
 #ifdef SINGLE_TEST_CASE
     solve();
@@ -450,7 +648,7 @@ int main() {
     read(int, t);
     for (int i = 0; i < t; ++i) {
 #ifdef DUMP_TEST_CASE
-        if (t < (DUMP_TEST_CASE)) {
+        if (t != (TOT_TEST_CASE)) {
             solve();
         } else if (i + 1 == (DUMP_TEST_CASE)) {
             dump();

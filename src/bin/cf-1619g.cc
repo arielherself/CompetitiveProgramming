@@ -1,8 +1,8 @@
 /**
  * Author:   subcrip
- * Created:  2024-06-03 23:04:55
- * Modified: 2024-06-03 23:17:23
- * Elapsed:  12 minutes
+ * Created:  2024-06-05 13:40:00
+ * Modified: 2024-06-05 13:51:37
+ * Elapsed:  11 minutes
  */
 
 #pragma GCC optimize("Ofast")
@@ -486,47 +486,151 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
 /////////////////////////////////////////////////////////
 
 // #define SINGLE_TEST_CASE
-// #define DUMP_TEST_CASE 7219
+// #define DUMP_TEST_CASE 23
 // #define TOT_TEST_CASE 10000
 
-void dump() {}
+void dump() {
+    read(int, n, k);
+    cout << n << ' ' << k << '\n';
+    for (int i = 0; i < n; ++i) {
+        read(int, x, y, t);
+        cout << x << ' ' << y << ' ' << t << '\n';
+    }
+}
 
-void dump_ignore() {}
+void dump_ignore() {
+    read(int, n, k);
+    for (int i = 0; i < n; ++i) {
+        read(int, x, y, t);
+    }
+}
 
 void prep() {
 }
 
-void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    auto check = [&] (int idx) -> bool {
-        int prev_num = idx == 0 ? a[1] : a[0];
-        int prev_gcd = -INF;
-        for (int i = idx == 0 ? 2 : 1; i < n; ++i) {
-            if (i == idx) continue;
-            int curr_gcd = gcd(a[i], prev_num);
-            if (curr_gcd < prev_gcd) {
-                return false;
-            }
-            prev_gcd = curr_gcd;
-            prev_num = a[i];
-        }
-        return true;
-    };
-    int prev_gcd = -INF;
-    for (int i = 1; i < n; ++i) {
-        int curr_gcd = gcd(a[i], a[i - 1]);
-        if (curr_gcd < prev_gcd) {
-            if ((i - 2 >= 0 and check(i - 2)) or check(i - 1) or check(i)) {
-                cout << "YES\n";
-            } else {
-                cout << "NO\n";
-            }
-            return;
-        }
-        prev_gcd = curr_gcd;
+class quick_union {
+public:
+    vector<size_t> c, sz;
+public:
+    quick_union(size_t n) : c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
     }
-    cout << "YES\n";
+
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] += sz[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_size(size_t i) {
+        return sz[query(i)];
+    }
+};
+
+void solve() {
+    read(int, n, k);
+    unordered_map<int, vector<pii>, safe_hash> row, col;
+    vector<pii> co(n);
+    map<int, vector<int>> rev;
+    for (int i = 0; i < n; ++i) {
+        read(int, x, y, t);
+        rev[t].emplace_back(i);
+        row[x].emplace_back(y, i);
+        col[y].emplace_back(x, i);
+        co[i] = { x, y };
+    }
+    unordered_map<int, list<pii>, safe_hash> row_link, col_link;
+    vector<pair<list<pii>::iterator, list<pii>::iterator>> pt(n);
+    vector<bool> stale(n);
+    for (auto&& [x, v] : row) {
+        sort(v.begin(), v.end());
+        row_link[x].insert(row_link[x].end(), v.begin(), v.end());
+        for (auto it = row_link[x].begin(); it != row_link[x].end(); ++it) {
+            pt[it->second].first = it;
+        }
+    }
+    for (auto&& [y, v] : col) {
+        sort(v.begin(), v.end());
+        col_link[y].insert(col_link[y].end(), v.begin(), v.end());
+        for (auto it = col_link[y].begin(); it != col_link[y].end(); ++it) {
+            pt[it->second].second = it;
+        }
+    }
+    quick_union qu(n);
+    auto dfs = [&] (auto dfs, int v) -> void {
+        auto [x, y] = co[v];
+        auto [row_it, col_it] = pt[v];
+        stale[v] = 1;
+        // down
+        if (row_it != row_link[x].begin()) {
+            auto prev_it = prev(row_it);
+            if (not stale[prev_it->second] and y - prev_it->first <= k) {
+                qu.merge(v, prev_it->second);
+                dfs(dfs, prev_it->second);
+            }
+        }
+        // up
+        if (row_it != row_link[x].end()) {
+            auto next_it = next(row_it);
+            if (next_it != row_link[x].end()) {
+                if (not stale[next_it->second] and next_it->first - y <= k) {
+                    qu.merge(v, next_it->second);
+                    dfs(dfs, next_it->second);
+                }
+            }
+        }
+        // left
+        if (col_it != col_link[y].begin()) {
+            auto prev_it = prev(col_it);
+            if (not stale[prev_it->second] and x - prev_it->first <= k) {
+                qu.merge(v, prev_it->second);
+                dfs(dfs, prev_it->second);
+            }
+        }
+        // right
+        if (col_it != col_link[x].end()) {
+            auto next_it = next(col_it);
+            if (next_it != col_link[y].end()) {
+                if (not stale[next_it->second] and next_it->first - x <= k) {
+                    qu.merge(v, next_it->second);
+                    dfs(dfs, next_it->second);
+                }
+            }
+        }
+
+        row_link[x].erase(row_it);
+        col_link[y].erase(col_it);
+    };
+    for (int i = 0; i < n; ++i) {
+        if (not stale[i]) {
+            dfs(dfs, i);
+        }
+    }
+    int blk = 0;
+    for (int i = 0; i < n; ++i) {
+        if (qu.query(i) == i) {
+            blk += 1;
+        }
+    }
+    vector<bool> use(n);
+    int res = blk - 1;
+    for (auto&& [t, v] : rev) {
+        for (auto&& i : v) {
+            if (use[qu.query(i)]) continue;
+            use[qu.query(i)] = 1;
+            blk -= 1;
+        }
+        res = min(res, t + max(0, blk - t - 1));
+    }
+    cout << res << '\n';
 }
 
 int main() {

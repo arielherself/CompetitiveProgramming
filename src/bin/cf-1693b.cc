@@ -1,8 +1,8 @@
 /**
  * Author:   subcrip
- * Created:  2024-06-03 23:04:55
- * Modified: 2024-06-03 23:17:23
- * Elapsed:  12 minutes
+ * Created:  2024-06-03 21:57:30
+ * Modified: 2024-06-03 22:01:36
+ * Elapsed:  4 minutes
  */
 
 #pragma GCC optimize("Ofast")
@@ -498,35 +498,32 @@ void prep() {
 
 void solve() {
     read(int, n);
-    readvec(int, a, n);
-    auto check = [&] (int idx) -> bool {
-        int prev_num = idx == 0 ? a[1] : a[0];
-        int prev_gcd = -INF;
-        for (int i = idx == 0 ? 2 : 1; i < n; ++i) {
-            if (i == idx) continue;
-            int curr_gcd = gcd(a[i], prev_num);
-            if (curr_gcd < prev_gcd) {
-                return false;
-            }
-            prev_gcd = curr_gcd;
-            prev_num = a[i];
-        }
-        return true;
-    };
-    int prev_gcd = -INF;
-    for (int i = 1; i < n; ++i) {
-        int curr_gcd = gcd(a[i], a[i - 1]);
-        if (curr_gcd < prev_gcd) {
-            if ((i - 2 >= 0 and check(i - 2)) or check(i - 1) or check(i)) {
-                cout << "YES\n";
-            } else {
-                cout << "NO\n";
-            }
-            return;
-        }
-        prev_gcd = curr_gcd;
+    adj(ch, n);
+    for (int i = 2; i <= n; ++i) {
+        read(int, p);
+        edge(ch, i, p);
     }
-    cout << "YES\n";
+    vector<pll> target(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        cin >> target[i];
+    }
+    int res = 0;
+    auto dfs = [&] (auto dfs, int v, int pa) -> ll {
+        ll sum = 0;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            sum += dfs(dfs, u, v);
+        }
+        if (sum >= target[v].second) {
+            sum = target[v].second;
+        } else if (sum < target[v].first) {
+            sum = target[v].second;
+            res += 1;
+        }
+        return sum;
+    };
+    dfs(dfs, 1, 0);
+    cout << res << '\n';
 }
 
 int main() {

@@ -4,8 +4,8 @@ from os import system
 import io
 
 if __name__ == '__main__':
-    n = 5000
-    m = 10000
-    t = 200000
-    print(n, m)
-    for _ in range(m):
+    n = 100000
+    print(2)
+    print(n)
+    for _ in range(n):
+        print(0)

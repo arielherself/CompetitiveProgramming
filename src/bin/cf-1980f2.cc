@@ -1,8 +1,8 @@
 /**
  * Author:   subcrip
- * Created:  2024-06-03 23:04:55
- * Modified: 2024-06-03 23:17:23
- * Elapsed:  12 minutes
+ * Created:  2024-06-03 23:49:19
+ * Modified: 2024-06-04 20:28:22
+ * Elapsed:  1239 minutes
  */
 
 #pragma GCC optimize("Ofast")
@@ -496,37 +496,91 @@ void dump_ignore() {}
 void prep() {
 }
 
-void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    auto check = [&] (int idx) -> bool {
-        int prev_num = idx == 0 ? a[1] : a[0];
-        int prev_gcd = -INF;
-        for (int i = idx == 0 ? 2 : 1; i < n; ++i) {
-            if (i == idx) continue;
-            int curr_gcd = gcd(a[i], prev_num);
-            if (curr_gcd < prev_gcd) {
-                return false;
+template<typename _Tp, typename _Op = function<_Tp(const _Tp&, const _Tp&)>> struct sparse_table {
+    _Op op;
+    vector<vector<_Tp>> st;
+    template <typename ReverseIterator>
+    sparse_table(ReverseIterator __first, ReverseIterator __last, _Op&& __operation) {
+        op = __operation;
+        int n = distance(__first, __last);
+        st = vector<vector<_Tp>>(n, vector<_Tp>(int(log2(n) + 1)));
+        int i = n - 1;
+        for (auto it = __first; it != __last; ++it) {
+            st[i][0] = *it;
+            for (int j = 1; i + (1 << j) <= n; ++j) {
+                st[i][j] = op(st[i][j - 1], st[i + (1 << (j - 1))][j - 1]);
             }
-            prev_gcd = curr_gcd;
-            prev_num = a[i];
+            i -= 1;
         }
-        return true;
-    };
-    int prev_gcd = -INF;
-    for (int i = 1; i < n; ++i) {
-        int curr_gcd = gcd(a[i], a[i - 1]);
-        if (curr_gcd < prev_gcd) {
-            if ((i - 2 >= 0 and check(i - 2)) or check(i - 1) or check(i)) {
-                cout << "YES\n";
-            } else {
-                cout << "NO\n";
-            }
-            return;
-        }
-        prev_gcd = curr_gcd;
     }
-    cout << "YES\n";
+    _Tp query(size_t __start, size_t __end) {
+        int s = lg2(__end - __start + 1);
+        return op(st[__start][s], st[__end - (1 << s) + 1][s]);
+    }
+};
+
+void solve() {
+    read(ll, n, m);
+    read(int, k);
+    readvec(pll, a, k);
+    vector<int> rev(k);
+    iota(rev.begin(), rev.end(), 0);
+    sort_by_key(rev.begin(), rev.end(), [&] (int i) -> pll { return {a[i].first, -a[i].second}; });
+    sort_by_key(a.begin(), a.end(), [&] (pll x) -> pll { return {x.first, -x.second}; });
+    ll res = 0;
+    vector<pll> ss(k + 1, {m + 1, n + 1});
+    vector<bool> stale(k);
+    for (int i = 0; i < k - 1; ++i) {
+        if (a[i + 1].first == a[i].first) {
+            stale[i] = 1;
+        }
+    }
+    a.emplace_back(n + 1, m + 1);
+    vector<tuple<ll, ll, int>> st;
+    st.emplace_back(0, 0, -1);
+    vector<unordered_map<int, ll, safe_hash>> c(k);
+    vector<ll> val(k + 1);
+    vector<int> fa(k + 1);
+    ll curr = 0;
+    vector<pli> tag;
+    for (int i = 0; i < k; ++i) {
+        tag.emplace_back(a[i].second, i);
+    }
+    sparse_table<pli> rmq(tag.rbegin(), tag.rend(), functor(min));
+    for (int i = 0; i <= k; ++i) {
+        while (st.size() and get<1>(st.back()) > a[i].second) {
+            st.pop_back();
+        }
+        int prev = get<2>(st.back());
+        curr = (prev == -1 ? 0 : val[prev]) + (a[i].second - 1) * (a[i].first - get<0>(st.back()));
+        val[i] = curr;
+        st.emplace_back(a[i].first, a[i].second, i);
+        fa[i] = prev;
+        int l = -1, r = prev - 1;
+        if (l > r) continue;
+        while (l < r) {
+            int mid = l + r + 1 >> 1;
+            if ((mid == -1 ? 0 : rmq.query(mid, prev - 1).first) <= a[i].second) {
+                l = mid;
+            } else {
+                r = mid - 1;
+            }
+        }
+        if ((l == -1 ? 0 : a[l].second) <= a[i].second) {
+            ll asdf = (l == -1 ? 0 : val[l]) + (a[i].second - 1) * (a[i].first - (l == -1 ? 0 : a[l].first));
+            c[prev][i] = asdf - curr;
+            // debug(make_tuple(l, prev, rev[prev]));
+        }
+    }
+    curr -= m;
+    cout << curr << '\n';
+    vector<ll> d(k);
+    int ptr = k;
+    while (fa[ptr] != -1) {
+        d[rev[fa[ptr]]] = c[fa[ptr]][ptr];
+        ptr = fa[ptr];
+    }
+    putvec(d);
 }
 
 int main() {

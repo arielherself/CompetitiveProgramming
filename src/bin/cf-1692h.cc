@@ -1,10 +1,3 @@
-/**
- * Author:   subcrip
- * Created:  2024-06-03 23:04:55
- * Modified: 2024-06-03 23:17:23
- * Elapsed:  12 minutes
- */
-
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -499,34 +492,27 @@ void prep() {
 void solve() {
     read(int, n);
     readvec(int, a, n);
-    auto check = [&] (int idx) -> bool {
-        int prev_num = idx == 0 ? a[1] : a[0];
-        int prev_gcd = -INF;
-        for (int i = idx == 0 ? 2 : 1; i < n; ++i) {
-            if (i == idx) continue;
-            int curr_gcd = gcd(a[i], prev_num);
-            if (curr_gcd < prev_gcd) {
-                return false;
+    vector<int> ps(n);
+    unordered_map<int, pair<int, int>, safe_hash> bk;
+    int choice = a[0], l = 0, r = 0;
+    int res = 1;
+    for (int i = 0; i < n; ++i) {
+        int curr = 2 * bk[a[i]].first - i;
+        if (bk[a[i]].first > 0) {
+            if (curr + 1 - ps[bk[a[i]].second] > res) {
+                res = curr + 1 - ps[bk[a[i]].second];
+                choice = a[i];
+                l = bk[a[i]].second;
+                r = i;
             }
-            prev_gcd = curr_gcd;
-            prev_num = a[i];
         }
-        return true;
-    };
-    int prev_gcd = -INF;
-    for (int i = 1; i < n; ++i) {
-        int curr_gcd = gcd(a[i], a[i - 1]);
-        if (curr_gcd < prev_gcd) {
-            if ((i - 2 >= 0 and check(i - 2)) or check(i - 1) or check(i)) {
-                cout << "YES\n";
-            } else {
-                cout << "NO\n";
-            }
-            return;
+        ps[i] = curr;
+        if (bk[a[i]].first == 0 or ps[i] < ps[bk[a[i]].second]) {
+            bk[a[i]].second = i;
         }
-        prev_gcd = curr_gcd;
+        bk[a[i]].first += 1;
     }
-    cout << "YES\n";
+    cout << choice << ' ' << l + 1 << ' ' << r + 1 << '\n';
 }
 
 int main() {

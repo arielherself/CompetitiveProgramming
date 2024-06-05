@@ -1,10 +1,3 @@
-/**
- * Author:   subcrip
- * Created:  2024-06-03 23:04:55
- * Modified: 2024-06-03 23:17:23
- * Elapsed:  12 minutes
- */
-
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -496,37 +489,97 @@ void dump_ignore() {}
 void prep() {
 }
 
+bool query(int i, int j, int k) {
+    cout << "? " << i + 1 << ' ' << j + 1 << ' ' << k + 1 << endl;
+    read(int, x);
+    if (x == -1) exit(0);
+    return x ^ 1;
+}
+
+void claim(const vector<int>& idx) {
+    cout << "! " << idx.size();
+    for (auto&& x : idx) cout << ' ' << x + 1;
+    cout << endl;
+}
+
 void solve() {
     read(int, n);
-    readvec(int, a, n);
-    auto check = [&] (int idx) -> bool {
-        int prev_num = idx == 0 ? a[1] : a[0];
-        int prev_gcd = -INF;
-        for (int i = idx == 0 ? 2 : 1; i < n; ++i) {
-            if (i == idx) continue;
-            int curr_gcd = gcd(a[i], prev_num);
-            if (curr_gcd < prev_gcd) {
-                return false;
-            }
-            prev_gcd = curr_gcd;
-            prev_num = a[i];
-        }
-        return true;
-    };
-    int prev_gcd = -INF;
-    for (int i = 1; i < n; ++i) {
-        int curr_gcd = gcd(a[i], a[i - 1]);
-        if (curr_gcd < prev_gcd) {
-            if ((i - 2 >= 0 and check(i - 2)) or check(i - 1) or check(i)) {
-                cout << "YES\n";
-            } else {
-                cout << "NO\n";
-            }
-            return;
-        }
-        prev_gcd = curr_gcd;
+    int m = n / 3;
+    vector<bool> dense(m);
+    vector<bool> is_impostor(n);
+    int p = -1, q = -1;
+    for (int i = 0; i < m; ++i) {
+        dense[i] = query(i * 3, i * 3 + 1, i * 3 + 2);
+        if (dense[i]) p = i;
+        else q = i;
     }
-    cout << "YES\n";
+    assert(p != -1 and q != -1);
+    int zero = -1, one = -1;
+    if (query(3 * p, 3 * p + 1, 3 * q) == 0 or
+        query(3 * p, 3 * p + 1, 3 * q + 1) == 0 or
+        query(3 * p, 3 * p + 1, 3 * q + 2) == 0) {
+        // one of them is 0, the remaining one must be 1.
+        one = 3 * p + 2;
+    } else {
+        // both of them is 1, set to an arbitrary one.
+        one = 3 * p;
+    }
+    if (query(3 * q, 3 * q + 1, one) == 0) {
+        zero = 3 * q;
+    } else if (query(3 * q, 3 * q + 2, one) == 0) {
+        zero = 3 * q;
+    } else {
+        zero = 3 * q + 1;
+    }
+    for (int i = 0; i < m; ++i) {
+        int curr = 0;
+        if (dense[i]) {
+            int left = query(3 * i, 3 * i + 1, zero);
+            int right = query(3 * i, 3 * i + 2, zero);
+            if (left == 0 and right == 0) {
+                is_impostor[3 * i] = 0;
+                is_impostor[3 * i + 1] = 1;
+                is_impostor[3 * i + 2] = 1;
+            } else if (left == 0 and right == 1) {
+                is_impostor[3 * i] = 1;
+                is_impostor[3 * i + 1] = 0;
+                is_impostor[3 * i + 2] = 1;
+            } else if (left == 1 and right == 0) {
+                is_impostor[3 * i] = 1;
+                is_impostor[3 * i + 1] = 1;
+                is_impostor[3 * i + 2] = 0;
+            } else {
+                is_impostor[3 * i] = 1;
+                is_impostor[3 * i + 1] = 1;
+                is_impostor[3 * i + 2] = 1;
+            }
+        } else {
+            int left = query(3 * i, 3 * i + 1, one);
+            int right = query(3 * i, 3 * i + 2, one);
+            if (left == 0 and right == 0) {
+                is_impostor[3 * i] = 0;
+                is_impostor[3 * i + 1] = 0;
+                is_impostor[3 * i + 2] = 0;
+            } else if (left == 0 and right == 1) {
+                is_impostor[3 * i] = 0;
+                is_impostor[3 * i + 1] = 0;
+                is_impostor[3 * i + 2] = 1;
+            } else if (left == 1 and right == 0) {
+                is_impostor[3 * i] = 0;
+                is_impostor[3 * i + 1] = 1;
+                is_impostor[3 * i + 2] = 0;
+            } else {
+                is_impostor[3 * i] = 1;
+                is_impostor[3 * i + 1] = 0;
+                is_impostor[3 * i + 2] = 0;
+            }
+        }
+    }
+    vector<int> res;
+    for (int i = 0; i < n; ++i) {
+        if (is_impostor[i]) res.emplace_back(i);
+    }
+    claim(res);
 }
 
 int main() {

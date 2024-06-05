@@ -75,10 +75,10 @@ local function add_timestamp()
     vim.api.nvim_buf_set_lines(bufnr, 0, -1, false, lines)
 end
 
-vim.api.nvim_create_autocmd(
-    "BufWritePre",
-    {
-        pattern = "*.cc",
-        callback = add_timestamp,
-    }
-)
+-- vim.api.nvim_create_autocmd(
+--     "BufWritePre",
+--     {
+--         pattern = "*.cc",
+--         callback = add_timestamp,
+--     }
+-- )

@@ -1,8 +1,8 @@
 /**
  * Author:   subcrip
- * Created:  2024-06-03 23:04:55
- * Modified: 2024-06-03 23:17:23
- * Elapsed:  12 minutes
+ * Created:  2024-06-03 12:01:51
+ * Modified: 2024-06-03 14:07:12
+ * Elapsed:  125 minutes
  */
 
 #pragma GCC optimize("Ofast")
@@ -498,35 +498,59 @@ void prep() {
 
 void solve() {
     read(int, n);
-    readvec(int, a, n);
-    auto check = [&] (int idx) -> bool {
-        int prev_num = idx == 0 ? a[1] : a[0];
-        int prev_gcd = -INF;
-        for (int i = idx == 0 ? 2 : 1; i < n; ++i) {
-            if (i == idx) continue;
-            int curr_gcd = gcd(a[i], prev_num);
-            if (curr_gcd < prev_gcd) {
-                return false;
-            }
-            prev_gcd = curr_gcd;
-            prev_num = a[i];
+    vector<int> a, b;
+    int m = 0;
+    int prev = -1;
+    int zeros = 0;
+    int first = 0;
+    for (int i = 0; i < n; ++i) {
+        read(int, x);
+        if (x == 0) {
+            first = 1;
         }
-        return true;
-    };
-    int prev_gcd = -INF;
-    for (int i = 1; i < n; ++i) {
-        int curr_gcd = gcd(a[i], a[i - 1]);
-        if (curr_gcd < prev_gcd) {
-            if ((i - 2 >= 0 and check(i - 2)) or check(i - 1) or check(i)) {
-                cout << "YES\n";
-            } else {
-                cout << "NO\n";
-            }
-            return;
+        if (x != prev) {
+            if (prev == 0) first = 1;
+            a.emplace_back(x);
+            m += 1;
+            prev = x;
+        } else {
+            zeros += 1;
         }
-        prev_gcd = curr_gcd;
     }
-    cout << "YES\n";
+    for (int i = 0; i < n - 1; ++i) {
+        int m = a.size();
+        if (m <= 1) {
+            break;
+        }
+        // debug(a);
+        // debug(zeros);
+        set<int> oc;
+        if (first) {
+            oc.emplace(a[0]);
+        }
+        if (zeros) {
+            first = 1;
+            zeros -= 1;
+        } else {
+            first = 0;
+        }
+        for (int i = 1; i < m; ++i) {
+            if (oc.count(a[i] - a[i - 1])) {
+                zeros += 1;
+            } else {
+                oc.emplace(a[i] - a[i - 1]);
+            }
+        }
+        a.clear();
+        for (auto&& x : oc) {
+            a.emplace_back(x);
+        }
+    }
+    if (m == 0) {
+        cout << 0 << '\n';
+    } else {
+        cout << a[0] << '\n';
+    }
 }
 
 int main() {

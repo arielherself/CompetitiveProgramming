@@ -1,8 +1,8 @@
 /**
  * Author:   subcrip
- * Created:  2024-06-03 23:04:55
- * Modified: 2024-06-03 23:17:23
- * Elapsed:  12 minutes
+ * Created:  2024-06-03 23:18:29
+ * Modified: 2024-06-04 20:28:04
+ * Elapsed:  1269 minutes
  */
 
 #pragma GCC optimize("Ofast")
@@ -496,35 +496,142 @@ void dump_ignore() {}
 void prep() {
 }
 
-void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    auto check = [&] (int idx) -> bool {
-        int prev_num = idx == 0 ? a[1] : a[0];
-        int prev_gcd = -INF;
-        for (int i = idx == 0 ? 2 : 1; i < n; ++i) {
-            if (i == idx) continue;
-            int curr_gcd = gcd(a[i], prev_num);
-            if (curr_gcd < prev_gcd) {
-                return false;
-            }
-            prev_gcd = curr_gcd;
-            prev_num = a[i];
+static vector<MLL<MDL1>> power1;
+static vector<MLL<MDL2>> power2;
+static const ll b = rd();
+template <typename _Tp>
+struct hash_vec {
+    using hash_type = pll;
+    MLL<MDL1> hash1;
+    MLL<MDL2> hash2;
+    vector<_Tp> seq;
+    size_t size() {
+        return seq.size();
+    }
+    void push_back(const _Tp& x) {
+        hash1 = hash1 * b + x;
+        hash2 = hash2 * b + x;
+        seq.push_back(x);
+    }
+    void push_front(const _Tp& x) {
+        size_t length = size();
+        hash1 += x * power1[length];
+        hash2 += x * power2[length];
+        seq.push_front(x);
+    }
+    void pop_back() {
+        _Tp e = seq.back(); seq.pop_back();
+        hash1 = (hash1 - e) / b;
+        hash2 = (hash2 - e) / b;
+    }
+    void pop_front() {
+        _Tp e = seq.front(); seq.pop_front();
+        int length = seq.size();
+        hash1 -= e * power1[length];
+        hash2 -= e * power2[length];
+    }
+    void set(size_t pos, const _Tp& value) {
+        int length = seq.size();
+        int old_value = seq[pos];
+        hash1 += (value - old_value) * power1[length - 1 - pos];
+        hash2 += (value - old_value) * power2[length - 1 - pos];
+        seq[pos] = value;
+    }
+    const _Tp& operator[](size_t pos) {
+        return seq[pos];
+    }
+    hash_type hash() {
+        return {hash1.val, hash2.val};
+    }
+    void clear() {
+        hash1 = 0;
+        hash2 = 0;
+        seq.clear();
+    }
+    hash_vec(size_t maxn) {
+        clear();
+        MLL<MDL1> c1 = power1.size() ? power1.back() * b : 1;
+        MLL<MDL2> c2 = power2.size() ? power2.back() * b : 1;
+        for (int i = power1.size(); i < maxn; ++i) {
+            power1.push_back(c1);
+            power2.push_back(c2);
+            c1 *= b;
+            c2 *= b;
         }
-        return true;
-    };
-    int prev_gcd = -INF;
-    for (int i = 1; i < n; ++i) {
-        int curr_gcd = gcd(a[i], a[i - 1]);
-        if (curr_gcd < prev_gcd) {
-            if ((i - 2 >= 0 and check(i - 2)) or check(i - 1) or check(i)) {
-                cout << "YES\n";
-            } else {
-                cout << "NO\n";
-            }
+    }
+    hash_vec(size_t maxn, const _Tp& init_value) : hash_vec(maxn) {
+        for (size_t i = 0; i != maxn; ++i) {
+            push_back(init_value);
+        }
+    }
+};
+
+void solve() {
+    read(int, n, m);
+    vector<vector<int>> a(n, vector<int>(m)), b(n, vector<int>(m));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            cin >> a[i][j];
+        }
+    }
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            cin >> b[i][j];
+        }
+    }
+    unordered_map<hash_vec<int>::hash_type, vector<int>, pair_hash> b_row;
+    hash_vec<int> hs(max(n, m) + 1);
+    for (int i = 0; i < n; ++i) {
+        vector<int> r = b[i];
+        sort(r.begin(), r.end());
+        hs.clear();
+        for (int j = 0; j < m; ++j) {
+            hs.push_back(r[j]);
+        }
+        b_row[hs.hash()].emplace_back(i);
+    }
+    vector<int> row_mapping(n);
+    for (int i = 0; i < n; ++i) {
+        hs.clear();
+        vector<int> r = a[i];
+        sort(r.begin(), r.end());
+        for (int j = 0; j < m; ++j) {
+            hs.push_back(r[j]);
+        }
+        if (not b_row.count(hs.hash())) {
+            cout << "NO\n";
             return;
         }
-        prev_gcd = curr_gcd;
+        row_mapping[i] = b_row[hs.hash()].back();
+        b_row[hs.hash()].pop_back();
+        if (b_row[hs.hash()].size() == 0) {
+            b_row.erase(hs.hash());
+        }
+    }
+    vector<vector<int>> new_a(n, vector<int>(m));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            new_a[row_mapping[i]][j] = a[i][j];
+        }
+    }
+    unordered_map<hash_vec<int>::hash_type, int, pair_hash> b_col;
+    for (int j = 0; j < m; ++j) {
+        hs.clear();
+        for (int i = 0; i < n; ++i) {
+            hs.push_back(b[i][j]);
+        }
+        b_col[hs.hash()] += 1;
+    }
+    for (int j = 0; j < m; ++j) {
+        hs.clear();
+        for (int i = 0; i < n; ++i) {
+            hs.push_back(new_a[i][j]);
+        }
+        if (b_col[hs.hash()] == 0) {
+            cout << "NO\n";
+            return;
+        }
+        b_col[hs.hash()] -= 1;
     }
     cout << "YES\n";
 }

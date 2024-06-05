@@ -1,8 +1,8 @@
 /**
  * Author:   subcrip
- * Created:  2024-06-03 23:04:55
- * Modified: 2024-06-03 23:17:23
- * Elapsed:  12 minutes
+ * Created:  2024-06-03 15:39:47
+ * Modified: 2024-06-03 16:27:08
+ * Elapsed:  47 minutes
  */
 
 #pragma GCC optimize("Ofast")
@@ -499,34 +499,28 @@ void prep() {
 void solve() {
     read(int, n);
     readvec(int, a, n);
-    auto check = [&] (int idx) -> bool {
-        int prev_num = idx == 0 ? a[1] : a[0];
-        int prev_gcd = -INF;
-        for (int i = idx == 0 ? 2 : 1; i < n; ++i) {
-            if (i == idx) continue;
-            int curr_gcd = gcd(a[i], prev_num);
-            if (curr_gcd < prev_gcd) {
-                return false;
-            }
-            prev_gcd = curr_gcd;
-            prev_num = a[i];
-        }
-        return true;
-    };
-    int prev_gcd = -INF;
-    for (int i = 1; i < n; ++i) {
-        int curr_gcd = gcd(a[i], a[i - 1]);
-        if (curr_gcd < prev_gcd) {
-            if ((i - 2 >= 0 and check(i - 2)) or check(i - 1) or check(i)) {
-                cout << "YES\n";
-            } else {
-                cout << "NO\n";
-            }
-            return;
-        }
-        prev_gcd = curr_gcd;
+    readvec(int, b, n);
+    unordered_map<int, int, safe_hash> bk;
+    for (int i = 0; i < n; ++i) {
+        bk[a[i] >> __builtin_ctz(a[i])] += 1;
     }
-    cout << "YES\n";
+    for (int i = 0; i < n; ++i) {
+        while (b[i] != 0) {
+            b[i] >>= __builtin_ctz(b[i]);
+            if (bk.count(b[i])) {
+                if (--bk[b[i]] == 0) {
+                    bk.erase(b[i]);
+                }
+                break;
+            }
+            b[i] >>= 1;
+        }
+    }
+    if (bk.size() == 0) {
+        cout << "YES\n";
+    } else {
+        cout << "NO\n";
+    }
 }
 
 int main() {

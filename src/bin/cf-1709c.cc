@@ -1,8 +1,8 @@
 /**
  * Author:   subcrip
- * Created:  2024-06-03 23:04:55
- * Modified: 2024-06-03 23:17:23
- * Elapsed:  12 minutes
+ * Created:  2024-06-02 23:15:35
+ * Modified: 2024-06-03 00:11:27
+ * Elapsed:  55 minutes
  */
 
 #pragma GCC optimize("Ofast")
@@ -497,36 +497,59 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    auto check = [&] (int idx) -> bool {
-        int prev_num = idx == 0 ? a[1] : a[0];
-        int prev_gcd = -INF;
-        for (int i = idx == 0 ? 2 : 1; i < n; ++i) {
-            if (i == idx) continue;
-            int curr_gcd = gcd(a[i], prev_num);
-            if (curr_gcd < prev_gcd) {
-                return false;
-            }
-            prev_gcd = curr_gcd;
-            prev_num = a[i];
+    read(string, a);
+    int n = a.size();
+    int s = 0, cnt = 0;
+    for (int i = 0; i < n; ++i) {
+        if (a[i] == '(') {
+            s += 1;
+        } else if (a[i] == ')') {
+            s -= 1;
+        } else {
+            cnt += 1;
         }
-        return true;
-    };
-    int prev_gcd = -INF;
-    for (int i = 1; i < n; ++i) {
-        int curr_gcd = gcd(a[i], a[i - 1]);
-        if (curr_gcd < prev_gcd) {
-            if ((i - 2 >= 0 and check(i - 2)) or check(i - 1) or check(i)) {
-                cout << "YES\n";
-            } else {
-                cout << "NO\n";
-            }
-            return;
-        }
-        prev_gcd = curr_gcd;
     }
-    cout << "YES\n";
+    s = -s;
+    int x = cnt + s >> 1, y = cnt - s >> 1;
+    int curr = 0, cx = x, cy = y;
+    string p, q;
+    for (int i = 0; i < n; ++i) {
+        if (a[i] == '(') {
+            curr += 1;
+        } else if (a[i] == ')') {
+            curr -= 1;
+        } else {
+            if (cx) {
+                p += '(';
+                curr += 1;
+                cx -= 1;
+            } else {
+                p += ')';
+                curr -= 1;
+            }
+        }
+    }
+    for (int i = 0; i < n; ++i) {
+        if (a[i] == '(') {
+            curr += 1;
+        } else if (a[i] == ')') {
+            curr -= 1;
+        } else {
+            if (curr > 0 and cy) {
+                q += ')';
+                curr -= 1;
+                cy -= 1;
+            } else {
+                q += '(';
+                curr += 1;
+            }
+        }
+    }
+    if (p == q) {
+        cout << "YES\n";
+    } else {
+        cout << "NO\n";
+    }
 }
 
 int main() {

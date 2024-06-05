@@ -1,8 +1,8 @@
 /**
  * Author:   subcrip
- * Created:  2024-06-03 23:04:55
- * Modified: 2024-06-03 23:17:23
- * Elapsed:  12 minutes
+ * Created:  2024-06-03 14:55:45
+ * Modified: 2024-06-03 15:26:11
+ * Elapsed:  30 minutes
  */
 
 #pragma GCC optimize("Ofast")
@@ -497,36 +497,26 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    auto check = [&] (int idx) -> bool {
-        int prev_num = idx == 0 ? a[1] : a[0];
-        int prev_gcd = -INF;
-        for (int i = idx == 0 ? 2 : 1; i < n; ++i) {
-            if (i == idx) continue;
-            int curr_gcd = gcd(a[i], prev_num);
-            if (curr_gcd < prev_gcd) {
-                return false;
-            }
-            prev_gcd = curr_gcd;
-            prev_num = a[i];
+    constexpr ll m = lg2(MDL) + 2;
+    read(ll, n, k);
+    readvec(ll, a, n);
+    ll sum = accumulate(a.begin(), a.end(), ll(0));
+    vector<vector<ll>> ss(n + 1, vector<ll>(m));
+    for (ll j = 1; j < m; ++j) {
+        for (ll i = n - 1; ~i; --i) {
+            ss[i][j] = ss[i + 1][j] + a[i] - a[i] / 2;
+            a[i] /= 2;
         }
-        return true;
-    };
-    int prev_gcd = -INF;
-    for (int i = 1; i < n; ++i) {
-        int curr_gcd = gcd(a[i], a[i - 1]);
-        if (curr_gcd < prev_gcd) {
-            if ((i - 2 >= 0 and check(i - 2)) or check(i - 1) or check(i)) {
-                cout << "YES\n";
-            } else {
-                cout << "NO\n";
-            }
-            return;
-        }
-        prev_gcd = curr_gcd;
     }
-    cout << "YES\n";
+    vector<vector<ll>> dp(n + 1, vector<ll>(m, INFLL));
+    dp[0][0] = 0;
+    for (ll i = 1; i <= n; ++i) {
+        dp[i][0] = dp[i - 1][0] + k;
+        for (ll j = 1; j < m; ++j) {
+            dp[i][j] = min(dp[i - 1][j] + k, dp[i - 1][j - 1] + ss[i - 1][j]);
+        }
+    }
+    cout << sum - *min_element(dp[n].begin(), dp[n].end()) << '\n';
 }
 
 int main() {
