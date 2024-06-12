@@ -491,27 +491,44 @@ void prep() {
 
 void solve() {
     read(int, n);
-    read(string, s);
-    readvec1(int, ch, n);
-    string curr;
-    ll res = 0;
-    vector<int> vis(n + 1);
-    auto dfs = [&] (auto dfs, int v) -> void {
-        if (vis[v]) return;
-        vis[v] = 1;
-        curr += s[v - 1];
-        dfs(dfs, ch[v]);
-    };
-    for (int i = 1; i <= n; ++i) {
-        if (not vis[i]) {
-            curr.clear();
-            dfs(dfs, i);
-            ll p = period(curr);
-            if (res == 0) res = p;
-            else res = lcm(res, p);
+    readvec(int, a, n);
+    set<pii> st;
+    sort(a.begin(), a.end());
+    vector<int> nxt(n);
+    for (int i = n - 1; ~i; --i) {
+        if (i == n - 1 or a[i] != a[i + 1]) {
+            nxt[i] = i + 1;
+        } else {
+            nxt[i] = nxt[i + 1];
         }
     }
-    cout << res << '\n';
+    auto binary_search = [&] (int val, int left) -> int {
+        int l = left, r = n - 1;
+        while (l < r) {
+            int mid = l + r >> 1;
+            if (a[mid] >= val) {
+                r = mid;
+            } else {
+                l = mid + 1;
+            }
+        }
+        if (l >= left and l < n and a[l] >= val) {
+            return l;
+        } else {
+            return -1;
+        }
+    };
+    int res = 0;
+    for (int i = 0; i < n; ++i) {
+        int j = nxt[i];
+        int cnt = nxt[i] - i;
+        while (j != -1 and j != n) {
+            cnt += 1;
+            j = binary_search(2 * a[j] - a[i], j + 1);
+        }
+        res = max(res, cnt);
+    }
+    cout << n - res << '\n';
 }
 
 int main() {

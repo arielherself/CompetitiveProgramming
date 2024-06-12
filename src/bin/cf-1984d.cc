@@ -489,28 +489,181 @@ void dump_ignore() {}
 void prep() {
 }
 
-void solve() {
-    read(int, n);
-    read(string, s);
-    readvec1(int, ch, n);
-    string curr;
-    ll res = 0;
-    vector<int> vis(n + 1);
-    auto dfs = [&] (auto dfs, int v) -> void {
-        if (vis[v]) return;
-        vis[v] = 1;
-        curr += s[v - 1];
-        dfs(dfs, ch[v]);
-    };
-    for (int i = 1; i <= n; ++i) {
-        if (not vis[i]) {
-            curr.clear();
-            dfs(dfs, i);
-            ll p = period(curr);
-            if (res == 0) res = p;
-            else res = lcm(res, p);
+vector<int> calc_z(const vector<pll>& t) {  // z function of t
+    int m = t.size();
+    vector<int> z;
+    z.push_back(m);
+    pair<int, int> prev = {1, -1};
+    for (int i = 1; i < m; ++i) {
+        if (z[i - prev.first] + i <= prev.second) {
+            z.push_back(z[i - prev.first]);
+        } else {
+            int j = max(i, prev.second + 1);
+            while (j < m && t[j] == t[j - i]) ++j;
+            z.push_back(j - i);
+            prev = {i, j - 1};
         }
     }
+    return z;
+}
+int period(const vector<pll>& s) {  // find the length of shortest recurring period
+    int n = s.size();
+    auto z = calc_z(s);
+    for (int i = 1; i <= n / 2; ++i) {
+        if (n % i == 0 && z[i] == n - i) {
+            return i;
+        }
+    }
+    return n;
+}
+
+static vector<MLL<MDL1>> power1;
+static vector<MLL<MDL2>> power2;
+static const ll b = rd();
+template <typename _Tp>
+struct hash_vec {
+    using hash_type = pll;
+    MLL<MDL1> hash1;
+    MLL<MDL2> hash2;
+    vector<_Tp> seq;
+    size_t size() {
+        return seq.size();
+    }
+    void push_back(const _Tp& x) {
+        hash1 = hash1 * b + x;
+        hash2 = hash2 * b + x;
+        seq.push_back(x);
+    }
+    void push_front(const _Tp& x) {
+        size_t length = size();
+        hash1 += x * power1[length];
+        hash2 += x * power2[length];
+        seq.push_front(x);
+    }
+    void pop_back() {
+        _Tp e = seq.back(); seq.pop_back();
+        hash1 = (hash1 - e) / b;
+        hash2 = (hash2 - e) / b;
+    }
+    void pop_front() {
+        _Tp e = seq.front(); seq.pop_front();
+        int length = seq.size();
+        hash1 -= e * power1[length];
+        hash2 -= e * power2[length];
+    }
+    void set(size_t pos, const _Tp& value) {
+        int length = seq.size();
+        int old_value = seq[pos];
+        hash1 += (value - old_value) * power1[length - 1 - pos];
+        hash2 += (value - old_value) * power2[length - 1 - pos];
+        seq[pos] = value;
+    }
+    const _Tp& operator[](size_t pos) {
+        return seq[pos];
+    }
+    hash_type hash() {
+        return {hash1.val, hash2.val};
+    }
+    void clear() {
+        hash1 = 0;
+        hash2 = 0;
+        seq.clear();
+    }
+    hash_vec(size_t maxn) {
+        clear();
+        MLL<MDL1> c1 = power1.size() ? power1.back() * b : 1;
+        MLL<MDL2> c2 = power2.size() ? power2.back() * b : 1;
+        for (int i = power1.size(); i < maxn; ++i) {
+            power1.push_back(c1);
+            power2.push_back(c2);
+            c1 *= b;
+            c2 *= b;
+        }
+    }
+    hash_vec(size_t maxn, const _Tp& init_value) : hash_vec(maxn) {
+        for (size_t i = 0; i != maxn; ++i) {
+            push_back(init_value);
+        }
+    }
+};
+
+struct range_hash {
+    vector<pair<MLL<MDL1>, MLL<MDL2>>> hp;
+    template <typename T>
+    range_hash(const T& vec) {
+        hp.emplace_back();
+        hash_vec<ll> hs(vec.size());
+        for (auto&& x : vec) {
+            hs.push_back(x);
+            hp.emplace_back(hs.hash());
+        }
+    }
+
+    /// query hash of subarray [[l, r]]. Index starts from 1.
+    pair<MLL<MDL1>, MLL<MDL2>> range_query(size_t l, size_t r) {
+        return {
+            (hp[r + 1].first - hp[l].first * power1[r + 1 - l]),
+            (hp[r + 1].second - hp[l].second * power2[r + 1 - l]),
+        };
+    }
+};
+
+ll sum(ll start, ll end) {
+    return (start + end) * (end - start + 1) / 2;
+}
+
+void solve() {
+    read(string, s);
+    int n = s.size();
+    int curr = 0;
+    vector<int> nxt(n + 1);
+    vector<int> prepend(n);
+    range_hash hp(s);
+    nxt[n] = n;
+    for (int i = n - 1; ~i; --i) {
+        if (s[i] != 'a') {
+            nxt[i] = i;
+        } else {
+            nxt[i] = nxt[i + 1];
+        }
+    }
+    int cnt = 0;
+    for (int i = 0; i < n; ++i) {
+        if (s[i] != 'a') {
+            prepend[i] = cnt;
+            cnt = 0;
+        } else {
+            cnt ++ ;
+        }
+    }
+    int l = 0;
+    for (int i = 0; i < n; ++i) {
+        if (s[i] != 'a') {
+            break;
+        }
+        l += 1;
+    }
+    ll res = 0;
+    for (int i = 1; l + i - 1 < n; ++i) {
+        int min_prepend = INF;
+        int ptr = l;
+        int f = 1;
+        int prev = 0;
+        while (ptr + i - 1 < n) {
+            // debug(sl(ptr, ptr + i - 1));
+            if (hp.range_query(ptr, ptr + i - 1) != hp.range_query(l, l + i - 1)) {
+                f = 0;
+                break;
+            }
+            min_prepend = min(min_prepend, min(prepend[ptr], ptr - prev));
+            prev = ptr + i;
+            ptr = nxt[ptr + i];
+        }
+        if (f and ptr == n) {
+            res += min_prepend + 1;
+        }
+    }
+    if (res == 0) res = n - 1;
     cout << res << '\n';
 }
 

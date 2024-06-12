@@ -476,9 +476,18 @@ public:
 template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container) {
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
+#define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
+template <typename T, size_t N>
+array<T, N> __initarray(const T& init) {
+    array<T, N> res;
+    for (size_t i = 0; i < N; ++i) {
+        res[i] = init;
+    }
+    return res;
+}
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -489,28 +498,28 @@ void dump_ignore() {}
 void prep() {
 }
 
+using mll = MLL<PRIME>;
+
 void solve() {
-    read(int, n);
-    read(string, s);
-    readvec1(int, ch, n);
-    string curr;
-    ll res = 0;
-    vector<int> vis(n + 1);
-    auto dfs = [&] (auto dfs, int v) -> void {
-        if (vis[v]) return;
-        vis[v] = 1;
-        curr += s[v - 1];
-        dfs(dfs, ch[v]);
-    };
-    for (int i = 1; i <= n; ++i) {
-        if (not vis[i]) {
-            curr.clear();
-            dfs(dfs, i);
-            ll p = period(curr);
-            if (res == 0) res = p;
-            else res = lcm(res, p);
+    read(int, n, x);
+    int mx = x + 10;
+    vector<vector<mll>> dp(mx, vector<mll>(n + 1));
+    vector<vector<ll>> xx(mx, vector<ll>(n + 1));
+    dp[0][0] = 1;
+    xx[0][0] = x;
+    mll res = 0;
+    for (int i = 1; i < mx; ++i) {
+        for (int j = 0; j <= n; ++j) {
+            for (int k = 0; k <= j; ++k) {
+                if (xx[i - 1][k] <= 0) continue;
+                debug(make_tuple(i, j, k));
+                dp[i][j] += dp[i - 1][k] * qpow<mll>(xx[i - 1][k], k - j);
+            }
+            xx[i][j] = x - ll(1) * (n - 1) * i - j;
         }
+        res += dp[i][n];
     }
+    debugvec(dp);
     cout << res << '\n';
 }
 

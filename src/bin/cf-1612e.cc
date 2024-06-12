@@ -1,3 +1,4 @@
+#include <numeric>
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -478,7 +479,7 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -489,29 +490,77 @@ void dump_ignore() {}
 void prep() {
 }
 
+bool less(const pii& a, const pii& b) {
+    if (a == make_pair(0, 0)) return true;
+    return a.first * b.second < a.second * b.first;
+}
+
 void solve() {
+    constexpr int N = 2e5 + 10;
     read(int, n);
-    read(string, s);
-    readvec1(int, ch, n);
-    string curr;
-    ll res = 0;
-    vector<int> vis(n + 1);
-    auto dfs = [&] (auto dfs, int v) -> void {
-        if (vis[v]) return;
-        vis[v] = 1;
-        curr += s[v - 1];
-        dfs(dfs, ch[v]);
-    };
-    for (int i = 1; i <= n; ++i) {
-        if (not vis[i]) {
-            curr.clear();
-            dfs(dfs, i);
-            ll p = period(curr);
-            if (res == 0) res = p;
-            else res = lcm(res, p);
+    vector<vector<int>> bk(N);
+    for (int i = 0; i < n; ++i) {
+        read(int, x, k);
+        bk[x].emplace_back(k);
+    }
+    vector<vector<pii>> r(21);
+    for (int i = 0; i < N; ++i) {
+        if (bk[i].empty()) continue;
+        // process the unlimited situation
+        r[0].emplace_back(accumulate(bk[i].begin(), bk[i].end(), 0), i);
+        for (int k = 1; k <= 20; ++k) {
+            r[k].emplace_back(accumulate(bk[i].begin(), bk[i].end(), 0, [k] (int x, int y) {
+                return x + min(k, y);
+            }), i);
         }
     }
-    cout << res << '\n';
+    pii res = {};
+    vector<int> seq;
+
+    for (int k = 1; k <= 20; ++k) {
+        if (r[k].size() < k) continue;
+        sort(r[k].begin(), r[k].end(), greater());
+        pii curr = {
+            accumulate(r[k].begin(), r[k].begin() + k, 0, [] (int s, const pii& x) { return s + x.first; }),
+            k
+        };
+        if (::less(res, curr)) {
+            res = curr;
+            seq.clear();
+            for (int i = 0; i < k; ++i) {
+                seq.emplace_back(r[k][i].second);
+            }
+        }
+    }
+
+    if (r[0].size() > 20) {
+        sort(r[0].begin(), r[0].end(), greater());
+        pii curr = {
+            accumulate(r[0].begin(), r[0].begin() + 20, 0, [] (int s, const pii& x) { return s + x.first; }),
+            20
+        };
+        vector<int> curr_seq;
+        for (int i = 0; i < 20; ++i) {
+            curr_seq.emplace_back(r[0][i].second);
+        }
+        for (int i = 20; i < r[0].size(); ++i) {
+            pii nw = { curr.first + r[0][i].first, curr.second + 1 };
+            if (::less(nw, curr)) {
+                break;
+            }
+            curr = nw;
+            curr_seq.emplace_back(r[0][i].second);
+        }
+        if (::less(res, curr)) {
+            res = curr;
+            seq = curr_seq;
+        }
+    }
+
+    debug(res);
+    cout << seq.size() << '\n';
+    putvec(seq);
+
 }
 
 int main() {

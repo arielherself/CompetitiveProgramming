@@ -486,30 +486,40 @@ void dump() {}
 
 void dump_ignore() {}
 
+using mll = MLL<PRIME>;
+constexpr int N = 3e5 + 10;
+mll pw[N];
+
 void prep() {
+    pw[0] = 1;
+    for (int i = 1; i < N; ++i) {
+        pw[i] = pw[i - 1] * 2;
+    }
 }
 
 void solve() {
     read(int, n);
-    read(string, s);
-    readvec1(int, ch, n);
-    string curr;
-    ll res = 0;
-    vector<int> vis(n + 1);
-    auto dfs = [&] (auto dfs, int v) -> void {
-        if (vis[v]) return;
-        vis[v] = 1;
-        curr += s[v - 1];
-        dfs(dfs, ch[v]);
-    };
-    for (int i = 1; i <= n; ++i) {
-        if (not vis[i]) {
-            curr.clear();
-            dfs(dfs, i);
-            ll p = period(curr);
-            if (res == 0) res = p;
-            else res = lcm(res, p);
-        }
+    readvec(ll, a, n);
+    vector<ll> ps(n + 1);
+    vector<int> cnt(n + 1);
+    partial_sum(a.begin(), a.end(), ps.begin() + 1);
+    partial_sum(ps.begin(), ps.end(), cnt.begin(), [] (int a, ll b) { return a + (b >= 0); });
+    vector<ll> c;
+    for (int i = 0; i <= n; ++i) {
+        c.emplace_back(abs(ps[i]) + ps[n] - ps[i]);
+    }
+    // debug(c);
+    ll target = *max_element(c.begin(), c.end());
+    mll res = 0;
+    int f = 0;
+    for (int i = 0; i <= n; ++i) {
+        if (c[i] != target or ps[i] >= 0) continue;
+        f = 1;
+        res += pw[cnt[i] + n - i];
+        // debug(res);
+    }
+    if (f == 0) {
+        res = pw[n];
     }
     cout << res << '\n';
 }

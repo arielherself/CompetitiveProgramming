@@ -476,6 +476,15 @@ public:
 template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container) {
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
+#define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
+template <typename T, size_t N>
+array<T, N> __initarray(const T& init) {
+    array<T, N> res;
+    for (size_t i = 0; i < N; ++i) {
+        res[i] = init;
+    }
+    return res;
+}
 /////////////////////////////////////////////////////////
 
 // #define SINGLE_TEST_CASE
@@ -490,28 +499,36 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    read(string, s);
-    readvec1(int, ch, n);
-    string curr;
-    ll res = 0;
-    vector<int> vis(n + 1);
-    auto dfs = [&] (auto dfs, int v) -> void {
-        if (vis[v]) return;
-        vis[v] = 1;
-        curr += s[v - 1];
-        dfs(dfs, ch[v]);
-    };
-    for (int i = 1; i <= n; ++i) {
-        if (not vis[i]) {
-            curr.clear();
-            dfs(dfs, i);
-            ll p = period(curr);
-            if (res == 0) res = p;
-            else res = lcm(res, p);
+    read(int, n, m);
+    vector<int> a(n * m);
+    for (int i = 0; i < n * m; ++i) {
+        read(char, c);
+        a[i] = c == '1';
+    }
+    vector<int> res(n * m);
+    vector<int> ps(n * m + 1);
+    partial_sum(a.begin(), a.end(), ps.begin() + 1);
+    // get good columns
+    vector<bool> col(m);
+    int cnt = 0;
+    for (int i = 0; i < n * m; ++i) {
+        if (a[i]) {
+            if (col[i % m] == 0) {
+                cnt += 1;
+            }
+            col[i % m] = 1;
+        }
+        res[i] += cnt;
+    }
+    // get good rows
+    for (int i = 1; i <= m; ++i) {
+        int curr = 0;
+        for (int j = i; j <= n * m; j += m) {
+            curr += !!(ps[j] - ps[max(0, j - m)]);
+            res[j - 1] += curr;
         }
     }
-    cout << res << '\n';
+    putvec(res);
 }
 
 int main() {

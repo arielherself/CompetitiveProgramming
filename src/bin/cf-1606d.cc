@@ -476,6 +476,15 @@ public:
 template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container) {
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
+#define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
+template <typename T, size_t N>
+array<T, N> __initarray(const T& init) {
+    array<T, N> res;
+    for (size_t i = 0; i < N; ++i) {
+        res[i] = init;
+    }
+    return res;
+}
 /////////////////////////////////////////////////////////
 
 // #define SINGLE_TEST_CASE
@@ -490,28 +499,87 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    read(string, s);
-    readvec1(int, ch, n);
-    string curr;
-    ll res = 0;
-    vector<int> vis(n + 1);
-    auto dfs = [&] (auto dfs, int v) -> void {
-        if (vis[v]) return;
-        vis[v] = 1;
-        curr += s[v - 1];
-        dfs(dfs, ch[v]);
-    };
-    for (int i = 1; i <= n; ++i) {
-        if (not vis[i]) {
-            curr.clear();
-            dfs(dfs, i);
-            ll p = period(curr);
-            if (res == 0) res = p;
-            else res = lcm(res, p);
+    read(int, n, m);
+    vector<vector<int>> a(n, vector<int>(m));
+    for (int i  =0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            cin >> a[i][j];
         }
     }
-    cout << res << '\n';
+
+    vector<int> mn(n, INF), mx(n, -INF);
+    vector<vector<bool>> left_kx(m, vector<bool>(n));
+    vector<vector<int>> left(m, vector<int>(n));
+    for (int i = 0; i < m; ++i) {
+        for (int j = 0; j < n; ++j) {
+            mn[j] = min(mn[j], a[j][i]);
+            mx[j] = max(mx[j], a[j][i]);
+        }
+
+        iota(left[i].begin(), left[i].end(), 0);
+        sort_by_key(left[i].begin(), left[i].end(), [&] (int i) { return make_pair(mn[i], i); }, greater());
+        int acc = -INF;
+        for (int j = n - 1; j > 0; --j) {
+            acc = max(acc, mx[left[i][j]]);
+            if (acc < mn[left[i][j - 1]]) {
+                left_kx[i][j - 1] = 1;
+            }
+        }
+    }
+
+    mn.assign(n, INF), mx.assign(n, -INF);
+    vector<vector<bool>> right_kx(m, vector<bool>(n));
+    vector<vector<int>> right(m, vector<int>(n));
+    for (int i = m - 1; i >= 0; --i) {
+        for (int j = 0; j < n; ++j) {
+            mn[j] = min(mn[j], a[j][i]);
+            mx[j] = max(mx[j], a[j][i]);
+        }
+
+        iota(right[i].begin(), right[i].end(), 0);
+        sort_by_key(right[i].begin(), right[i].end(), [&] (int i) { return make_pair(-mx[i], i); }, greater());
+        int acc = INF;
+        for (int j = n - 1; j > 0; --j) {
+            acc = min(acc, mn[right[i][j]]);
+            if (acc > mx[right[i][j - 1]]) {
+                right_kx[i][j - 1] = 1;
+            }
+        }
+    }
+
+    for (int i = 0; i < m - 1; ++i) {
+        int pi = i, si = i + 1;
+        int next_ptr = 0;
+        vector<int> bk(n);
+        int cnt = 0;
+        for (int j = 0; j < n - 1; ++j) {
+            if (++bk[left[pi][j]] == 1) {
+                cnt += 1;
+            } else {
+                cnt -= 1;
+            }
+            if (++bk[right[si][j]] == 1) {
+                cnt += 1;
+            } else {
+                cnt -= 1;
+            }
+            if (cnt == 0 and left_kx[pi][j] and right_kx[si][j]) {
+                // found.
+                cout << "YES\n";
+                for (int i = 0; i < n; ++i) {
+                    if (bk[i] == 2) {
+                        cout << 'R';
+                    } else {
+                        cout << 'B';
+                    }
+                }
+                cout << ' ' << i + 1 << '\n';
+                return;
+            }
+        }
+    }
+
+    cout << "NO\n";
 }
 
 int main() {

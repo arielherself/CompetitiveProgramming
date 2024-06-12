@@ -479,37 +479,92 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
 /////////////////////////////////////////////////////////
 
 // #define SINGLE_TEST_CASE
-// #define DUMP_TEST_CASE 7219
+// #define DUMP_TEST_CASE 83
 // #define TOT_TEST_CASE 10000
 
-void dump() {}
+static const int b = rd();
 
-void dump_ignore() {}
+void dump() {
+}
 
+void dump_ignore() {
+}
+
+constexpr int N = 1e5 + 10;
+
+MLL<MDL1> pw1[N];
+MLL<MDL2> pw2[N];
 void prep() {
+    pw1[0] = 1;
+    pw2[0] = 1;
+    for (int i = 1; i < N; ++i) {
+        pw1[i] = pw1[i - 1] * b;
+        pw2[i] = pw2[i - 1] * b;
+    }
+}
+
+
+vector<pair<MLL<MDL1>, MLL<MDL2>>> hash_ps(const vector<int>& a) {
+    int n = a.size();
+    vector<pair<MLL<MDL1>, MLL<MDL2>>> res(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        res[i].first = res[i - 1].first + pw1[i - 1] * a[i - 1];
+        res[i].second = res[i - 1].second + pw2[i - 1] * a[i - 1];
+    }
+    return res;
 }
 
 void solve() {
-    read(int, n);
-    read(string, s);
-    readvec1(int, ch, n);
-    string curr;
-    ll res = 0;
-    vector<int> vis(n + 1);
-    auto dfs = [&] (auto dfs, int v) -> void {
-        if (vis[v]) return;
-        vis[v] = 1;
-        curr += s[v - 1];
-        dfs(dfs, ch[v]);
-    };
+    read(int, n, k);
+    vector<int> a(n);
+    for (int i = 0; i < n; ++i) {
+        read(char, c);
+        a[i] = c == '1';
+    }
+    vector<int> b, c;  // b is xored
+    for (int i = n - 1; ~i; --i) {
+        b.emplace_back(a[i] ^ 1);
+        c.emplace_back(a[i]);
+    }
+    vector<int> ps(n + 1), ps_rev(n + 1);
     for (int i = 1; i <= n; ++i) {
-        if (not vis[i]) {
-            curr.clear();
-            dfs(dfs, i);
-            ll p = period(curr);
-            if (res == 0) res = p;
-            else res = lcm(res, p);
+        ps[i] = ps[i - 1] + a[i - 1];
+        ps_rev[i] = ps_rev[i - 1] + c[i - 1];
+    }
+    auto hp = hash_ps(a), hp_rev = hash_ps(b);
+    int left = n;
+    int res = -1;
+    int f = 0;
+    for (int i = 0; i < n - k; ++i) {
+        if (c[i] == c[i + k]) {
+            f += 1;
         }
+    }
+    auto get_segment = [&] (vector<pair<MLL<MDL1>, MLL<MDL2>>>& hs, int l, int r) -> pair<MLL<MDL1>, MLL<MDL2>> {
+        return {(hs[r].first - hs[l].first) / pw1[l], (hs[r].second - hs[l].second) / pw2[l]};
+    };
+    int g = 0;
+    while (left > 0) {
+        if (left + k < n and a[left] == a[left + k]) {
+            break;
+        }
+        int left_len = n - left;
+        if (not f) {
+            int left_break_start = max(n - left_len, n - k);
+            int left_break_size = min(n - left_break_start, n - (left_break_start + k - n + left_len));
+            int left_l = min(n, left + k) - left;
+            if (ps[left_l + left] - ps[left] == 0 and ps_rev[left_len + k - left_l] - ps_rev[left_len] == 0 or
+                ps[left_l + left] - ps[left] == left_l and ps_rev[left_len + k - left_l] - ps_rev[left_len] == k - left_l) {
+                if (left_break_size < 0 or get_segment(hp, left_break_start, left_break_start + left_break_size) == get_segment(hp_rev, left_break_start + k - n + left_len, left_break_start + k - n + left_len + left_break_size)) {
+                    res = left;
+                    break;
+                }
+            }
+        }
+        if (left_len + k < n and c[left_len] == c[left_len + k]) {
+            f -= 1;
+        }
+        --left;
     }
     cout << res << '\n';
 }

@@ -491,27 +491,25 @@ void prep() {
 
 void solve() {
     read(int, n);
-    read(string, s);
-    readvec1(int, ch, n);
-    string curr;
-    ll res = 0;
-    vector<int> vis(n + 1);
-    auto dfs = [&] (auto dfs, int v) -> void {
-        if (vis[v]) return;
-        vis[v] = 1;
-        curr += s[v - 1];
-        dfs(dfs, ch[v]);
-    };
+    vector<int> ps(n + 1);
     for (int i = 1; i <= n; ++i) {
-        if (not vis[i]) {
-            curr.clear();
-            dfs(dfs, i);
-            ll p = period(curr);
-            if (res == 0) res = p;
-            else res = lcm(res, p);
-        }
+        read(char, c);
+        ps[i] = ps[i - 1] + (c == '1');
     }
-    cout << res << '\n';
+    array<pii, 4> dp;
+    dp[0b00] = { 0, 0 };
+    dp[0b01] = { 0, 0 };
+    dp[0b10] = { INF, INF };
+    dp[0b11] = { INF, INF };
+    pii dp1, dp0;
+    for (int i = 1; i <= n; ++i) {
+        dp1 = { dp[(i & 1) << 1].first + i - ps[i], dp[(i & 1) << 1].second + 1 };
+        dp0 = { dp[(i & 1) << 1 | 1].first + ps[i], dp[(i & 1) << 1 | 1].second + 1 };
+        dp[(i & 1) << 1 | 1] = min(dp[(i & 1) << 1 | 1], { dp1.first - ps[i], dp1.second });
+        dp[(i & 1) << 1] = min(dp[(i & 1) << 1], { dp0.first - i + ps[i], dp0.second });
+    }
+    pii res = min(dp1, dp0);
+    cout << res.first << '\n';
 }
 
 int main() {

@@ -490,28 +490,19 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
     read(string, s);
-    readvec1(int, ch, n);
-    string curr;
-    ll res = 0;
-    vector<int> vis(n + 1);
-    auto dfs = [&] (auto dfs, int v) -> void {
-        if (vis[v]) return;
-        vis[v] = 1;
-        curr += s[v - 1];
-        dfs(dfs, ch[v]);
-    };
-    for (int i = 1; i <= n; ++i) {
-        if (not vis[i]) {
-            curr.clear();
-            dfs(dfs, i);
-            ll p = period(curr);
-            if (res == 0) res = p;
-            else res = lcm(res, p);
+    int f = s[0] == '1' and *s.rbegin() != '9';
+    for (int i = 1; i < s.size() - 1; ++i) {
+        if (s[i] == '0') {
+            f = 0;
+            break;
         }
     }
-    cout << res << '\n';
+    if (f) {
+        cout << "YES\n";
+    } else {
+        cout << "NO\n";
+    }
 }
 
 int main() {

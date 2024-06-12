@@ -476,6 +476,15 @@ public:
 template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container) {
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
+#define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
+template <typename T, size_t N>
+array<T, N> __initarray(const T& init) {
+    array<T, N> res;
+    for (size_t i = 0; i < N; ++i) {
+        res[i] = init;
+    }
+    return res;
+}
 /////////////////////////////////////////////////////////
 
 // #define SINGLE_TEST_CASE
@@ -490,28 +499,57 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    read(string, s);
-    readvec1(int, ch, n);
-    string curr;
-    ll res = 0;
-    vector<int> vis(n + 1);
-    auto dfs = [&] (auto dfs, int v) -> void {
-        if (vis[v]) return;
-        vis[v] = 1;
-        curr += s[v - 1];
-        dfs(dfs, ch[v]);
-    };
+    read(int, n, a, b);
+    read(string, x);
+    vector<vector<vector<vector<ull>>>> dp(n + 1, vector<vector<vector<ull>>>(a, vector<vector<ull>>(b, vector<ull>(n + 1, ~ull(0)))));
+    vector<ll> pw_a(n + 1), pw_b(n + 1);
+    pw_a[0] = 1, pw_b[0] = 1;
     for (int i = 1; i <= n; ++i) {
-        if (not vis[i]) {
-            curr.clear();
-            dfs(dfs, i);
-            ll p = period(curr);
-            if (res == 0) res = p;
-            else res = lcm(res, p);
+        pw_a[i] = (pw_a[i - 1] * 10) % a;
+        pw_b[i] = (pw_b[i - 1] * 10) % b;
+    }
+    dp[0][0][0][0] = 0;
+    for (int i = 1; i <= n; ++i) {
+        int curr = x[n - i] - 48;
+        // color red
+        for (int j = 0; j < a; ++j) {
+            for (int k = 0; k < b; ++k) {
+                for (int l = 0; l < n; ++l) {
+                    if (dp[i - 1][j][k][l] == ~ull(0)) continue;
+                    // debug(make_tuple(i, (j + curr * pw_a[i - 1]) % a, k, l));
+                    dp[i][(j + curr * pw_a[l]) % a][k][l + 1] = dp[i - 1][j][k][l] | ull(1) << i - 1;
+                }
+            }
+        }
+        // color blue
+        for (int j = 0; j < a; ++j) {
+            for (int k = 0; k < b; ++k) {
+                for (int l = 0; l <= n; ++l) {
+                    if (dp[i - 1][j][k][l] == ~ull(0)) continue;
+                    dp[i][j][(k + curr * pw_b[i - 1 - l]) % b][l] = dp[i - 1][j][k][l];
+                }
+            }
         }
     }
-    cout << res << '\n';
+    // debug(dp[1][2][0][1]);
+    // assert(dp[1][2][0][1] == 1);
+    int res = INF;
+    ull mask;
+    for (int l = 1; l < n; ++l) {
+        if (dp[n][0][0][l] == ~ull(0)) continue;
+        if (abs(2 * l - n) < res) {
+            res = abs(2 * l - n);
+            mask = dp[n][0][0][l];
+        }
+    }
+    if (res == INF) {
+        cout << -1 << endl;
+    } else {
+        for (int i = n - 1; ~i; --i) {
+            cout << ((mask >> i & 1) ? 'R' : 'B');
+        }
+        cout << endl;
+    }
 }
 
 int main() {

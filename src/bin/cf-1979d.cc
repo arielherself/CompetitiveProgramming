@@ -476,42 +476,89 @@ public:
 template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container) {
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
+template <typename T> bool has(const vector<T>& vec, const T& element) {
+    for (auto&& x : vec) {
+        if (x == element) return true;
+    }
+    return false;
+}
 /////////////////////////////////////////////////////////
 
 // #define SINGLE_TEST_CASE
-// #define DUMP_TEST_CASE 7219
+// #define DUMP_TEST_CASE 163
 // #define TOT_TEST_CASE 10000
 
-void dump() {}
+void dump() {
+    read(int, n, k);
+    read(string, s);
+    cout << n << ' ' << k << endl;
+    cout << s << endl;
+}
 
-void dump_ignore() {}
+void dump_ignore() {
+    read(int, n, k);
+    read(string, s);
+}
 
 void prep() {
 }
 
 void solve() {
-    read(int, n);
-    read(string, s);
-    readvec1(int, ch, n);
-    string curr;
-    ll res = 0;
-    vector<int> vis(n + 1);
-    auto dfs = [&] (auto dfs, int v) -> void {
-        if (vis[v]) return;
-        vis[v] = 1;
-        curr += s[v - 1];
-        dfs(dfs, ch[v]);
-    };
-    for (int i = 1; i <= n; ++i) {
-        if (not vis[i]) {
-            curr.clear();
-            dfs(dfs, i);
-            ll p = period(curr);
-            if (res == 0) res = p;
-            else res = lcm(res, p);
+    read(int, n, k);
+    vector<int> A(n);
+    vector<int> P(n + 1);
+    for (int i = 0; i < n; ++i) {
+        read(char, x);
+        A[i] = x == '1';
+        P[i + 1] = P[i] + A[i];
+    }
+
+    vector<int> D(n + 1);
+    for (int i = n; ~i; --i) {
+        if (i + k < n) {
+            if (A[i] == A[i + k] or not has({0, k}, P[i + k] - P[i])) {
+                D[i] = -1;
+            } else {
+                D[i] = D[i + k];
+            }
+        } else {
+            if (i + 1 < n and (A[i] != A[i + 1] or D[i + 1] == -1)) {
+                D[i] = -1;
+            } else {
+                D[i] = i;
+            }
         }
     }
-    cout << res << '\n';
+
+    vector<int> DR(n);
+    for (int i = 0; i < n; ++i) {
+        if (i - k >= 0) {
+            if (A[i] == A[i - k] or not has({0, k}, P[i + 1] - P[i + 1 - k])) {
+                DR[i] = -1;
+            } else {
+                DR[i] = DR[i - k];
+            }
+        } else {
+            if (i - 1 >= 0 and (A[i] != A[i - 1] or DR[i - 1] == -1)) {
+                DR[i] = -1;
+            } else {
+                DR[i] = i;
+            }
+        }
+    }
+
+    for (int i = 1; i <= n; ++i) {
+        if (D[i] == -1) continue;
+        if (i - k + n - D[i] < 0 or (
+            has({0, k}, P[n] - P[D[i]] + P[i] - P[i - k + n - D[i]]) and
+            DR[i - k + n - D[i] - 1] != -1 and
+            A[D[i] == n ? i - 1 : D[i]] != A[i - k + n - D[i] - 1]
+        )) {
+            cout << i << '\n';
+            return;
+        }
+    }
+    cout << -1 << '\n';
 }
 
 int main() {

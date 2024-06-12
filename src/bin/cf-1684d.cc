@@ -490,28 +490,19 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    read(string, s);
-    readvec1(int, ch, n);
-    string curr;
+    read(int, n, k);
+    vector<pii> a;
     ll res = 0;
-    vector<int> vis(n + 1);
-    auto dfs = [&] (auto dfs, int v) -> void {
-        if (vis[v]) return;
-        vis[v] = 1;
-        curr += s[v - 1];
-        dfs(dfs, ch[v]);
-    };
-    for (int i = 1; i <= n; ++i) {
-        if (not vis[i]) {
-            curr.clear();
-            dfs(dfs, i);
-            ll p = period(curr);
-            if (res == 0) res = p;
-            else res = lcm(res, p);
-        }
+    for (int i = 0; i < n; ++i) {
+        read(int, x);
+        res -= x;
+        a.emplace_back(x, i);
     }
-    cout << res << '\n';
+    sort_by_key(a.begin(), a.end(), [] (const pii& a) { return a.first + a.second; }, greater());
+    for (int i = 0; i < k; ++i) {
+        res += a[i].first - (n - 1 - a[i].second - (k - 1 - i));
+    }
+    cout << -res << '\n';
 }
 
 int main() {

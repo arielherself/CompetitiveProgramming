@@ -476,6 +476,15 @@ public:
 template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container) {
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
+#define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
+template <typename T, size_t N>
+array<T, N> __initarray(const T& init) {
+    array<T, N> res;
+    for (size_t i = 0; i < N; ++i) {
+        res[i] = init;
+    }
+    return res;
+}
 /////////////////////////////////////////////////////////
 
 // #define SINGLE_TEST_CASE
@@ -491,27 +500,26 @@ void prep() {
 
 void solve() {
     read(int, n);
-    read(string, s);
-    readvec1(int, ch, n);
-    string curr;
-    ll res = 0;
-    vector<int> vis(n + 1);
-    auto dfs = [&] (auto dfs, int v) -> void {
-        if (vis[v]) return;
-        vis[v] = 1;
-        curr += s[v - 1];
-        dfs(dfs, ch[v]);
-    };
-    for (int i = 1; i <= n; ++i) {
-        if (not vis[i]) {
-            curr.clear();
-            dfs(dfs, i);
-            ll p = period(curr);
-            if (res == 0) res = p;
-            else res = lcm(res, p);
+    auto a = initarray(vector<int>(n), 2);
+    for (int i = 0; i < 2; ++i) {
+        for (int j = 0; j < n; ++j) {
+            read(char, c);
+            a[i][j] = c == '*';
         }
     }
-    cout << res << '\n';
+    int l = 0;
+    vector<int> c(n);
+    for (int i = 0; i < n; ++i) {
+        if (a[0][i] == 0 or a[1][i] == 0) {
+            int r = i - 1;
+            if (r - l != 0) {
+
+            }
+            int l = i;
+        } else {
+            continue;
+        }
+    }
 }
 
 int main() {

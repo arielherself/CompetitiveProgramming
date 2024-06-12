@@ -476,40 +476,76 @@ public:
 template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container) {
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
+#define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
+template <typename T, size_t N>
+array<T, N> __initarray(const T& init) {
+    array<T, N> res;
+    for (size_t i = 0; i < N; ++i) {
+        res[i] = init;
+    }
+    return res;
+}
 /////////////////////////////////////////////////////////
 
 // #define SINGLE_TEST_CASE
-// #define DUMP_TEST_CASE 7219
+// #define DUMP_TEST_CASE 92
 // #define TOT_TEST_CASE 10000
 
-void dump() {}
+void dump() {
+    read(int, n);
+    readvec(int, a, n);
+    cout << n << '\n';
+    putvec(a);
+}
 
-void dump_ignore() {}
+void dump_ignore() {
+    read(int, n);
+    readvec(int, a, n);
+}
 
 void prep() {
 }
 
+using mll = MLL<PRIME>;
+
 void solve() {
     read(int, n);
-    read(string, s);
-    readvec1(int, ch, n);
-    string curr;
-    ll res = 0;
-    vector<int> vis(n + 1);
-    auto dfs = [&] (auto dfs, int v) -> void {
-        if (vis[v]) return;
-        vis[v] = 1;
-        curr += s[v - 1];
-        dfs(dfs, ch[v]);
-    };
+    readvec(int, a, n);
+    vector<ll> ps(n + 1);
+
     for (int i = 1; i <= n; ++i) {
-        if (not vis[i]) {
-            curr.clear();
-            dfs(dfs, i);
-            ll p = period(curr);
-            if (res == 0) res = p;
-            else res = lcm(res, p);
+        ps[i] = ps[i - 1] + ll(1) * (a[i - 1] - 1) * i;
+    }
+    vector<int> pre(n);
+    pre[0] = -1;
+    for (int i = 1; i < n; ++i) {
+        if (a[i] == a[i - 1]) {
+            pre[i] = pre[i - 1];
+        } else {
+            pre[i] = i - 1;
         }
+    }
+
+    mll res = 0;
+    for (int i = 0; i < n; ++i) {
+        int curr = 0;
+        int ptr = i;
+        int last_val = INF;;
+        do {
+            if (last_val == 1) {
+                res += ll(1) * curr * (ptr + 1) + ps[ptr + 1];
+                break;
+            }
+            if (last_val < a[ptr]) {
+                int nw = (a[ptr] + last_val - 1) / last_val;
+                curr += nw - 1;
+                last_val = a[ptr] / nw;
+            } else {
+                last_val = a[ptr];
+            }
+            res += curr;
+            ptr -= 1;
+        } while (ptr != -1);
     }
     cout << res << '\n';
 }

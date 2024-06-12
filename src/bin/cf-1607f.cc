@@ -476,6 +476,15 @@ public:
 template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container) {
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
+#define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
+template <typename T, size_t N>
+array<T, N> __initarray(const T& init) {
+    array<T, N> res;
+    for (size_t i = 0; i < N; ++i) {
+        res[i] = init;
+    }
+    return res;
+}
 /////////////////////////////////////////////////////////
 
 // #define SINGLE_TEST_CASE
@@ -489,29 +498,129 @@ void dump_ignore() {}
 void prep() {
 }
 
+// constexpr int N = 1e7 + 10;
+//
+// vector<int> rch[N], ch[N];
+
 void solve() {
-    read(int, n);
-    read(string, s);
-    readvec1(int, ch, n);
-    string curr;
-    ll res = 0;
-    vector<int> vis(n + 1);
+    read(int, n, m);
+    adj(rch, n * m - 1);
+    vector<int> ind(n * m);//, indch(n * m);
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            read(char, x);
+            if (x == 'L' and j - 1 >= 0) {
+                Edge(rch, i * m + j - 1, i * m + j);
+                ind[i * m + j] += 1;
+            }
+            if (x == 'R' and j + 1 < m) {
+                Edge(rch, i * m + j + 1, i * m + j);
+                ind[i * m + j] += 1;
+            }
+            if (x == 'U' and i - 1 >= 0) {
+                Edge(rch, (i - 1) * m + j, i * m + j);
+                ind[i * m + j] += 1;
+            }
+            if (x == 'D' and i + 1 < n) {
+                Edge(rch, (i + 1) * m + j, i * m + j);
+                ind[i * m + j] += 1;
+            }
+        }
+    }
+
+    deque<pii> q;
+    for (int i = 0; i < n * m; ++i) {
+        if (ind[i] == 0) {
+            q.emplace_back(i, 1);
+        }
+    }
+    vector<int> dis(n * m);
+    vector<bool> vis(n * m);
+    while (q.size()) {
+        popfront(q, v, d);
+        dis[v] = d;
+        vis[v] = 1;
+        for (auto&& u : rch[v]) {
+            if (--ind[u] == 0) {
+                q.emplace_back(u, d + 1);
+            }
+        }
+    }
+
+    int mx = 0, mxi = 0;
+    for (int i = 0; i < n * m; ++i) {
+        if (dis[i] > mx) {
+            mx = dis[i];
+            mxi = i;
+        }
+    }
+
+    int cnt = 0;
     auto dfs = [&] (auto dfs, int v) -> void {
         if (vis[v]) return;
         vis[v] = 1;
-        curr += s[v - 1];
-        dfs(dfs, ch[v]);
+        cnt += 1;
+        // vs.emplace(v);
+        for (auto&& u : rch[v]) {
+            dfs(dfs, u);
+        }
     };
-    for (int i = 1; i <= n; ++i) {
+
+    unordered_map<int, int, safe_hash> cand;
+    for (int i = 0; i < n * m; ++i) {
         if (not vis[i]) {
-            curr.clear();
+            // vs.clear();
+            cnt = 0;
             dfs(dfs, i);
-            ll p = period(curr);
-            if (res == 0) res = p;
-            else res = lcm(res, p);
+            if (cnt > mx) {
+                mx = cnt;
+                mxi = i;
+            }
+            // int curr = rch.size();
+            // rch.emplace_back();
+            // for (auto&& v : vs) {
+            //     for (auto&& u : rch[v]) {
+            //         if (not vs.count(u)) {
+            //             Edge(rch, curr, u);
+            //         }
+            //     }
+            // }
+            // q.emplace_back(curr, vs.size());
+            // dis.emplace_back();
+            // cand[curr] = i;
         }
     }
-    cout << res << '\n';
+
+    // for (int i = 0; i < n * m; ++i) {
+    //     if (ind[i] == 0) {
+    //         q.emplace_back(i, 1);
+    //     }
+    // }
+    //
+    // dis.assign(dis.size(), 0);
+    // while (q.size()) {
+    //     popfront(q, v, d);
+    //     dis[v] = d;
+    //     for (auto&& u : rch[v]) {
+    //         if (--ind[u] == 0) {
+    //             q.emplace_back(u, d + 1);
+    //         }
+    //     }
+    // }
+
+    // int mxi = 0;
+    // for (int i = 0; i < dis.size(); ++i) {
+    //     if (dis[i] > dis[mxi]) {
+    //         mxi = i;
+    //     }
+    // }
+
+    // if (mxi >= n * m) {
+    //     cout << (cand[mxi] / m + 1) << ' ' << (cand[mxi] % m + 1) << ' ' << dis[mxi] << '\n';
+    // } else {
+    cout << (mxi / m + 1) << ' ' << (mxi % m + 1) << ' ' << dis[mxi] << '\n';
+    // }
+
 }
 
 int main() {

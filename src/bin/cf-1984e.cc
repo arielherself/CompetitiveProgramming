@@ -491,27 +491,66 @@ void prep() {
 
 void solve() {
     read(int, n);
-    read(string, s);
-    readvec1(int, ch, n);
-    string curr;
-    ll res = 0;
-    vector<int> vis(n + 1);
-    auto dfs = [&] (auto dfs, int v) -> void {
-        if (vis[v]) return;
-        vis[v] = 1;
-        curr += s[v - 1];
-        dfs(dfs, ch[v]);
-    };
+    adj(ch, n);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
+    }
+    vector<bool> mark(n + 1);
+    int leaf = 0;
+    int root = 0;
     for (int i = 1; i <= n; ++i) {
-        if (not vis[i]) {
-            curr.clear();
-            dfs(dfs, i);
-            ll p = period(curr);
-            if (res == 0) res = p;
-            else res = lcm(res, p);
+        if (ch[i].size() == 1) {
+            leaf += 1;
+            root = i;
+            mark[i] = 1;
         }
     }
-    cout << res << '\n';
+    debug(mark);
+    debug(leaf);
+    vector<int> s(n + 1);
+    vector<unordered_set<int, safe_hash>> o(n + 1);
+    auto dfs = [&] (auto dfs, int v, int pa) -> void {
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            if (not mark[u] and ch[v].size() == 2 and v != root) {
+                o[v].emplace(u);
+            }
+        }
+        int curr = 0;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            dfs(dfs, u, v);
+            curr += s[u];
+        }
+        s[v] = curr + not o[v].empty();
+    };
+    dfs(dfs, root, 0);
+
+    debug(s);
+    debug(root);
+
+    int res = 0;
+    mark[0] = 1;
+    auto dfs2 = [&] (auto dfs2, int v, int pa, int up) -> void {
+        if (ch[v].size() == 2 and not mark[pa] and o[v].empty()) {
+            o[v].emplace(pa);
+            up += 1;
+        }
+        debug(make_tuple(v, up + s[v]));
+        res = max(res, up + s[v]);
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            int new_up = up + s[v] - s[u];
+            // debug(make_tuple(u, o[v].size(), new_up));
+            if (o[v].size() == 1 and o[v].count(u)) {
+                new_up -= 1;
+            }
+            dfs2(dfs2, u, v, new_up);
+        }
+    };
+    dfs2(dfs2, root, 0, 0);
+    cout << res + leaf << '\n';
 }
 
 int main() {

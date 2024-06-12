@@ -476,6 +476,15 @@ public:
 template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container) {
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
+#define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
+template <typename T, size_t N>
+array<T, N> __initarray(const T& init) {
+    array<T, N> res;
+    for (size_t i = 0; i < N; ++i) {
+        res[i] = init;
+    }
+    return res;
+}
 /////////////////////////////////////////////////////////
 
 // #define SINGLE_TEST_CASE
@@ -489,27 +498,90 @@ void dump_ignore() {}
 void prep() {
 }
 
+class quick_union {
+private:
+    vector<size_t> c, sz;
+public:
+    quick_union(size_t n) : c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
+    }
+
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] += sz[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_size(size_t i) {
+        return sz[query(i)];
+    }
+};
+
 void solve() {
-    read(int, n);
-    read(string, s);
-    readvec1(int, ch, n);
-    string curr;
-    ll res = 0;
-    vector<int> vis(n + 1);
-    auto dfs = [&] (auto dfs, int v) -> void {
-        if (vis[v]) return;
-        vis[v] = 1;
-        curr += s[v - 1];
-        dfs(dfs, ch[v]);
-    };
-    for (int i = 1; i <= n; ++i) {
-        if (not vis[i]) {
-            curr.clear();
-            dfs(dfs, i);
-            ll p = period(curr);
-            if (res == 0) res = p;
-            else res = lcm(res, p);
+    read(int, n, m);
+    vector<vector<int>> a(n, vector<int>(m));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            read(char, c);
+            a[i][j] = c == '#';
         }
+    }
+
+    #define parse(i, j) ((i) * m + (j))
+    quick_union qu(n * m);
+
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            if (a[i][j] == 0) continue;
+            if (i and a[i - 1][j]) qu.merge(parse(i, j), parse(i - 1, j));
+            if (i + 1 < n and a[i + 1][j]) qu.merge(parse(i, j), parse(i + 1, j));
+            if (j and a[i][j - 1] ) qu.merge(parse(i, j), parse(i, j - 1));
+            if (j + 1 < m and a[i][j + 1]) qu.merge(parse(i, j), parse(i, j + 1));
+        }
+    }
+
+    int res = 0;
+    unordered_set<int, safe_hash> oc;
+    for (int i = 0; i < n; ++i) {
+        oc.clear();
+        int curr = 0;
+        auto work = [&] (int i, int j) {
+            if (not oc.count(qu.query(parse(i, j)))) {
+                oc.emplace(qu.query(parse(i, j)));
+                curr += qu.query_size(parse(i, j));
+            }
+        };
+        for (int j = 0; j < m; ++j) {
+            work(i, j);
+            if (i and a[i - 1][j]) work(i - 1, j);
+            if (i + 1 < n and a[i + 1][j]) work(i + 1, j);
+        }
+        res = max(res, curr);
+    }
+    unordered_set<int, safe_hash> oc1;
+    for (int j = 0; j < m; ++j) {
+        oc1.clear();
+        int curr = 0;
+        auto work = [&] (int i, int j) {
+            if (not oc1.count(qu.query(parse(i, j)))) {
+                oc1.emplace(qu.query(parse(i, j)));
+                curr += qu.query_size(parse(i, j));
+            }
+        };
+        for (int i = 0; i < n; ++i) {
+            work(i, j);
+            if (j and a[i][j - 1]) work(i, j - 1);
+            if (j + 1 < m and a[i][j + 1]) work(i, j + 1);
+        }
+        res = max(res, curr);
     }
     cout << res << '\n';
 }

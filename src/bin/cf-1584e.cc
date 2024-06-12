@@ -1,3 +1,4 @@
+#include <numeric>
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -489,29 +490,82 @@ void dump_ignore() {}
 void prep() {
 }
 
-void solve() {
-    read(int, n);
-    read(string, s);
-    readvec1(int, ch, n);
-    string curr;
-    ll res = 0;
-    vector<int> vis(n + 1);
-    auto dfs = [&] (auto dfs, int v) -> void {
-        if (vis[v]) return;
-        vis[v] = 1;
-        curr += s[v - 1];
-        dfs(dfs, ch[v]);
-    };
-    for (int i = 1; i <= n; ++i) {
-        if (not vis[i]) {
-            curr.clear();
-            dfs(dfs, i);
-            ll p = period(curr);
-            if (res == 0) res = p;
-            else res = lcm(res, p);
+template<typename _Tp, typename _Op = function<_Tp(const _Tp&, const _Tp&)>> struct sparse_table {
+    _Op op;
+    vector<vector<_Tp>> st;
+    template <typename ReverseIterator>
+    sparse_table(ReverseIterator __first, ReverseIterator __last, _Op&& __operation) {
+        op = __operation;
+        int n = distance(__first, __last);
+        st = vector<vector<_Tp>>(n, vector<_Tp>(int(log2(n) + 1)));
+        int i = n - 1;
+        for (auto it = __first; it != __last; ++it) {
+            st[i][0] = *it;
+            for (int j = 1; i + (1 << j) <= n; ++j) {
+                st[i][j] = op(st[i][j - 1], st[i + (1 << (j - 1))][j - 1]);
+            }
+            i -= 1;
         }
     }
-    cout << res << '\n';
+    _Tp query(size_t __start, size_t __end) {
+        int s = lg2(__end - __start + 1);
+        return op(st[__start][s], st[__end - (1 << s) + 1][s]);
+    }
+};
+
+void solve() {
+    read(int, n);
+    readvec(int, a, n);
+    vector<ll> ps(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        ps[i] = a[i - 1] - ps[i - 1];
+    }
+    vector<ll> dp(n + 1);
+    auto cmp = [] (const pii& a, const pii& b) -> bool {
+        if (a.first == b.first) {
+            return a.second < b.second;
+        }
+        return a.first > b.first;
+    };
+    array<set<pii, decltype(cmp)>, 2> st = {set<pii, decltype(cmp)>(cmp), set<pii, decltype(cmp)>(cmp)};
+    array<vector<ll>, 2> ps_parity = {vector<ll>(n + 1), vector<ll>(n + 1)};
+    for (int i = 0; i <= n; ++i) {
+        ps_parity[0][i] = INFLL;
+        ps_parity[1][i] = INFLL;
+        ps_parity[i % 2][i] = ps[i];
+    }
+    array<sparse_table<ll>, 2> rmq = {
+        sparse_table<ll>(ps_parity[0].rbegin(), ps_parity[0].rend(), functor(min)),
+        sparse_table<ll>(ps_parity[1].rbegin(), ps_parity[1].rend(), functor(min)),
+    };
+    st[n & 1].emplace(ps[n], n);
+    for (int i = n - 1; ~i; --i) {
+        int f = INF;
+        // same parity
+        {
+            auto it = st[i & 1].lower_bound({ps[i], i});
+            if (it != st[i & 1].end()) {
+                auto [p, idx] = *it;
+                f = min(f, idx);
+            }
+        }
+        // different parity
+        {
+            auto it = st[i & 1 ^ 1].lower_bound({-ps[i], i});
+            if (it != st[i & 1 ^ 1].end()) {
+                auto [p, idx] = *it;
+                f = min(f, idx);
+            }
+        }
+        if (f != INF and rmq[i & 1].query(i, f) >= ps[i] and
+            rmq[i & 1 ^ 1].query(i, f) + ps[i] >= 0) {
+            dp[i] += 1 + dp[f];
+        }
+        st[i & 1].emplace(ps[i], i);
+    }
+    // debug(ps);
+    // debug(dp);
+    cout << accumulate(dp.begin(), dp.end(), ll(0)) << '\n';
 }
 
 int main() {

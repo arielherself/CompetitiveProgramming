@@ -478,7 +478,7 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -489,27 +489,164 @@ void dump_ignore() {}
 void prep() {
 }
 
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+    using size_type = uint64_t;
+    using info_type = Addable_Info_t;
+    using tag_type = Tag_t;
+    size_type _max;
+    vector<info_type> d;
+    vector<tag_type> b;
+    void pull(size_type p) {
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+    void push(size_type p, size_type left_len, size_type right_len) {
+        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
+        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+        b[p] = tag_type();
+    }
+    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+        if (s == t) {
+            d[p] = c;
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        if (s != t) push(p, m - s + 1, t - m);
+        if (x <= m) set(s, m, p * 2, x, c);
+        else set(m + 1, t, p * 2 + 1, x, c);
+        pull(p);
+    }
+
+    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+        if (l <= s && t <= r) {
+            d[p].apply(c, t - s + 1);
+            b[p].apply(c);
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        push(p, m - s + 1, t - m);
+        if (l <= m) range_apply(s, m, p * 2, l, r, c);
+        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
+        pull(p);
+    }
+    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+        if (l <= s && t <= r) {
+            return d[p];
+        }
+        size_type m = s + (t - s >> 1);
+        info_type res = {};
+        push(p, m - s + 1, t - m);
+        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+        return res;
+    }
+    void build(const Sequence& a, size_type s, size_type t, size_type p) {
+        if (s == t) {
+            d[p] = a[s];
+            return;
+        }
+        int m = s + (t - s >> 1);
+        build(a, s, m, p * 2);
+        build(a, m + 1, t, p * 2 + 1);
+        pull(p);
+    }
+public:
+    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+    segtree(const Sequence& a) : segtree(a.size()) {
+        build(a, {}, _max, 1);
+    }
+    void set(size_type i, const info_type& c) {
+        set({}, _max, 1, i, c);
+    }
+
+    void range_apply(size_type l, size_type r, const tag_type& c) {
+        range_apply({}, _max, 1, l, r, c);
+    }
+    void apply(size_type i, const tag_type& c) {
+        range_apply(i, i, c);
+    }
+    info_type range_query(size_type l, size_type r) {
+        return range_query({}, _max, 1, l, r);
+    }
+    info_type query(size_type i) {
+        return range_query(i, i);
+    }
+    Sequence serialize() {
+        Sequence res = {};
+        for (size_type i = 0; i <= _max; ++i) {
+            res.push_back(query(i));
+        }
+        return res;
+    }
+    const vector<info_type>& get_d() {
+        return d;
+    }
+};
+using mll = MLL<PRIME>;
+struct Tag {
+    mll val = 0;
+    bool valid = 0;
+    bool clear = 0;
+    bool parity = 0;
+    void apply(const Tag& rhs) {
+        if (rhs.valid) {
+            if (rhs.clear) {
+                clear = 1;
+                val = rhs.val;
+                parity = rhs.parity;
+            } else {
+                if (rhs.parity == 0) {
+                    val = rhs.val + val;
+                } else {
+                    val = rhs.val - val;
+                }
+                parity ^= rhs.parity;
+            }
+            valid = 1;
+        }
+    }
+};
+struct Info {
+    mll val = 0;
+    int len = 0;
+    void apply(const Tag& rhs, size_t len) {
+        if (rhs.valid) {
+            if (rhs.clear) {
+                val = 0;
+            }
+            if (rhs.parity) {
+                val = rhs.val * this->len - val;
+            } else {
+                val = rhs.val * this->len + val;
+            }
+        }
+    }
+};
+Info operator+(const Info &a, const Info &b) {
+    return {a.val + b.val, a.len + b.len};
+}
+
 void solve() {
     read(int, n);
-    read(string, s);
-    readvec1(int, ch, n);
-    string curr;
-    ll res = 0;
-    vector<int> vis(n + 1);
-    auto dfs = [&] (auto dfs, int v) -> void {
-        if (vis[v]) return;
-        vis[v] = 1;
-        curr += s[v - 1];
-        dfs(dfs, ch[v]);
-    };
-    for (int i = 1; i <= n; ++i) {
-        if (not vis[i]) {
-            curr.clear();
-            dfs(dfs, i);
-            ll p = period(curr);
-            if (res == 0) res = p;
-            else res = lcm(res, p);
+    readvec(int, a, n);
+    auto [N, M] = discretize<int>(a.begin(), a.end());
+    segtree<Info, Tag> T(N + 1);
+    int prev = 0;
+    for (auto&& [x, i] : M) {
+        T.set(i, {0, x - prev});
+        prev = x;
+    }
+    mll res = a[0];
+    T.range_apply(1, M[a[0]], {1, 1, 0, 1});
+    for (int i = 1; i < n; ++i) {
+        int x = a[i];
+        mll new_res = res + x * res - 2 * T.range_query(1, M[x]).val;
+        T.range_apply(1, M[x], {res, 1, 0, 1});
+        if (M[x] + 1 <= N) {
+            new_res -= T.range_query(M[x] + 1, N).val;
+            T.range_apply(M[x] + 1, N, {0, 1, 1, 0});
         }
+        res = new_res;
     }
     cout << res << '\n';
 }

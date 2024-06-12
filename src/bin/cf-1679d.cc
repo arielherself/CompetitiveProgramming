@@ -478,7 +478,7 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -490,28 +490,58 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    read(string, s);
-    readvec1(int, ch, n);
-    string curr;
-    ll res = 0;
-    vector<int> vis(n + 1);
-    auto dfs = [&] (auto dfs, int v) -> void {
-        if (vis[v]) return;
-        vis[v] = 1;
-        curr += s[v - 1];
-        dfs(dfs, ch[v]);
+    read(int, n, m);
+    read(ll, k);
+    readvec1(int, a, n);
+    vector<pii> edges;
+    for (int i = 0; i < m; ++i) {
+        read(int, u, v);
+        edges.emplace_back(u, v);
+    }
+    auto work = [&] (int t) -> bool {
+        adj(ch, n);
+        vector<int> ind(n + 1);
+        for (auto&& [u, v] : edges) {
+            if (a[u] > t or a[v] > t) {
+                continue;
+            }
+            Edge(ch, u, v);
+            ind[v] += 1;
+        }
+        deque<int> q;
+        for (int i = 1; i <= n; ++i) {
+            if (a[i] > t) continue;
+            if (ind[i] == 0) {
+                q.emplace_back(i);
+            }
+        }
+        vector<int> d(n + 1);
+        while (q.size()) {
+            int v = q.front(); q.pop_front();
+            if (d[v] == k - 1) return true;
+            for (auto&& u : ch[v]) {
+                d[u] = max(d[u], d[v] + 1);
+                if (--ind[u] == 0) {
+                    q.emplace_back(u);
+                }
+            }
+        }
+        return n + 1 - count(ind.begin(), ind.end(), 0);
     };
-    for (int i = 1; i <= n; ++i) {
-        if (not vis[i]) {
-            curr.clear();
-            dfs(dfs, i);
-            ll p = period(curr);
-            if (res == 0) res = p;
-            else res = lcm(res, p);
+    int l = 1, r = *max_element(a.begin(), a.end());
+    while (l < r) {
+        int mid = l + r >> 1;
+        if (work(mid)) {
+            r = mid;
+        } else {
+            l = mid + 1;
         }
     }
-    cout << res << '\n';
+    if (work(l)) {
+        cout << l << '\n';
+    } else {
+        cout << -1 << '\n';
+    }
 }
 
 int main() {

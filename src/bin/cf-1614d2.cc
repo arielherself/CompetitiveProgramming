@@ -478,7 +478,7 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -489,29 +489,33 @@ void dump_ignore() {}
 void prep() {
 }
 
+constexpr int N = 2e7 + 10;
+
 void solve() {
     read(int, n);
-    read(string, s);
-    readvec1(int, ch, n);
-    string curr;
-    ll res = 0;
-    vector<int> vis(n + 1);
-    auto dfs = [&] (auto dfs, int v) -> void {
-        if (vis[v]) return;
-        vis[v] = 1;
-        curr += s[v - 1];
-        dfs(dfs, ch[v]);
-    };
-    for (int i = 1; i <= n; ++i) {
-        if (not vis[i]) {
-            curr.clear();
-            dfs(dfs, i);
-            ll p = period(curr);
-            if (res == 0) res = p;
-            else res = lcm(res, p);
+    vector<int> cnt(N + 1);
+    for (int i = 0; i < n; ++i) {
+        read(int, x);
+        cnt[x] += 1;
+    }
+
+    vector<int> tm_cnt(N + 1);
+    for (int i = N; i; --i) {
+        for (int j = i; j <= N; j += i) {
+            tm_cnt[i] += cnt[j];
         }
     }
-    cout << res << '\n';
+
+    vector<ll> res(N + 1);
+    for (int i = N; i; --i) {
+        if (tm_cnt[i] == 0) continue;
+        ll mx = 0;
+        for (int j = i + i; j <= N; j += i) {
+            mx = max(mx, res[j] + ll(1) * (tm_cnt[i] - tm_cnt[j] - cnt[i]) * i);
+        }
+        res[i] = mx + ll(1) * cnt[i] * i;
+    }
+    cout << res[1] << '\n';
 }
 
 int main() {

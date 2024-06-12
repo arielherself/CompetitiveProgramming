@@ -478,7 +478,7 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -490,28 +490,58 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    read(string, s);
-    readvec1(int, ch, n);
-    string curr;
-    ll res = 0;
-    vector<int> vis(n + 1);
-    auto dfs = [&] (auto dfs, int v) -> void {
-        if (vis[v]) return;
-        vis[v] = 1;
-        curr += s[v - 1];
-        dfs(dfs, ch[v]);
-    };
-    for (int i = 1; i <= n; ++i) {
-        if (not vis[i]) {
-            curr.clear();
-            dfs(dfs, i);
-            ll p = period(curr);
-            if (res == 0) res = p;
-            else res = lcm(res, p);
-        }
+    read(int, n, m, q);
+    vector<pii> a;
+    for (int i = 0; i < n; ++i) {
+        read(int, x);
+        a.emplace_back(x, 0);
     }
-    cout << res << '\n';
+    for (int i = 0; i < m; ++i) {
+        read(int, x);
+        a.emplace_back(x, 1);
+    }
+    n += m;
+    sort(a.begin(), a.end());
+    vector<pii> query;
+    for (int i = 0;i < q; ++i) {
+        read(int, x);
+        query.emplace_back(x, i);
+    }
+    sort(query.begin(), query.end());
+    vector<ll> res(q);
+    vector<int> cnt_ps(n + 1);
+    vector<ll> ps(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        ps[i] = ps[i - 1] + a[i - 1].first;
+        cnt_ps[i] = cnt_ps[i - 1] + not a[i - 1].second;
+    }
+    vector<pli> sep;
+    for (int i = 0; i < n - 1; ++i) {
+        sep.emplace_back(a[i + 1].first - a[i].first, i);
+    }
+    sort(sep.begin(), sep.end());
+    int ptr = 0;
+    vector<int> O(n);
+    ll curr = 0;
+    auto calc_range = [&] (int l, int r) -> ll {
+        return ps[r + 1] - ps[r + 1 - (cnt_ps[r + 1] - cnt_ps[l])];
+    };
+    for (int i = 0; i < n; ++i) {
+        curr += a[i].first * not a[i].second;
+        O[i] = i;
+    }
+    for (auto&& [x, idx] : query) {
+        while (ptr < sep.size() and sep[ptr].first <= x) {
+            int sep_left = sep[ptr++].second;
+            // merge two branches
+            int new_left = O[sep_left], new_right = O[sep_left + 1];
+            curr -= calc_range(new_left, sep_left) + calc_range(sep_left + 1, new_right);
+            curr += calc_range(new_left, new_right);
+            O[new_left] = new_right, O[new_right] = new_left;
+        }
+        res[idx] = curr;
+    }
+    putvec_eol(res);
 }
 
 int main() {
