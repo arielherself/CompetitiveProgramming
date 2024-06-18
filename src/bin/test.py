@@ -7,8 +7,9 @@ import io
 PRIME = 998_244_353
 
 if __name__ == '__main__':
-    N = 1000
-    print(1)
-    print(3, N * N // 3)
-    for i in range(3):
-        print(*(choice(['#', '.']) for _ in range(N * N // 3)), sep='')
+    N = 200000
+    print(N, N)
+    for _ in range(N):
+        print(226, 226)
+    for i in range(1, N + 1):
+        print(1, i)

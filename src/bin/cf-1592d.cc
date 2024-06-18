@@ -487,7 +487,7 @@ array<T, N> __initarray(const T& init) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -498,30 +498,86 @@ void dump_ignore() {}
 void prep() {
 }
 
+int query(const unordered_set<int>& nodes) {
+    assert(nodes.size() > 1);
+    cout << "? " << nodes.size();
+    for (auto&& x : nodes) {
+        cout << ' ' << x;
+    }
+    cout << endl;
+    read(int, x);
+    return x;
+}
+
+void claim(int a, int b) {
+    cout << "! " << a << ' ' << b << endl;
+}
+
 void solve() {
-    read(int, n, c);
-    readvec(ll, a, n);
-    a[0] += c;
-    vector<ll> ps(n + 1), ss(n + 1);
+    read(int, n);
+    vector<pii> edges(n - 1);
+    vector<bool> mark(n - 1, 1);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edges[i] = { u, v };
+    }
+
+    unordered_set<int> q;
     for (int i = 1; i <= n; ++i) {
-        ps[i] = max(ps[i - 1], a[i - 1]);
+        q.emplace(i);
     }
-    for (int i = n - 1; ~i; --i) {
-        ss[i] = max(ss[i + 1], a[i]);
-    }
-    ll left = 0;
-    for (int i = 0; i < n; ++i) {
-        if (ps[i] < a[i] and ss[i + 1] <= a[i]) {
-            cout << 0;
-        } else {
-            int res = i;
-            if (ss[i + 1] > a[i] + left) {
-                res += 1;
-            }
-            cout << res;
+    int prev = query(q);
+
+    while (1) {
+        int m = count(mark.begin(), mark.end(), 1);
+        if (m == 1) break;
+        int target = m / 2;
+        vector<vector<pii>> e(n + 1);
+        for (int i = 0; i < n - 1; ++i) {
+            if (not mark[i]) continue;
+            edgew(e, edges[i].first, edges[i].second, i);
         }
-        cout << " \n"[i + 1 == n];
-        left += a[i];
+        unordered_set<int> q;
+        vector<bool> new_mark(n - 1);
+        vector<int> layer(n + 1);
+        vector<int> ass(n + 1);
+        vector<int> father(n + 1);
+        vector<int> idx;
+        auto dfs = [&] (auto dfs, int v, int pa, int l) -> void {
+            idx.emplace_back(v);
+            father[v] = pa;
+            layer[v] = l;
+            for (auto&& [u, i] : e[v]) {
+                if (u == pa) continue;
+                ass[u] = i;
+                dfs(dfs, u, v, l + 1);
+            }
+        };
+        ass[1] = -1;
+        dfs(dfs, 1, 0, 0);
+        if (idx.size() < target) {
+            exit(825);
+        }
+        partial_sort(idx.begin(), idx.begin() + target, idx.end(), [&] (int i, int j) { return layer[i] > layer[j]; });
+        for (int i = 0; i < target; ++i) {
+            q.emplace(idx[i]);
+            q.emplace(father[idx[i]]);
+            new_mark[ass[idx[i]]] = 1;
+        }
+        int curr = query(q);
+        if (curr != prev) {
+            for (int i = 0; i < n - 1; ++i) {
+                if (not mark[i]) continue;
+                new_mark[i] = new_mark[i] ^ 1;
+            }
+        }
+        mark = new_mark;
+    }
+
+    for (int i = 0; i < n - 1; ++i) {
+        if (mark[i]) {
+            claim(edges[i].first, edges[i].second);
+        }
     }
 }
 

@@ -487,7 +487,7 @@ array<T, N> __initarray(const T& init) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -495,34 +495,65 @@ void dump() {}
 
 void dump_ignore() {}
 
+using mll = MLL<PRIME>;
+
 void prep() {
 }
 
+
 void solve() {
-    read(int, n, c);
-    readvec(ll, a, n);
-    a[0] += c;
-    vector<ll> ps(n + 1), ss(n + 1);
-    for (int i = 1; i <= n; ++i) {
-        ps[i] = max(ps[i - 1], a[i - 1]);
-    }
-    for (int i = n - 1; ~i; --i) {
-        ss[i] = max(ss[i + 1], a[i]);
-    }
-    ll left = 0;
+    read(int, n);
+    vector<int> a(n);
     for (int i = 0; i < n; ++i) {
-        if (ps[i] < a[i] and ss[i + 1] <= a[i]) {
-            cout << 0;
-        } else {
-            int res = i;
-            if (ss[i + 1] > a[i] + left) {
-                res += 1;
-            }
-            cout << res;
+        read(char, op);
+        if (op == '+') {
+            read(int, x);
+            a[i] = x;
         }
-        cout << " \n"[i + 1 == n];
-        left += a[i];
     }
+
+    mll res = 0;
+    for (int i = 0; i < n; ++i) {
+        if (a[i] == 0) continue;
+        vector<vector<mll>> dp(n + 1, vector<mll>(n + 1));
+        dp[0][0] = 1;
+        for (int j = 1; j <= n; ++j) {
+            if (j != i + 1) {
+                dp[j] = dp[j - 1];
+            }
+            if (a[j - 1] == 0) {
+                for (int k = 0; k < n; ++k) {
+                    dp[j][k] += dp[j - 1][k + 1];
+                }
+                dp[j][0] += dp[j - 1][0];
+            } else if (a[j - 1] > a[i] or j < i + 1 and a[j - 1] == a[i]) {
+                for (int k = 0; k <= n; ++k) {
+                    dp[j][k] += dp[j - 1][k];
+                }
+            } else {
+                for (int k = 0; k < n; ++k) {
+                    if (k == 0 and j > i + 1) {
+                        dp[j][k] += dp[j - 1][k];
+                    } else {
+                        dp[j][k + 1] += dp[j - 1][k];
+                    }
+                }
+            }
+        }
+        for (int k = 1; k <= n; ++k) {
+            res += dp[n][k] * a[i];
+        }
+        // for (int j = 0; j <= n; ++j) {
+        //     mll curr = 0;
+        //     for (int k = 1; k <= n; ++k) {
+        //         curr += dp[j][k];
+        //     }
+        //     cerr << curr << ' ';
+        // }
+        // cerr << endl;
+    }
+
+    cout << res << '\n';
 }
 
 int main() {

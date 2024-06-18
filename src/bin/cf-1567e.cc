@@ -487,7 +487,7 @@ array<T, N> __initarray(const T& init) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -498,30 +498,192 @@ void dump_ignore() {}
 void prep() {
 }
 
-void solve() {
-    read(int, n, c);
-    readvec(ll, a, n);
-    a[0] += c;
-    vector<ll> ps(n + 1), ss(n + 1);
-    for (int i = 1; i <= n; ++i) {
-        ps[i] = max(ps[i - 1], a[i - 1]);
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+    using size_type = uint64_t;
+    using info_type = Addable_Info_t;
+    using tag_type = Tag_t;
+    size_type _max;
+    vector<info_type> d;
+    vector<tag_type> b;
+    void pull(size_type p) {
+        d[p] = d[p * 2] + d[p * 2 + 1];
     }
-    for (int i = n - 1; ~i; --i) {
-        ss[i] = max(ss[i + 1], a[i]);
+    void push(size_type p, size_type left_len, size_type right_len) {
+        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
+        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+        b[p] = tag_type();
     }
-    ll left = 0;
-    for (int i = 0; i < n; ++i) {
-        if (ps[i] < a[i] and ss[i + 1] <= a[i]) {
-            cout << 0;
-        } else {
-            int res = i;
-            if (ss[i + 1] > a[i] + left) {
-                res += 1;
-            }
-            cout << res;
+    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+        if (s == t) {
+            d[p] = c;
+            return;
         }
-        cout << " \n"[i + 1 == n];
-        left += a[i];
+        size_type m = s + (t - s >> 1);
+        if (s != t) push(p, m - s + 1, t - m);
+        if (x <= m) set(s, m, p * 2, x, c);
+        else set(m + 1, t, p * 2 + 1, x, c);
+        pull(p);
+    }
+
+    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+        if (l <= s && t <= r) {
+            d[p].apply(c, t - s + 1);
+            b[p].apply(c);
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        push(p, m - s + 1, t - m);
+        if (l <= m) range_apply(s, m, p * 2, l, r, c);
+        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
+        pull(p);
+    }
+    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+        if (l <= s && t <= r) {
+            return d[p];
+        }
+        size_type m = s + (t - s >> 1);
+        info_type res = {};
+        push(p, m - s + 1, t - m);
+        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+        return res;
+    }
+    void build(const Sequence& a, size_type s, size_type t, size_type p) {
+        if (s == t) {
+            d[p] = a[s];
+            return;
+        }
+        int m = s + (t - s >> 1);
+        build(a, s, m, p * 2);
+        build(a, m + 1, t, p * 2 + 1);
+        pull(p);
+    }
+public:
+    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+    segtree(const Sequence& a) : segtree(a.size()) {
+        build(a, {}, _max, 1);
+    }
+    void set(size_type i, const info_type& c) {
+        set({}, _max, 1, i, c);
+    }
+
+    void range_apply(size_type l, size_type r, const tag_type& c) {
+        range_apply({}, _max, 1, l, r, c);
+    }
+    void apply(size_type i, const tag_type& c) {
+        range_apply(i, i, c);
+    }
+    info_type range_query(size_type l, size_type r) {
+        return range_query({}, _max, 1, l, r);
+    }
+    info_type query(size_type i) {
+        return range_query(i, i);
+    }
+    Sequence serialize() {
+        Sequence res = {};
+        for (size_type i = 0; i <= _max; ++i) {
+            res.push_back(query(i));
+        }
+        return res;
+    }
+    const vector<info_type>& get_d() {
+        return d;
+    }
+};
+struct Tag {
+    ll val = 0;
+    void apply(const Tag& rhs) {
+        val += rhs.val;
+    }
+};
+struct Info {
+    ll val = 0;
+    void apply(const Tag& rhs, size_t len) {
+        val += rhs.val * len;
+    }
+};
+Info operator+(const Info &a, const Info &b) {
+    return {a.val + b.val};
+}
+
+void solve() {
+    read(int, n, q);
+    readvec(int, a, n);
+    set<int> gaps;
+    gaps.emplace(0), gaps.emplace(n);
+    int cnt = 0;
+    segtree<Info, Tag> tr(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        if (i - 2 >= 0 and a[i - 1] < a[i - 2] ) {
+            gaps.emplace(i - 1);
+            cnt = 0;
+        }
+        tr.set(i, { cnt + 1 });
+        ++cnt;
+    }
+            // cerr << "tr = ";
+            // for (auto&& x : tr.serialize()) {
+            //     cerr << x.val << ' ';
+            // }
+            // cerr << endl;
+
+    while (q--) {
+        read(int, op);
+        if (op == 1) {
+            read(int, i, x);
+            --i;
+            if (i + 1 < n) {
+                auto ub = gaps.upper_bound(i + 1);
+                auto lb = prev(gaps.lower_bound(i + 1));
+                if (a[i] <= a[i + 1]) {
+                    tr.range_apply(i + 2, *ub, { - (i - *lb + 1) });
+                    gaps.emplace(i + 1);
+                }
+            }
+            if (i - 1 >= 0) {
+                auto lb = prev(gaps.lower_bound(i));
+                if (a[i] >= a[i - 1] and x < a[i - 1]) {
+                    tr.apply(i + 1, { - (i - *lb) });
+                    gaps.emplace(i);
+                } else if (a[i] < a[i - 1] and x >= a[i - 1]) {
+                    tr.apply(i + 1, { i - *lb });
+                    gaps.erase(i);
+                }
+            }
+            if (i + 1 < n) {
+                auto ub = gaps.upper_bound(i + 1);
+                auto lb = prev(gaps.lower_bound(i + 1));
+                if (x <= a[i + 1]) {
+                    tr.range_apply(i + 2, *ub, { i - *lb + 1 });
+                    gaps.erase(i + 1);
+                }
+            }
+            a[i] = x;
+            // debug(a);
+            // debugvec(gaps);
+            // cerr << "tr = ";
+            // for (auto&& x : tr.serialize()) {
+            //     cerr << x.val << ' ';
+            // }
+            // cerr << endl;
+        } else {
+            read(int, l, r);
+            --l, --r;
+            auto ub = prev(gaps.lower_bound(r + 1));
+            auto lb = gaps.lower_bound(l + 1);
+            if (*ub < *lb) {
+                cout << ll(1) * (r - l + 1) * (r - l + 2) / 2 << '\n';
+            } else {
+                // debug(make_tuple(*lb, *ub));
+                ll res = 0;
+                res += ll(1) * (*lb - l) * (*lb - l + 1) / 2;
+                res += ll(1) * (r + 1 - *ub) * (r + 1 - *ub + 1) / 2;
+                if (*lb + 1 <= *ub) res += tr.range_query(*lb + 1, *ub).val;
+                // res += tr.query(*ub).val - tr.query(*lb).val;
+                cout << res << '\n';
+            }
+        }
     }
 }
 

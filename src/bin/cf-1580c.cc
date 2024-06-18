@@ -487,7 +487,7 @@ array<T, N> __initarray(const T& init) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -498,30 +498,88 @@ void dump_ignore() {}
 void prep() {
 }
 
+constexpr int t = 3000;
+int state_run[t + 1][t + 1], state_maint[t + 1][t + 1];
+
 void solve() {
-    read(int, n, c);
-    readvec(ll, a, n);
-    a[0] += c;
-    vector<ll> ps(n + 1), ss(n + 1);
-    for (int i = 1; i <= n; ++i) {
-        ps[i] = max(ps[i - 1], a[i - 1]);
-    }
-    for (int i = n - 1; ~i; --i) {
-        ss[i] = max(ss[i + 1], a[i]);
-    }
-    ll left = 0;
-    for (int i = 0; i < n; ++i) {
-        if (ps[i] < a[i] and ss[i + 1] <= a[i]) {
-            cout << 0;
-        } else {
-            int res = i;
-            if (ss[i + 1] > a[i] + left) {
-                res += 1;
+    read(int, n, m);
+    readvec(pii, info, n);
+    vector<int> add_time(n);
+    vector<int> running(n), maintenance(n);
+    int running_cnt = 0, maintenance_cnt = 0;
+    vector<vector<pii>> event_run(m + 1), event_maint(m + 1);
+
+    for (int i = 1; i <= m; ++i) {
+        int delay = -1;
+        read(int, op, x);
+        --x;
+        int period = info[x].first + info[x].second;
+        if (op == 1) {
+            add_time[x] = i;
+            if (period <= t) {
+                state_run[period][i % period] += 1;
+                state_maint[period][(i + info[x].first) % period] += 1;
+                ++maintenance_cnt;  // offset
+            } else {
+                running[x] = 1;
+                ++running_cnt;
+                if (i + info[x].first <= m) event_maint[i + info[x].first].emplace_back(x, i);
             }
-            cout << res;
+        } else {
+            if (period <= t) {
+                delay = x;
+            } else {
+                if (running[x]) {
+                    running[x] = 0;
+                    --running_cnt;
+                } else if (maintenance[x]) {
+                    maintenance[x] = 0;
+                    --maintenance_cnt;
+                }
+                add_time[x] = 0;
+            }
         }
-        cout << " \n"[i + 1 == n];
-        left += a[i];
+
+        for (auto&& [x, raw_time] : event_maint[i]) {
+            if (add_time[x] != raw_time) continue;
+            running[x] = 0;
+            --running_cnt;
+            maintenance[x] = 1;
+            ++maintenance_cnt;
+            if (i + info[x].second <= m) event_run[i + info[x].second].emplace_back(x, raw_time);
+        }
+
+        for (auto&& [x, raw_time] : event_run[i]) {
+            if (add_time[x] != raw_time) continue;
+            running[x] = 1;
+            ++running_cnt;
+            maintenance[x] = 0;
+            --maintenance_cnt;
+            if (i + info[x].first <= m) event_maint[i + info[x].first].emplace_back(x, raw_time);
+        }
+
+        // debug(make_tuple(running_cnt, maintenance_cnt));
+        for (int j = 1; j <= t; ++j) {
+            maintenance_cnt -= state_run[j][i % j];
+            running_cnt += state_run[j][i % j];
+
+            running_cnt -= state_maint[j][i % j];
+            maintenance_cnt += state_maint[j][i % j];
+        }
+
+        if (delay != -1) {
+            state_run[period][add_time[delay] % period] -= 1;
+            state_maint[period][(add_time[delay] + info[delay].first) % period] -= 1;
+            if ((i - add_time[delay]) % period < info[delay].first) {
+                // current running
+                --running_cnt;
+            } else {
+                --maintenance_cnt;
+            }
+            add_time[delay] = 0;
+        }
+
+        cout << maintenance_cnt << '\n';
     }
 }
 

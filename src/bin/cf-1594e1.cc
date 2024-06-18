@@ -487,7 +487,7 @@ array<T, N> __initarray(const T& init) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -498,31 +498,44 @@ void dump_ignore() {}
 void prep() {
 }
 
+unordered_map<string, int> mp = {
+    {"white", 0},
+    {"yellow", 1},
+    {"green", 2},
+    {"blue", 3},
+    {"red", 4},
+    {"orange", 5},
+};
+
+using mll = MLL<MDL>;
+
 void solve() {
-    read(int, n, c);
-    readvec(ll, a, n);
-    a[0] += c;
-    vector<ll> ps(n + 1), ss(n + 1);
-    for (int i = 1; i <= n; ++i) {
-        ps[i] = max(ps[i - 1], a[i - 1]);
-    }
-    for (int i = n - 1; ~i; --i) {
-        ss[i] = max(ss[i + 1], a[i]);
-    }
-    ll left = 0;
-    for (int i = 0; i < n; ++i) {
-        if (ps[i] < a[i] and ss[i + 1] <= a[i]) {
-            cout << 0;
-        } else {
-            int res = i;
-            if (ss[i + 1] > a[i] + left) {
-                res += 1;
+    read(int, k);
+    vector<array<mll, 6>> regular(k);
+    for (int i = k - 1; ~i; --i) {
+        if (i != k - 1) {
+            array<mll, 6> left = {}, right = {};
+            for (int j = 0; j < 6; ++j) {
+                for (int l = 0; l < 6; ++l) {
+                    if (j / 2 == l / 2) continue;
+                    left[j] += regular[i + 1][l];
+                }
             }
-            cout << res;
+            for (int j = 0; j < 6; ++j) {
+                for (int l = 0; l < 6; ++l) {
+                    if (j / 2 == l / 2) continue;
+                    right[j] += regular[i + 1][l];
+                }
+            }
+            for (int j = 0; j < 6; ++j) {
+                regular[i][j] = left[j] * right[j];
+            }
+        } else {
+            regular[i] = { 1, 1, 1, 1, 1, 1 };
         }
-        cout << " \n"[i + 1 == n];
-        left += a[i];
     }
+
+    cout << accumulate(regular[0].begin(), regular[0].end(), mll(0)) << '\n';
 }
 
 int main() {

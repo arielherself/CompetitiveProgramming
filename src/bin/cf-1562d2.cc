@@ -488,40 +488,78 @@ array<T, N> __initarray(const T& init) {
 /////////////////////////////////////////////////////////
 
 // #define SINGLE_TEST_CASE
-// #define DUMP_TEST_CASE 7219
-// #define TOT_TEST_CASE 10000
+// #define DUMP_TEST_CASE 3
+// #define TOT_TEST_CASE 1000
 
-void dump() {}
+void dump() {
+}
 
-void dump_ignore() {}
+void dump_ignore() {
+}
 
 void prep() {
 }
 
 void solve() {
-    read(int, n, c);
-    readvec(ll, a, n);
-    a[0] += c;
-    vector<ll> ps(n + 1), ss(n + 1);
+    read(int, n, q);
+    vector<int> a(n);
+    for (int i = 0; i < n; ++i) {
+        read(char, c);
+        a[i] = c == '+';
+    }
+    vector<int> ps(n + 1), ss(n + 1);
     for (int i = 1; i <= n; ++i) {
-        ps[i] = max(ps[i - 1], a[i - 1]);
+        ps[i] = ps[i - 1] + ((i & 1) * 2 - 1) * a[i - 1];
     }
     for (int i = n - 1; ~i; --i) {
-        ss[i] = max(ss[i + 1], a[i]);
+        ss[i] = ss[i + 1] + ((i & 1) * 2 - 1) * a[i];
     }
-    ll left = 0;
-    for (int i = 0; i < n; ++i) {
-        if (ps[i] < a[i] and ss[i + 1] <= a[i]) {
-            cout << 0;
-        } else {
-            int res = i;
-            if (ss[i + 1] > a[i] + left) {
-                res += 1;
+
+    while (q--) {
+        read(int, l, r);
+        --l, --r;
+
+        int f = 0;
+        if ((r - l) & 1) {
+            if (ps[r + 1] - ps[l] == 0) {
+                cout << "0\n";
+                continue;
             }
-            cout << res;
+            f = 1;
+            --r;
         }
-        cout << " \n"[i + 1 == n];
-        left += a[i];
+        // remove one number
+        int left = l, right = r;
+        #define calc(x) (((l + 1) & 1) * 2 - 1) * (ps[(x)] - ps[l]) + (((r + 1) & 1) * 2 - 1) * (ss[(x) + 1] - ss[r + 1])
+        while (left < right) {
+            int mid = left + right >> 1;
+            int curr = calc(mid);
+            if (calc(l) >= 0 and calc(r) <= 0) {
+                if (curr > 0) {
+                    left = mid + 1;
+                } else {
+                    right = mid;
+                }
+            } else {
+                if (curr < 0) {
+                    left = mid + 1;
+                } else {
+                    right = mid;
+                }
+            }
+        }
+        if (f) {
+            cout << "2\n" << left + 1 << ' ' << r + 2 << '\n';
+        } else {
+            cout << "1\n" << left + 1 << '\n';
+        }
+        #undef calc
+        // for (int i = l; i <= r; ++i) {
+        //     int left = (((l + 1) & 1) * 2 - 1) * (ps[i] - ps[l]);
+        //     int right = (((r + 1) & 1) * 2 - 1) * (ss[i + 1] - ss[r + 1]);
+        //     cerr << left + right << " ";
+        // }
+        // cerr << '\n';
     }
 }
 
