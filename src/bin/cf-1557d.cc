@@ -186,7 +186,6 @@ template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __
 #define putvec1_eol(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
 #define debug(x) __AS_PROCEDURE(cerr << #x" = " << (x) << endl;)
 #define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : a) cerr << x << ' '; cerr << endl;)
-#define deb(...) debug(make_tuple(__VA_ARGS__))
 template<typename T, typename U> istream& operator>>(istream& in, pair<T, U>& p) {
     return in >> p.first >> p.second;
 }
@@ -480,7 +479,7 @@ array<T, N> __initarray(const T& init) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -491,42 +490,172 @@ void dump_ignore() {}
 void prep() {
 }
 
-void solve() {
-    read(int, n, k);
-    vector<int> a;
-    for (int i = 0; i < n; ++i) {
-        read(int, x);
-        --x;
-        a.emplace_back(x);
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+    using size_type = uint64_t;
+    using info_type = Addable_Info_t;
+    using tag_type = Tag_t;
+    size_type _max;
+    vector<info_type> d;
+    vector<tag_type> b;
+    void pull(size_type p) {
+        d[p] = d[p * 2] + d[p * 2 + 1];
     }
-
-    vector dp(n + 1, vector<int>(n + 1));
-    for (int i = 1; i <= n; ++i) {
-        // don't remove the current element
-        for (int j = 0; j <= n; ++j) {
-            dp[i][j] = dp[i - 1][j] + ((i - 1) - a[i - 1] == j);
-        }
-
-        // remove the current element
-        for (int j = 0; j < n; ++j) {
-            chmax(dp[i][j + 1], dp[i - 1][j]);
-        }
+    void push(size_type p, size_type left_len, size_type right_len) {
+        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
+        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+        b[p] = tag_type();
     }
-
-    // debug(dp);
-
-    for (int i = 0; i <= n; ++i) {
-        if (dp[n][i] >= k) {
-            cout << i << '\n';
+    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+        if (s == t) {
+            d[p] = c;
             return;
         }
+        size_type m = s + (t - s >> 1);
+        if (s != t) push(p, m - s + 1, t - m);
+        if (x <= m) set(s, m, p * 2, x, c);
+        else set(m + 1, t, p * 2 + 1, x, c);
+        pull(p);
     }
 
-    cout << -1 << '\n';
+    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+        if (l <= s && t <= r) {
+            d[p].apply(c, t - s + 1);
+            b[p].apply(c);
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        push(p, m - s + 1, t - m);
+        if (l <= m) range_apply(s, m, p * 2, l, r, c);
+        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
+        pull(p);
+    }
+    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+        if (l <= s && t <= r) {
+            return d[p];
+        }
+        size_type m = s + (t - s >> 1);
+        info_type res = {};
+        push(p, m - s + 1, t - m);
+        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+        return res;
+    }
+    void build(const Sequence& a, size_type s, size_type t, size_type p) {
+        if (s == t) {
+            d[p] = a[s];
+            return;
+        }
+        int m = s + (t - s >> 1);
+        build(a, s, m, p * 2);
+        build(a, m + 1, t, p * 2 + 1);
+        pull(p);
+    }
+public:
+    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+    segtree(const Sequence& a) : segtree(a.size()) {
+        build(a, {}, _max, 1);
+    }
+    void set(size_type i, const info_type& c) {
+        set({}, _max, 1, i, c);
+    }
+
+    void range_apply(size_type l, size_type r, const tag_type& c) {
+        range_apply({}, _max, 1, l, r, c);
+    }
+    void apply(size_type i, const tag_type& c) {
+        range_apply(i, i, c);
+    }
+    info_type range_query(size_type l, size_type r) {
+        return range_query({}, _max, 1, l, r);
+    }
+    info_type query(size_type i) {
+        return range_query(i, i);
+    }
+    Sequence serialize() {
+        Sequence res = {};
+        for (size_type i = 0; i <= _max; ++i) {
+            res.push_back(query(i));
+        }
+        return res;
+    }
+    const vector<info_type>& get_d() {
+        return d;
+    }
+};
+struct Tag {
+    int val = 0, idx = 0;
+    void apply(const Tag& rhs) {
+        if (rhs.val > val) {
+            val = rhs.val;
+            idx = rhs.idx;
+        }
+    }
+};
+struct Info {
+    int val = 0, idx = 0;
+    void apply(const Tag& rhs, size_t len) {
+        if (rhs.val > val) {
+            val = rhs.val;
+            idx = rhs.idx;
+        }
+    }
+};
+Info operator+(const Info &a, const Info &b) {
+    return {
+        max(a.val, b.val),
+        a.val > b.val ? a.idx : b.idx
+    };
+}
+
+void solve() {
+    read(int, n, m);
+    set<int> pts;
+    vector<vector<pii>> segments(n);
+    for (int i = 0; i < m; ++i) {
+        read(int, j, l, r);
+        segments[j - 1].emplace_back(l, r);
+        pts.emplace(l), pts.emplace(r);
+    }
+    unordered_map<int, int, safe_hash> mp;
+    int N = 0;
+    for (auto&& x : pts) mp[x] = ++N;
+    segtree<Info, Tag> tr(N + 1);
+    vector<int> pre(n);
+    for (int i = 0; i < n; ++i) {
+        int curr = 0;
+        int prev = -1;
+        for (auto&& [l, r] : segments[i]) {
+            auto [val, idx] = tr.range_query(mp[l], mp[r]);
+            if (val > curr) {
+                curr = val;
+                prev = idx;
+            }
+        }
+        curr += 1;
+        pre[i] = prev;
+        for (auto&& [l, r] : segments[i]) {
+            tr.range_apply(mp[l], mp[r], {curr, i});
+        }
+    }
+    auto [val, idx] = tr.range_query(1, N);
+    vector<bool> oc(n);
+    while (idx != -1) {
+        oc[idx] = 1;
+        idx = pre[idx];
+    }
+    cout << n - val << '\n';
+    for (int i = 0; i < n; ++i) {
+        if (not oc[i]) {
+            cout << i + 1 << ' ';
+        }
+    }
+    cout << '\n';
 }
 
 int main() {
 #if __cplusplus < 201402L or defined(_MSC_VER) and not defined(__clang__)
+
     assert(false && "incompatible compiler variant detected.");
 #endif
     untie;

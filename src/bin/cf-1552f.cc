@@ -186,7 +186,6 @@ template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __
 #define putvec1_eol(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
 #define debug(x) __AS_PROCEDURE(cerr << #x" = " << (x) << endl;)
 #define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : a) cerr << x << ' '; cerr << endl;)
-#define deb(...) debug(make_tuple(__VA_ARGS__))
 template<typename T, typename U> istream& operator>>(istream& in, pair<T, U>& p) {
     return in >> p.first >> p.second;
 }
@@ -480,7 +479,7 @@ array<T, N> __initarray(const T& init) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -491,42 +490,49 @@ void dump_ignore() {}
 void prep() {
 }
 
+using mll = MLL<PRIME>;
+
 void solve() {
-    read(int, n, k);
-    vector<int> a;
+    read(int, n);
+    vector<tiii> a(n);
+    vector<int> pts;
+    vector<bool> init(2 * n);
+    unordered_map<int, int, safe_hash> ar;
     for (int i = 0; i < n; ++i) {
-        read(int, x);
-        --x;
-        a.emplace_back(x);
+        read(int, s, t, o);
+        a.emplace_back(s, t, o);
+        ar[s] = t;
+        pts.emplace_back(s), pts.emplace_back(t);
     }
-
-    vector dp(n + 1, vector<int>(n + 1));
-    for (int i = 1; i <= n; ++i) {
-        // don't remove the current element
-        for (int j = 0; j <= n; ++j) {
-            dp[i][j] = dp[i - 1][j] + ((i - 1) - a[i - 1] == j);
+    sort(a.begin(), a.end());
+    sort(pts.begin(), pts.end());
+    unordered_map<int, int, safe_hash> rev;
+    for (int i = 0; i < 2 * n; ++i) {
+        rev[pts[i]] = i + 1;
+    }
+    for (auto&& [s, t, o] : a) {
+        init[rev[s]] = o;
+    }
+    vector<array<mll, 2>> dp(2 * n + 1);
+    for (int i = 1; i <= 2 * n; ++i) {
+        if (init[i]) {
+            dp[i][0] = dp[i - 1][0] + dp[i - 1][1] - dp[rev[ar[pts[i - 1]]]][1] + (pts[i - 1] - (i >= 2 ? pts[i - 2] : 0)) * 2;
+        } else {
+            dp[i][0] = dp[i - 1][0] + (pts[i - 1] - (i >= 2 ? pts[i - 2] : 0));
         }
 
-        // remove the current element
-        for (int j = 0; j < n; ++j) {
-            chmax(dp[i][j + 1], dp[i - 1][j]);
+        if (ar[pts[i - 1]]) {
+            dp[i][1] = dp[i - 1][1] + dp[i - 1][1] - dp[rev[ar[pts[i - 1]]]][1] + (pts[i - 1] - (i >= 2 ? pts[i - 2] : 0)) * 2;
+        } else {
+            dp[i][1] = dp[i - 1][1] + (pts[i - 1] - (i >= 2 ? pts[i - 2] : 0));
         }
     }
-
-    // debug(dp);
-
-    for (int i = 0; i <= n; ++i) {
-        if (dp[n][i] >= k) {
-            cout << i << '\n';
-            return;
-        }
-    }
-
-    cout << -1 << '\n';
+    cout << dp[2 * n][0] + 1 << '\n';
 }
 
 int main() {
 #if __cplusplus < 201402L or defined(_MSC_VER) and not defined(__clang__)
+
     assert(false && "incompatible compiler variant detected.");
 #endif
     untie;

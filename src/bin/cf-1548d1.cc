@@ -186,7 +186,6 @@ template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __
 #define putvec1_eol(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
 #define debug(x) __AS_PROCEDURE(cerr << #x" = " << (x) << endl;)
 #define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : a) cerr << x << ' '; cerr << endl;)
-#define deb(...) debug(make_tuple(__VA_ARGS__))
 template<typename T, typename U> istream& operator>>(istream& in, pair<T, U>& p) {
     return in >> p.first >> p.second;
 }
@@ -480,7 +479,7 @@ array<T, N> __initarray(const T& init) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -492,41 +491,46 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, k);
+    read(int, n);
     vector<int> a;
     for (int i = 0; i < n; ++i) {
-        read(int, x);
-        --x;
-        a.emplace_back(x);
+        read(int, x, y);
+        x >>= 1, y >>= 1;
+        a.emplace_back((x & 1) << 1 | (y & 1));
     }
 
-    vector dp(n + 1, vector<int>(n + 1));
-    for (int i = 1; i <= n; ++i) {
-        // don't remove the current element
-        for (int j = 0; j <= n; ++j) {
-            dp[i][j] = dp[i - 1][j] + ((i - 1) - a[i - 1] == j);
-        }
+    ll res = 0;
+    for (int i = 0; i < n; ++i) {
+        array<int, 4> cnt{};
+        for (int j = i + 1; j < n; ++j) {
+            int curr = !!(a[i] ^ a[j]);
+            if (curr == 1) {
+                if (a[i] != a[j]) {
+                    res += cnt[a[i]] + cnt[a[j]];
+                }
+            } else {
+                if (a[i] == a[j]) {
+                    res += accumulate(cnt.begin(), cnt.end(), 0);
+                } else {
+                    for (int k = 0; k < 4; ++k) {
+                        if (k != a[i] and k != a[j]) {
+                            res += cnt[k];
+                        }
+                    }
+                }
+            }
 
-        // remove the current element
-        for (int j = 0; j < n; ++j) {
-            chmax(dp[i][j + 1], dp[i - 1][j]);
+            cnt[a[j]] += 1;
         }
     }
 
-    // debug(dp);
+    cout << res << '\n';
 
-    for (int i = 0; i <= n; ++i) {
-        if (dp[n][i] >= k) {
-            cout << i << '\n';
-            return;
-        }
-    }
-
-    cout << -1 << '\n';
 }
 
 int main() {
 #if __cplusplus < 201402L or defined(_MSC_VER) and not defined(__clang__)
+
     assert(false && "incompatible compiler variant detected.");
 #endif
     untie;

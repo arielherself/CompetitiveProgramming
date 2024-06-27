@@ -478,6 +478,10 @@ array<T, N> __initarray(const T& init) {
     }
     return res;
 }
+template <typename T, typename U, typename V>
+bool safe_eq(T& container, const U& key, const V& val) {
+    return container.count(key) and container[key] == val;
+}
 /////////////////////////////////////////////////////////
 
 // #define SINGLE_TEST_CASE
@@ -492,37 +496,77 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, k);
-    vector<int> a;
-    for (int i = 0; i < n; ++i) {
-        read(int, x);
-        --x;
-        a.emplace_back(x);
-    }
-
-    vector dp(n + 1, vector<int>(n + 1));
-    for (int i = 1; i <= n; ++i) {
-        // don't remove the current element
-        for (int j = 0; j <= n; ++j) {
-            dp[i][j] = dp[i - 1][j] + ((i - 1) - a[i - 1] == j);
-        }
-
-        // remove the current element
-        for (int j = 0; j < n; ++j) {
-            chmax(dp[i][j + 1], dp[i - 1][j]);
-        }
-    }
-
-    // debug(dp);
-
-    for (int i = 0; i <= n; ++i) {
-        if (dp[n][i] >= k) {
-            cout << i << '\n';
+    read(int, n, m, k);
+    vector res(n, vector<int>(m));
+    unordered_map<int, char, safe_hash> mp;
+    int tm = 0;
+    if (n % 2 == 1) {
+        if (k < m / 2) {
+            cout << "NO\n";
             return;
         }
+        k -= m / 2;
+        for (int j = 0; j < m; j += 2) {
+            res[n - 1][j] = res[n - 1][j + 1] = ++tm;
+        }
     }
 
-    cout << -1 << '\n';
+    if (k & 1) {
+        cout << "NO\n";
+        return;
+    }
+
+    for (int i = 0; i < n / 2 * 2; i += 2) {
+        for (int j = 0; j < m / 2 * 2 and k > 0; j += 2) {
+            res[i][j] = res[i][j + 1] = ++tm;
+            res[i + 1][j] = res[i + 1][j + 1] = ++tm;
+            k -= 2;
+        }
+    }
+
+    if (k > 0) {
+        cout << "NO\n";
+        return;
+    }
+
+    cout << "YES\n";
+
+    for (int i = 0; i < n / 2 * 2; i += 2) {
+        for (int j = 0; j < m; ++j) {
+            if (res[i][j] == 0 and res[i + 1][j] == 0) {
+                res[i][j] = res[i + 1][j] = ++tm;
+            }
+        }
+    }
+
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            if (not mp.count(res[i][j])) {
+                int mask = ~0;
+                if (i + 1 < n and res[i + 1][j] == res[i][j]) {
+                    for (auto&& [x, y] : vector<pii> {{i, j - 1}, {i, j + 1}, {i + 1, j - 1}, {i + 1, j + 1}, {i - 1, j}, {i + 2, j}}) {
+                        if (x >= 0 and x < n and y >= 0 and y < m and mp.count(res[x][y])) {
+                            mask &= ~(1 << mp[res[x][y]] - 'a');
+                        }
+                    }
+                } else {
+                    for (auto&& [x, y] : vector<pii> {{i - 1, j}, {i - 1, j + 1}, {i + 1, j}, {i + 1, j + 1}, {i, j - 1}, {i, j + 2}}) {
+                        if (x >= 0 and x < n and y >= 0 and y < m and mp.count(res[x][y])) {
+                            mask &= ~(1 << mp[res[x][y]] - 'a');
+                        }
+                    }
+                }
+                mp[res[i][j]] = lsp(mask) + 'a';
+            }
+        }
+    }
+
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            cout << mp[res[i][j]];
+        }
+        cout << "\n";
+    }
 }
 
 int main() {

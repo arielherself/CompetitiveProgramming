@@ -480,7 +480,7 @@ array<T, N> __initarray(const T& init) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -493,36 +493,35 @@ void prep() {
 
 void solve() {
     read(int, n, k);
-    vector<int> a;
-    for (int i = 0; i < n; ++i) {
+    vector<int> a(n * k);
+    for (int i = 0; i < n * k; ++i) {
         read(int, x);
-        --x;
-        a.emplace_back(x);
+        a[i] = x - 1;
     }
+    vector<bool> color(n);
+    vector<pii> res(n);
 
-    vector dp(n + 1, vector<int>(n + 1));
-    for (int i = 1; i <= n; ++i) {
-        // don't remove the current element
-        for (int j = 0; j <= n; ++j) {
-            dp[i][j] = dp[i - 1][j] + ((i - 1) - a[i - 1] == j);
-        }
-
-        // remove the current element
-        for (int j = 0; j < n; ++j) {
-            chmax(dp[i][j + 1], dp[i - 1][j]);
-        }
-    }
-
-    // debug(dp);
-
-    for (int i = 0; i <= n; ++i) {
-        if (dp[n][i] >= k) {
-            cout << i << '\n';
-            return;
+    int color_cnt = 0;
+    int cnt = 0;
+    while (color_cnt < n) {
+        if (cnt++ >= (n + k - 2) / (k - 1)) assert(false);
+        vector<int> prev(n, -1);
+        int last = -1;
+        for (int i = 0; i < n * k; ++i) {
+            if (prev[a[i]] != -1 and not color[a[i]] and prev[a[i]] > last) {
+                res[a[i]] = {prev[a[i]] + 1, i + 1};
+                color[a[i]] = 1;
+                color_cnt += 1;
+                last = i;
+            } else {
+                prev[a[i]] = i;
+            }
         }
     }
 
-    cout << -1 << '\n';
+    for (auto&& [l, r] : res) {
+        cout << l << ' ' << r << '\n';
+    }
 }
 
 int main() {

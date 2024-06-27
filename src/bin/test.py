@@ -7,9 +7,16 @@ import io
 PRIME = 998_244_353
 
 if __name__ == '__main__':
-    N = 200000
-    print(N, N)
-    for _ in range(N):
-        print(226, 226)
-    for i in range(1, N + 1):
-        print(1, i)
+    a = [(0, 0), (2, 16), (30, 14), (4, 6), (2, 10)]
+    a.sort(key=lambda t: t[1])
+    n = len(a)
+    res = []
+    for i in range(n):
+        for j in range(i + 1, n):
+            for k in range(i + 1, j):
+                # if (a[j][0] - a[i][0]) * (a[k][1] - a[i][1]) % (a[j][1] - a[i][1]):
+                #     continue
+                x, y = a[i][0] // 2 + (a[j][0] // 2 - a[i][0] // 2) * (a[k][1] // 2 - a[i][1] // 2 + a[j][1] // 2 - a[i][1] // 2 - 1) // (a[j][1] // 2 - a[i][1] // 2) - a[k][0] // 2, a[i][1] // 2 - a[j][1] // 2
+                if (x + y) & 1:
+                    res.append((a[i], a[j], a[k], x, y))
+    print(res)

@@ -513,8 +513,6 @@ void solve() {
         }
     }
 
-    // debug(dp);
-
     for (int i = 0; i <= n; ++i) {
         if (dp[n][i] >= k) {
             cout << i << '\n';

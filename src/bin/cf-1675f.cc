@@ -478,6 +478,7 @@ array<T, N> __initarray(const T& init) {
     }
     return res;
 }
+
 /////////////////////////////////////////////////////////
 
 // #define SINGLE_TEST_CASE
@@ -493,36 +494,54 @@ void prep() {
 
 void solve() {
     read(int, n, k);
-    vector<int> a;
-    for (int i = 0; i < n; ++i) {
+    read(int, x, y);
+    vector<bool> mark(n + 1), on_path(n + 1);
+    for (int i = 0; i < k; ++i) {
         read(int, x);
-        --x;
-        a.emplace_back(x);
+        mark[x] = 1;
     }
 
-    vector dp(n + 1, vector<int>(n + 1));
+    adj(ch, n);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
+    }
+
+    auto dfs1 = [&] (auto dfs1, int v, int pa) -> void {
+        for (auto&& u : ch[v]) {
+            if (u == pa) {
+                continue;
+            }
+            dfs1(dfs1, u, v);
+            on_path[v] = on_path[v] or on_path[u];
+        }
+    };
+    on_path[y] = 1;
+    dfs1(dfs1, x, 0);
+
+    auto dfs = [&] (auto dfs, int v, int pa) -> int {
+        int curr = 0;
+        for (auto&& u : ch[v]) {
+            if (u == pa or on_path[u]) {
+                continue;
+            }
+            curr += dfs(dfs, u, v);
+        }
+        if (curr or mark[v]) {
+            return 2 * not on_path[v] + curr;
+        } else {
+            return 0;
+        }
+    };
+
+    int res = count(on_path.begin(), on_path.end(), 1) - 1;
     for (int i = 1; i <= n; ++i) {
-        // don't remove the current element
-        for (int j = 0; j <= n; ++j) {
-            dp[i][j] = dp[i - 1][j] + ((i - 1) - a[i - 1] == j);
-        }
-
-        // remove the current element
-        for (int j = 0; j < n; ++j) {
-            chmax(dp[i][j + 1], dp[i - 1][j]);
+        if (on_path[i]) {
+            res += dfs(dfs, i, 0);
         }
     }
 
-    // debug(dp);
-
-    for (int i = 0; i <= n; ++i) {
-        if (dp[n][i] >= k) {
-            cout << i << '\n';
-            return;
-        }
-    }
-
-    cout << -1 << '\n';
+    cout << res << '\n';
 }
 
 int main() {

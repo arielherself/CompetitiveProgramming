@@ -186,7 +186,6 @@ template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __
 #define putvec1_eol(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
 #define debug(x) __AS_PROCEDURE(cerr << #x" = " << (x) << endl;)
 #define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : a) cerr << x << ' '; cerr << endl;)
-#define deb(...) debug(make_tuple(__VA_ARGS__))
 template<typename T, typename U> istream& operator>>(istream& in, pair<T, U>& p) {
     return in >> p.first >> p.second;
 }
@@ -480,7 +479,7 @@ array<T, N> __initarray(const T& init) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -491,42 +490,80 @@ void dump_ignore() {}
 void prep() {
 }
 
+template<typename _Tp, typename _Op = function<_Tp(const _Tp&, const _Tp&)>> struct sparse_table {
+    _Op op;
+    vector<vector<_Tp>> st;
+    template <typename ReverseIterator>
+    sparse_table(ReverseIterator __first, ReverseIterator __last, _Op&& __operation) {
+        op = __operation;
+        int n = distance(__first, __last);
+        st = vector<vector<_Tp>>(n, vector<_Tp>(int(log2(n) + 1)));
+        int i = n - 1;
+        for (auto it = __first; it != __last; ++it) {
+            st[i][0] = *it;
+            for (int j = 1; i + (1 << j) <= n; ++j) {
+                st[i][j] = op(st[i][j - 1], st[i + (1 << (j - 1))][j - 1]);
+            }
+            i -= 1;
+        }
+    }
+    _Tp query(size_t __start, size_t __end) {
+        int s = lg2(__end - __start + 1);
+        return op(st[__start][s], st[__end - (1 << s) + 1][s]);
+    }
+};
+
 void solve() {
-    read(int, n, k);
-    vector<int> a;
-    for (int i = 0; i < n; ++i) {
+    read(int, n, q);
+    readvec(int, a, n);
+    sparse_table<int> st(a.rbegin(), a.rend(), [] ( int x, int y ) { return x | y; });
+
+    int target = st.query(0, n - 1);
+
+    while (q--) {
         read(int, x);
-        --x;
-        a.emplace_back(x);
-    }
-
-    vector dp(n + 1, vector<int>(n + 1));
-    for (int i = 1; i <= n; ++i) {
-        // don't remove the current element
-        for (int j = 0; j <= n; ++j) {
-            dp[i][j] = dp[i - 1][j] + ((i - 1) - a[i - 1] == j);
+        int l = x, r = n - 1;
+        int res = INF;
+        while (l != -1) {
+            {
+                int left = x, right = n - 1;
+                while (left < right) {
+                    int mid = left + right >> 1;
+                    if (st.query(l, mid) == target) {
+                        right = mid;
+                    } else {
+                        left = mid + 1;
+                    }
+                }
+                if (st.query(l, left) == target) {
+                    chmin(res, left - l + 1);
+                }
+            }
+            {
+                int curr = st.query(l, x);
+                int left = 0, right = l - 1;
+                while (left < right) {
+                    int mid = left + right + 1 >> 1;
+                    if (st.query(mid, x) > curr) {
+                        left = mid;
+                    } else {
+                        right = mid - 1;
+                    }
+                }
+                if (st.query(left, x) > curr) {
+                    l = left;
+                } else {
+                    l = -1;
+                }
+            }
         }
-
-        // remove the current element
-        for (int j = 0; j < n; ++j) {
-            chmax(dp[i][j + 1], dp[i - 1][j]);
-        }
+        cout << res << '\n';
     }
-
-    // debug(dp);
-
-    for (int i = 0; i <= n; ++i) {
-        if (dp[n][i] >= k) {
-            cout << i << '\n';
-            return;
-        }
-    }
-
-    cout << -1 << '\n';
 }
 
 int main() {
 #if __cplusplus < 201402L or defined(_MSC_VER) and not defined(__clang__)
+
     assert(false && "incompatible compiler variant detected.");
 #endif
     untie;
