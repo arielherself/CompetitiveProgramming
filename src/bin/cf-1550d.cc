@@ -1,7 +1,3 @@
-#pragma GCC diagnostic ignored "-Wunused-const-variable"
-#pragma GCC diagnostic ignored "-Wreorder"
-// #pragma GCC diagnostic ignored "-Wreorder-ctor"
-#pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -492,10 +488,33 @@ void dump() {}
 
 void dump_ignore() {}
 
+constexpr int N = 2e5 + 10;
+using mll = MLL<MDL>;
+mll fact[N];
 void prep() {
+    fact[0] = 1;
+    for (int i = 1; i < N; ++i) {
+        fact[i] = fact[i - 1] * i;
+    }
 }
 
 void solve() {
+    read(int, n, l, r);
+
+    mll res = 0;
+    for (int x = max(1, r - n); x <= min(r - (n + 1) / 2, min(n - l, (r - n - l + 1) / 2)); ++x) {
+        res += comb(r - x, (n + 1) / 2);
+    }
+    res += min(max(0, r - n - 1), n - l) * comb(n, (n + 1) / 2);
+
+    if (n & 1) {
+        for (int x = max(1, r - n); x <= min(r - n / 2, min(n - l, (r - n - l + 1) / 2)); ++x) {
+            res += comb(r - x, n / 2);
+        }
+        res += min(max(0, r - n - 1), n - l) * comb(n, n / 2);
+    }
+
+    cout << res << '\n';
 }
 
 int main() {

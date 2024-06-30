@@ -1,7 +1,3 @@
-#pragma GCC diagnostic ignored "-Wunused-const-variable"
-#pragma GCC diagnostic ignored "-Wreorder"
-// #pragma GCC diagnostic ignored "-Wreorder-ctor"
-#pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -484,7 +480,7 @@ array<T, N> __initarray(const T& init) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -496,6 +492,36 @@ void prep() {
 }
 
 void solve() {
+    using mll = MLL<PRIME>;
+    read(int, n, k);
+    vector<mll> last(k + 1);
+    vector tot(n + 1, vector<mll>(k + 1));
+
+    tot[0][0] = 1;
+    last[0] = 1;
+
+    for (int i = 1; i <= n; ++i) {
+        vector<mll> curr(k + 1);
+        if (i - 2 == 0 or i == n) {
+            for (int j = 0; j <= k; ++j) {
+                curr[min(k, j + 1)] += tot[i - 2][j];
+            }
+        } else if (i - 3 >= 0) {
+            for (int j = 0; j <= k; ++j) {
+                curr[min(k, j + 1)] += tot[i - 3][j];
+            }
+        }
+        for (int j = 0; j <= k; ++j) {
+            curr[min(k, j + 1)] += last[j];
+        }
+
+        for (int j = 0; j <= k; ++j) {
+            tot[i][j] = tot[i - 1][j] + curr[j];
+        }
+        last = curr;
+    }
+
+    cout << last[k] << '\n';
 }
 
 int main() {

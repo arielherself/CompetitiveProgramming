@@ -1,7 +1,3 @@
-#pragma GCC diagnostic ignored "-Wunused-const-variable"
-#pragma GCC diagnostic ignored "-Wreorder"
-// #pragma GCC diagnostic ignored "-Wreorder-ctor"
-#pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -125,8 +121,8 @@ struct safe_hash {
 struct pair_hash {
     template <typename T, typename U>
     size_t operator()(const pair<T, U>& a) const {
-        auto hash1 = safe_hash()(a.first);
-        auto hash2 = safe_hash()(a.second);
+        auto hash1 = hash<T>()(a.first);
+        auto hash2 = hash<U>()(a.second);
         if (hash1 != hash2) {
             return hash1 ^ hash2;
         }
@@ -495,7 +491,121 @@ void dump_ignore() {}
 void prep() {
 }
 
+struct return_t {
+    ll length = 0;
+    string raw = "";
+    ll cnt_haha = 0;
+    int right_h = 0;
+    int right_ha = 0;
+    int right_hah = 0;
+    int left_a = 0;
+    int left_ha = 0;
+    int left_aha = 0;
+};
+
 void solve() {
+    read(int, n);
+    unordered_map<string, int> cnt;
+    unordered_map<pair<int, string>, pair<pair<int, string>, pair<int, string>>, pair_hash> var;
+    pair<int, string> last;
+    for (int i = 0; i < n; ++i) {
+        read(string, s, op);
+        if (op == ":=") {
+            read(string, v);
+            var[{cnt[s]++, s}] = { {-1, ""}, {-1, v} };
+        } else {
+            read(string, v1, plus, v2);
+            var[{cnt[s]++, s}] = { {cnt[v1] - 1, v1}, {cnt[v2] - 1, v2} };
+        }
+        if (i + 1 == n) {
+            last = { cnt[s] - 1, s };
+        }
+    }
+
+    auto make_raw = [] (const string& v) {
+        return_t res;
+        res.length = v.size();
+        if (v.size() < 3) {
+            res.raw = v;
+        }
+        for (int i = 0; i + 3 < res.length; ++i) {
+            if (v.substr(i, 4) == "haha") {
+                res.cnt_haha = 1;
+            }
+        }
+        if (v.size() >= 3 and v.substr(v.size() - 3, 3) == "hah") {
+            res.right_hah = 1;
+        }
+        if (v.size() >= 2 and v.substr(v.size() - 2, 2) == "ha") {
+            res.right_ha = 1;
+        }
+        if (v[v.size() - 1] == 'h') {
+            res.right_h = 1;
+        }
+        if (v.size() >= 3 and v.substr(0, 3) == "aha") {
+            res.left_aha = 1;
+        }
+        if (v.size() >= 2 and v.substr(0, 2) == "ha") {
+            res.left_ha = 1;
+        }
+        if (v[0] == 'a') {
+            res.left_a = 1;
+        }
+        return res;
+    };
+
+    unordered_map<pair<int, string>, return_t, pair_hash> cache;
+    auto dfs = [&] (auto dfs, const pair<int, string>& key) -> return_t {
+        return_t res;
+        if (cache.count(key)) {
+            res = cache[key];
+        } else {
+            if (var[key].first.first == -1) {
+                res = make_raw(var[key].second.second);
+            } else {
+                auto&& [l, r] = var[key];
+                return_t left_res = dfs(dfs, l), right_res = dfs(dfs, r);
+                if (left_res.length + right_res.length < 3) {
+                    res = make_raw(left_res.raw + right_res.raw);
+                } else {
+                    res.length = left_res.length + right_res.length;
+                    res.cnt_haha = left_res.cnt_haha + right_res.cnt_haha;
+                    if (left_res.right_hah and right_res.left_a) {
+                        res.cnt_haha += 1;
+                    }
+                    if (left_res.right_ha and right_res.left_ha) {
+                        res.cnt_haha += 1;
+                    }
+                    if (left_res.right_h and right_res.left_aha) {
+                        res.cnt_haha += 1;
+                    }
+                    res.right_hah = right_res.right_hah;
+                    res.right_ha = right_res.right_ha;
+                    res.right_h = right_res.right_h;
+                    res.left_aha = left_res.left_aha;
+                    res.left_ha = left_res.left_ha;
+                    res.left_a = left_res.left_a;
+                    if (right_res.raw == "ah" and left_res.right_h or right_res.raw == "h" and left_res.right_ha) {
+                        res.right_hah = 1;
+                    }
+                    if (right_res.raw == "a" and left_res.right_h) {
+                        res.right_ha = 1;
+                    }
+                    if (left_res.raw == "h" and right_res.left_a) {
+                        res.left_ha = 1;
+                    }
+                    if (left_res.raw == "a" and right_res.left_ha or left_res.raw == "ah" and right_res.left_a) {
+                        res.left_aha = 1;
+                    }
+                }
+            }
+            cache[key] = res;
+            // deb(key, cache[key].cnt_haha, cache[key].right_h, cache[key].left_aha, cache[key].length);
+        }
+        return cache[key];
+    };
+
+    cout << dfs(dfs, last).cnt_haha << '\n';
 }
 
 int main() {

@@ -1,7 +1,3 @@
-#pragma GCC diagnostic ignored "-Wunused-const-variable"
-#pragma GCC diagnostic ignored "-Wreorder"
-// #pragma GCC diagnostic ignored "-Wreorder-ctor"
-#pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -492,10 +488,25 @@ void dump() {}
 
 void dump_ignore() {}
 
+constexpr int N = 4000010;
+using mll = MLL<MDL>;
+mll pw[N];
 void prep() {
+    pw[0] = 1;
+    for (int i = 1; i < N; ++i) {
+        pw[i] = pw[i - 1] * 2;
+    }
 }
 
 void solve() {
+    read(int, n, m);
+    readvec(char, a, n * m);
+    int cnt = count(a.begin(), a.end(), '0');
+    if (cnt == 0) {
+        cout << pw[n * m] - 1 << '\n';
+    } else {
+        cout << pw[n * m - cnt] << '\n';
+    }
 }
 
 int main() {

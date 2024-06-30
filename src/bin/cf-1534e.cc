@@ -1,7 +1,3 @@
-#pragma GCC diagnostic ignored "-Wunused-const-variable"
-#pragma GCC diagnostic ignored "-Wreorder"
-// #pragma GCC diagnostic ignored "-Wreorder-ctor"
-#pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -484,7 +480,7 @@ array<T, N> __initarray(const T& init) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -495,7 +491,52 @@ void dump_ignore() {}
 void prep() {
 }
 
+int query(const vector<int>& a) {
+    if (a.empty()) return 0;
+    cout << "?";
+    for (auto&& x : a) {
+        cout << ' ' << x;
+    }
+    cout << endl;
+    read(int, x);
+    return x;
+}
+
 void solve() {
+    read(int, n, k);
+    if ((n % k) & 1) {
+        cout << -1 << endl;
+        return;
+    }
+
+    int ptr = 0;
+    int res = 0;
+    for (int i = 0; i < n / k; ++i) {
+        vector<int> curr;
+        for (int j = ptr; j < ptr + k; ++j) {
+            curr.emplace_back(j + 1);
+        }
+        ptr += k;
+        res ^= query(curr);
+    }
+
+    if (n % k) {
+        int x = (n % k) / 2;
+        vector<int> curr;
+        for (int j = n - x; j > n - x - k; --j) {
+            curr.emplace_back(j);
+        }
+        res ^= query(curr);
+        curr.clear();
+        for (int j = n; j > n - x; --j) {
+            curr.emplace_back(j);
+        }
+        for (int j = n / k * k; j > n - x - k; --j) {
+            curr.emplace_back(j);
+        }
+        res ^= query(curr);
+    }
+    cout << "! " << res << endl;
 }
 
 int main() {

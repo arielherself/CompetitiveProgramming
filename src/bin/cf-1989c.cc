@@ -1,7 +1,3 @@
-#pragma GCC diagnostic ignored "-Wunused-const-variable"
-#pragma GCC diagnostic ignored "-Wreorder"
-// #pragma GCC diagnostic ignored "-Wreorder-ctor"
-#pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -496,6 +492,37 @@ void prep() {
 }
 
 void solve() {
+    read(int, n);
+    readvec(int, b, n);
+    readvec(int, c, n);
+    vector<pii> a;
+    for (int i = 0; i < n; ++i) {
+        a.emplace_back(b[i], c[i]);
+    }
+    int s1 = 0, s2 = 0, cand = 0;
+    for (int i = 0; i < n; ++i) {
+        if (a[i].first == 1 and a[i].second == 1) {
+            s1 += 1, s2 += 1, cand += 1;
+        } else if (a[i].first == 1 and a[i].second == 0) {
+            s1 += 1;
+        } else if (a[i].first == 1 and a[i].second == -1) {
+            s1 += 1;
+        } else if (a[i].first == 0 and a[i].second == 1) {
+            s2 += 1;
+        } else if (a[i].first == 0 and a[i].second == -1) {
+        } else if (a[i].first == -1 and a[i].second == 1) {
+            s2 += 1;
+        } else if (a[i].first == -1 and a[i].second == 0) {
+        } else if (a[i].first == -1 and a[i].second == -1) {
+            cand += 1;
+        }
+    }
+    int res = -INF;
+    for (int x = 0; x <= cand; ++x) {
+        int y = cand - x;
+        chmax(res, min(s1 - x, s2 - y));
+    }
+    cout << res << '\n';
 }
 
 int main() {

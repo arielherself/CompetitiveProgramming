@@ -1,7 +1,7 @@
 vim.api.nvim_create_autocmd("FileType", {
     pattern = "cpp",
     callback = function()
-        vim.api.nvim_buf_set_keymap(0, 'n', "<leader>b", '<Cmd>10sp<CR><Cmd>te ctext -i $(gcc -xc++ /dev/null -E -Wp,-v 2>&1 | sed -n "s,^ ,,p" | tr "\\n" ",") < % > ctext_out.cc && clang++ -std=c++17 -DONLINE_JUDGE -Wl,-z,stack-size=268435456 -Wall -Ofast -g -fsanitize=address -fsanitize=undefined ctext_out.cc && ./a.out < std.in<CR>i', {
+        vim.api.nvim_buf_set_keymap(0, 'n', "<leader>b", '<Cmd>10sp<CR><Cmd>te ctext -i $(gcc -xc++ /dev/null -E -Wp,-v 2>&1 | sed -n "s,^ ,,p" | tr "\\n" ",") < % > ctext_out.cc && clang++ -std=c++17 -DONLINE_JUDGE -Wl,-z,stack-size=268435456 -Wall -Ofast -g -fsanitize=address -fsanitize=undefined ctext_out.cc && time ./a.out < std.in<CR>i', {
             silent = true,
             noremap = true
         })

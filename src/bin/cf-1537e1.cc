@@ -1,7 +1,3 @@
-#pragma GCC diagnostic ignored "-Wunused-const-variable"
-#pragma GCC diagnostic ignored "-Wreorder"
-// #pragma GCC diagnostic ignored "-Wreorder-ctor"
-#pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -484,7 +480,7 @@ array<T, N> __initarray(const T& init) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -496,6 +492,20 @@ void prep() {
 }
 
 void solve() {
+    read(int, n, k);
+    read(string, s);
+    string res(k, 'z');
+    for (int i = 1; i <= n; ++i) {
+        string curr;
+        int ptr = 0;
+        for (int j = 0; j < k; ++j) {
+            curr += s[ptr];
+            ptr = (ptr + 1) % i;
+        }
+        if (curr < res) res = curr;
+    }
+
+    cout << res << '\n';
 }
 
 int main() {

@@ -1,6 +1,5 @@
 #pragma GCC diagnostic ignored "-Wunused-const-variable"
-#pragma GCC diagnostic ignored "-Wreorder"
-// #pragma GCC diagnostic ignored "-Wreorder-ctor"
+#pragma GCC diagnostic ignored "-Wreorder-ctor"
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
@@ -484,7 +483,7 @@ array<T, N> __initarray(const T& init) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -495,7 +494,73 @@ void dump_ignore() {}
 void prep() {
 }
 
+class quick_union {
+private:
+    vector<size_t> c, sz;
+public:
+    quick_union(size_t n) : c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
+    }
+
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] += sz[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_size(size_t i) {
+        return sz[query(i)];
+    }
+};
+
 void solve() {
+    read(int, n, q);
+    vector<tiii> edges;
+    int base = 0;
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v, w);
+        edges.emplace_back(w, u, v);
+        base += w;
+    }
+    sort(edges.begin(), edges.end());
+
+    vector<tiii> qe;
+    for (int i = 0; i < q; ++i) {
+        read(int, u, v, w);
+        qe.emplace_back(w, u, v);
+    }
+
+    vector<int> res(q, INF);
+    for (int i = 1; i <= 10; ++i) {
+        quick_union qu(n + 1);
+        for (auto&& [w, u, v] : edges) {
+            if (w > i) break;
+            qu.merge(u, v);
+        }
+        for (int j = 0; j < q; ++j) {
+            auto&& [w, u, v] = qe[j];
+            if (qu.connected(u, v) and res[j] == INF) {
+                res[j] = min(0, w - i);
+            }
+            if (w <= i) {
+                qu.merge(u, v);
+            }
+        }
+    }
+
+    assert(count(res.begin(), res.end(), INF) == 0);
+    int curr = base;
+    for (int i = 0; i < q; ++i) {
+        cout << (curr += res[i]) << '\n';
+    }
 }
 
 int main() {

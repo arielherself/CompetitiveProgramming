@@ -1,7 +1,3 @@
-#pragma GCC diagnostic ignored "-Wunused-const-variable"
-#pragma GCC diagnostic ignored "-Wreorder"
-// #pragma GCC diagnostic ignored "-Wreorder-ctor"
-#pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -484,7 +480,7 @@ array<T, N> __initarray(const T& init) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -496,6 +492,40 @@ void prep() {
 }
 
 void solve() {
+    read(int, n, k);
+    read(string, s);
+    auto z = calc_z(s);
+    int p = n;
+    int pos = INF;
+    char c = 0;
+    for (int i = 1; i <= n; ++i) {
+        int curr = i;
+        if (z[i % n] == n - i) {
+            curr += n - i;
+            if (z[n - i] != i) {
+                curr += z[n - i];
+                if (s[curr % i] < s[curr % n] and (curr < pos or curr == pos and s[pos % i] < c)) {
+                    pos = curr;
+                    c = s[pos % i];
+                    p = i;
+                }
+            }
+        } else {
+            curr += z[i % n];
+            if (s[curr % i] < s[curr % n] and (curr < pos or curr == pos and s[pos % i] < c)) {
+                pos = curr;
+                c = s[pos % i];
+                p = i;
+            }
+        }
+    }
+
+    int ptr = 0;
+    for (int i = 0; i < k; ++i) {
+        cout << s[ptr];
+        ptr = (ptr + 1) % p;
+    }
+    cout << '\n';
 }
 
 int main() {

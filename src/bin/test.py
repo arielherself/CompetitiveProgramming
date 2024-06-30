@@ -7,16 +7,32 @@ import io
 PRIME = 998_244_353
 
 if __name__ == '__main__':
-    a = [(0, 0), (2, 16), (30, 14), (4, 6), (2, 10)]
-    a.sort(key=lambda t: t[1])
-    n = len(a)
-    res = []
-    for i in range(n):
-        for j in range(i + 1, n):
-            for k in range(i + 1, j):
-                # if (a[j][0] - a[i][0]) * (a[k][1] - a[i][1]) % (a[j][1] - a[i][1]):
-                #     continue
-                x, y = a[i][0] // 2 + (a[j][0] // 2 - a[i][0] // 2) * (a[k][1] // 2 - a[i][1] // 2 + a[j][1] // 2 - a[i][1] // 2 - 1) // (a[j][1] // 2 - a[i][1] // 2) - a[k][0] // 2, a[i][1] // 2 - a[j][1] // 2
-                if (x + y) & 1:
-                    res.append((a[i], a[j], a[k], x, y))
-    print(res)
+    n = 4
+    k = 5
+    for i in range(1 << n * k):
+        j = i
+        cnt = (j & ((1 << n) - 1)).bit_count()
+        f = 1
+        for _ in range(k):
+            if (j & ((1 << n) - 1)).bit_count() != cnt:
+                f = 0
+                break
+            j >>= n
+        for j in range(n):
+            l = i >> j
+            c = 0
+            while l:
+                c += l & 1
+                l >>= n
+            if (c & 1) == 0:
+                f = 0
+                break
+        if f:
+            m = i
+            for j in range(k):
+                for l in range(n):
+                    print(m & 1, end='')
+                    m >>= 1
+                print()
+            print()
+
