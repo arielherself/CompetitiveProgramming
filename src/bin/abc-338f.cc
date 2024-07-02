@@ -480,7 +480,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -492,6 +492,45 @@ void prep() {
 }
 
 void solve() {
+    read(int, n, m);
+    vector<int> dp(1 << n + 5, INF);
+    vector<vector<pii>> e(n + 1);
+    while (m--) {
+        read(int, u, v, w);
+        --u, --v;
+        Edgew(e, u, v, w);
+    }
+
+    auto dfs = [&] (auto dfs, int state) -> void {
+        int v = state & ((1 << 5) - 1);
+        int mask = state >> 5;
+        for (auto&& [u, w] : e[v]) {
+            int new_state = (mask | 1 << u) << 5 | u;
+            if (dp[new_state] <= w + dp[state]) {
+                ;;
+            } else {
+                dp[new_state] = w + dp[state];
+                dfs(dfs, new_state);
+            }
+        }
+    };
+
+    for (int i = 0; i < n; ++i) {
+        Edgew(e, n, i, 0);
+    }
+    dp[n] = 0;
+    dfs(dfs, n);
+
+    int res = INF;
+    for (int i = 0; i < n; ++i) {
+        chmin(res, dp[((1 << n) - 1) << 5 | i]);
+    }
+    // debug(dp);
+    if (res == INF) {
+        cout << "No\n";
+    } else {
+        cout << res << '\n';
+    }
 }
 
 int main() {
