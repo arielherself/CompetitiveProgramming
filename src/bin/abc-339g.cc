@@ -483,7 +483,7 @@ array<T, N> __initarray(const T& init) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -497,24 +497,59 @@ void prep() {
 void solve() {
     read(int, n);
     readvec(int, a, n);
-    int prev = 0;
-    vector<int> b;
-    for (int i = 0; i < n; ++i) {
-        if (a[i] < prev) {
-            b.emplace_back(prev - a[i]);
-        } else {
-            prev = a[i];
+    auto [N, M] = discretize<ll>(a.begin(), a.end());
+    int blk = sqrt(n);
+    vector ps((n + blk - 1) / blk, vector<ll>(N + 1));
+    // debug((n + blk - 1) / blk);
+    for (int i = 0; i < n; i += blk) {
+        int j = min(n, i + blk);
+        vector<ll> curr(N + 1);
+        for (int k = i; k < j; ++k) {
+            curr[M[a[k]]] += a[k];
+        }
+        for (int k = 1; k <= N; ++k) {
+            ps[i / blk][k] = ps[i / blk][k - 1] + curr[k];
         }
     }
-    sort(b.begin(), b.end());
-    int m = b.size();
-    ll res = 0;
-    prev = 0;
-    for (int i = 0; i < m; ++i) {
-        res += ll(1) * (b[i] - prev) * (m - i + 1);
-        prev = b[i];
+
+    read(int, q);
+    ll b = 0;
+    while (q--) {
+        read(ll, u, v, w);
+        ll l = u xor b, r = v xor b, x = w xor b;
+        --l, --r;
+        auto it = M.upper_bound(x);
+        b = 0;
+        if (it == M.begin()) {
+            ;;
+        } else {
+            int y = (--it)->second;
+            int start_idx = (l + blk - 1) / blk;
+            int end_idx = r / blk;
+            if (start_idx < end_idx) {
+                for (int i = start_idx; i < end_idx; ++i) {
+                    b += ps[i][y];
+                }
+                for (int i = l; i < start_idx * blk; ++i) {
+                    if (a[i] <= x) {
+                        b += a[i];
+                    }
+                }
+                for (int i = end_idx * blk; i <= r; ++i) {
+                    if (a[i] <= x) {
+                        b += a[i];
+                    }
+                }
+            } else {
+                for (int i = l; i <= r; ++i) {
+                    if (a[i] <= x) {
+                        b += a[i];
+                    }
+                }
+            }
+        }
+        cout << b << '\n';
     }
-    cout << res << '\n';
 }
 
 int main() {

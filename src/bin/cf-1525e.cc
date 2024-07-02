@@ -1,12 +1,9 @@
 #pragma GCC diagnostic ignored "-Wunused-const-variable"
 #pragma GCC diagnostic ignored "-Wreorder"
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#pragma GCC diagnostic ignored "-Wshift-op-parentheses"
 #pragma GCC optimize("Ofast")
-/////////////////////////////////////////////////////////
-/**
- * This code should require C++14.
- * However, it's only been tested with C++17.
- */
+/************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
 using namespace std;
@@ -481,9 +478,9 @@ array<T, N> __initarray(const T& init) {
     }
     return res;
 }
-/////////////////////////////////////////////////////////
+/*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -494,26 +491,33 @@ void dump_ignore() {}
 void prep() {
 }
 
+using mll = MLL<PRIME>;
+
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int prev = 0;
-    vector<int> b;
+    read(int, n, m);
+    vector dis(m, vector<int>(n));
     for (int i = 0; i < n; ++i) {
-        if (a[i] < prev) {
-            b.emplace_back(prev - a[i]);
-        } else {
-            prev = a[i];
+        for (int j = 0; j < m; ++j) {
+            cin >> dis[j][i];
         }
     }
-    sort(b.begin(), b.end());
-    int m = b.size();
-    ll res = 0;
-    prev = 0;
-    for (int i = 0; i < m; ++i) {
-        res += ll(1) * (b[i] - prev) * (m - i + 1);
-        prev = b[i];
+
+    mll res = 0;
+    for (auto&& v : dis) {
+        vector<int> open(n + 1);
+        for (auto&& x : v) {
+            open[n + 1 - x] += 1;
+        }
+        int curr = n - v.size();
+        mll rev = 1;
+        for (int i = 0; i < n; ++i) {
+            curr += open[i];
+            rev *= mll(1) * curr / (n - i);
+            curr -= 1;
+        }
+        res += 1 - rev;
     }
+
     cout << res << '\n';
 }
 

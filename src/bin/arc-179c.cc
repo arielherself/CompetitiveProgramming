@@ -483,7 +483,7 @@ array<T, N> __initarray(const T& init) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -496,25 +496,39 @@ void prep() {
 
 void solve() {
     read(int, n);
-    readvec(int, a, n);
-    int prev = 0;
-    vector<int> b;
-    for (int i = 0; i < n; ++i) {
-        if (a[i] < prev) {
-            b.emplace_back(prev - a[i]);
-        } else {
-            prev = a[i];
+    vector<int> a(n);
+    iota(a.begin(), a.end(), 1);
+
+    unordered_map<pii, int, pair_hash> cache;
+    auto cmp = [&] (int i, int j) -> bool {
+        if (cache.count({i, j})) return cache[{i, j}] == 0;
+        else if (cache.count({j, i})) return cache[{j, i}] == 1;
+        cout << "? " << i << ' ' << j << endl;
+        read(int, x);
+        if (x == -1) exit(0);
+        cache[{i, j}] = x;
+        return x == 0;
+    };
+
+    while (a.size() > 1) {
+        vector<int> b;
+        partial_sort(a.begin(), a.end(), a.end(), cmp);
+        int i = 0, j = a.size() - 1;
+        while (i < j) {
+            cout << "+ " << a[i] << ' ' << a[j] << endl;
+            read(int, x);
+            if (x == -1) exit(0);
+            b.emplace_back(x);
+            ++i, --j;
         }
+        if (i == j) {
+            b.emplace_back(a[i]);
+        }
+
+        swap(a, b);
     }
-    sort(b.begin(), b.end());
-    int m = b.size();
-    ll res = 0;
-    prev = 0;
-    for (int i = 0; i < m; ++i) {
-        res += ll(1) * (b[i] - prev) * (m - i + 1);
-        prev = b[i];
-    }
-    cout << res << '\n';
+
+    cout << "!" << endl;
 }
 
 int main() {

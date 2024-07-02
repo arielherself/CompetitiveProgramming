@@ -1,3 +1,6 @@
+#pragma GCC diagnostic ignored "-Wunused-const-variable"
+#pragma GCC diagnostic ignored "-Wreorder"
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -480,7 +483,7 @@ array<T, N> __initarray(const T& init) {
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -492,22 +495,8 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    read(string, a);
-
-    using mll = MLL<MDL>;
-    mll res = 1;
-    int cnt = 1;
-    for (int i = 1; i < n; ++i) {
-        if (a[i] != a[i - 1]) {
-            cnt += 1;
-        } else {
-            res *= (cnt + 1) / 2;
-            cnt = 1;
-        }
-    }
-    res *= (cnt + 1) / 2;
-    cout << res << '\n';
+    read(int, n, k);
+    cout << k * (n - 1) + 1 << '\n';
 }
 
 int main() {

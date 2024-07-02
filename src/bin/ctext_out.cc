@@ -1,13 +1,9 @@
 #pragma GCC diagnostic ignored "-Wunused-const-variable"
 #pragma GCC diagnostic ignored "-Wreorder"
-// #pragma GCC diagnostic ignored "-Wreorder-ctor"
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#pragma GCC diagnostic ignored "-Wshift-op-parentheses"
 #pragma GCC optimize("Ofast")
-/////////////////////////////////////////////////////////
-/**
- * This code should require C++14.
- * However, it's only been tested with C++17.
- */
+/************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
 using namespace std;
@@ -482,9 +478,9 @@ array<T, N> __initarray(const T& init) {
     }
     return res;
 }
-/////////////////////////////////////////////////////////
+/*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -496,6 +492,61 @@ void prep() {
 }
 
 void solve() {
+    read(int, n, m, w);
+    vector a(n, vector<int>(m));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            cin >> a[i][j];
+        }
+    }
+    vector ch(n * m + 1, pair<int, array<pii, 7>>());
+    auto add_edge = [&] (int v, int u, int w) {
+        int pos = ch[v].first++;
+        ch[v].second[pos] = {u, w};
+    };
+    #define ser(i, j) ((i) * m + (j))
+    int cnt = 0;
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            if (a[i][j] == -1) continue;
+            if (j + 1 < m and a[i][j + 1] != -1) {
+                add_edge(ser(i, j), ser(i, j + 1), w);
+                cnt += 1;
+            }
+            if (i + 1 < n and a[i + 1][j] != -1) {
+                add_edge(ser(i, j), ser(i + 1, j), w);
+                cnt += 1;
+            }
+
+            if (a[i][j] != 0) {
+                add_edge(ser(i, j), n * m, a[i][j]);
+                cnt += 1;
+            }
+        }
+    }
+
+    min_heap<pli> pq;
+    vector<ll> dis(n * m + 1, INFLL);
+    vector<bool> vis(n * m + 1);
+    pq.emplace(0, 0);
+    dis[0] = 0;
+    int mxs = 0;
+    while (pq.size()) {
+        chmax(mxs, pq.size());
+        poptop(pq, d, v);
+        continue_or(vis[v], 1);
+        for (int i = 0; i < ch[v].first; ++i) {
+            auto&& [u, w] = ch[v].second[i];
+            if (d + w < dis[u]) {
+                dis[u] = d + w;
+                pq.emplace(d + w, u);
+            }
+        }
+    }
+
+    debug(mxs);
+
+    cout << (dis[n * m - 1] == INFLL ? -1 : dis[n * m - 1]) << endl;
 }
 
 int main() {

@@ -483,7 +483,7 @@ array<T, N> __initarray(const T& init) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -495,26 +495,68 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int prev = 0;
-    vector<int> b;
-    for (int i = 0; i < n; ++i) {
-        if (a[i] < prev) {
-            b.emplace_back(prev - a[i]);
-        } else {
-            prev = a[i];
+    read(ll, n);
+    read(string, s, t);
+    int m = s.size();
+    vector pos(26, vector<int>());
+    vector nxt(26, vector<int>(m + 1, -1));
+    vector<int> cnt(26);
+    vector<int> rev(m);
+
+    for (int i = m - 1; ~i; --i) {
+        for (int j = 0; j < 26; ++j) {
+            if (s[i] - 'a' == j) {
+                nxt[j][i] = i;
+            } else {
+                nxt[j][i] = nxt[j][i + 1];
+            }
         }
     }
-    sort(b.begin(), b.end());
-    int m = b.size();
-    ll res = 0;
-    prev = 0;
+
     for (int i = 0; i < m; ++i) {
-        res += ll(1) * (b[i] - prev) * (m - i + 1);
-        prev = b[i];
+        rev[i] = pos[s[i] - 'a'].size();
+        pos[s[i] - 'a'].push_back(i);
+        cnt[s[i] - 'a'] += 1;
     }
-    cout << res << '\n';
+
+    auto check = [&] (ll tm) {
+        ll use = 1;
+        int ptr = 0;
+        for (auto&& x : t) {
+            int nx = nxt[x - 'a'][ptr];
+            if (nx == -1) {
+                nx = nxt[x - 'a'][0];
+                if (use == LLONG_MAX) return false;
+                ++use;
+            }
+            if (nx == -1) {
+                return false;
+            }
+            ll rep = (tm + rev[nx] - 1) / cnt[x - 'a'];
+            if (use > LLONG_MAX - rep) return false;
+            use += rep;
+            ptr = pos[x - 'a'][tm + rev[nx] - rep * cnt[x - 'a'] - 1] + 1;
+            if (ptr == m) {
+                ptr = 0;
+                if (use == LLONG_MAX) return false;
+                ++use;
+            }
+        }
+        return (ptr == 0 ? use - 1 : use) <= n;
+    };
+
+    ll l = 0, r = INFLL;
+    while (l < r) {
+        ll mid = (l + r + 1) >> 1;
+        if (check(mid)) {
+            l = mid;
+        } else {
+            r = mid - 1;
+        }
+    }
+
+    cout << l << '\n';
+
 }
 
 int main() {

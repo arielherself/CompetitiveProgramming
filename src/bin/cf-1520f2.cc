@@ -1,12 +1,9 @@
 #pragma GCC diagnostic ignored "-Wunused-const-variable"
 #pragma GCC diagnostic ignored "-Wreorder"
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#pragma GCC diagnostic ignored "-Wshift-op-parentheses"
 #pragma GCC optimize("Ofast")
-/////////////////////////////////////////////////////////
-/**
- * This code should require C++14.
- * However, it's only been tested with C++17.
- */
+/************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
 using namespace std;
@@ -481,9 +478,9 @@ array<T, N> __initarray(const T& init) {
     }
     return res;
 }
-/////////////////////////////////////////////////////////
+/*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -494,27 +491,176 @@ void dump_ignore() {}
 void prep() {
 }
 
+int query(int l, int r) {
+    cout << "? " << l + 1 << ' ' << r + 1 << endl;
+    read(int, x);
+    return r - l + 1 - x;
+}
+
+void claim(int x) {
+    cout << "! " << x + 1 << endl;
+}
+
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+    using size_type = uint64_t;
+    using info_type = Addable_Info_t;
+    using tag_type = Tag_t;
+    size_type _max;
+    vector<info_type> d;
+    vector<tag_type> b;
+    void pull(size_type p) {
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+    void push(size_type p, size_type left_len, size_type right_len) {
+        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
+        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+        b[p] = tag_type();
+    }
+    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+        if (s == t) {
+            d[p] = c;
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        if (s != t) push(p, m - s + 1, t - m);
+        if (x <= m) set(s, m, p * 2, x, c);
+        else set(m + 1, t, p * 2 + 1, x, c);
+        pull(p);
+    }
+
+    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+        if (l <= s && t <= r) {
+            d[p].apply(c, t - s + 1);
+            b[p].apply(c);
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        push(p, m - s + 1, t - m);
+        if (l <= m) range_apply(s, m, p * 2, l, r, c);
+        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
+        pull(p);
+    }
+    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+        if (l <= s && t <= r) {
+            return d[p];
+        }
+        size_type m = s + (t - s >> 1);
+        info_type res = {};
+        push(p, m - s + 1, t - m);
+        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+        return res;
+    }
+    void build(const Sequence& a, size_type s, size_type t, size_type p) {
+        if (s == t) {
+            d[p] = a[s];
+            return;
+        }
+        int m = s + (t - s >> 1);
+        build(a, s, m, p * 2);
+        build(a, m + 1, t, p * 2 + 1);
+        pull(p);
+    }
+public:
+    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+    segtree(const Sequence& a) : segtree(a.size()) {
+        build(a, {}, _max, 1);
+    }
+    void set(size_type i, const info_type& c) {
+        set({}, _max, 1, i, c);
+    }
+
+    void range_apply(size_type l, size_type r, const tag_type& c) {
+        range_apply({}, _max, 1, l, r, c);
+    }
+    void apply(size_type i, const tag_type& c) {
+        range_apply(i, i, c);
+    }
+    info_type range_query(size_type l, size_type r) {
+        return range_query({}, _max, 1, l, r);
+    }
+    info_type query(size_type i) {
+        return range_query(i, i);
+    }
+    Sequence serialize() {
+        Sequence res = {};
+        for (size_type i = 0; i <= _max; ++i) {
+            res.push_back(query(i));
+        }
+        return res;
+    }
+    const vector<info_type>& get_d() {
+        return d;
+    }
+};
+struct Tag {
+    int val = 0;
+    void apply(const Tag& rhs) {
+        val += rhs.val;
+    }
+};
+struct Info {
+    int val = 0;
+    void apply(const Tag& rhs, size_t len) {
+        val += rhs.val * len;
+    }
+};
+Info operator+(const Info &a, const Info &b) {
+    return {a.val + b.val};
+}
+
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int prev = 0;
-    vector<int> b;
-    for (int i = 0; i < n; ++i) {
-        if (a[i] < prev) {
-            b.emplace_back(prev - a[i]);
-        } else {
-            prev = a[i];
+    read(int, n, t);
+    int T = min(n, 16);
+    int P = (n + T - 1) / T;
+    segtree<Info, Tag> ps(P + 1);
+    int initialized = false;
+    auto init = [&] () {
+        for (int i = 0, start = 0; start < n; ++i, start += T) {
+            int end = min(n, start + T) - 1;
+            ps.set(i + 1, {query(start, end)});
+        }
+    };
+
+    while (t--) {
+        read(int, k);
+
+        if (not initialized) {
+            init();
+            initialized = true;
+        }
+
+        int start, pred;
+        {
+            int l = 0, r = P;
+            while (l < r) {
+                int mid = l + r + 1 >> 1;
+                if (ps.range_query(0, mid).val < k) {
+                    l = mid;
+                } else {
+                    r = mid - 1;
+                }
+            }
+            start = l * T;
+            pred = ps.range_query(0, l).val;
+        }
+
+        {
+            int l = start, r = min(n, start + T) - 1;
+            while (l < r) {
+                int mid = l + r >> 1;
+                int curr = pred + query(start, mid);
+                if (curr < k) {
+                    l = mid + 1;
+                } else {
+                    r = mid;
+                }
+            }
+            claim(l);
+            ps.apply(l / T + 1, { -1 });
         }
     }
-    sort(b.begin(), b.end());
-    int m = b.size();
-    ll res = 0;
-    prev = 0;
-    for (int i = 0; i < m; ++i) {
-        res += ll(1) * (b[i] - prev) * (m - i + 1);
-        prev = b[i];
-    }
-    cout << res << '\n';
 }
 
 int main() {

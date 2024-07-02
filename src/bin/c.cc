@@ -1,4 +1,6 @@
-#include <numeric>
+#pragma GCC diagnostic ignored "-Wunused-const-variable"
+#pragma GCC diagnostic ignored "-Wreorder"
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -481,7 +483,7 @@ array<T, N> __initarray(const T& init) {
 }
 /////////////////////////////////////////////////////////
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -495,33 +497,14 @@ void prep() {
 void solve() {
     read(int, n);
     readvec(int, a, n);
-    constexpr int Z = 1000;
-    using mll = MLL<MDL>;
-    vector dp(n + 1, array<mll, 2 * Z + 1>());
-
-    mll res = 1;
-    dp[0][Z] = 1;
-    unordered_set<int> oc;
-    for (int i = 1; i <= n; ++i) {
-        for (int j = 0; j <= 2 * Z; ++j) {
-            if (j - a[i - 1] == Z) {
-                res -= dp[i - 1][j - a[i - 1]];
-                if (oc.count(a[i - 1])) {
-                    ;;
-                } else {
-                    oc.emplace(a[i - 1]);
-                    dp[i][j] += dp[i - 1][j - a[i - 1]];
-                }
-            } else if (j - a[i - 1] >= 0 and j - a[i - 1] <= 2 * Z) {
-                dp[i][j] += dp[i - 1][j - a[i - 1]];
-            }
-            dp[i][j] += dp[i - 1][j];
+    int res = 0;
+    for (int i = n - 1; ~i; --i) {
+        if (i == n - 1 or res < a[i]) {
+            res = a[i];
+        } else {
+            res += 1;
         }
     }
-
-    debug(accumulate(dp[n].begin(), dp[n].end(), mll(0)));
-    res += accumulate(dp[n].begin(), dp[n].end(), mll(0));
-
     cout << res << '\n';
 }
 

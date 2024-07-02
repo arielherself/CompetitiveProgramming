@@ -483,7 +483,7 @@ array<T, N> __initarray(const T& init) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -495,26 +495,31 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int prev = 0;
-    vector<int> b;
-    for (int i = 0; i < n; ++i) {
-        if (a[i] < prev) {
-            b.emplace_back(prev - a[i]);
-        } else {
-            prev = a[i];
+    read(int, v1, v2, v3);
+    constexpr int N = 15;
+    constexpr int x1 = 0, y1 = 0, z1 = 0;
+    constexpr int a1 = 7 * 7 * 7, a2 = a1, a3 = a2;
+    for (int x2 = -N + 1; x2 < N; ++x2) {
+        for (int y2 = -N + 1; y2 < N; ++y2) {
+            for (int z2 = 0; z2 < N; ++z2) {
+                for (int x3 = -N + 1; x3 < N; ++x3) {
+                    for (int y3 = -N + 1; y3 < N; ++y3) {
+                        for (int z3 = 0; z3 < N; ++z3) {
+                            int a12 = max(0, min(x1 + 7, x2 + 7) - max(x1, x2)) * max(0, min(y1 + 7, y2 + 7) - max(y1, y2)) * max(0, min(z1 + 7, z2 + 7) - max(z1, z2));
+                            int a23 = max(0, min(x2 + 7, x3 + 7) - max(x2, x3)) * max(0, min(y2 + 7, y3 + 7) - max(y2, y3)) * max(0, min(z2 + 7, z3 + 7) - max(z2, z3));
+                            int a13 = max(0, min(x1 + 7, x3 + 7) - max(x1, x3)) * max(0, min(y1 + 7, y3 + 7) - max(y1, y3)) * max(0, min(z1 + 7, z3 + 7) - max(z1, z3));
+                            int a123 = max(0, min(x1 + 7, (min(x2 + 7, x3 + 7))) - max(x1, max(x2, x3))) * max(0, min(y1 + 7, min(y2 + 7, y3 + 7)) - max(y1, max(y2, y3))) * max(0, min(z1 + 7, min(z2 + 7, z3 + 7)) - max(z1, max(z2, z3)));
+                            if (v1 == a1 + a2 + a3 - 2 * a12 - 2 * a13 - 2 * a23 + 3 * a123 and v2 == a12 + a23 + a13 - 3 * a123 and v3 == a123) {
+                                cout << "Yes\n" << x1 << ' ' << y1 << ' ' << z1 << ' ' << x2 << ' ' << y2 << ' ' << z2 << ' ' << x3 << ' ' << y3 << ' ' << z3 << '\n';
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
-    sort(b.begin(), b.end());
-    int m = b.size();
-    ll res = 0;
-    prev = 0;
-    for (int i = 0; i < m; ++i) {
-        res += ll(1) * (b[i] - prev) * (m - i + 1);
-        prev = b[i];
-    }
-    cout << res << '\n';
+    cout << "No\n";
 }
 
 int main() {

@@ -1,6 +1,7 @@
 #pragma GCC diagnostic ignored "-Wunused-const-variable"
 #pragma GCC diagnostic ignored "-Wreorder"
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#pragma GCC diagnostic ignored "-Wshift-op-parentheses"
 #pragma GCC optimize("Ofast")
 /////////////////////////////////////////////////////////
 /**
@@ -483,7 +484,7 @@ array<T, N> __initarray(const T& init) {
 }
 /////////////////////////////////////////////////////////
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -495,26 +496,68 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int prev = 0;
-    vector<int> b;
-    for (int i = 0; i < n; ++i) {
-        if (a[i] < prev) {
-            b.emplace_back(prev - a[i]);
+    read(int, q, a0, c0);
+    vector<vector<int>> fa = {{}};
+    vector<int> depth = { 0 };
+    vector<pii> info = {{ a0, c0 }};
+
+    while (q--) {
+        read(int, op);
+        if (op == 1) {
+            read(int, p, a, c);
+            vector<int> curr = { p };
+            depth.emplace_back(depth[p] + 1);
+            info.emplace_back(a, c);
+            for (int i = 1; (1 << i) <= depth[p] + 1; ++i) {
+                curr.emplace_back(fa[curr.back()][i - 1]);
+            }
+            fa.emplace_back(curr);
         } else {
-            prev = a[i];
+            depth.emplace_back();
+            info.emplace_back();
+            fa.emplace_back();
+
+            auto kth_ancestor = [&] (int v, int k) -> int {
+                int ptr = v;
+                int b = 0;
+                while (k) {
+                    if (k & 1) {
+                        ptr = fa[ptr][b];
+                    }
+                    k >>= 1;
+                    b += 1;
+                }
+                return ptr;
+            };
+
+            read(int, v, w);
+            int ptr = v;
+            int l = 0;
+            while (1) {
+                int nxt = 0;
+                while (nxt + 1 < fa[ptr].size() and info[fa[ptr][nxt + 1]].first != 0) ++nxt;
+                if (nxt < fa[ptr].size() and info[fa[ptr][nxt]].first != 0) {
+                    l += 1 << nxt;
+                    ptr = fa[ptr][nxt];
+                } else {
+                    break;
+                }
+            }
+            int rem = w;
+            int got = 0;
+            ll cost = 0;
+            while (l >= 0 and rem > 0) {
+                int ptr = kth_ancestor(v, l);
+                int use = min(info[ptr].first, rem);
+                info[ptr].first -= use;
+                rem -= use;
+                got += use;
+                cost += ll(1) * info[ptr].second * use;
+                --l;
+            }
+            cout << got << ' ' << cost << endl;
         }
     }
-    sort(b.begin(), b.end());
-    int m = b.size();
-    ll res = 0;
-    prev = 0;
-    for (int i = 0; i < m; ++i) {
-        res += ll(1) * (b[i] - prev) * (m - i + 1);
-        prev = b[i];
-    }
-    cout << res << '\n';
 }
 
 int main() {
