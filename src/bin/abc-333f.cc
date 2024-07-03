@@ -157,7 +157,7 @@ struct array_hash {
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
 #define edgew(ch, u, v, w) __AS_PROCEDURE(ch[u].emplace_back(v, w), ch[v].emplace_back(u, w);)
 #define Edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v);)
-#define Edgew(ch, u, v, ...) __AS_PROCEDURE(ch[u].emplace_back(v, __VA_ARGS__);)
+#define Edgew(ch, u, v, w) __AS_PROCEDURE(ch[u].emplace_back(v, w);)
 template <typename T, typename Iterator> pair<size_t, map<T, size_t>> discretize(Iterator __first, Iterator __last) {
     set<T> st(__first, __last);
     size_t N = 0;
@@ -488,52 +488,18 @@ void dump() {}
 
 void dump_ignore() {}
 
+using mll = MLL<PRIME>;
+constexpr int N = 3010;
+mll pw[N];
+
 void prep() {
+    pw[0] = 1;
+    for (int i = 1; i < N; ++i) {
+        pw[i] = pw[i - 1] * 2;
+    }
 }
 
 void solve() {
-    read(int, n, m);
-    vector<tuple<int, int, int, int>> edges;
-    for (int i = 0; i < m; ++i) {
-        read(int, u, v, b, c);
-        edges.emplace_back(u, v, b, c);
-    }
-    sort_by_key(edges.begin(), edges.end(), [] (const auto& t) { return make_pair(-ld(1) * get<2>(t) / get<3>(t), get<2>(t)); });
-
-    auto work = [&] (int k) -> ld {
-        vector<vector<tiii>> e(n + 1);
-        for (auto&& [u, v, b, c] : edges) {
-            e[u].emplace_back(v, b, c);
-            Edgew(e, u, v, b, c);
-            if (--k == 0) {
-                break;
-            }
-        }
-        deque<tiii> q;
-        q.emplace_back(0, 0, 1);
-        while (q.size()) {
-            popfront(q, b, c, v);
-            if (v == n) {
-                return ld(1) * b / c;
-            }
-            for (auto&& [u, b1, c1] : e[v]) {
-                q.emplace_back(b + b1, c + c1, u);
-            }
-        }
-        return -1;
-    };
-
-    int l = 1, r = m;
-    while (l < r) {
-        int mid = l + r >> 1;
-        if (work(mid) != -1) {
-            r = mid;
-        } else {
-            l = mid + 1;
-        }
-    }
-
-    cout << setprecision(50) << work(l) << endl;
 }
 
 int main() {

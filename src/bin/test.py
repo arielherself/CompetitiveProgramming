@@ -7,7 +7,6 @@ import io
 PRIME = 998_244_353
 
 if __name__ == '__main__':
-    N = 2000
-    print(N, N, 10 ** 9)
-    for _ in range(N * N):
-        print(10 ** 9)
+    N = 1
+    M = 6
+

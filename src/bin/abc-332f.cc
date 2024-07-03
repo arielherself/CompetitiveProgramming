@@ -157,7 +157,7 @@ struct array_hash {
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
 #define edgew(ch, u, v, w) __AS_PROCEDURE(ch[u].emplace_back(v, w), ch[v].emplace_back(u, w);)
 #define Edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v);)
-#define Edgew(ch, u, v, ...) __AS_PROCEDURE(ch[u].emplace_back(v, __VA_ARGS__);)
+#define Edgew(ch, u, v, w) __AS_PROCEDURE(ch[u].emplace_back(v, w);)
 template <typename T, typename Iterator> pair<size_t, map<T, size_t>> discretize(Iterator __first, Iterator __last) {
     set<T> st(__first, __last);
     size_t N = 0;
@@ -491,49 +491,170 @@ void dump_ignore() {}
 void prep() {
 }
 
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+    using size_type = uint64_t;
+    using info_type = Addable_Info_t;
+    using tag_type = Tag_t;
+    size_type _max;
+    vector<info_type> d;
+    vector<tag_type> b;
+    void pull(size_type p) {
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+    void push(size_type p, size_type left_len, size_type right_len) {
+        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
+        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+        b[p] = tag_type();
+    }
+    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+        if (s == t) {
+            d[p] = c;
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        if (s != t) push(p, m - s + 1, t - m);
+        if (x <= m) set(s, m, p * 2, x, c);
+        else set(m + 1, t, p * 2 + 1, x, c);
+        pull(p);
+    }
+
+    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+        if (l <= s && t <= r) {
+            d[p].apply(c, t - s + 1);
+            b[p].apply(c);
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        push(p, m - s + 1, t - m);
+        if (l <= m) range_apply(s, m, p * 2, l, r, c);
+        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
+        pull(p);
+    }
+    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+        if (l <= s && t <= r) {
+            return d[p];
+        }
+        size_type m = s + (t - s >> 1);
+        info_type res = {};
+        push(p, m - s + 1, t - m);
+        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+        return res;
+    }
+    void build(const Sequence& a, size_type s, size_type t, size_type p) {
+        if (s == t) {
+            d[p] = a[s];
+            return;
+        }
+        int m = s + (t - s >> 1);
+        build(a, s, m, p * 2);
+        build(a, m + 1, t, p * 2 + 1);
+        pull(p);
+    }
+public:
+    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+    segtree(const Sequence& a) : segtree(a.size()) {
+        build(a, {}, _max, 1);
+    }
+    void set(size_type i, const info_type& c) {
+        set({}, _max, 1, i, c);
+    }
+
+    void range_apply(size_type l, size_type r, const tag_type& c) {
+        range_apply({}, _max, 1, l, r, c);
+    }
+    void apply(size_type i, const tag_type& c) {
+        range_apply(i, i, c);
+    }
+    info_type range_query(size_type l, size_type r) {
+        return range_query({}, _max, 1, l, r);
+    }
+    info_type query(size_type i) {
+        return range_query(i, i);
+    }
+    Sequence serialize() {
+        Sequence res = {};
+        for (size_type i = 0; i <= _max; ++i) {
+            res.push_back(query(i));
+        }
+        return res;
+    }
+    const vector<info_type>& get_d() {
+        return d;
+    }
+};
+
+using mll = MLL<PRIME>;
+
+struct Tag {
+    mll a = 1, x = 0;
+    bool sg = false;
+    void apply(const Tag& rhs) {
+        a *= rhs.a;
+    }
+};
+struct Info {
+    mll a = 1, x = 0, val = 0;
+    void apply(const Tag& rhs, size_t len) {
+        a *= rhs.a;
+        assert(a != 0);
+        val *= rhs.a;
+        if (rhs.sg) {
+            x = rhs.x;
+            val = a * x;
+        }
+    }
+};
+Info operator+(const Info &a, const Info &b) {
+    return {1, a.val + b.val, a.val + b.val};
+}
+
 void solve() {
     read(int, n, m);
-    vector<tuple<int, int, int, int>> edges;
+    readvec(int, a, n);
+    vector<int> b(m), c(m);
+    segtree<Info, Tag> tr(m + 1);
+
+    vector<vector<int>> open(n), close(n);
     for (int i = 0; i < m; ++i) {
-        read(int, u, v, b, c);
-        edges.emplace_back(u, v, b, c);
-    }
-    sort_by_key(edges.begin(), edges.end(), [] (const auto& t) { return make_pair(-ld(1) * get<2>(t) / get<3>(t), get<2>(t)); });
-
-    auto work = [&] (int k) -> ld {
-        vector<vector<tiii>> e(n + 1);
-        for (auto&& [u, v, b, c] : edges) {
-            e[u].emplace_back(v, b, c);
-            Edgew(e, u, v, b, c);
-            if (--k == 0) {
-                break;
-            }
-        }
-        deque<tiii> q;
-        q.emplace_back(0, 0, 1);
-        while (q.size()) {
-            popfront(q, b, c, v);
-            if (v == n) {
-                return ld(1) * b / c;
-            }
-            for (auto&& [u, b1, c1] : e[v]) {
-                q.emplace_back(b + b1, c + c1, u);
-            }
-        }
-        return -1;
-    };
-
-    int l = 1, r = m;
-    while (l < r) {
-        int mid = l + r >> 1;
-        if (work(mid) != -1) {
-            r = mid;
-        } else {
-            l = mid + 1;
-        }
+        read(int, l, r, x);
+        --l, --r;
+        b[m - 1 - i] = x;
+        c[m - 1 - i] = r - l + 1;
+        open[l].emplace_back(m - 1 - i);
+        close[r].emplace_back(m - 1 - i);
     }
 
-    cout << setprecision(50) << work(l) << endl;
+    set<int> lock = { m };
+    for (int i = 0; i < n; ++i) {
+        tr.apply(m, { 1, a[i], true });
+
+        for (auto&& j : open[i]) {
+            tr.apply(j, { 1, mll(1) / c[j] * b[j], true });
+            if (mll(1) / c[j] == 1) {
+                lock.emplace(j);
+            } else {
+                tr.range_apply(j + 1, m, { 1 - mll(1) / c[j], 0, false });
+            }
+        }
+
+        // for (auto&& x : tr.serialize()) {
+        //     cerr << x.val << ' ';
+        // }
+        // cerr << endl;
+
+        cout << tr.range_query(0, *lock.begin()).val << " \n"[i + 1 == n];
+
+        for (auto&& j : close[i]) {
+            tr.apply(j, { 1, 0, true });
+            if (mll(1) / c[j] == 1) {
+                lock.erase(j);
+            } else {
+                tr.range_apply(j + 1, m, { 1 / (1 - mll(1) / c[j]), 0, false });
+            }
+        }
+    }
 }
 
 int main() {
