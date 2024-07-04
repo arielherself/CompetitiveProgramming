@@ -456,7 +456,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -468,6 +468,31 @@ void prep() {
 }
 
 void solve() {
+    using mll = MLL<PRIME>;
+
+    read(int, n);
+    readvec(int, a, n);
+
+    vector dp(n + 1, array<mll, 1 << 11>());
+    dp[0][1] = 1;
+    for (int i = 1; i <= n; ++i) {
+        for (int j = 1; j <= min(a[i - 1], 10); ++j) {
+            for (int k = 1; k < (1 << 11); ++k) {
+                dp[i][k | (k << j & ((1 << 11) - 1))] += dp[i - 1][k];
+            }
+        }
+        for (int k = 1; k < (1 << 11); ++k) {
+            dp[i][k] += dp[i - 1][k] * max(0, a[i - 1] - 10);
+        }
+    }
+
+    mll res = 0;
+    for (int k = 1; k < (1 << 11); ++k) {
+        if (k & 1 << 10) {
+            res += dp[n][k];
+        }
+    }
+    cout << res / accumulate(a.begin(), a.end(), mll(1), [] (const mll& x, const mll& y) { return x * y; }) << endl;
 }
 
 int main() {

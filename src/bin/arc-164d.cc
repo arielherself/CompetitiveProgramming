@@ -456,7 +456,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -468,6 +468,34 @@ void prep() {
 }
 
 void solve() {
+    using mll = MLL<PRIME>;
+
+    read(int, n);
+    read(string, a);
+
+    vector dp(2 * n + 1, vector<pair<mll, mll>>(2 * n + 1));
+    dp[0][n] = { 1, 0 };
+    for (int i = 1; i <= 2 * n; ++i) {
+        if (a[i - 1] == '+' or a[i - 1] == '?') {
+            for (int j = 0; j + 1 <= 2 * n; ++j) {
+                dp[i][j + 1] = { dp[i][j + 1].first + dp[i - 1][j].first, dp[i][j + 1].second + dp[i - 1][j].second + dp[i - 1][j].first * abs(j - n) };
+            }
+        }
+        if (a[i - 1] == '-' or a[i - 1] == '?') {
+            for (int j = 1; j <= 2 * n; ++j) {
+                dp[i][j - 1] = { dp[i][j - 1].first + dp[i - 1][j].first, dp[i][j - 1].second + dp[i - 1][j].second + dp[i - 1][j].first * abs(j - n) };
+            }
+        }
+    }
+
+    // for (int i = 0; i <= 2 * n; ++i) {
+    //     for (int j = 0; j <= 2 * n; ++j) {
+    //         cerr << dp[i][j] << ' ';
+    //     }
+    //     cerr << endl;
+    // }
+
+    cout << dp[2 * n][n].second << endl;
 }
 
 int main() {

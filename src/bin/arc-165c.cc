@@ -2,7 +2,6 @@
 #pragma GCC diagnostic ignored "-Wreorder"
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #pragma GCC diagnostic ignored "-Wshift-op-parentheses"
-#pragma GCC diagnostic ignored "-Wlogical-op-parentheses"
 #pragma GCC optimize("Ofast")
 /************* This code requires C++17. ***************/
 
@@ -456,7 +455,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -467,7 +466,83 @@ void dump_ignore() {}
 void prep() {
 }
 
+class quick_union {
+private:
+    vector<size_t> c, sz;
+public:
+    quick_union(size_t n) : c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
+    }
+
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] += sz[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_size(size_t i) {
+        return sz[query(i)];
+    }
+};
+
 void solve() {
+    read(int, n, m);
+    vector<tiii> edges;
+    for (int i = 0; i < m; ++i) {
+        read(int, u, v, w);
+        edges.emplace_back(w, u, v);
+    }
+    sort(edges.begin(), edges.end());
+
+    vector<vector<pii>> e(n + 1);
+    quick_union qu(n + 1);
+    for (auto& [w, u, v] : edges) {
+        if (qu.connected(u, v)) continue;
+        e[u].emplace_back(v, w);
+        e[v].emplace_back(u, w);
+        qu.merge(u, v);
+    }
+
+    ll res = INFLL;
+    vector<int> trace;
+    vector<int> color(n + 1);
+    auto dfs = [&] (auto dfs, int v, int pa, int curr) -> void {
+        color[v] = curr;
+        vector<int> sub;
+        for (auto&& [u, w] : e[v]) {
+            if (u == pa) continue;
+            sub.emplace_back(w);
+            trace.emplace_back(w);
+            dfs(dfs, u, v, 1 ^ curr);
+            trace.pop_back();
+        }
+
+        if (sub.size() >= 2) {
+            partial_sort(sub.begin(), sub.begin() + 2, sub.end());
+            chmin(res, sub[0] + sub[1]);
+        }
+
+        if (trace.size() >= 2) {
+            chmin(res, trace[trace.size() - 1] + trace[trace.size() - 2]);
+        }
+    };
+    dfs(dfs, 1, 0, 0);
+
+    for (auto&& [w, u, v] : edges) {
+        if (color[u] == color[v]) {
+            chmin(res, w);
+        }
+    }
+
+    cout << res << '\n';
 }
 
 int main() {

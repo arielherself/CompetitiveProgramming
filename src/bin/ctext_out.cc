@@ -2,6 +2,7 @@
 #pragma GCC diagnostic ignored "-Wreorder"
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #pragma GCC diagnostic ignored "-Wshift-op-parentheses"
+#pragma GCC diagnostic ignored "-Wlogical-op-parentheses"
 #pragma GCC optimize("Ofast")
 /************* This code requires C++17. ***************/
 
@@ -467,37 +468,34 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, M);
+    using mll = MLL<PRIME>;
 
-    vector<ll> fact(n + 1), pw(n + 1), factinv(n + 1);
-    fact[0] = 1, pw[0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        fact[i] = (fact[i - 1] * i) % M;
-        factinv[i] = inverse(fact[i], M);
-        pw[i] = (pw[i - 1] * 2) % M;
-    }
+    read(int, n);
+    read(string, a);
 
-    auto combination = [&] (int n, int k) -> ll {
-        return (((fact[n] * factinv[k]) % M) * factinv[n - k]) % M;
-    };
-
-    vector dp(n + 1, vector<ll>(n + 1));
-    for (int i = 1; i <= n; ++i) {
-        for (int j = 1; j <= i - 2; ++j) {
-            for (int k = 1; k <= i - j - 1; ++k) {
-                dp[i][j + k] = (dp[i][j + k] + ((((dp[i - j - 1][k] * combination(j + k, k)) % M) * pw[j - 1]) % M)) % M;
+    vector dp(2 * n + 1, vector<pair<mll, mll>>(2 * n + 1));
+    dp[0][n] = { 1, 0 };
+    for (int i = 1; i <= 2 * n; ++i) {
+        if (a[i - 1] == '+' or a[i - 1] == '?') {
+            for (int j = 0; j + 1 <= 2 * n; ++j) {
+                dp[i][j + 1] = { dp[i][j + 1].first + dp[i - 1][j].first, dp[i][j + 1].second + dp[i - 1][j].second + dp[i - 1][j].first * abs(j - n) };
             }
         }
-        dp[i][i] = (dp[i][i] + pw[i - 1]) % M;
-        // debug(accumulate(dp[i].begin(), dp[i].end(), ll(0), [&] (ll a, ll b) { return (a + b) % M; }));
+        if (a[i - 1] == '-' or a[i - 1] == '?') {
+            for (int j = 1; j <= 2 * n; ++j) {
+                dp[i][j - 1] = { dp[i][j - 1].first + dp[i - 1][j].first, dp[i][j - 1].second + dp[i - 1][j].second + dp[i - 1][j].first * abs(j - n) };
+            }
+        }
     }
 
-    ll res = 0;
-    for (int i = 0; i <= n; ++i) {
-        res = (res + dp[n][i]) % M;
+    for (int i = 0; i <= 2 * n; ++i) {
+        for (int j = 0; j <= 2 * n; ++j) {
+            cerr << dp[i][j] << ' ';
+        }
+        cerr << endl;
     }
 
-    cout << res << '\n';
+    cout << dp[2 * n][n].second << endl;
 }
 
 int main() {

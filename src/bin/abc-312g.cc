@@ -456,7 +456,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -468,6 +468,39 @@ void prep() {
 }
 
 void solve() {
+    read(int, n);
+    adj(ch, n);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
+    }
+
+    vector<int> sz(n + 1);
+    auto dfs2 = [&] (auto dfs2, int v, int pa) -> void {
+        sz[v] = 1;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            dfs2(dfs2, u, v);
+            sz[v] += sz[u];
+        }
+    };
+    dfs2(dfs2, 1, 0);
+
+    ll res = 0;
+    auto dfs = [&] (auto dfs, int v, int pa) -> void {
+        int up = n - sz[v];
+        res += ll(1) * up * (sz[v] - 1);
+        int prev = 0;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            dfs(dfs, u, v);
+            prev += sz[u];
+            res += ll(1) * sz[u] * (sz[v] - 1 - prev);
+        }
+    };
+    dfs(dfs, 1, 0);
+
+    cout << ll(1) * n * (n - 1) * (n - 2) / 6 - res << endl;
 }
 
 int main() {

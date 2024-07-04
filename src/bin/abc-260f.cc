@@ -456,7 +456,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -468,6 +468,59 @@ void prep() {
 }
 
 void solve() {
+    read(int, s, t, m);
+
+    constexpr int N = 3e5 + 5;
+    constexpr int M = 1e3 + 5;
+
+    vector<bitset<M>> r(s + 1);
+    vector<vector<int>> l(t + 1);
+    while (m--) {
+        read(int, u, v);
+        r[u][v - s] = 1;
+        l[v - s].emplace_back(u);
+    }
+
+    vector<bitset<M>> lr(t + 1);
+    for (int i = 1; i <= t; ++i) {
+        for (auto&& j : l[i]) {
+            lr[i] |= r[j];
+        }
+    }
+
+    pii res;
+    for (int i = 1; i <= t; ++i) {
+        for (int j = i + 1; j <= t; ++j) {
+            if (lr[i][j] and lr[j][i]) {
+                res = {i, j};
+                break;
+            }
+        }
+    }
+
+    if (res == make_pair(0, 0)) {
+        cout << -1 << endl;
+    } else {
+        auto [u, v] = res;
+        cout << u + s << ' ' << v + s;
+
+        bitset<N> l1;
+        for (auto&& i : l[u]) {
+            l1[i] = 1;
+        }
+
+        int cnt = 0;
+        for (auto&& i : l[v]) {
+            if (cnt == 2) break;
+            if (l1[i]) {
+                cout << ' ' << i;
+                ++cnt;
+            }
+        }
+
+        cout << endl;
+    }
+
 }
 
 int main() {

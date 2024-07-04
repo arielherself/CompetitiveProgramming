@@ -456,7 +456,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -467,7 +467,99 @@ void dump_ignore() {}
 void prep() {
 }
 
+class quick_union {
+private:
+    vector<size_t> c, sz;
+public:
+    quick_union(size_t n) : c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
+    }
+    
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] += sz[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_size(size_t i) {
+        return sz[query(i)];
+    }
+};
+
 void solve() {
+    read(int, n, m);
+    vector<tuple<int, int, int, int>> edges;
+    for (int i = 0; i < m; ++i) {
+        read(int, u, v);
+        read(char, w);
+        edges.emplace_back(u, v, w == 'B', i + 1);
+    }
+
+    vector<int> a(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        read(char, w);
+        a[i] = w == 'B';
+    }
+
+    array<vector<tuple<int, int, int, int>>, 3> cand;
+    for (auto&& [u, v, w, i] : edges) {
+        if (a[u] == a[v] and a[u] == w) {
+            cand[0].emplace_back(u, v, w, i);
+        } else if (a[u] == w or a[v] == w) {
+            cand[1].emplace_back(u, v, w, i);
+        } else {
+            cand[2].emplace_back(u, v, w, i);
+        }
+    }
+
+    quick_union qu(n + 1);
+    vector<int> res;
+    vector<int> sat(n + 1);
+    for (auto&& [u, v, w, i] : cand[0]) {
+        if (qu.connected(u, v)) continue;
+        if (sat[u] and sat[v]) {
+            cand[2].emplace_back(u, v, w, i);
+        } else if (sat[u] or sat[v]) {
+            cand[1].emplace_back(u, v, w, i);
+        } else {
+            qu.merge(u, v);
+            res.emplace_back(i);
+            sat[u] = 1; sat[v] = 1;
+        }
+    }
+
+    for (auto&& [u, v, w, i] : cand[1]) {
+        if (qu.connected(u, v)) continue;
+        if ((w != a[u] or sat[u]) and (w != a[v] or sat[v])) {
+            cand[2].emplace_back(u, v, w, i);
+        } else {
+            qu.merge(u, v);
+            res.emplace_back(i);
+            if (w == a[u]) sat[u] = 1;
+            if (w == a[v]) sat[v] = 1;
+        }
+    }
+
+    for (auto&& [u, v, w, i] : cand[2]) {
+        if (qu.connected(u, v)) continue;
+        qu.merge(u, v);
+        res.emplace_back(i);
+    }
+
+    if (count(sat.begin() + 1, sat.end(), 0) != 0) {
+        cout << "No\n";
+    } else {
+        cout << "Yes\n";
+        putvec(res);
+    }
 }
 
 int main() {
