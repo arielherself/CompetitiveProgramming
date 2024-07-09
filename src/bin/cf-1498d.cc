@@ -467,43 +467,53 @@ void dump_ignore() {}
 void prep() {
 }
 
+ll work(int x, ll a, int b) {
+    // returns the exact integer `ceil(x * (a / b))`
+    ll c = ll(1) * x * a;
+    return c / b + (c % b != 0);
+}
+
 void solve() {
-    using mll = MLL<MDL>;
+    read(int, n, m);
 
-    read(int, n, k, q);
-    readvec(int, a, n);
+    vector<int> dp(m + 1);
+    dp[0] = 1;
 
-    vector dp(k + 3, vector<mll>(n));
-    dp[1].assign(n, mll(1));
-    for (int i = 2; i < k + 3; ++i) {
-        for (int j = 0; j < n; ++j) {
-            if (j - 1 >= 0) {
-                dp[i][j] += dp[i - 1][j - 1];
-            }
-            if (j + 1 < n) {
-                dp[i][j] += dp[i - 1][j + 1];
-            }
-        }
-    }
-
-    vector<mll> p(n);
-    mll curr = 0;
+    vector<int> res(m + 1, -1);
     for (int i = 0; i < n; ++i) {
-        for (int j = 1; j <= k + 1; ++j) {
-            p[i] += dp[j][i] * dp[k + 2 - j][i];
+        read(int, t);
+        read(ll, x);
+        read(int, y);
+
+        vector<int> curr(m + 1);
+        for (int j = 0; j <= m; ++j) {
+            if (dp[j] != 0) {
+                chmax(curr[j], y + 1);
+            }
+            if (curr[j] != 0) {
+                ll nxt;
+                if (t == 1) {
+                    nxt = j + work(1, x, 100000);
+                } else {
+                    nxt = work(j, x, 100000);
+                }
+                if (nxt <= m) {
+                    chmax(curr[nxt], curr[j] - 1);
+                }
+            }
         }
-        curr += p[i] * a[i];
+
+        for (int j = 0; j <= m; ++j) {
+            if (curr[j] != 0 and dp[j] == 0) {
+                res[j] = i + 1;
+            }
+        }
+
+        swap(dp, curr);
+        // debug(dp);
     }
 
-    while (q--) {
-        read(int, i, x);
-        --i;
-        curr += p[i] * (x - a[i]);
-        a[i] = x;
-
-        cout << curr << '\n';
-    }
-
+    putvec1(res);
 }
 
 int main() {

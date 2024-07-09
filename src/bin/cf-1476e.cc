@@ -467,43 +467,87 @@ void dump_ignore() {}
 void prep() {
 }
 
+string make_mask(const string&s, int mask) {
+    string t;
+    for (int i = 0; i < s.size(); ++i) {
+        if (mask & (1 << i)) {
+            t += s[i];
+        } else {
+            t += '_';
+        }
+    }
+    return t;
+}
+
 void solve() {
-    using mll = MLL<MDL>;
-
-    read(int, n, k, q);
-    readvec(int, a, n);
-
-    vector dp(k + 3, vector<mll>(n));
-    dp[1].assign(n, mll(1));
-    for (int i = 2; i < k + 3; ++i) {
-        for (int j = 0; j < n; ++j) {
-            if (j - 1 >= 0) {
-                dp[i][j] += dp[i - 1][j - 1];
-            }
-            if (j + 1 < n) {
-                dp[i][j] += dp[i - 1][j + 1];
-            }
-        }
-    }
-
-    vector<mll> p(n);
-    mll curr = 0;
+    read(int, n, m, k);
+    unordered_map<string, int> mp;
     for (int i = 0; i < n; ++i) {
-        for (int j = 1; j <= k + 1; ++j) {
-            p[i] += dp[j][i] * dp[k + 2 - j][i];
+        read(string, s);
+        mp[s] = i;
+    }
+
+    int f = 1;
+    vector<vector<int>> ch(n);
+    vector<int> ind(n);
+    for (int i = 0; i < m; ++i) {
+        read(string, s);
+        read(int, x);
+        --x;
+        vector<int> v;
+        int ff = 0;
+        for (int j = 0; j < (1 << k); ++j) {
+            string curr = make_mask(s, j);
+            if (mp.count(curr)) {
+                v.emplace_back(mp[curr]);
+                if (mp[curr] == x) {
+                    ff = 1;
+                }
+            }
         }
-        curr += p[i] * a[i];
+
+        if (ff == 0) {
+            f = 0;
+        } else {
+            for (auto&& j : v) {
+                if (j != x) {
+                    Edge(ch, x, j);
+                    ind[j] += 1;
+                }
+            }
+        }
     }
 
-    while (q--) {
-        read(int, i, x);
-        --i;
-        curr += p[i] * (x - a[i]);
-        a[i] = x;
-
-        cout << curr << '\n';
+    if (f == 0) {
+        cout << "NO" << endl;
+        return;
     }
 
+    vector<int> res;
+    deque<int> q;
+    for (int i = 0; i < n; ++i) {
+        if (ind[i] == 0) {
+            q.emplace_back(i);
+        }
+    }
+
+    while (q.size()) {
+        int v = q.front(); q.pop_front();
+        res.emplace_back(v + 1);
+
+        for (auto&& u : ch[v]) {
+            if (--ind[u] == 0) {
+                q.emplace_back(u);
+            }
+        }
+    }
+
+    if (res.size() != n) {
+        cout << "NO" << endl;
+    } else {
+        cout << "YES" << endl;
+        putvec(res);
+    }
 }
 
 int main() {

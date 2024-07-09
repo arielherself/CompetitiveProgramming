@@ -2,9 +2,5 @@
 using namespace std;
 
 int main() {
-    auto test = [] {
-        cout << "Hello, world!\n";
-    };
-
-    test();
+    cout << (-1 / 2) << endl;
 }

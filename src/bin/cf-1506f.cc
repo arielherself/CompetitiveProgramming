@@ -456,7 +456,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -468,42 +468,46 @@ void prep() {
 }
 
 void solve() {
-    using mll = MLL<MDL>;
-
-    read(int, n, k, q);
-    readvec(int, a, n);
-
-    vector dp(k + 3, vector<mll>(n));
-    dp[1].assign(n, mll(1));
-    for (int i = 2; i < k + 3; ++i) {
-        for (int j = 0; j < n; ++j) {
-            if (j - 1 >= 0) {
-                dp[i][j] += dp[i - 1][j - 1];
-            }
-            if (j + 1 < n) {
-                dp[i][j] += dp[i - 1][j + 1];
-            }
-        }
-    }
-
-    vector<mll> p(n);
-    mll curr = 0;
+    read(int, n);
+    vector<pii> a(n);
     for (int i = 0; i < n; ++i) {
-        for (int j = 1; j <= k + 1; ++j) {
-            p[i] += dp[j][i] * dp[k + 2 - j][i];
+        cin >> a[i].first;
+    }
+    for (int i = 0; i < n; ++i) {
+        cin >> a[i].second;
+    }
+
+    sort_by_key(a.begin(), a.end(), [] (const pii& x) { return make_pair(x.first - x.second, x.first); });
+
+    pii prev = { 1, 1 };
+    ll res = 0;
+    for (auto&& [x, y] : a) {
+        if ((prev.first - prev.second) & 1) {
+            if ((x - y) & 1) {
+                if (prev.first - prev.second == x - y) {
+                    ;;
+                } else {
+                    res += ((x - y) - (prev.first - prev.second)) / 2;
+                }
+            } else {
+                res += ((x - y) - (prev.first - prev.second) + 1) / 2;
+            }
+        } else {
+            if ((x - y) % 2 == 0) {
+                if (prev.first - prev.second == x - y) {
+                    res += x - prev.first;
+                } else {
+                    res += ((x - y) - (prev.first - prev.second)) / 2;
+                }
+            } else {
+                res += ((x - y) - (prev.first - prev.second)) / 2;
+            }
         }
-        curr += p[i] * a[i];
+
+        prev = { x, y };
     }
 
-    while (q--) {
-        read(int, i, x);
-        --i;
-        curr += p[i] * (x - a[i]);
-        a[i] = x;
-
-        cout << curr << '\n';
-    }
-
+    cout << res << '\n';
 }
 
 int main() {

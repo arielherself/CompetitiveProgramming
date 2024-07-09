@@ -468,42 +468,34 @@ void prep() {
 }
 
 void solve() {
-    using mll = MLL<MDL>;
+    read(int, n);
 
-    read(int, n, k, q);
-    readvec(int, a, n);
+    constexpr int N = 2e5 + 20;
+    using mll = MLL<PRIME>;
 
-    vector dp(k + 3, vector<mll>(n));
-    dp[1].assign(n, mll(1));
-    for (int i = 2; i < k + 3; ++i) {
-        for (int j = 0; j < n; ++j) {
-            if (j - 1 >= 0) {
-                dp[i][j] += dp[i - 1][j - 1];
-            }
-            if (j + 1 < n) {
-                dp[i][j] += dp[i - 1][j + 1];
-            }
-        }
-    }
-
-    vector<mll> p(n);
-    mll curr = 0;
+    vector<int> a(N);
     for (int i = 0; i < n; ++i) {
-        for (int j = 1; j <= k + 1; ++j) {
-            p[i] += dp[j][i] * dp[k + 2 - j][i];
+        read(int, x);
+        a[x] += 1;
+    }
+
+    vector<mll> ss = { 1 };
+    for (int i = 1; i < N; ++i) {
+        int k = (ss.size() - 1 + a[i - 1]) / 2;
+        vector<mll> curr(k + 1);
+        for (int j = 0; j <= k; ++j) {
+            curr[j] = ss[max(0, 2 * j - a[i - 1])];
         }
-        curr += p[i] * a[i];
+
+        vector<mll> t(k + 1);
+        for (int j = k; ~j; --j) {
+            t[j] = (j == k ? 0 : t[j + 1]) + curr[j];
+        }
+
+        ss = t;
     }
 
-    while (q--) {
-        read(int, i, x);
-        --i;
-        curr += p[i] * (x - a[i]);
-        a[i] = x;
-
-        cout << curr << '\n';
-    }
-
+    cout << ss[0] << endl;
 }
 
 int main() {

@@ -468,42 +468,53 @@ void prep() {
 }
 
 void solve() {
-    using mll = MLL<MDL>;
+    read(int, n, m);
+    read(ll, k);
+    int l = 2 * max(n, m);
+    vector<pii> a(l + 1, { -1, -1 });
 
-    read(int, n, k, q);
-    readvec(int, a, n);
-
-    vector dp(k + 3, vector<mll>(n));
-    dp[1].assign(n, mll(1));
-    for (int i = 2; i < k + 3; ++i) {
-        for (int j = 0; j < n; ++j) {
-            if (j - 1 >= 0) {
-                dp[i][j] += dp[i - 1][j - 1];
-            }
-            if (j + 1 < n) {
-                dp[i][j] += dp[i - 1][j + 1];
-            }
-        }
-    }
-
-    vector<mll> p(n);
-    mll curr = 0;
     for (int i = 0; i < n; ++i) {
-        for (int j = 1; j <= k + 1; ++j) {
-            p[i] += dp[j][i] * dp[k + 2 - j][i];
+        read(int, x);
+        a[x].first = i + 1;
+    }
+
+    for (int i = 0; i < m; ++i) {
+        read(int, x);
+        a[x].second = i + 1;
+    }
+
+    auto work = [&] (ll tm) -> ll {
+        ll ret = 0;
+        for (int i = 1; i <= l; ++i) {
+            if (a[i].first != -1 and a[i].second != -1) {
+                ll first;
+                if (m > n) {
+                    first = mod(a[i].first - a[i].second, m - n);
+                } else if (n > m) {
+                    first = mod(a[i].second - a[i].first, n - m);
+                } else {
+                    if (a[i].first != a[i].second) {
+                        ;;
+                    } else {
+                        ret += 1 + (tm < a[i].first ? -1 : (tm - a[i].first) / n);
+                    }
+                }
+            }
         }
-        curr += p[i] * a[i];
+        return tm - ret;
+    };
+
+    ll left = 1, right = INFLL;
+    while (left < right) {
+        ll mid = left + right >> 1;
+        if (work(mid) < k) {
+            left = mid + 1;
+        } else {
+            right = mid;
+        }
     }
 
-    while (q--) {
-        read(int, i, x);
-        --i;
-        curr += p[i] * (x - a[i]);
-        a[i] = x;
-
-        cout << curr << '\n';
-    }
-
+    cout << left << endl;
 }
 
 int main() {

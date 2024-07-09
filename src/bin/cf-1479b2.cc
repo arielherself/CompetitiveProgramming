@@ -468,42 +468,25 @@ void prep() {
 }
 
 void solve() {
-    using mll = MLL<MDL>;
+    read(int, N);
+    readvec(int, a, N);
 
-    read(int, n, k, q);
-    readvec(int, a, n);
+    int n = unique(a.begin(), a.end()) - a.begin();
 
-    vector dp(k + 3, vector<mll>(n));
-    dp[1].assign(n, mll(1));
-    for (int i = 2; i < k + 3; ++i) {
-        for (int j = 0; j < n; ++j) {
-            if (j - 1 >= 0) {
-                dp[i][j] += dp[i - 1][j - 1];
-            }
-            if (j + 1 < n) {
-                dp[i][j] += dp[i - 1][j + 1];
-            }
+    vector<int> oc(N + 1, -1);
+    vector<int> dp(n + 1);
+    int res = INF;
+    for (int i = 1; i <= n; ++i) {
+        dp[i] = dp[i - 1] + 1;
+        int prev = oc[a[i - 1]];
+        if (prev != -1) {
+            chmin(dp[i], dp[prev + 1] + i - 1 - prev - 1);
         }
+        chmin(res, dp[i] + n - i);
+        oc[a[i - 1]] = i;
     }
 
-    vector<mll> p(n);
-    mll curr = 0;
-    for (int i = 0; i < n; ++i) {
-        for (int j = 1; j <= k + 1; ++j) {
-            p[i] += dp[j][i] * dp[k + 2 - j][i];
-        }
-        curr += p[i] * a[i];
-    }
-
-    while (q--) {
-        read(int, i, x);
-        --i;
-        curr += p[i] * (x - a[i]);
-        a[i] = x;
-
-        cout << curr << '\n';
-    }
-
+    cout << res << endl;
 }
 
 int main() {

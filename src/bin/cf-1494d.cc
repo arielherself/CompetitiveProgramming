@@ -468,42 +468,97 @@ void prep() {
 }
 
 void solve() {
-    using mll = MLL<MDL>;
+    read(int, n);
+    vector<vector<int>> child(n);
+    vector<int> val(n);
+    vector<bool> vis(n);
+    vector a(n, vector<int>(n));
 
-    read(int, n, k, q);
-    readvec(int, a, n);
-
-    vector dp(k + 3, vector<mll>(n));
-    dp[1].assign(n, mll(1));
-    for (int i = 2; i < k + 3; ++i) {
-        for (int j = 0; j < n; ++j) {
-            if (j - 1 >= 0) {
-                dp[i][j] += dp[i - 1][j - 1];
-            }
-            if (j + 1 < n) {
-                dp[i][j] += dp[i - 1][j + 1];
-            }
-        }
-    }
-
-    vector<mll> p(n);
-    mll curr = 0;
     for (int i = 0; i < n; ++i) {
-        for (int j = 1; j <= k + 1; ++j) {
-            p[i] += dp[j][i] * dp[k + 2 - j][i];
+        for (int j = 0; j < n; ++j) {
+            cin >> a[i][j];
+
+            if (i == j) {
+                val[i] = a[i][j];
+            }
         }
-        curr += p[i] * a[i];
     }
 
-    while (q--) {
-        read(int, i, x);
-        --i;
-        curr += p[i] * (x - a[i]);
-        a[i] = x;
+    unordered_map<pii, int, pair_hash> cache;
+    auto query = [&] (auto query, int u, int v) -> int {
+        if (not cache.count(minmax(u, v))) {
+            if (child[u].size()) {
+                cache[minmax(u, v)] = query(query, child[u][0], v);
+            } else if (child[v].size()) {
+                cache[minmax(u, v)] = query(query, u, child[v][0]);
+            } else {
+                cache[minmax(u, v)] = a[u][v];
+            }
+        }
+        return cache[minmax(u, v)];
+    };
 
-        cout << curr << '\n';
+    set<pii> st;
+    for (int i = 0; i < n; ++i) {
+        int mn = INF;
+        for (int j = 0; j < n; ++j) {
+            if (i == j) continue;
+            chmin(mn, query(query, i, j));
+        }
+        st.emplace(mn, i);
     }
 
+    vector<int> curr(n);
+    iota(curr.begin(), curr.end(), 0);
+    while (curr.size() > 1) {
+        auto [dis, i] = *st.begin();
+
+        vector<int> nxt;
+
+            vector<int> grp = { i };
+            vis[i] = 1;
+            for (auto&& j : curr) {
+                if (query(query, i, j) == dis) {
+                    vis[j] = true;
+                    grp.emplace_back(j);
+                }
+            }
+                int u = child.size();
+                child.emplace_back(grp);
+                val.emplace_back(dis);
+                nxt.emplace_back(u);
+                vis.emplace_back(0);
+
+                for (auto&& j : curr) {
+                    if (not vis[j]) {
+                        nxt.emplace_back(j);
+                    }
+                }
+
+        for (auto&& j : grp) {
+            st.erase({ dis, j });
+        }
+        int nxt_dis = INF;
+        for (auto&& j : nxt) {
+            if (j != u) {
+                chmin(nxt_dis, query(query, u, j));
+            }
+        }
+        st.emplace(nxt_dis, u);
+
+        swap(curr, nxt);
+    }
+
+    int m = child.size();
+    cout << m << '\n';
+    for (auto&& x : val) cout << x << ' ';
+    cout << '\n';
+    cout << m << '\n';
+    for (int i = 0; i < m; ++i) {
+        for (auto&& j : child[i]) {
+            cout << j + 1 << ' ' << i + 1 << '\n';
+        }
+    }
 }
 
 int main() {

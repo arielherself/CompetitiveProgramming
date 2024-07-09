@@ -456,54 +456,82 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
-// #define DUMP_TEST_CASE 7219
-// #define TOT_TEST_CASE 10000
+// #define SINGLE_TEST_CASE
+#define DUMP_TEST_CASE 9003
+#define TOT_TEST_CASE 10000
 
-void dump() {}
+void dump() {
+    read(int, n, m);
+    cout << n << ' ' << m << '\n';
+    for (int i = 0; i < n; ++i) {
+        read(string, s);
+        cout << s << '\n';
+    }
+}
 
-void dump_ignore() {}
+void dump_ignore() {
+    read(int, n, m);
+    // cout << n << ' ' << m << '\n';
+    for (int i = 0; i < n; ++i) {
+        read(string, s);
+        // cout << s << '\n';
+    }
+}
 
 void prep() {
 }
 
 void solve() {
-    using mll = MLL<MDL>;
-
-    read(int, n, k, q);
-    readvec(int, a, n);
-
-    vector dp(k + 3, vector<mll>(n));
-    dp[1].assign(n, mll(1));
-    for (int i = 2; i < k + 3; ++i) {
-        for (int j = 0; j < n; ++j) {
-            if (j - 1 >= 0) {
-                dp[i][j] += dp[i - 1][j - 1];
-            }
-            if (j + 1 < n) {
-                dp[i][j] += dp[i - 1][j + 1];
-            }
-        }
-    }
-
-    vector<mll> p(n);
-    mll curr = 0;
+    read(int, n, m);
+    vector<vector<int>> a(n);
     for (int i = 0; i < n; ++i) {
-        for (int j = 1; j <= k + 1; ++j) {
-            p[i] += dp[j][i] * dp[k + 2 - j][i];
+        for (int j = 0; j < m; ++j) {
+            read(char, c);
+            if (c == 'X') {
+                a[i].emplace_back(j);
+            }
         }
-        curr += p[i] * a[i];
     }
 
-    while (q--) {
-        read(int, i, x);
-        --i;
-        curr += p[i] * (x - a[i]);
-        a[i] = x;
+    vector b(n, vector<int>(m));
+    set<int> dp = { 0 };
 
-        cout << curr << '\n';
+    for (int i = 0; i < n; ++i) {
+        set<int> curr;
+        unordered_map<int, int, safe_hash> last;
+        for (auto&& j : a[i]) {
+            auto it = dp.upper_bound(j);
+            if (it == dp.begin()) {
+                if (not last.count(*it)) {
+                    for (int k = j; k <= *it; ++k) {
+                        b[i][k] = 1;
+                        curr.emplace(k);
+                    }
+                    last[*it] = *it + 1;
+                }
+            } else {
+                --it;
+                int start = last.count(*it) ? last[*it] : *it;
+                for (int k = start; k <= j; ++k) {
+                    b[i][k] = 1;
+                    curr.emplace(k);
+                }
+                last[*it] = j + 1;
+            }
+        }
+
+        curr.emplace(0);
+        b[i][0] = 1;
+        dp = curr;
     }
 
+
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            cout << (b[i][j] ? 'X' : '.');
+        }
+        cout << '\n';
+    }
 }
 
 int main() {

@@ -468,42 +468,64 @@ void prep() {
 }
 
 void solve() {
-    using mll = MLL<MDL>;
+    read(int, n);
+    readvec1(int, k, n);
+    vector<int> mp(n + 1);
+    iota(mp.begin(), mp.end(), 0);
 
-    read(int, n, k, q);
-    readvec(int, a, n);
+    while (n > 1 and (count(k.begin() + 1, k.end(), 0) != 0 or count(k.begin() + 1, k.end(), n - 1) != 0)) {
+        vector<int> new_k(n);
+        vector<int> new_mp(n);
 
-    vector dp(k + 3, vector<mll>(n));
-    dp[1].assign(n, mll(1));
-    for (int i = 2; i < k + 3; ++i) {
-        for (int j = 0; j < n; ++j) {
-            if (j - 1 >= 0) {
-                dp[i][j] += dp[i - 1][j - 1];
+        int target = -1;
+        for (int i = 1; i <= n; ++i) {
+            if (k[i] == 0 or k[i] == n - 1) {
+                target = i;
+                break;
             }
-            if (j + 1 < n) {
-                dp[i][j] += dp[i - 1][j + 1];
+        }
+
+        int cnt = 1;
+        for (int i = 1; i <= n; ++i) {
+            if (i != target) {
+                if (k[target] == 0) {
+                    new_k[cnt] = k[i] - 1;
+                } else {
+                    new_k[cnt] = k[i];
+                }
+                new_mp[cnt++] = mp[i];
             }
+        }
+
+        swap(k, new_k);
+        swap(mp, new_mp);
+        n -= 1;
+    }
+
+    if (n == 1) {
+        cout << "! 0 0" << endl;
+        return;
+    }
+
+    vector<pii> q;
+    for (int i = 1; i <= n; ++i) {
+        for (int j = i + 1; j <= n; ++j) {
+            q.emplace_back(i, j);
         }
     }
 
-    vector<mll> p(n);
-    mll curr = 0;
-    for (int i = 0; i < n; ++i) {
-        for (int j = 1; j <= k + 1; ++j) {
-            p[i] += dp[j][i] * dp[k + 2 - j][i];
+    sort_by_key(q.begin(), q.end(), [&] (const pii& x) { return -abs(k[x.first] - k[x.second]); });
+
+    for (auto&& [x, y] : q) {
+        cout << "? " << mp[x] << ' ' << mp[y] << endl;
+        read(string, s);
+        if (s == "Yes") {
+            cout << "! " << mp[x] << ' ' << mp[y] << endl;
+            return;
         }
-        curr += p[i] * a[i];
     }
 
-    while (q--) {
-        read(int, i, x);
-        --i;
-        curr += p[i] * (x - a[i]);
-        a[i] = x;
-
-        cout << curr << '\n';
-    }
-
+    cout << "! 0 0" << endl;
 }
 
 int main() {

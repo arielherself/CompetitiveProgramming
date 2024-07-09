@@ -468,42 +468,58 @@ void prep() {
 }
 
 void solve() {
-    using mll = MLL<MDL>;
-
-    read(int, n, k, q);
-    readvec(int, a, n);
-
-    vector dp(k + 3, vector<mll>(n));
-    dp[1].assign(n, mll(1));
-    for (int i = 2; i < k + 3; ++i) {
-        for (int j = 0; j < n; ++j) {
-            if (j - 1 >= 0) {
-                dp[i][j] += dp[i - 1][j - 1];
-            }
-            if (j + 1 < n) {
-                dp[i][j] += dp[i - 1][j + 1];
-            }
-        }
-    }
-
-    vector<mll> p(n);
-    mll curr = 0;
+    read(int, n);
+    vector<int> a(n), cnt(5), cnt_ps(5);
     for (int i = 0; i < n; ++i) {
-        for (int j = 1; j <= k + 1; ++j) {
-            p[i] += dp[j][i] * dp[k + 2 - j][i];
-        }
-        curr += p[i] * a[i];
-    }
-
-    while (q--) {
-        read(int, i, x);
-        --i;
-        curr += p[i] * (x - a[i]);
+        read(int, x);
         a[i] = x;
-
-        cout << curr << '\n';
+        cnt[x] += 1;
     }
 
+    for (int i = 1; i <= 4; ++i) {
+        cnt_ps[i] = cnt_ps[i - 1] + cnt[i];
+    }
+
+    auto get = [&] (int i) -> int {
+        if (i >= cnt_ps[3]) return 4;
+        if (i >= cnt_ps[2]) return 3;
+        if (i >= cnt_ps[1]) return 2;
+        return 1;
+    };
+
+    int res = 0;
+    for (int i = 1; i <= 4; ++i) {
+        array<int, 5> bk = {};
+        for (int j = cnt_ps[i - 1]; j < cnt_ps[i]; ++j) {
+            if (a[j] == i) continue;
+            bk[a[j]] += 1;
+        }
+
+        for (int j = cnt_ps[i]; j < n; ++j) {
+            if (a[j] == i and bk[get(j)] > 0) {
+                bk[get(j)] -= 1;
+                a[j] = get(j);
+                ++res;
+            }
+        }
+
+        for (int j = cnt_ps[i]; j < n; ++j) {
+            if (a[j] == i) {
+                for (int k = 1; k <= 4; ++k) {
+                    if (bk[k] > 0) {
+                        bk[k] -= 1;
+                        a[j] = k;
+                        ++res;
+                        break;
+                    }
+                }
+            }
+        }
+
+        // debug(a);
+    }
+
+    cout << res << endl;
 }
 
 int main() {

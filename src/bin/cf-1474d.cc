@@ -456,7 +456,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -468,42 +468,41 @@ void prep() {
 }
 
 void solve() {
-    using mll = MLL<MDL>;
+    read(int, n);
+    readvec(ll, a, n);
+    vector<ll> b(n);
+    b[0] = a[0];
+    for (int i = 1; i < n; ++i) {
+        b[i] = a[i] - b[i - 1];
+    }
 
-    read(int, n, k, q);
-    readvec(int, a, n);
+    auto ss_min = initarray(vector<ll>(n + 1, INFLL), 2);
+    for (int i = n - 1; ~i; --i) {
+        for (int j = 0; j < 2; ++j) {
+            ss_min[j][i] = ss_min[j][i + 1];
+        }
+        chmin(ss_min[i & 1][i], b[i]);
+    }
 
-    vector dp(k + 3, vector<mll>(n));
-    dp[1].assign(n, mll(1));
-    for (int i = 2; i < k + 3; ++i) {
-        for (int j = 0; j < n; ++j) {
-            if (j - 1 >= 0) {
-                dp[i][j] += dp[i - 1][j - 1];
-            }
-            if (j + 1 < n) {
-                dp[i][j] += dp[i - 1][j + 1];
-            }
+
+    if (min(ss_min[0][0], ss_min[1][0]) == 0 and b[n - 1] == 0) {
+        cout << "YES\n";
+        return;
+    }
+
+    for (int i = 0; i < n - 1; ++i) {
+        ll odd_new = ss_min[(i + 1) & 1][i + 1] + 2 * (a[i] - a[i + 1]);
+        ll even_new = ss_min[(i + 2) & 1][i + 2] - 2 * (a[i] - a[i + 1]);
+        if (b[i] - a[i] + a[i + 1] >= 0 and odd_new >= 0 and (i + 2 == n or even_new >= 0) and (odd_new == 0 or (i + 2 < n and even_new == 0)) and b[n - 1] + (((n - 1) & 1) == ((i + 1) & 1) ? +1 : -1) * 2 * (a[i] - a[i + 1]) == 0) {
+            cout << "YES\n";
+            return;
+        }
+        if (b[i] < 0) {
+            break;
         }
     }
 
-    vector<mll> p(n);
-    mll curr = 0;
-    for (int i = 0; i < n; ++i) {
-        for (int j = 1; j <= k + 1; ++j) {
-            p[i] += dp[j][i] * dp[k + 2 - j][i];
-        }
-        curr += p[i] * a[i];
-    }
-
-    while (q--) {
-        read(int, i, x);
-        --i;
-        curr += p[i] * (x - a[i]);
-        a[i] = x;
-
-        cout << curr << '\n';
-    }
-
+    cout << "NO\n";
 }
 
 int main() {

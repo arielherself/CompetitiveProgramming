@@ -464,46 +464,64 @@ void dump() {}
 
 void dump_ignore() {}
 
+using mll = MLL<PRIME>;
+constexpr int N = 3e5 + 10;
+mll pw[N];
+
 void prep() {
+    pw[0] = 1;
+    for (int i = 1; i < N; ++i) {
+        pw[i] = pw[i - 1] * 2;
+    }
 }
 
 void solve() {
-    using mll = MLL<MDL>;
-
-    read(int, n, k, q);
-    readvec(int, a, n);
-
-    vector dp(k + 3, vector<mll>(n));
-    dp[1].assign(n, mll(1));
-    for (int i = 2; i < k + 3; ++i) {
-        for (int j = 0; j < n; ++j) {
-            if (j - 1 >= 0) {
-                dp[i][j] += dp[i - 1][j - 1];
-            }
-            if (j + 1 < n) {
-                dp[i][j] += dp[i - 1][j + 1];
-            }
-        }
-    }
-
-    vector<mll> p(n);
-    mll curr = 0;
+    read(int, n, m);
+    vector a(n, vector<int>(m));
+    int tot = 0;
     for (int i = 0; i < n; ++i) {
-        for (int j = 1; j <= k + 1; ++j) {
-            p[i] += dp[j][i] * dp[k + 2 - j][i];
+        for (int j = 0; j < m; ++j) {
+            read(char, c);
+            a[i][j] = c == 'o';
+            tot += a[i][j];
         }
-        curr += p[i] * a[i];
     }
 
-    while (q--) {
-        read(int, i, x);
-        --i;
-        curr += p[i] * (x - a[i]);
-        a[i] = x;
+    mll res = 0;
 
-        cout << curr << '\n';
+    // process horizontal dominoes.
+    for (int i = 0; i < n; ++i) {
+        int prev = -1;
+        for (int j = 0; j < m; ++j) {
+            if (a[i][j] == 0) {
+                prev = j;
+            } else {
+                int l = j - prev;
+                res += pw[tot - 1] * (1 - mll(1) / pw[(l - 1) / 2 * 2]) / 3;
+                if (l % 2 == 0) {
+                    res += pw[tot - l];
+                }
+            }
+        }
     }
 
+    // process vertical dominoes.
+    for (int j = 0; j < m; ++j) {
+        int prev = -1;
+        for (int i = 0; i < n; ++i) {
+            if (a[i][j] == 0) {
+                prev = i;
+            } else {
+                int l = i - prev;
+                res += pw[tot - 1] * (1 - mll(1) / pw[(l - 1) / 2 * 2]) / 3;
+                if (l % 2 == 0) {
+                    res += pw[tot - l];
+                }
+            }
+        }
+    }
+
+    cout << res << endl;
 }
 
 int main() {

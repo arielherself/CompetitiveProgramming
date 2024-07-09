@@ -363,11 +363,11 @@ template <ll mdl> struct MLL {
     friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
     friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
     friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
-    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
-    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
-    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
-    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
-    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
+    MLL& operator+=(const MLL& rhs) { return val = (*this + rhs).val; }
+    MLL& operator-=(const MLL& rhs) { return val = (*this - rhs).val; }
+    MLL& operator*=(const MLL& rhs) { return val = (*this * rhs).val; }
+    MLL& operator/=(const MLL& rhs) { return val = (*this / rhs).val; }
+    MLL& operator%=(const MLL& rhs) { return val = (*this % rhs).val; }
 };
 
 template <ll mdl>
@@ -467,43 +467,39 @@ void dump_ignore() {}
 void prep() {
 }
 
+template <typename T> struct fractional {
+    T x, y;
+    fractional() : x(0), y(1) {}
+    fractional(const T& x) : x(x), y(1) {}
+    fractional(const T& x, const T& y) : x(x), y(y) {}
+    void condense() {
+        if (x == 0) {
+            y = 1;
+        } else {
+            auto g = gcd(x, y); x /= g; y /= g;
+        }
+    }
+    friend fractional operator+(const fractional& lhs, const fractional& rhs) { return fractional(lhs.x * rhs.y + lhs.y * rhs.x, lhs.y * rhs.y); }
+    friend fractional operator-(const fractional& lhs, const fractional& rhs) { return fractional(lhs.x * rhs.y - lhs.y * rhs.x, lhs.y * rhs.y); }
+    friend fractional operator*(const fractional& lhs, const fractional& rhs) { return fractional(lhs.x * rhs.x, lhs.y * rhs.y); }
+    friend fractional operator/(const fractional& lhs, const fractional& rhs) { return fractional(lhs.x * rhs.y, lhs.y * rhs.x); }
+    fractional& operator+=(const fractional& rhs) { return *this = *this + rhs; }
+    fractional& operator-=(const fractional& rhs) { return *this = *this - rhs; }
+    fractional& operator*=(const fractional& rhs) { return *this = *this * rhs; }
+    fractional& operator/=(const fractional& rhs) { return *this = *this / rhs; }
+    bool operator==(fractional& rhs) { this->condense(), rhs.condense(); return x == rhs.x and y == rhs.y; }
+    bool operator!=(fractional& rhs) { return not (*this == rhs); }
+    bool operator<(fractional& rhs) { this->condense(), rhs.condense(); return x * rhs.y < y * rhs.x; }
+    bool operator>(fractional& rhs) { return rhs < *this; }
+    bool operator<=(fractional& rhs) { return not (*this > rhs); }
+    bool operator>=(fractional& rhs) { return not (*this < rhs); }
+    ld to_double() const { return (ld)x / y; }
+};
+
 void solve() {
-    using mll = MLL<MDL>;
-
-    read(int, n, k, q);
-    readvec(int, a, n);
-
-    vector dp(k + 3, vector<mll>(n));
-    dp[1].assign(n, mll(1));
-    for (int i = 2; i < k + 3; ++i) {
-        for (int j = 0; j < n; ++j) {
-            if (j - 1 >= 0) {
-                dp[i][j] += dp[i - 1][j - 1];
-            }
-            if (j + 1 < n) {
-                dp[i][j] += dp[i - 1][j + 1];
-            }
-        }
-    }
-
-    vector<mll> p(n);
-    mll curr = 0;
-    for (int i = 0; i < n; ++i) {
-        for (int j = 1; j <= k + 1; ++j) {
-            p[i] += dp[j][i] * dp[k + 2 - j][i];
-        }
-        curr += p[i] * a[i];
-    }
-
-    while (q--) {
-        read(int, i, x);
-        --i;
-        curr += p[i] * (x - a[i]);
-        a[i] = x;
-
-        cout << curr << '\n';
-    }
-
+    read(int, n);
+    readvec(pii, a, n);
+    
 }
 
 int main() {

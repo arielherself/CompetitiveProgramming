@@ -456,7 +456,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -468,42 +468,60 @@ void prep() {
 }
 
 void solve() {
-    using mll = MLL<MDL>;
+    read(int, n);
+    adj(ch, n);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
+    }
 
-    read(int, n, k, q);
-    readvec(int, a, n);
+    vector<int> a(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        read(char, c);
+        a[i] = c == 'B';
+    }
 
-    vector dp(k + 3, vector<mll>(n));
-    dp[1].assign(n, mll(1));
-    for (int i = 2; i < k + 3; ++i) {
-        for (int j = 0; j < n; ++j) {
-            if (j - 1 >= 0) {
-                dp[i][j] += dp[i - 1][j - 1];
+    vector<vector<int>> layers(n + 1);
+    vector<int> father(n + 1);
+    auto dfs = [&] (auto dfs, int v, int pa, int l) -> void {
+        father[v] = pa;
+        layers[l].emplace_back(v);
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            dfs(dfs, u, v, l + 1);
+        }
+    };
+    dfs(dfs, 1, 0, 0);
+
+    vector<int> res(n + 1, -1);
+    for (int l = n; ~l; --l) {
+        for (auto&& v : layers[l]) {
+            array<int, 2> cnt = {};
+            for (auto&& u : ch[v]) {
+                if (u == father[v]) continue;
+                if (res[u] != (1 ^ a[v])) {
+                    res[u] = a[v];
+                    cnt[a[v]] += 1;
+                } else {
+                    cnt[1 ^ a[v]] += 1;
+                }
             }
-            if (j + 1 < n) {
-                dp[i][j] += dp[i - 1][j + 1];
+
+            if (cnt[a[v]] > cnt[1 ^ a[v]]) {
+                ;;
+            } else if (cnt[a[v]] == cnt[1 ^ a[v]] and father[v] != 0 and res[father[v]] != (1 ^ a[v])) {
+                res[father[v]] = a[v];
+            } else {
+                cout << -1 << '\n';
+                return;
             }
         }
     }
 
-    vector<mll> p(n);
-    mll curr = 0;
-    for (int i = 0; i < n; ++i) {
-        for (int j = 1; j <= k + 1; ++j) {
-            p[i] += dp[j][i] * dp[k + 2 - j][i];
-        }
-        curr += p[i] * a[i];
+    for (int i = 1; i <= n; ++i) {
+        cout << (res[i] ? 'B' : 'W');
     }
-
-    while (q--) {
-        read(int, i, x);
-        --i;
-        curr += p[i] * (x - a[i]);
-        a[i] = x;
-
-        cout << curr << '\n';
-    }
-
+    cout << '\n';
 }
 
 int main() {

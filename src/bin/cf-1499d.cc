@@ -456,7 +456,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -464,46 +464,56 @@ void dump() {}
 
 void dump_ignore() {}
 
+vector<int> soe(int n) {
+    vector<bool> not_prime(n + 1);
+    vector<int> primes;
+    vector<int> res(n + 1);
+    for (int i = 2; i <= n; ++i) {
+        if (not not_prime[i]) {
+            primes.emplace_back(i);
+            res[i] = 1;
+        }
+        for (auto&& x : primes) {
+            if (i * x > n) break;
+            not_prime[i * x] = 1;
+            if (i % x == 0) {
+                res[i * x] = res[i];
+                break;
+            }
+            res[i * x] = res[i] + 1;
+        }
+    }
+    return res;
+}
+
+constexpr int N = 2e7 + 5;
+vector<int> cnt;
+
 void prep() {
+    cnt = soe(N);
 }
 
 void solve() {
-    using mll = MLL<MDL>;
+    read(int, c, d, x);
 
-    read(int, n, k, q);
-    readvec(int, a, n);
-
-    vector dp(k + 3, vector<mll>(n));
-    dp[1].assign(n, mll(1));
-    for (int i = 2; i < k + 3; ++i) {
-        for (int j = 0; j < n; ++j) {
-            if (j - 1 >= 0) {
-                dp[i][j] += dp[i - 1][j - 1];
+    auto get = [&] (int x) -> int {
+        if (x == 1) return 1;
+        return 1 << cnt[x];
+    };
+    ll res = 0;
+    int sq = sqrt(x);
+    for (int i = 1; i <= sq; ++i) {
+        if (x % i == 0) {
+            if ((d + x / i) % c == 0) {
+                res += get((d + x / i) / c);
             }
-            if (j + 1 < n) {
-                dp[i][j] += dp[i - 1][j + 1];
+            if (i != x / i and (d + i) % c == 0) {
+                res += get((d + i) / c);
             }
         }
     }
 
-    vector<mll> p(n);
-    mll curr = 0;
-    for (int i = 0; i < n; ++i) {
-        for (int j = 1; j <= k + 1; ++j) {
-            p[i] += dp[j][i] * dp[k + 2 - j][i];
-        }
-        curr += p[i] * a[i];
-    }
-
-    while (q--) {
-        read(int, i, x);
-        --i;
-        curr += p[i] * (x - a[i]);
-        a[i] = x;
-
-        cout << curr << '\n';
-    }
-
+    cout << res << '\n';
 }
 
 int main() {
