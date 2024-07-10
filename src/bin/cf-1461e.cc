@@ -456,7 +456,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -468,57 +468,46 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
-    }
+    read(ll, k, l, r, t, x, y);
 
-    auto dfs = [&] (auto dfs, int v, int pa) -> pii {
-        int sols = 0;
-        int rets_mn = INF, rets_mx = -INF;
-        for (auto&& u : ch[v]) {
-            if (u == pa) continue;
-            auto [x, y] = dfs(dfs, u, v);
-            chmin(rets_mn, x);
-            chmax(rets_mx, x);
-            chmax(sols, y);
-        }
-
-        int child = ch[v].size() - 1;
-
-        if (child == 0) {
-            return { 0, 0 };
-        } else if (child == 1) {
-            return { rets_mn + 1, sols };
+    if (x > y) {
+        ll p = (k + y - r + x - 1) / x;
+        if (p > t) {
+            if (k - int128(1) * x * t < l) {
+                cout << "No\n";
+            } else {
+                cout << "Yes\n";
+            }
         } else {
-            return { rets_mn + 1, max(rets_mx + 2, sols) };
+            k -= int128(1) * x * p;
+            t -= p;
+            if (k - int128(1) * t * (x - y) < l) {
+                cout << "No\n";
+            } else {
+                cout << "Yes\n";
+            }
         }
-    };
-
-    unordered_map<int, int, safe_hash> mpr;
-    multiset<int> rets;
-    int sols = 0;
-    for (auto&& u : ch[1]) {
-        auto [x, y] = dfs(dfs, u, 1);
-        mpr[u] = x;
-        rets.emplace(x);
-        chmax(sols, y);
+        return;
     }
 
-    if (ch[1].size() == 1) {
-        cout << max(*rets.begin() + 1, sols) << '\n';
-    } else {
-        int res = INF;
-        for (auto&& u : ch[1]) {
-            rets.erase(rets.lower_bound(mpr[u]));
-            chmin(res, max(mpr[u] + 1, max(*rets.rbegin() + 2, sols)));
-            rets.emplace(mpr[u]);
+    ll init = (k - l) / x;
+    k -= init * x;
+    t -= init;
+    vector<bool> vis(x);
+    for (; t > 0; ) {
+        k += y;
+        if (k > r or k - x < l) {
+            cout << "No\n";
+            return;
         }
-
-        cout << res << '\n';
+        ll go = (k - l) / x;
+        k -= go * x;
+        t -= go;
+        if (vis[k - l]) break;
+        vis[k - l] = 1;
     }
+
+    cout << "Yes\n";
 }
 
 int main() {

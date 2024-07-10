@@ -468,56 +468,40 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(int, m, n);
+
+    map<int, int> a;
+    for (int i = 0; i < n; ++i) {
+        read(int, x, y);
+        a[y] |= 1 << x - 1;
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) -> pii {
-        int sols = 0;
-        int rets_mn = INF, rets_mx = -INF;
-        for (auto&& u : ch[v]) {
-            if (u == pa) continue;
-            auto [x, y] = dfs(dfs, u, v);
-            chmin(rets_mn, x);
-            chmax(rets_mx, x);
-            chmax(sols, y);
+    a.emplace(m + 1, 3);
+
+
+    array<int, 4> dp = { 0, 0, 0, 1 };
+    int prev = -1;
+    for (auto&& [i, mask] : a) {
+        array<int, 4> ndp = {};
+
+        if (mask == 1) {
+            if (dp[2] and (i - prev) % 2 == 0 or dp[1] and (i - prev) % 2 == 1) ndp[3] = 1;
+            if (dp[3]) ndp[1] = 1;
+        } else if (mask == 2) {
+            if (dp[1] and (i - prev) % 2 == 0 or dp[2] and (i - prev) % 2 == 1) ndp[3] = 1;
+            if (dp[3]) ndp[2] = 1;
+        } else if (mask == 3) {
+            if (dp[3]) ndp[3] = 1;
         }
 
-        int child = ch[v].size() - 1;
-
-        if (child == 0) {
-            return { 0, 0 };
-        } else if (child == 1) {
-            return { rets_mn + 1, sols };
-        } else {
-            return { rets_mn + 1, max(rets_mx + 2, sols) };
-        }
-    };
-
-    unordered_map<int, int, safe_hash> mpr;
-    multiset<int> rets;
-    int sols = 0;
-    for (auto&& u : ch[1]) {
-        auto [x, y] = dfs(dfs, u, 1);
-        mpr[u] = x;
-        rets.emplace(x);
-        chmax(sols, y);
+        prev = i;
+        dp = ndp;
     }
 
-    if (ch[1].size() == 1) {
-        cout << max(*rets.begin() + 1, sols) << '\n';
+    if (dp[3]) {
+        cout << "YES\n";
     } else {
-        int res = INF;
-        for (auto&& u : ch[1]) {
-            rets.erase(rets.lower_bound(mpr[u]));
-            chmin(res, max(mpr[u] + 1, max(*rets.rbegin() + 2, sols)));
-            rets.emplace(mpr[u]);
-        }
-
-        cout << res << '\n';
+        cout << "NO\n";
     }
 }
 

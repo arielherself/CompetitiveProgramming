@@ -226,8 +226,8 @@ template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __
 #define read(type, ...) __AS_PROCEDURE(type __VA_ARGS__; __read(__VA_ARGS__);)
 #define readvec(type, a, n) __AS_PROCEDURE(vector<type> a(n); for (auto& x : a) cin >> x;)
 #define readvec1(type, a, n) __AS_PROCEDURE(vector<type> a((n) + 1); copy_n(ii<type>(cin), (n), a.begin() + 1);)
-#define putvec(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
-#define putvec1(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
+#define putvec(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << '\n';)
+#define putvec1(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << '\n';)
 #define putvec_eol(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
 #define putvec1_eol(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
 #define debug(x) __AS_PROCEDURE(cerr << #x" = " << (x) << endl;)
@@ -467,57 +467,64 @@ void dump_ignore() {}
 void prep() {
 }
 
+class quick_union {
+private:
+    vector<size_t> c, sz;
+public:
+    quick_union(size_t n) : c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
+    }
+    
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] += sz[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_size(size_t i) {
+        return sz[query(i)];
+    }
+};
+
 void solve() {
-    read(int, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
+    read(int, n, m);
+
+    vector<pii> edges;
+    while (m--) {
         read(int, u, v);
-        edge(ch, u, v);
+
+        edges.emplace_back(u, n + v);
+        edges.emplace_back(v, n + u);
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) -> pii {
-        int sols = 0;
-        int rets_mn = INF, rets_mx = -INF;
-        for (auto&& u : ch[v]) {
-            if (u == pa) continue;
-            auto [x, y] = dfs(dfs, u, v);
-            chmin(rets_mn, x);
-            chmax(rets_mx, x);
-            chmax(sols, y);
-        }
+    auto ser = [&n] (int x) { return x > n ? x - n : x; };
 
-        int child = ch[v].size() - 1;
-
-        if (child == 0) {
-            return { 0, 0 };
-        } else if (child == 1) {
-            return { rets_mn + 1, sols };
-        } else {
-            return { rets_mn + 1, max(rets_mx + 2, sols) };
-        }
-    };
-
-    unordered_map<int, int, safe_hash> mpr;
-    multiset<int> rets;
-    int sols = 0;
-    for (auto&& u : ch[1]) {
-        auto [x, y] = dfs(dfs, u, 1);
-        mpr[u] = x;
-        rets.emplace(x);
-        chmax(sols, y);
+    quick_union qu(n + 1);
+    vector<int> res;
+    int cnt = 0;
+    for (auto&& [u, v] : edges) {
+        if (qu.connected(ser(u), ser(v))) continue;
+        deb(u, v);
+        qu.merge(ser(u), ser(v));
+        if (u > n) res.emplace_back(u - n);
+        if (v > n) res.emplace_back(v - n);
+        ++cnt;
     }
 
-    if (ch[1].size() == 1) {
-        cout << max(*rets.begin() + 1, sols) << '\n';
+    if (cnt == n - 1) {
+        cout << "YES\n";
+        cout << res.size() << '\n';
+        putvec(res);
     } else {
-        int res = INF;
-        for (auto&& u : ch[1]) {
-            rets.erase(rets.lower_bound(mpr[u]));
-            chmin(res, max(mpr[u] + 1, max(*rets.rbegin() + 2, sols)));
-            rets.emplace(mpr[u]);
-        }
-
-        cout << res << '\n';
+        cout <<"NO\n";
     }
 }
 
