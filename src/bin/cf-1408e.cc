@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -468,7 +468,60 @@ void dump_ignore() {}
 void prep() {
 }
 
+class quick_union {
+private:
+    vector<size_t> c, sz;
+public:
+    quick_union(size_t n) : c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
+    }
+    
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] += sz[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_size(size_t i) {
+        return sz[query(i)];
+    }
+};
+
 void solve() {
+    read(int, m, n);
+    readvec(int, a, m);
+    readvec(int, b, n);
+    
+    ll tot = 0;
+    vector<tiii> edges;
+    for (int i = 0; i < m; ++i) {
+        read(int, t);
+        while (t--) {
+            read(int, x);
+            edges.emplace_back(i, m + x - 1, a[i] + b[x - 1]);
+            tot += a[i] + b[x - 1];
+        }
+    }
+
+    sort_by_key(edges.begin(), edges.end(), [] (const tiii& t) { return -get<2>(t); });
+    quick_union qu(m + n);
+
+    ll mx = 0;
+    for (auto&& [u, v, w] : edges) {
+        if (qu.connected(u, v)) continue;
+        qu.merge(u, v);
+        mx += w;
+    }
+
+    cout << tot - mx << '\n';
 }
 
 int main() {

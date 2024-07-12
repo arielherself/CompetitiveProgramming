@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,6 +469,33 @@ void prep() {
 }
 
 void solve() {
+    read(int, n, pistol, laser, awp, d);
+    readvec1(int, a, n);
+    vector dp(n + 1, array<ll, 2>());
+    dp[0][0] = -d;
+    dp[0][1] = INF;
+
+    ll res = 0;
+    for (int i = 1; i <= n; ++i) {
+        ll to_1 = min(ll(1) * laser, ll(1) * min(pistol, awp) * a[i] + pistol);
+        ll to_0 = ll(1) * min(pistol, awp) * a[i] + awp;
+        ll ending = min(awp, min(pistol, laser));
+
+        dp[i][1] = min(dp[i - 1][0] + d + to_1, dp[i - 1][1] + d + to_1 + d + ending + d);
+        dp[i][0] = min(min(dp[i - 1][0] + d + to_0, dp[i - 1][0] + d + to_1 + 2 * d + ending), min(dp[i - 1][1] + d + to_0 + d + ending + d, dp[i - 1][1] + d + to_1 + d + ending + d + ending));
+
+        if (i == n) {
+            // debug(dp[i - 1][0] + d + to_0);
+            // debug(dp[i - 1][0] + d + to_1 + 2 * d + ending);
+            // debug(dp[i - 1][1] + d + to_0 + d + ending);
+            // debug(dp[i - 1][1] + d + to_1 + ending + d + ending);
+            res = min(min(dp[i - 1][0] + d + to_0, dp[i - 1][0] + d + to_1 + 2 * d + ending), min(dp[i - 1][1] + d + to_0 + d + ending, dp[i - 1][1] + d + to_1 + d + ending + d + ending));
+        }
+
+        // deb(dp[i][0], dp[i][1]);
+    }
+
+    cout << res << '\n';
 }
 
 int main() {

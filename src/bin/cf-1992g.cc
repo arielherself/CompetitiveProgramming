@@ -465,10 +465,31 @@ void dump() {}
 
 void dump_ignore() {}
 
+using mll = MLL<MDL>;
+constexpr int N = 1e5 + 10;
+mll fact[N], factrev[N];
+
 void prep() {
+    fact[0] = 1;
+    factrev[0] = 1;
+    for (int i = 1; i < N; ++i) {
+        fact[i] = fact[i - 1] * i;
+        factrev[i] = 1 / fact[i];
+    }
 }
 
 void solve() {
+    read(int, n);
+    int m = 2 * n + 1;
+
+    mll res = 0;
+    for (int i = 1; i <= 2 * n + 1; ++i) {
+        for (int j = 0; j <= n; ++j) {
+            res += i * fastcomb(min(i - 1, n), i - 1 - j) * fastcomb(max(0, n - i), 2 * j - i + 1);
+        }
+    }
+
+    cout << res << '\n';
 }
 
 int main() {

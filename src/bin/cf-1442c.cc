@@ -250,7 +250,6 @@ return_t qpow(ll b, ll p) {
 }
 
 #define comb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] / fact[k] / fact[(n) - (k)])
-#define fastcomb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] * factrev[k] * factrev[(n) - (k)])
 
 constexpr inline int lg2(ll x) { return x == 0 ? -1 : sizeof(ll) * 8 - 1 - __builtin_clzll(x); }
 
@@ -457,7 +456,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,6 +468,102 @@ void prep() {
 }
 
 void solve() {
+    read(int, n, m);
+    vector<pii> edges;
+    for (int i = 0; i < m; ++i) {
+        read(int, u, v);
+        edges.emplace_back(u, v);
+    }
+
+    int t = lg2(n) + 1;
+
+    {
+        vector<vector<pii>> e((t + 1) * n + 1);
+        for (auto&& [u, v] : edges) {
+            for (int i = 0; i <= t; ++i) {
+                if (i % 2 == 0) {
+                    e[i * n + u].emplace_back(i * n + v, 1);
+                } else {
+                    e[i * n + v].emplace_back(i * n + u, 1);
+                }
+            }
+        }
+
+        for (int i = 1; i <= n; ++i) {
+            int pw = 1;
+            for (int j = 1; j <= t; ++j) {
+                e[(j - 1) * n + i].emplace_back(j * n + i, pw);
+                pw <<= 1;
+            }
+        }
+
+        vector<int> dis((t + 1) * n + 1, INF);
+        vector<bool> vis((t + 1) * n + 1);
+        min_heap<pii> pq;
+        dis[1] = 0;
+        pq.emplace(0, 1);
+
+        while (pq.size()) {
+            poptop(pq, d, v);
+            continue_or(vis[v], 1);
+            for (auto&& [u, w] : e[v]) {
+                if (not vis[u] and chmin(dis[u], dis[v] + w)) {
+                    pq.emplace(dis[u], u);
+                }
+            }
+        }
+
+        int res = INF;
+        for (int i = 0; i <= t; ++i) {
+            chmin(res, dis[i * n]);
+        }
+
+        if (res != INF) {
+            cout << res << '\n';
+            return;
+        }
+    }
+
+    {
+        // WARN: Do we have to ensure the number of transitions is greater than `t`?
+        // Nope.
+
+        vector<vector<pair<int, pii>>> e(2 * n + 1);
+        for (auto&& [u, v] : edges) {
+            e[u].emplace_back(v, make_pair(0, 1));
+            e[n + v].emplace_back(n + u, make_pair(0, 1));
+        }
+
+        for (int i = 1; i <= n; ++i) {
+            e[i].emplace_back(n + i, make_pair(1, 0));
+            e[n + i].emplace_back(i, make_pair(1, 0));
+        }
+
+        vector<pii> dis(2 * n + 1, { INF, INF });
+        vector<bool> vis(2 * n + 1);
+        min_heap<pair<pii, int>> pq;
+        dis[1] = { 0, 0 };
+        pq.emplace(dis[1], 1);
+
+        while (pq.size()) {
+            poptop(pq, d, v);
+            continue_or(vis[v], 1);
+
+            for (auto&& [u, w] : e[v]) {
+                if (not vis[u] and chmin(dis[u], make_pair(dis[v].first + w.first, dis[v].second + w.second))) {
+                    pq.emplace(dis[u], u);
+                }
+            }
+        }
+
+        pii res = min(dis[n], dis[2 * n]);
+        MLL<PRIME> pw = 0;
+        for (int i = 0; i < res.first; ++i) {
+            pw = 2 * pw + 1;
+        }
+
+        cout << pw + res.second << '\n';
+    }
 }
 
 int main() {

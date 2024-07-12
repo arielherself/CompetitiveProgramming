@@ -250,6 +250,7 @@ return_t qpow(ll b, ll p) {
 }
 
 #define comb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] / fact[k] / fact[(n) - (k)])
+#define fastcomb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] * factrev[k] * factrev[(n) - (k)])
 
 constexpr inline int lg2(ll x) { return x == 0 ? -1 : sizeof(ll) * 8 - 1 - __builtin_clzll(x); }
 
@@ -456,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,55 +470,101 @@ void prep() {
 
 void solve() {
     read(int, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
-    }
+    set<pii, greater<>> primary, candidates;
+    set<int, greater<>> regular_candidates;
 
-    auto dfs = [&] (auto dfs, int v, int pa) -> pii {
-        int sols = 0;
-        int rets_mn = INF, rets_mx = -INF;
-        for (auto&& u : ch[v]) {
-            if (u == pa) continue;
-            auto [x, y] = dfs(dfs, u, v);
-            chmin(rets_mn, x);
-            chmax(rets_mx, x);
-            chmax(sols, y);
-        }
-
-        int child = ch[v].size() - 1;
-
-        if (child == 0) {
-            return { 0, 0 };
-        } else if (child == 1) {
-            return { rets_mn + 1, sols };
+    int curr = 0;
+    int r = 0;
+    ll sum = 0;
+    ll res = 0;
+    while (n--) {
+        read(int, tp, d);
+        sum += d;
+        if (d < 0) {
+            curr -= tp;
+            if (primary.count({-d, tp})) {
+                primary.erase({-d, tp});
+                res += d;
+                r -= tp;
+            } else {
+                candidates.erase({-d, tp});
+                if (tp == 0) {
+                    regular_candidates.erase(-d);
+                }
+            }
         } else {
-            return { rets_mn + 1, max(rets_mx + 2, sols) };
-        }
-    };
-
-    unordered_map<int, int, safe_hash> mpr;
-    multiset<int> rets;
-    int sols = 0;
-    for (auto&& u : ch[1]) {
-        auto [x, y] = dfs(dfs, u, 1);
-        mpr[u] = x;
-        rets.emplace(x);
-        chmax(sols, y);
-    }
-
-    if (ch[1].size() == 1) {
-        cout << max(*rets.begin() + 1, sols) << '\n';
-    } else {
-        int res = INF;
-        for (auto&& u : ch[1]) {
-            rets.erase(rets.lower_bound(mpr[u]));
-            chmin(res, max(mpr[u] + 1, max(*rets.rbegin() + 2, sols)));
-            rets.emplace(mpr[u]);
+            curr += tp;
+            candidates.emplace(d, tp);
+            if (tp == 0) {
+                regular_candidates.emplace(d);
+            }
         }
 
-        cout << res << '\n';
+        if (candidates.size() and primary.size() < curr) {
+            auto it = candidates.begin();
+            primary.emplace(*it);
+            res += it->first;
+            r += it->second;
+            if (it->second == 0) {
+                regular_candidates.erase(it->first);
+            }
+            candidates.erase(it);
+        }
+
+        if (primary.size() == curr and curr != 0 and candidates.size() and candidates.begin()->first > primary.rbegin()->first) {
+            auto out = prev(primary.end());
+            res -= out->first;
+            r -= out->second;
+            candidates.emplace(*out);
+            if (out->second == 0) {
+                regular_candidates.emplace(out->first);
+            }
+            primary.erase(out);
+            auto in = candidates.begin();
+            res += in->first;
+            r += in->second;
+            primary.emplace(*in);
+            if (in->second == 0) {
+                regular_candidates.erase(in->first);
+            }
+            candidates.erase(in);
+        }
+
+        if (primary.size() > curr) {
+            auto out = prev(primary.end());
+            res -= out->first;
+            r -= out->second;
+            candidates.emplace(*out);
+            if (out->second == 0) {
+                regular_candidates.emplace(out->first);
+            }
+            primary.erase(out);
+        }
+
+        // deb(r, curr);
+        if (r == curr and curr > 0) {
+            auto out = prev(primary.end());
+            res -= out->first;
+            r -= out->second;
+            candidates.emplace(*out);
+            if (out->second == 0) {
+                regular_candidates.emplace(out->first);
+            }
+            primary.erase(out);
+            if (regular_candidates.size()) {
+                auto in = regular_candidates.begin();
+                res += *in;
+                primary.emplace(*in, 0);
+                candidates.erase({*in, 0});
+                regular_candidates.erase(*in);
+            }
+        }
+
+        deb(r, curr);
+        debugvec(primary);
+        debugvec(candidates);
+        debugvec(regular_candidates);
+        cout << res + sum << '\n';
     }
 }
 

@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,6 +469,103 @@ void prep() {
 }
 
 void solve() {
+    read(int, n);
+    set<pii, greater<>> primary, candidates;
+    set<int, greater<>> regular_candidates;
+
+    int curr = 0;
+    int r = 0;
+    ll sum = 0;
+    ll res = 0;
+    while (n--) {
+        read(int, tp, d);
+        sum += d;
+        if (d < 0) {
+            curr -= tp;
+            if (primary.count({-d, tp})) {
+                primary.erase({-d, tp});
+                res += d;
+                r -= tp;
+            } else {
+                candidates.erase({-d, tp});
+                if (tp == 0) {
+                    regular_candidates.erase(-d);
+                }
+            }
+        } else {
+            curr += tp;
+            candidates.emplace(d, tp);
+            if (tp == 0) {
+                regular_candidates.emplace(d);
+            }
+        }
+
+        if (candidates.size() and primary.size() < curr) {
+            auto it = candidates.begin();
+            primary.emplace(*it);
+            res += it->first;
+            r += it->second;
+            if (it->second == 0) {
+                regular_candidates.erase(it->first);
+            }
+            candidates.erase(it);
+        }
+
+        if (primary.size() == curr and curr != 0 and candidates.size() and candidates.begin()->first > primary.rbegin()->first) {
+            auto out = prev(primary.end());
+            res -= out->first;
+            r -= out->second;
+            candidates.emplace(*out);
+            if (out->second == 0) {
+                regular_candidates.emplace(out->first);
+            }
+            primary.erase(out);
+            auto in = candidates.begin();
+            res += in->first;
+            r += in->second;
+            primary.emplace(*in);
+            if (in->second == 0) {
+                regular_candidates.erase(in->first);
+            }
+            candidates.erase(in);
+        }
+
+        if (primary.size() > curr) {
+            auto out = prev(primary.end());
+            res -= out->first;
+            r -= out->second;
+            candidates.emplace(*out);
+            if (out->second == 0) {
+                regular_candidates.emplace(out->first);
+            }
+            primary.erase(out);
+        }
+
+        // deb(r, curr);
+        if (r == curr and curr > 0) {
+            auto out = prev(primary.end());
+            res -= out->first;
+            r -= out->second;
+            candidates.emplace(*out);
+            if (out->second == 0) {
+                regular_candidates.emplace(out->first);
+            }
+            primary.erase(out);
+            if (regular_candidates.size()) {
+                auto in = regular_candidates.begin();
+                res += *in;
+                primary.emplace(*in, 0);
+                candidates.erase({*in, 0});
+                regular_candidates.erase(*in);
+            }
+        }
+
+        // deb(r, curr);
+        // debugvec(primary);
+        // debugvec(candidates);
+        // debugvec(regular_candidates);
+        cout << res + sum << '\n';
+    }
 }
 
 int main() {

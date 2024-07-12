@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,6 +469,63 @@ void prep() {
 }
 
 void solve() {
+    read(int, n, q);
+    vector<int> a;
+    for (int i = 1; i <= n; ++i) {
+        read(int, x);
+        a.emplace_back(max(0, i - x + 1));
+    }
+    debug(a);
+
+    vector<int> pos(n + 1, n);
+    vector<int> nxt(n + 1, n);
+    int m = lg2(n) + 1;
+    vector f(n + 1, vector<int>(m + 1, n));
+    for (int i = n - 1; ~i; --i) {
+        f[i][0] = pos[a[i] + 1];
+        for (int j = 1; (1 << j) <= m; ++j) {
+            f[i][1 << j] = f[f[i][1 << j - 1]][j - 1];
+        }
+        pos[a[i]] = i;
+        if (a[i] == 0) {
+            nxt[i] = i;
+        } else {
+            nxt[i] = nxt[i + 1];
+        }
+    }
+
+    while (q--) {
+        read(int, x, y);
+        int l = x, r = n - 1 - y;
+
+        int res = 1;
+        int curr = nxt[l];
+        if (curr > r) {
+            cout << 0 << '\n';
+            continue;
+        }
+        while (1) {
+            int left = 0, right = m;
+            while (left < right) {
+                int mid = left + right + 1 >> 1;
+                deb(curr, mid);
+                if (f[curr][mid] <= r) {
+                    left = mid;
+                } else {
+                    right = mid - 1;
+                }
+            }
+
+            if (f[curr][left] <= r) {
+                res += 1 << left;
+                curr = f[curr][left];
+            } else {
+                break;
+            }
+        }
+
+        cout << res << '\n';
+    }
 }
 
 int main() {

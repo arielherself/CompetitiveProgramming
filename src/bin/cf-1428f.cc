@@ -250,7 +250,6 @@ return_t qpow(ll b, ll p) {
 }
 
 #define comb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] / fact[k] / fact[(n) - (k)])
-#define fastcomb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] * factrev[k] * factrev[(n) - (k)])
 
 constexpr inline int lg2(ll x) { return x == 0 ? -1 : sizeof(ll) * 8 - 1 - __builtin_clzll(x); }
 
@@ -457,7 +456,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,6 +468,63 @@ void prep() {
 }
 
 void solve() {
+    read(int, n);
+    readvec(char, a, n);
+    transform(a.begin(), a.end(), a.begin(), [] (char c) { return c - '0'; });
+
+    vector<pii> segs;
+    int s = -1;
+    for (int i = 0; i < n; ++i) {
+        if (a[i] == 1) {
+            if (s == -1) {
+                s = i;
+            }
+        } else {
+            if (s != -1) {
+                segs.emplace_back(s, i - s);
+                s = -1;
+            }
+        }
+    }
+    if (s != -1) {
+        segs.emplace_back(s, n - s);
+    }
+    int m = segs.size();
+
+    vector<ll> ps(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        ps[i] = ps[i - 1] + ll(1) * (1 + i) * i / 2;
+    }
+
+    vector<int> prev(m, -1), next(m, -1);
+
+    vector<int> stack;
+    for (int i = 0; i < m; ++i) {
+        while (stack.size() and segs[stack.back()].second <= segs[i].second) {
+            stack.pop_back();
+        }
+        if (stack.size()) {
+            prev[i] = stack.back();
+        }
+
+        stack.emplace_back(i);
+    }
+
+    stack.clear();
+    for (int i = m - 1; ~i; --i) {
+        while (stack.size() and segs[stack.back()].second < segs[i].second) {
+            stack.pop_back();
+        }
+        if (stack.size()) {
+            next[i] = stack.back();
+        }
+    }
+
+    ll res = 0;
+    for (int i = 0; i < m; ++i) {
+        res += ps[segs[i].second];
+    }
+
 }
 
 int main() {

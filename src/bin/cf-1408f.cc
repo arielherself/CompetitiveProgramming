@@ -250,7 +250,6 @@ return_t qpow(ll b, ll p) {
 }
 
 #define comb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] / fact[k] / fact[(n) - (k)])
-#define fastcomb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] * factrev[k] * factrev[(n) - (k)])
 
 constexpr inline int lg2(ll x) { return x == 0 ? -1 : sizeof(ll) * 8 - 1 - __builtin_clzll(x); }
 
@@ -457,7 +456,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,6 +468,35 @@ void prep() {
 }
 
 void solve() {
+    read(int, n);
+    int m = 1 << msp(n);
+    int t = msp(n);;
+
+    vector<pii> res;
+    for (int i = 0; i < t; ++i) {
+        int step = 1 << i;
+        vector<bool> vis(n);
+        for (int j = 0; j + step < m; ++j) {
+            if (vis[j]) continue;
+            vis[j] = vis[j + step] = 1;
+            res.emplace_back(j + 1, j + step + 1);
+        }
+    }
+
+    for (int i = 0; i < t; ++i) {
+        int step = 1 << i;
+        vector<bool> vis(n);
+        for (int j = n - 1; j - step > n - 1 - m; --j) {
+            if (vis[j]) continue;
+            vis[j] = vis[j - step] = 1;
+            res.emplace_back(j + 1, j - step + 1);
+        }
+    }
+
+    cout << res.size() << '\n';
+    for (auto&& [i, j] : res) {
+        cout << i << " " << j << '\n';
+    }
 }
 
 int main() {

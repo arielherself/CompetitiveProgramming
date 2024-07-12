@@ -250,7 +250,6 @@ return_t qpow(ll b, ll p) {
 }
 
 #define comb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] / fact[k] / fact[(n) - (k)])
-#define fastcomb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] * factrev[k] * factrev[(n) - (k)])
 
 constexpr inline int lg2(ll x) { return x == 0 ? -1 : sizeof(ll) * 8 - 1 - __builtin_clzll(x); }
 
@@ -457,7 +456,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -468,7 +467,58 @@ void dump_ignore() {}
 void prep() {
 }
 
+struct point {
+    int x, y, i;
+    point(int x, int y, int i) : x(x), y(y), i(i) {}
+};
+
 void solve() {
+    read(int, _, n);
+    read(pii, s, t);
+
+    vector<point> a;
+    for (int i = 0; i < n; ++i) {
+        read(int, x, y);
+        a.emplace_back(x, y, i);
+    }
+    vector<vector<pii>> e(n + 2);
+
+    sort_by_key(a.begin(), a.end(), [] (const point& x) { return x.x; });
+    for (int i = 1; i < n; ++i) {
+        edgew(e, a[i - 1].i, a[i].i, a[i].x - a[i - 1].x);
+    }
+
+    sort_by_key(a.begin(), a.end(), [] (const point& x) { return x.y; });
+    for (int i = 1; i < n; ++i) {
+        edgew(e, a[i - 1].i, a[i].i, a[i].y - a[i - 1].y);
+    }
+
+    int src = n, dst = n + 1;
+    for (int i = 0; i < n; ++i) {
+        edgew(e, src, a[i].i, min(abs(s.first - a[i].x), abs(s.second - a[i].y)));
+        edgew(e, dst, a[i].i, abs(t.first - a[i].x) + abs(t.second - a[i].y));
+    }
+
+    edgew(e, src, dst, abs(s.first - t.first) + abs(s.second - t.second));
+
+    vector<ll> dis(n + 2, INFLL);
+    vector<bool> vis(n + 2);
+    min_heap<pli> pq;
+    dis[src] = 0;
+    pq.emplace(0, src);
+
+    while (pq.size()) {
+        poptop(pq, d, v);
+        continue_or(vis[v], 1);
+
+        for (auto&& [u, w] : e[v]) {
+            if (not vis[u] and chmin(dis[u], dis[v] + w)) {
+                pq.emplace(dis[u], u);
+            }
+        }
+    }
+
+    cout << dis[dst] << '\n';
 }
 
 int main() {
