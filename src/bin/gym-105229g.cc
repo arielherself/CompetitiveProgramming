@@ -469,77 +469,70 @@ void prep() {
 }
 
 void solve() {
+    using mll = MLL<PRIME>;
+
     read(int, n, m);
-    vector<pll> a(n);
-
-    for (int i = 0; i < n; ++i) {
-        cin >> a[i].first;
-    }
-    for (int i = 0; i < n; ++i) {
-        cin >> a[i].second;
+    vector a(n + 1, vector<int>(n + 1, -1));
+    for (int i = 0; i < m; ++i) {
+        read(int, x, y);
+        a[x][y] = i;
     }
 
-    sort_by_key(a.begin(), a.end(), [] (const pii& p) { return -p.second; });
+    vector dp(n + 1, vector(n + 1, vector<mll>(1 << m)));
+    for (int i = 0; i <= n; ++i) {
+        for (int j = 0; j <= n; ++j) {
+            vector<pii> cond;
+            if (i - 2 >= 0 and j - 1 >= 0 and a[i - 2][j - 1] != -1) {
+                cond.emplace_back(a[i - 2][j - 1], a[i - 1][j - 1]);
+            }
+            if (i - 2 >= 0 and j + 1 <= n and a[i - 2][j + 1] != -1) {
+                cond.emplace_back(a[i - 2][j + 1], a[i - 1][j + 1]);
+            }
+            if (i - 1 >= 0 and j - 2 >= 0 and a[i - 1][j - 2] != -1) {
+                cond.emplace_back(a[i - 1][j - 2], a[i - 1][j - 1]);
+            }
+            if (i - 1 >= 0 and j + 2 <= n and a[i - 1][j + 2] != -1) {
+                cond.emplace_back(a[i - 1][j + 2], a[i - 1][j + 1]);
+            }
+            if (i + 2 <= n and j - 1 >= 0 and a[i + 2][j - 1] != -1) {
+                cond.emplace_back(a[i + 2][j - 1], a[i + 1][j - 1]);
+            }
+            if (i + 2 <= n and j + 1 <= n and a[i + 2][j + 1] != -1) {
+                cond.emplace_back(a[i + 2][j + 1], a[i + 1][j + 1]);
+            }
+            if (i + 1 <= n and j - 2 >= 0 and a[i + 1][j - 2] != -1) {
+                cond.emplace_back(a[i + 1][j - 2], a[i + 1][j - 1]);
+            }
+            if (i + 1 <= n and j + 2 <= n and a[i + 1][j + 2] != -1) {
+                cond.emplace_back(a[i + 1][j + 2], a[i + 1][j + 1]);
+            }
 
-    int k = min(n, 15);
-    vector<array<ll, 3>> info(1 << k);
-    set<ll> tm;
-    for (int i = 0; i < (1 << k); ++i) {
-        int t = popcount(i);
+            for (int mask = 0; mask < (1 << m); ++mask) {
+                int new_mask = a[i][j] != -1 ? (mask | 1 << a[i][j]) : mask;
+                int f = 1;
+                for (auto&& [x, y] : cond) {
+                    if ((mask & 1 << x) or y != -1 and not (mask & 1 << y)) {
+                        ;;
+                    } else {
+                        f = 0;
+                        break;
+                    }
+                }
 
-        for (int j = 0; j < k; ++j) {
-            if (i & 1 << j) {
-                info[i][0] += a[j].first;
-                info[i][1] += a[j].second * --t;
-                info[i][2] += a[j].second;
+                if (f == 1) {
+                    if (i == 0 and j == 0 and mask == 0) dp[0][0][0] = 1;
+                    if (i - 1 >= 0) {
+                        dp[i][j][new_mask] += dp[i - 1][j][mask];
+                    }
+                    if (j - 1 >= 0) {
+                        dp[i][j][new_mask] += dp[i][j - 1][mask];
+                    }
+                }
             }
         }
-
-        if (info[i][0] <= m) {
-            tm.emplace(info[i][0]);
-        }
     }
 
-    map<ll, int> mp;
-    int N = 0;
-    for (auto&& x : tm) mp[x] = ++N;
-
-    vector ps(n - k + 1, vector<ll>(N + 1));
-    for (int i = 0; i <= n - k; ++i) {
-        vector<ll> bk(N + 1);
-        for (int j = 0; j < (1 << k); ++j) {
-            if (info[j][0] <= m) {
-                chmax(bk[mp[info[j][0]]], info[j][1] + info[j][2] * i);
-            }
-        }
-
-        for (int j = 1; j <= N; ++j) {
-            ps[i][j] = max(ps[i][j - 1], bk[j]);
-        }
-    }
-
-    ll res = 0;
-
-    for (int i = 0; i < (1 << n - k); ++i) {
-        int t = popcount(i);
-        ll tot = 0, sum = 0;
-
-        for (int j = 0; j < n - k; ++j) {
-            if (i & 1 << j) {
-                tot += a[k + j].first;
-                sum += a[k + j].second * --t;
-            }
-        }
-
-        if (tot > m) continue;
-        auto it = mp.upper_bound(m - tot);
-        if (it == mp.begin()) continue;
-        --it;
-
-        chmax(res, sum + ps[popcount(i)][it->second]);
-    }
-
-    cout << res << '\n';
+    cout << accumulate(dp[n][n].begin(), dp[n][n].end(), mll(0)) << endl;
 }
 
 int main() {

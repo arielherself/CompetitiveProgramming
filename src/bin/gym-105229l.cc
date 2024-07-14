@@ -249,8 +249,8 @@ return_t qpow(ll b, ll p) {
     else return half * half;
 }
 
-#define comb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] / fact[k] / fact[(n) - (k)])
-#define fastcomb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] * factrev[k] * factrev[(n) - (k)])
+#define comb(n, t) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] / fact[k] / fact[(n) - (k)])
+#define fastcomb(n, t) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] * factrev[k] * factrev[(n) - (k)])
 
 constexpr inline int lg2(ll x) { return x == 0 ? -1 : sizeof(ll) * 8 - 1 - __builtin_clzll(x); }
 
@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,77 +469,74 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, m);
-    vector<pll> a(n);
-
-    for (int i = 0; i < n; ++i) {
-        cin >> a[i].first;
+    read(int, n, m, k);
+    adj(ch, n);
+    for (int i = 1; i <= n; ++i) {
+        read(int, t);
+        while (t--) {
+            read(int, j);
+            edge(ch, i, j);
+        }
     }
-    for (int i = 0; i < n; ++i) {
-        cin >> a[i].second;
+
+    vector<unordered_set<int, safe_hash>> cand(n + 1);
+    while (m--) {
+        read(int, u, v);
+        if (u > v) swap(u, v);
+        cand[u].emplace(v);
     }
 
-    sort_by_key(a.begin(), a.end(), [] (const pii& p) { return -p.second; });
+    vector<int> mark(n + 1);
+    while (k--) {
+        read(int, i);
+        mark[i] = 1;
+    }
 
-    int k = min(n, 15);
-    vector<array<ll, 3>> info(1 << k);
-    set<ll> tm;
-    for (int i = 0; i < (1 << k); ++i) {
-        int t = popcount(i);
+    auto dfs = [&] (auto dfs, int v, int pa) -> int {
+        if (mark[v]) return 0;
+        else if (ch[v].size() == 1 and ch[v][0] == pa) return INF;
 
-        for (int j = 0; j < k; ++j) {
-            if (i & 1 << j) {
-                info[i][0] += a[j].first;
-                info[i][1] += a[j].second * --t;
-                info[i][2] += a[j].second;
+        vector<int> x, y;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+
+            if (cand[v].count(u)) {
+                x.emplace_back(dfs(dfs, u, v));
+            } else {
+                y.emplace_back(dfs(dfs, u, v));
             }
         }
 
-        if (info[i][0] <= m) {
-            tm.emplace(info[i][0]);
+        sort(x.begin(), x.end());
+        sort(y.begin(), y.end());
+
+        int ret = INF;
+        if (x.size() and x[0] != INF) {
+            chmin(ret, x[0] + 1);
         }
-    }
 
-    map<ll, int> mp;
-    int N = 0;
-    for (auto&& x : tm) mp[x] = ++N;
-
-    vector ps(n - k + 1, vector<ll>(N + 1));
-    for (int i = 0; i <= n - k; ++i) {
-        vector<ll> bk(N + 1);
-        for (int j = 0; j < (1 << k); ++j) {
-            if (info[j][0] <= m) {
-                chmax(bk[mp[info[j][0]]], info[j][1] + info[j][2] * i);
+        int sum = 0;
+        for (auto&& i : x) {
+            if (i != INF and sum != INF) {
+                sum += i;
+            } else {
+                sum = INF;
             }
         }
-
-        for (int j = 1; j <= N; ++j) {
-            ps[i][j] = max(ps[i][j - 1], bk[j]);
-        }
-    }
-
-    ll res = 0;
-
-    for (int i = 0; i < (1 << n - k); ++i) {
-        int t = popcount(i);
-        ll tot = 0, sum = 0;
-
-        for (int j = 0; j < n - k; ++j) {
-            if (i & 1 << j) {
-                tot += a[k + j].first;
-                sum += a[k + j].second * --t;
+        for (auto&& i : y) {
+            if (i != INF and sum != INF) {
+                sum += i;
+            } else {
+                sum = INF;
             }
         }
+        chmin(ret, sum);
 
-        if (tot > m) continue;
-        auto it = mp.upper_bound(m - tot);
-        if (it == mp.begin()) continue;
-        --it;
+        return ret;
+    };
 
-        chmax(res, sum + ps[popcount(i)][it->second]);
-    }
-
-    cout << res << '\n';
+    int res = dfs(dfs, 1, 0);
+    cout << (res == INF? -1 : res) << '\n';
 }
 
 int main() {

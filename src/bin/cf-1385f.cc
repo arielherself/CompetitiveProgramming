@@ -457,87 +457,106 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
-// #define DUMP_TEST_CASE 7219
-// #define TOT_TEST_CASE 10000
+// #define SINGLE_TEST_CASE
+// #define DUMP_TEST_CASE 85
+// #define TOT_TEST_CASE 7035
 
-void dump() {}
+void dump() {
+    read(int, n, k);
+    cout << n << ' ' << k  << '\n';
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        cout << u << ' ' << v << '\n';
+    }
+}
 
-void dump_ignore() {}
+void dump_ignore() {
+    read(int, n, k);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+    }
+}
 
 void prep() {
 }
 
 void solve() {
-    read(int, n, m);
-    vector<pll> a(n);
-
-    for (int i = 0; i < n; ++i) {
-        cin >> a[i].first;
-    }
-    for (int i = 0; i < n; ++i) {
-        cin >> a[i].second;
+    read(int, n, k);
+    adj(ch, n);
+    
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
     }
 
-    sort_by_key(a.begin(), a.end(), [] (const pii& p) { return -p.second; });
-
-    int k = min(n, 15);
-    vector<array<ll, 3>> info(1 << k);
-    set<ll> tm;
-    for (int i = 0; i < (1 << k); ++i) {
-        int t = popcount(i);
-
-        for (int j = 0; j < k; ++j) {
-            if (i & 1 << j) {
-                info[i][0] += a[j].first;
-                info[i][1] += a[j].second * --t;
-                info[i][2] += a[j].second;
+    vector<int> dp(n + 1);
+    vector<int> nv(n + 1);
+    auto dfs = [&] (auto dfs, int v, int pa) -> void {
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            dfs(dfs, u, v);
+            if (dp[u] % k == 0 and nv[u] == 0) {
+                dp[v] += 1;
+            } else {
+                nv[v] += 1;
             }
         }
+    };
+    dfs(dfs, 1, 0);
+    // debug(dp);
 
-        if (info[i][0] <= m) {
-            tm.emplace(info[i][0]);
-        }
+    int curr = 0;
+    for (int i = 1; i <= n; ++i) {
+        curr += dp[i] / k;
     }
 
-    map<ll, int> mp;
-    int N = 0;
-    for (auto&& x : tm) mp[x] = ++N;
+    int res = 0;
+    auto dfs2 = [&] (auto dfs2, int v, int pa) -> void {
+        chmax(res, curr);
+        // deb(v, curr);
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            int changed_u = 0, changed_v = 0;
 
-    vector ps(n - k + 1, vector<ll>(N + 1));
-    for (int i = 0; i <= n - k; ++i) {
-        vector<ll> bk(N + 1);
-        for (int j = 0; j < (1 << k); ++j) {
-            if (info[j][0] <= m) {
-                chmax(bk[mp[info[j][0]]], info[j][1] + info[j][2] * i);
+            if (dp[u] % k == 0 and nv[u] == 0) {
+                // remove one active child from node v
+                // always doesn't count as a unavailble vertex.
+                changed_v = 1;
+                curr -= dp[v] / k;
+                dp[v] -= 1;
+                curr += dp[v] / k;
+            } else {
+                nv[v] -= 1;
+            }
+            if (dp[v] % k == 0 and nv[v] == 0) {
+                // add one active child to node u
+                changed_u = 1;
+                curr -= dp[u] / k;
+                dp[u] += 1;
+                curr += dp[u] / k;
+            } else {
+                nv[u] += 1;
+            }
+
+            dfs2(dfs2, u, v);
+
+            if (changed_u) {
+                curr -= dp[u] / k;
+                dp[u] -= 1;
+                curr += dp[u] / k;
+            } else {
+                nv[u] -= 1;
+            }
+            if (changed_v) {
+                curr -= dp[v] / k;
+                dp[v] += 1;
+                curr += dp[v] / k;
+            } else {
+                nv[v] += 1;
             }
         }
-
-        for (int j = 1; j <= N; ++j) {
-            ps[i][j] = max(ps[i][j - 1], bk[j]);
-        }
-    }
-
-    ll res = 0;
-
-    for (int i = 0; i < (1 << n - k); ++i) {
-        int t = popcount(i);
-        ll tot = 0, sum = 0;
-
-        for (int j = 0; j < n - k; ++j) {
-            if (i & 1 << j) {
-                tot += a[k + j].first;
-                sum += a[k + j].second * --t;
-            }
-        }
-
-        if (tot > m) continue;
-        auto it = mp.upper_bound(m - tot);
-        if (it == mp.begin()) continue;
-        --it;
-
-        chmax(res, sum + ps[popcount(i)][it->second]);
-    }
+    };
+    dfs2(dfs2, 1, 0);
 
     cout << res << '\n';
 }

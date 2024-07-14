@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -465,81 +465,40 @@ void dump() {}
 
 void dump_ignore() {}
 
+constexpr int N = 1e6 + 5;
+vector<bool> not_prime(N + 1);
 void prep() {
+    vector<int> res;
+    for (int i = 2; i <= N; ++i) {
+        if (not not_prime[i]) {
+            res.emplace_back(i);
+        }
+        for (auto&& x : res) {
+            if (i * x > N) break;
+            not_prime[i * x] = 1;
+            if (i % x == 0) break;
+        }
+    }
 }
 
 void solve() {
-    read(int, n, m);
-    vector<pll> a(n);
-
-    for (int i = 0; i < n; ++i) {
-        cin >> a[i].first;
-    }
-    for (int i = 0; i < n; ++i) {
-        cin >> a[i].second;
+    read(int, n);
+    readvec(int, a, n);
+    vector<int> ps(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        ps[i] = ps[i - 1] + a[i - 1];
     }
 
-    sort_by_key(a.begin(), a.end(), [] (const pii& p) { return -p.second; });
-
-    int k = min(n, 15);
-    vector<array<ll, 3>> info(1 << k);
-    set<ll> tm;
-    for (int i = 0; i < (1 << k); ++i) {
-        int t = popcount(i);
-
-        for (int j = 0; j < k; ++j) {
-            if (i & 1 << j) {
-                info[i][0] += a[j].first;
-                info[i][1] += a[j].second * --t;
-                info[i][2] += a[j].second;
+    int res = INF;
+    for (int l = 1; l <= n; ++l) {
+        for (int r = l; r <= n; ++r) {
+            if (not_prime[ps[r] - ps[l - 1]]) {
+                chmin(res, r - l);
             }
         }
-
-        if (info[i][0] <= m) {
-            tm.emplace(info[i][0]);
-        }
     }
 
-    map<ll, int> mp;
-    int N = 0;
-    for (auto&& x : tm) mp[x] = ++N;
-
-    vector ps(n - k + 1, vector<ll>(N + 1));
-    for (int i = 0; i <= n - k; ++i) {
-        vector<ll> bk(N + 1);
-        for (int j = 0; j < (1 << k); ++j) {
-            if (info[j][0] <= m) {
-                chmax(bk[mp[info[j][0]]], info[j][1] + info[j][2] * i);
-            }
-        }
-
-        for (int j = 1; j <= N; ++j) {
-            ps[i][j] = max(ps[i][j - 1], bk[j]);
-        }
-    }
-
-    ll res = 0;
-
-    for (int i = 0; i < (1 << n - k); ++i) {
-        int t = popcount(i);
-        ll tot = 0, sum = 0;
-
-        for (int j = 0; j < n - k; ++j) {
-            if (i & 1 << j) {
-                tot += a[k + j].first;
-                sum += a[k + j].second * --t;
-            }
-        }
-
-        if (tot > m) continue;
-        auto it = mp.upper_bound(m - tot);
-        if (it == mp.begin()) continue;
-        --it;
-
-        chmax(res, sum + ps[popcount(i)][it->second]);
-    }
-
-    cout << res << '\n';
+    cout << (res == INF ? -1 : res) << '\n';
 }
 
 int main() {

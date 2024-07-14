@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,74 +469,71 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, m);
-    vector<pll> a(n);
+    read(int, n);
+    read(ll, target);
 
-    for (int i = 0; i < n; ++i) {
-        cin >> a[i].first;
+    vector<ll> val;
+    vector<int> sub(n - 1);
+    vector<int> cost;
+    vector<vector<pii>> ch(n + 1);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v, w, c);
+        edgew(ch, u, v, i);
+        val.emplace_back(w);
+        cost.emplace_back(c);
     }
-    for (int i = 0; i < n; ++i) {
-        cin >> a[i].second;
+
+    ll sum = 0;
+    auto dfs = [&] (auto dfs, int v, int pa) -> int {
+        int ret = 0;
+        for (auto&& [u, i] : ch[v]) {
+            if (u == pa) continue;
+            int curr = dfs(dfs, u, v);
+            ret += curr;
+            sub[i] = curr;
+            sum += curr * val[i];
+        }
+        return ret == 0 ? 1 : ret;
+    };
+    dfs(dfs, 1, 0);
+
+    target = sum - target;
+
+    array<vector<ll>, 2> cand;
+    for (int i = 0; i < n - 1; ++i) {
+        while (val[i] > 0) {
+            cand[cost[i] - 1].emplace_back((val[i] - val[i] / 2) * sub[i]);
+            val[i] /= 2;
+        }
     }
 
-    sort_by_key(a.begin(), a.end(), [] (const pii& p) { return -p.second; });
+    for (int i = 0; i < 2; ++i) {
+        sort(cand[i].begin(), cand[i].end(), greater());
+    }
 
-    int k = min(n, 15);
-    vector<array<ll, 3>> info(1 << k);
-    set<ll> tm;
-    for (int i = 0; i < (1 << k); ++i) {
-        int t = popcount(i);
+    int p = cand[0].size(), q = cand[1].size();
+    array<vector<ll>, 2> ps = { vector<ll>(p + 1), vector<ll>(q + 1) };
+    for (int i = 1; i <= p; ++i) {
+        ps[0][i] = ps[0][i - 1] + cand[0][i - 1];
+    }
+    for (int i = 1; i <= q; ++i) {
+        ps[1][i] = ps[1][i - 1] + cand[1][i - 1];
+    }
 
-        for (int j = 0; j < k; ++j) {
-            if (i & 1 << j) {
-                info[i][0] += a[j].first;
-                info[i][1] += a[j].second * --t;
-                info[i][2] += a[j].second;
+    int res = INF;
+    for (int i = 0; i <= p; ++i) {
+        int l = 0, r = q;
+        while (l < r) {
+            int mid = l + r >> 1;
+            if (ps[0][i] + ps[1][mid] >= target) {
+                r = mid;
+            } else {
+                l = mid + 1;
             }
         }
-
-        if (info[i][0] <= m) {
-            tm.emplace(info[i][0]);
+        if (ps[0][i] + ps[1][l] >= target) {
+            chmin(res, i + 2 * l);
         }
-    }
-
-    map<ll, int> mp;
-    int N = 0;
-    for (auto&& x : tm) mp[x] = ++N;
-
-    vector ps(n - k + 1, vector<ll>(N + 1));
-    for (int i = 0; i <= n - k; ++i) {
-        vector<ll> bk(N + 1);
-        for (int j = 0; j < (1 << k); ++j) {
-            if (info[j][0] <= m) {
-                chmax(bk[mp[info[j][0]]], info[j][1] + info[j][2] * i);
-            }
-        }
-
-        for (int j = 1; j <= N; ++j) {
-            ps[i][j] = max(ps[i][j - 1], bk[j]);
-        }
-    }
-
-    ll res = 0;
-
-    for (int i = 0; i < (1 << n - k); ++i) {
-        int t = popcount(i);
-        ll tot = 0, sum = 0;
-
-        for (int j = 0; j < n - k; ++j) {
-            if (i & 1 << j) {
-                tot += a[k + j].first;
-                sum += a[k + j].second * --t;
-            }
-        }
-
-        if (tot > m) continue;
-        auto it = mp.upper_bound(m - tot);
-        if (it == mp.begin()) continue;
-        --it;
-
-        chmax(res, sum + ps[popcount(i)][it->second]);
     }
 
     cout << res << '\n';

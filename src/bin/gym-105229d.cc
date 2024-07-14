@@ -468,78 +468,124 @@ void dump_ignore() {}
 void prep() {
 }
 
+struct choice_t {
+    char op;
+    ll val;
+};
+
 void solve() {
-    read(int, n, m);
-    vector<pll> a(n);
+    using mll = MLL<PRIME>;
 
+    constexpr char plus = '+';
+    constexpr char multiply = '*';
+
+    read(int, n);
+    vector<array<choice_t, 2>> a(n);
     for (int i = 0; i < n; ++i) {
-        cin >> a[i].first;
+        for (int j = 0; j < 2; ++j) {
+            read(char, op);
+            read(int, val);
+            a[i][j] = {
+                .op = op,
+                .val = val,
+            };
+        }
     }
+
+    vector<ll> b(n);
+    int m = 0;
+    ll curr = 0;
     for (int i = 0; i < n; ++i) {
-        cin >> a[i].second;
+        if (a[i][0].op == plus and a[i][1].op == plus) {
+            b[i] = max(a[i][0].val, a[i][1].val);
+        } else if (a[i][0].op == plus and a[i][1].val == 1) {
+            b[i] = a[i][0].val;
+        } else if (a[i][0].val == 1 and a[i][1].op == plus) {
+            b[i] = a[i][1].val;
+        } else if (a[i][0].op == multiply and a[i][0].val == 1 and a[i][1].op == multiply and a[i][1].val == 1) {
+            b[i] = 0;
+        } else {
+            b[i] = -1;
+        }
+    }
+    vector<ll> ps(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        ps[i] = ps[i - 1] + (b[i - 1] == -1 ? 0 : b[i - 1]);
+    }
+    vector<int> nxt(n + 1, n);
+    int last = n;
+    for (int i = n - 1; ~i; --i) {
+        if (b[i] == -1) {
+            nxt[i] = i + 1;
+            last = i;
+        } else {
+            nxt[i] = last;
+        }
     }
 
-    sort_by_key(a.begin(), a.end(), [] (const pii& p) { return -p.second; });
-
-    int k = min(n, 15);
-    vector<array<ll, 3>> info(1 << k);
-    set<ll> tm;
-    for (int i = 0; i < (1 << k); ++i) {
-        int t = popcount(i);
-
-        for (int j = 0; j < k; ++j) {
-            if (i & 1 << j) {
-                info[i][0] += a[j].first;
-                info[i][1] += a[j].second * --t;
-                info[i][2] += a[j].second;
+    int sz = min(n, 333);
+    vector<pair<mll, mll>> pp(n + 1);
+    pp[0] = {1, 0};
+    mll multiplier = 1, sum = 0;
+    for (int i = 0; i < n; ++i) {
+        int curr = 1;
+        if (a[i][0].op == multiply and a[i][1].op == multiply) {
+            curr = max(a[i][0].val, a[i][1].val);
+        } else if (a[i][0].op == plus and a[i][1].op == multiply) {
+            if (a[i][1].val == 1) {
+                sum += a[i][0].val;
+            } else {
+                curr = a[i][1].val;
             }
-        }
-
-        if (info[i][0] <= m) {
-            tm.emplace(info[i][0]);
-        }
-    }
-
-    map<ll, int> mp;
-    int N = 0;
-    for (auto&& x : tm) mp[x] = ++N;
-
-    vector ps(n - k + 1, vector<ll>(N + 1));
-    for (int i = 0; i <= n - k; ++i) {
-        vector<ll> bk(N + 1);
-        for (int j = 0; j < (1 << k); ++j) {
-            if (info[j][0] <= m) {
-                chmax(bk[mp[info[j][0]]], info[j][1] + info[j][2] * i);
+        } else if (a[i][0].op == multiply and a[i][1].op == plus) {
+            if (a[i][0].val == 1) {
+                sum += a[i][1].val;
+            } else {
+                curr = a[i][0].val;
             }
+        } else {
+            sum += max(a[i][0].val, a[i][1].val);
         }
 
-        for (int j = 1; j <= N; ++j) {
-            ps[i][j] = max(ps[i][j - 1], bk[j]);
-        }
+        multiplier *= curr;
+        sum *= curr;
+        pp[i + 1] = {multiplier, sum};
     }
 
-    ll res = 0;
+    read(int, q);
+    while (q--) {
+        read(int, init, l, r);
+        --l, --r;
 
-    for (int i = 0; i < (1 << n - k); ++i) {
-        int t = popcount(i);
-        ll tot = 0, sum = 0;
-
-        for (int j = 0; j < n - k; ++j) {
-            if (i & 1 << j) {
-                tot += a[k + j].first;
-                sum += a[k + j].second * --t;
+        ll bootstrap = init;
+        int curr = l;
+        while (curr <= r and nxt[curr] <= r + 1 and bootstrap <= 1e9) {
+            if (nxt[curr] == curr + 1) {
+                ll tmp[2] = {};
+                for (int j = 0; j < 2; ++j) {
+                    tmp[j] = bootstrap;
+                    if (a[curr][j].op == plus) {
+                        tmp[j] += a[curr][j].val;
+                    } else {
+                        tmp[j] *= a[curr][j].val;
+                    }
+                }
+                bootstrap = max(tmp[0], tmp[1]);
+            } else {
+                bootstrap += ps[nxt[curr]] - ps[curr];
             }
+            curr = nxt[curr];
         }
 
-        if (tot > m) continue;
-        auto it = mp.upper_bound(m - tot);
-        if (it == mp.begin()) continue;
-        --it;
+        mll res = bootstrap;
+        if (bootstrap <= 1e9 and curr <= r) {
+            res += ps[r + 1] - ps[curr];
+        } else {
+            res = res * (pp[r + 1].first / pp[curr].first) + pp[r + 1].second - pp[curr].second * (pp[r + 1].first / pp[curr].first);
+        }
 
-        chmax(res, sum + ps[popcount(i)][it->second]);
+        cout << res << '\n';
     }
-
-    cout << res << '\n';
 }
 
 int main() {

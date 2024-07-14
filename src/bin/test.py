@@ -7,7 +7,11 @@ import io
 PRIME = 998_244_353
 
 if __name__ == '__main__':
-    N = 1000000
+    N = 100000
+    Q = 100000
     print(N)
     for i in range(N):
-        print(999999000001 + i)
+        print("+3 *2")
+    print(Q)
+    for i in range(Q):
+        print(f"2 1 {N}")

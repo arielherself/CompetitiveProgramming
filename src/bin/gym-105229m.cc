@@ -469,77 +469,15 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, m);
-    vector<pll> a(n);
-
-    for (int i = 0; i < n; ++i) {
-        cin >> a[i].first;
+    read(int, n);
+    if (n == 2) {
+        cout << 0 << endl;
+    } else if (n == 3) {
+        cout << "1\n1 2\n1 3" << endl;
+    } else if (n == 5) {
+        cout << "2\n1 2\n3 4\n1 3\n2 4" << endl;
+    } else {
     }
-    for (int i = 0; i < n; ++i) {
-        cin >> a[i].second;
-    }
-
-    sort_by_key(a.begin(), a.end(), [] (const pii& p) { return -p.second; });
-
-    int k = min(n, 15);
-    vector<array<ll, 3>> info(1 << k);
-    set<ll> tm;
-    for (int i = 0; i < (1 << k); ++i) {
-        int t = popcount(i);
-
-        for (int j = 0; j < k; ++j) {
-            if (i & 1 << j) {
-                info[i][0] += a[j].first;
-                info[i][1] += a[j].second * --t;
-                info[i][2] += a[j].second;
-            }
-        }
-
-        if (info[i][0] <= m) {
-            tm.emplace(info[i][0]);
-        }
-    }
-
-    map<ll, int> mp;
-    int N = 0;
-    for (auto&& x : tm) mp[x] = ++N;
-
-    vector ps(n - k + 1, vector<ll>(N + 1));
-    for (int i = 0; i <= n - k; ++i) {
-        vector<ll> bk(N + 1);
-        for (int j = 0; j < (1 << k); ++j) {
-            if (info[j][0] <= m) {
-                chmax(bk[mp[info[j][0]]], info[j][1] + info[j][2] * i);
-            }
-        }
-
-        for (int j = 1; j <= N; ++j) {
-            ps[i][j] = max(ps[i][j - 1], bk[j]);
-        }
-    }
-
-    ll res = 0;
-
-    for (int i = 0; i < (1 << n - k); ++i) {
-        int t = popcount(i);
-        ll tot = 0, sum = 0;
-
-        for (int j = 0; j < n - k; ++j) {
-            if (i & 1 << j) {
-                tot += a[k + j].first;
-                sum += a[k + j].second * --t;
-            }
-        }
-
-        if (tot > m) continue;
-        auto it = mp.upper_bound(m - tot);
-        if (it == mp.begin()) continue;
-        --it;
-
-        chmax(res, sum + ps[popcount(i)][it->second]);
-    }
-
-    cout << res << '\n';
 }
 
 int main() {
