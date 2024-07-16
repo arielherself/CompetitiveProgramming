@@ -468,46 +468,75 @@ void dump_ignore() {}
 void prep() {
 }
 
-constexpr int N = 100;
-ll dp[N][N][N], ndp[N][N][N];
+// custom less function
+bool compare(const string& a, const string& b) {
+    if (a.size() < b.size()) return true;
+    else if (a.size() > b.size()) return false;
+    else {
+        int n = a.size();
+        for (int i = 0; i < n; ++i) {
+            if (a[i] < b[i]) {
+                return true;
+            } else if (a[i] > b[i]) {
+                return false;
+            }
+        }
+        return true;
+    }
+}
 
 void solve() {
-    read(int, n, m);
-    vector a(n, vector<ll>(m));
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < m; ++j) {
-            cin >> a[i][j];
-        }
-    }
+    read(int, n, k);
+    k += 1;
 
-    memset(dp, 0x3f, sizeof(dp));
-    for (int i = 0; i < n; ++i) {
-        memset(ndp, 0x3f, sizeof(ndp));
-        for (int j = 0; j < m; ++j) {
-            for (int k = 0; k < n; ++k) {
-                for (int l = 0; l < m; ++l) {
-                    // (i, j) as minimum
-                    ll p = a[i][j] - i - j;
-                    ll q = a[k][l] - k - l;
-                    ll prev = i == 0 and j == 0 ? 0 : min(i - 1 >= 0 ? dp[j][k][l] : INFLL, j - 1 >= 0 ? ndp[j - 1][k][l] : INFLL);
-                    if (q > p) {
-                        chmin(ndp[j][i][j], prev + (q - p) * (i + j));
-                    } else {
-                        chmin(ndp[j][k][l], prev + p - q);
-                    }
+    string res(100, '9');
+    for (int i = 0; i <= 10; ++i) {
+        for (int j = 0; j < 10; ++j) {
+            if (j + k <= 10) {
+                int target = n - k * i * 9 - (j + j + k - 1) * k / 2;
+                if (target < 0 or target % k != 0) {
+                    continue;
+                }
+                target /= k;
+                string s = char(j + '0') + string(i, '9');
+                while (target) {
+                    int curr = min(9, target);
+                    s += curr + '0';
+                    target -= curr;
+                }
+                reverse(s.begin(), s.end());
+                if (compare(s, res)) {
+                    res = s;
+                }
+            } else {
+                int second = j + k - 10;
+                int first = k - second;
+                int target = n - first * i * 9 - (j + j + first - 1) * first / 2 -
+                             (0 + second - 1) * second / 2;
+                if (target - second < 0 or (target - second) % k != 0) {
+                    continue;
+                }
+                target = (target - second) / k;
+                string s = char(j + '0') + string(i, '9');
+                int f = 1;
+                while (target) {
+                    int curr = min(9 - f, target);
+                    s += curr + '0';
+                    target -= curr;
+                    f = 0;
+                }
+                reverse(s.begin(), s.end());
+                if (compare(s, res)) {
+                    res = s;
                 }
             }
         }
-        swap(dp, ndp);
     }
-
-    ll res = INFLL;
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < m; ++j) {
-            chmin(res, dp[m - 1][i][j]);
-        }
+    if (res.size() == 100) {
+        cout << -1 << '\n';
+    } else {
+        cout << res << '\n';
     }
-    cout << res << '\n';
 }
 
 int main() {

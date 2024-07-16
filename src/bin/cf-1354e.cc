@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -468,46 +468,106 @@ void dump_ignore() {}
 void prep() {
 }
 
-constexpr int N = 100;
-ll dp[N][N][N], ndp[N][N][N];
-
 void solve() {
     read(int, n, m);
-    vector a(n, vector<ll>(m));
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < m; ++j) {
-            cin >> a[i][j];
+    read(int, n1, n2, n3);
+
+    adj(ch, n);
+    while (m--) {
+        read(int, u, v);
+        edge(ch, u, v);
+    }
+
+    vector<int> state(n + 1);
+    vector<bool> vis(n + 1);
+    vector<int> bag(n + 1);
+    vector<array<int, 2>> nums;
+    int tm = 0;
+    array<int, 2> nw = {};
+    int f = 1;
+    auto dfs = [&] (auto dfs, int v, int curr) -> void {
+        bag[v] = tm;
+        state[v] = curr;
+        nw[curr] += 1;
+        vis[v] = 1;
+
+        for (auto&& u : ch[v]) {
+            if (vis[u]) {
+                if (state[u] != (1 ^ curr)) {
+                    f = 0;
+                    return;
+                }
+                continue;
+            }
+            dfs(dfs, u, 1 ^ curr);
+        }
+    };
+
+    int pre_val = 0;
+    for (int i = 1; i <= n; ++i) {
+        if (not vis[i]) {
+            nw.fill(0);
+            dfs(dfs, i, 0);
+            nums.emplace_back(nw);
+            ++tm;
+            pre_val += nw[0];
         }
     }
 
-    memset(dp, 0x3f, sizeof(dp));
-    for (int i = 0; i < n; ++i) {
-        memset(ndp, 0x3f, sizeof(ndp));
-        for (int j = 0; j < m; ++j) {
-            for (int k = 0; k < n; ++k) {
-                for (int l = 0; l < m; ++l) {
-                    // (i, j) as minimum
-                    ll p = a[i][j] - i - j;
-                    ll q = a[k][l] - k - l;
-                    ll prev = i == 0 and j == 0 ? 0 : min(i - 1 >= 0 ? dp[j][k][l] : INFLL, j - 1 >= 0 ? ndp[j - 1][k][l] : INFLL);
-                    if (q > p) {
-                        chmin(ndp[j][i][j], prev + (q - p) * (i + j));
-                    } else {
-                        chmin(ndp[j][k][l], prev + p - q);
-                    }
+    if (f == 0) {
+        cout << "NO\n";
+        return;
+    }
+
+    int k = nums.size();
+    vector dp(k + 1, vector<int>(n + 1));
+    dp[0][pre_val] = 1;
+    for (int i = 1; i <= k; ++i) {
+        dp[i] = dp[i - 1];
+        for (int j = 0; j <= n; ++j) {
+            int idx = j - nums[i - 1][0] + nums[i - 1][1];
+            if (idx >= 0 and idx <= n) {
+                dp[i][idx] |= dp[i - 1][j];
+            }
+        }
+        // debug(dp[i]);
+    }
+
+    // debug(bag);
+    // debug(pre_val);
+
+    if (dp[k][n2] == 0) {
+        cout << "NO\n";
+    } else {
+        cout << "YES\n";
+        vector<int> sol2(k);
+        int val = n2;
+        for (int i = k; i > 0; --i) {
+            if (dp[i - 1][val] == 1) {
+                // don't need to select this element.
+                ;;
+            } else {
+                sol2[i - 1] = 1;
+                val -= nums[i - 1][1] - nums[i - 1][0];
+            }
+        }
+
+        for (int i = 1; i <= n; ++i) {
+            if (state[i] == sol2[bag[i]]) {
+                cout << 2;
+            } else {
+                if (n1 > 0) {
+                    cout << 1;
+                    n1 -= 1;
+                } else {
+                    cout << 3;
                 }
             }
         }
-        swap(dp, ndp);
+
+        cout << '\n';
     }
 
-    ll res = INFLL;
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < m; ++j) {
-            chmin(res, dp[m - 1][i][j]);
-        }
-    }
-    cout << res << '\n';
 }
 
 int main() {
