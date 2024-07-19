@@ -470,18 +470,57 @@ void prep() {
 
 void solve() {
     read(int, n);
-    read(string, a, b);
+    vector<tiii> a;
+
+    set<int> st;
     for (int i = 0; i < n; ++i) {
-        if (a[i] != '0' or b[i] != '0') {
-            if (a[i] == '0') {
-                cout << "No\n";
-            } else {
-                cout << "Yes\n";
-            }
-            return;
+        read(int, l, r);
+        a.emplace_back(l, r, i);
+        st.emplace(l);
+        st.emplace(r);
+    }
+
+    unordered_map<int, int, safe_hash> mp;
+    int N = 0;
+    for (auto& x : st) mp[x] = ++N;
+
+    vector<vector<int>> open(N + 1), close(N + 1);
+    for (auto&& [l, r, i] : a) {
+        open[mp[l]].emplace_back(i);
+        close[mp[r]].emplace_back(i);
+    }
+
+    int tot = 0;
+    int t = 0;
+    vector<int> cnt(n);
+    unordered_set<int, safe_hash> curr;
+    int last = -1;
+    for (int i = 1; i <= N; ++i) {
+        int f = curr.size();
+        int v = f == 1 ? *curr.begin() : -1;
+        for (auto&& x : open[i]) {
+            curr.emplace(x);
+        }
+
+        chmax(t, curr.size());
+        if (f == 0 and curr.size()) {
+            tot += 1;
+        } else if (f == 1 and curr.size() > 1 and last == v) {
+            cnt[v] += 1;
+        }
+
+        f = curr.size();
+        for (auto&& x : close[i]) {
+            curr.erase(x);
+        }
+
+        if (f > 1 and curr.size() == 1) {
+            last = *curr.begin();
         }
     }
-    cout << "Yes\n";
+
+    cout << (t > 1 ? tot + *max_element(cnt.begin(), cnt.end()) : tot - 1) << '\n';
+
 }
 
 int main() {

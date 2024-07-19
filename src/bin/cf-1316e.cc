@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,19 +469,43 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    read(string, a, b);
+    read(int, n, p, k);
+    readvec(int, a, n);
+    vector s(n, vector<int>(p));
     for (int i = 0; i < n; ++i) {
-        if (a[i] != '0' or b[i] != '0') {
-            if (a[i] == '0') {
-                cout << "No\n";
-            } else {
-                cout << "Yes\n";
-            }
-            return;
+        for (int j = 0; j < p; ++j) {
+            cin >> s[i][j];
         }
     }
-    cout << "Yes\n";
+
+    vector<int> idx(n);
+    iota(idx.begin(), idx.end(), 0);
+    sort_by_key(idx.begin(), idx.end(), [&] (auto&& i) { return -a[i]; });
+
+    vector dp(n + 1, vector<ll>(1 << p));
+    for (int i = 0; i < k; ++i) {
+        dp[0][0] += a[idx[i]];
+    }
+
+    for (int i = 1; i <= n; ++i) {
+        dp[i] = dp[i - 1];
+        for (int j = 0; j < (1 << p); ++j) {
+            int rem = k - i + 1 + popcount(j);
+            for (int k = 0; k < p; ++k) {
+                if (j >> k & 1) continue;
+                if (rem > 0) {
+                    // previously added this element
+                    if (i - 1 + rem < n) {
+                        chmax(dp[i][j | 1 << k], dp[i - 1][j] - a[idx[i - 1]] + a[idx[i - 1 + rem]] + s[idx[i - 1]][k]);
+                    }
+                } else {
+                    chmax(dp[i][j | 1 << k], dp[i - 1][j] + s[idx[i - 1]][k]);
+                }
+            }
+        }
+    }
+
+    cout << dp[n][(1 << p) - 1] << endl;
 }
 
 int main() {

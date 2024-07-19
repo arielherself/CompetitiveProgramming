@@ -469,19 +469,33 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    read(string, a, b);
-    for (int i = 0; i < n; ++i) {
-        if (a[i] != '0' or b[i] != '0') {
-            if (a[i] == '0') {
-                cout << "No\n";
-            } else {
-                cout << "Yes\n";
+    read(string, s, t);
+    int n = s.size(), m = t.size();
+
+    for (int i = 1; i <= m; ++i) {
+        vector<int> dp(i + 1, -1);
+        dp[0] = i;
+        for (int j = 0; j < n; ++j) {
+            vector<int> curr = dp;
+            for (int k = 0; k < i; ++k) {
+                if (s[j] == t[k]) {
+                    chmax(curr[k + 1], dp[k]);
+                }
             }
+            for (int k = 0; k <= i; ++k) {
+                if (dp[k] < m and dp[k] != -1 and s[j] == t[dp[k]]) {
+                    chmax(curr[k], dp[k] + 1);
+                }
+            }
+            swap(dp, curr);
+            // debug(dp);
+        }
+        if (dp[i] == m) {
+            cout << "YES\n";
             return;
         }
     }
-    cout << "Yes\n";
+    cout << "NO\n";
 }
 
 int main() {

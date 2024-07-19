@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,51 +469,59 @@ void prep() {
 }
 
 void solve() {
-    using mll = MLL<PRIME>;
+    read(int, n);
+    vector<tiii> a;
 
-    read(string, s, t);
-    int n = s.size(), m = t.size();
-
-    mll res = 0;
-
-    string rev(t.rbegin(), t.rend());
-
-    // Not splitting & prepend(reversed)
-    vector dp(n + 1, vector<mll>(m + 1));
-    dp[0][0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        for (int j = 0; j <= m; ++j) {
-            dp[i][j] = dp[i - 1][j];  // append
-            if (j > 0 and rev[j - 1] == s[i - 1]) {
-                dp[i][j] += dp[i - 1][j - 1];  // prepend
-            }
-        }
-        res += dp[i][m];
+    set<int> st;
+    for (int i = 0; i < n; ++i) {
+        read(int, l, r);
+        a.emplace_back(l, r, i);
+        st.emplace(l);
+        st.emplace(r);
     }
 
-    // Not splitting & append
-    // Without any prepending characters, not allowing to discard
-    if (s.substr(0, m) == t) {
-        res += n - m + 1;
+    unordered_map<int, int, safe_hash> mp;
+    int N = 0;
+    for (auto& x : st) mp[x] = ++N;
+
+    vector<vector<int>> open(N + 1), close(N + 1);
+    for (auto&& [l, r, i] : a) {
+        open[mp[l]].emplace_back(i);
+        close[mp[r]].emplace_back(i);
     }
 
-    // Splitting
-    // Excluding full prepend
-    for (int i = 0; i < m; ++i) {
-        string a = t.substr(0, m - i - 1);
-        string ra(a.rbegin(), a.rend());
-        string b = t.substr(m - i - 1);
-        int cr = 0, cb = 0;
-        for (int j = 0; j < m; ++j) {
-            if (cr < ra.size() and s[j] == ra[cr]) ++cr;
-            else if (cb < b.size() and s[j] == b[cb]) ++cb;
+    int tot = 0;
+    int t = 0;
+    vector<int> cnt(n);
+    unordered_set<int, safe_hash> curr;
+    int last = -1;
+    for (int i = 1; i <= N; ++i) {
+        int f = curr.size();
+        int v = f == 1 ? *curr.begin() : -1;
+        for (auto&& x : open[i]) {
+            curr.emplace(x);
         }
-        if (cr == ra.size() and cb == b.size()) {
-            res += n - m + 1;
+
+        chmax(t, curr.size());
+        if (f == 0 and curr.size()) {
+            tot += 1;
+        } else if (f == 1 and curr.size() > 1 and last == v) {
+            cnt[v] += 1;
+        }
+
+        f = curr.size();
+        for (auto&& x : close[i]) {
+            curr.erase(x);
+        }
+
+        if (f > 1 and curr.size() == 1) {
+            last = *curr.begin();
+            // deb(last);
         }
     }
 
-    cout << res << endl;
+    cout << (t > 1 ? tot + *max_element(cnt.begin(), cnt.end()) : tot - 1) << '\n';
+
 }
 
 int main() {

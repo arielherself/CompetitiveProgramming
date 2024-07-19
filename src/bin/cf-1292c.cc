@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,18 +470,51 @@ void prep() {
 
 void solve() {
     read(int, n);
-    read(string, a, b);
-    for (int i = 0; i < n; ++i) {
-        if (a[i] != '0' or b[i] != '0') {
-            if (a[i] == '0') {
-                cout << "No\n";
-            } else {
-                cout << "Yes\n";
-            }
-            return;
+    adj(ch, n);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
+    }
+
+    vector son(n + 1, vector<int>(n + 1));
+    vector son_sz(n + 1, vector<int>(n + 1));
+    auto dfs = [&] (auto&& dfs, int v, int pa, int f, int b) -> void {
+        son[f][v] = b;
+        son_sz[f][b] += 1;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            dfs(dfs, u, v, f, b);
+        }
+    };
+    for (int i = 1; i <= n; ++i) {
+        for (auto&& u : ch[i]) {
+            dfs(dfs, u, i, i, u);
         }
     }
-    cout << "Yes\n";
+
+    vector dp(n + 1, vector<ll>(n + 1, -1));
+    auto dfs2 = [&] (auto&& dfs2, int v, int u) -> ll {
+        if (v < u) swap(u, v);
+        if (dp[v][u] != -1) return dp[v][u];
+        if (v == u) {
+            return dp[v][u] = 0;
+        } else {
+            auto x = dfs2(dfs2, son[v][u], u);
+            auto y = dfs2(dfs2, son[u][v], v);
+            return dp[v][u] = max(x, y) + ll(n - son_sz[v][son[v][u]]) * (n - son_sz[u][son[u][v]]);
+        }
+    };
+
+    ll res = 0;
+    for (int i = 1; i <= n; ++i) {
+        for (int j = 1; j <= n; ++j) {
+            if (dp[i][j] == -1) dfs2(dfs2, i, j);
+            chmax(res, dp[i][j]);
+        }
+    }
+
+    cout << res << endl;
+
 }
 
 int main() {

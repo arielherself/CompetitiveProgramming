@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,18 +470,60 @@ void prep() {
 
 void solve() {
     read(int, n);
-    read(string, a, b);
-    for (int i = 0; i < n; ++i) {
-        if (a[i] != '0' or b[i] != '0') {
-            if (a[i] == '0') {
-                cout << "No\n";
-            } else {
-                cout << "Yes\n";
+    vector<vector<pii>> ch(n + 1);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edgew(ch, u, v, i);
+    }
+
+    vector<int> layer(n + 1);
+    vector<int> hang(n + 1);
+    vector<int> fa(n + 1);
+    auto dfs = [&] (auto dfs, int v, int pa) -> void {
+        for (auto&& [u, i] : ch[v]) {
+            if (u == pa) continue;
+            hang[u] = i;
+            fa[u] = v;
+            layer[u] = layer[v] + 1;
+            dfs(dfs, u, v);
+        }
+    };
+    dfs(dfs, 1, 0);
+
+    read(int, m);
+    vector<int> val(n - 1, 1);
+    vector<tiii> check;
+    while (m--) {
+        read(int, u, v, w);
+        check.emplace_back(u, v, w);
+
+        while (u != v) {
+            if (layer[u] < layer[v]) swap(u, v);
+            chmax(val[hang[u]], w);
+            u = fa[u];
+        }
+    }
+
+    for (auto&& [u, v, w] : check) {
+        int f = 0;
+        while (u != v) {
+            if (layer[u] < layer[v]) swap(u, v);
+            if (val[hang[u]] < w) {
+                f = 0;
+                break;
+            } else if (val[hang[u]] == w) {
+                f = 1;
             }
+            u = fa[u];
+        }
+
+        if (f == 0) {
+            cout << -1 << '\n';
             return;
         }
     }
-    cout << "Yes\n";
+
+    putvec(val);
 }
 
 int main() {

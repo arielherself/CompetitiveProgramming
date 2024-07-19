@@ -469,19 +469,63 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    read(string, a, b);
-    for (int i = 0; i < n; ++i) {
-        if (a[i] != '0' or b[i] != '0') {
-            if (a[i] == '0') {
-                cout << "No\n";
-            } else {
-                cout << "Yes\n";
+    read(int, n, d);
+    vector<array<unordered_set<int, safe_hash>, 3>> a(n);
+    vector<int> layer(n + 1);
+    // debug(n);
+    vector<int> fa(n + 1);
+
+    ll sum = 0;
+
+    for (int i = 1; i <= n; ++i) {
+        layer[i] = lg2(i);
+        fa[i] = i >> 1;
+        if (2 * i + 1 <= n) {
+            a[layer[i]][2].emplace(i);
+        } else if (2 * i <= n) {
+            a[layer[i]][1].emplace(i);
+        } else {
+            a[layer[i]][0].emplace(i);
+        }
+
+        sum += layer[i];
+    }
+    // debug(fa);
+    // debug(sum);
+
+    if (d > ll(1) * n * (n - 1) / 2 or d < sum) {
+        cout << "NO\n";
+    } else {
+        cout << "YES\n";
+        while (sum < d) {
+            for (int i = 0; i < n; ++i) {
+                if (a[i][0].size() and (a[i][1].size() or a[i][0].size() > 1)) {
+                    int t = a[i][1].size() ? 1 : 0;
+                    int v = *a[i][0].begin();
+                    int u = a[i][1].size() ? *a[i][1].begin() : *next(a[i][0].begin());
+                    if (a[layer[fa[v]]][1].count(fa[v])) {
+                        a[layer[fa[v]]][1].erase(fa[v]);
+                        a[layer[fa[v]]][0].emplace(fa[v]);
+                    } else {
+                        a[layer[fa[v]]][2].erase(fa[v]);
+                        a[layer[fa[v]]][1].emplace(fa[v]);
+                    }
+                    a[i][0].erase(v);
+                    a[i + 1][0].emplace(v);
+                    layer[v] = i + 1;
+                    fa[v] = u;
+                    a[i][t].erase(u);
+                    a[i][t + 1].emplace(u);
+                    sum += 1;
+                    break;
+                }
             }
-            return;
+        }
+        for (int i = 2; i <= n; ++i) {
+            cout << fa[i] << " \n"[i == n];
         }
     }
-    cout << "Yes\n";
+
 }
 
 int main() {

@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,19 +469,69 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    read(string, a, b);
-    for (int i = 0; i < n; ++i) {
-        if (a[i] != '0' or b[i] != '0') {
-            if (a[i] == '0') {
-                cout << "No\n";
-            } else {
-                cout << "Yes\n";
-            }
-            return;
+    read(int, n, k);
+    readvec(int, a, n);
+    sort(a.begin(), a.end());
+
+    ll res = INFLL;
+
+    vector<ll> ps(n + 1);
+    ll sum = 0;
+    for (int i = 1; i <= n; ++i) {
+        sum += a[i - 1];
+        ps[i] = ll(1) * a[i - 1] * i - sum;
+        if (i >= k) {
+            chmin(res, ps[i]);
         }
     }
-    cout << "Yes\n";
+
+    vector<ll> ss(n + 1);
+    sum = 0;
+    for (int i = n - 1; ~i; --i) {
+        sum += a[i];
+        ss[i] = sum - ll(1) * a[i] * (n - i);
+        if (n - i >= k) {
+            chmin(res, ss[i]);
+        }
+    }
+
+    int prev = 0;
+    for (int i = 1; i < n; ++i) {
+        if (a[i] != a[i - 1]) {
+            int l = prev, r = i - 1;
+            int left_cnt = prev, right_cnt = n - i;
+            int cnt = r - l + 1;
+            if (k <= cnt) {
+                chmin(res, 0);
+            } else if (left_cnt > 0 and right_cnt > 0 and left_cnt + cnt >= k and right_cnt + cnt >= k) {
+                ll left_cost = ps[l] + ll(1) * (a[l] - 1 - a[l - 1]) * left_cnt;
+                ll right_cost = ss[r + 1] + ll(1) * (a[r + 1] - 1 - a[r]) * right_cnt;
+                chmin(res, min(left_cost, right_cost) + ll(1) * (k - cnt));
+            } else if (left_cnt > 0 and left_cnt + cnt >= k) {
+                ll left_cost = ps[l] + ll(1) * (a[l] - 1 - a[l - 1]) * left_cnt;
+                chmin(res, left_cost + ll(1) * (k - cnt));
+            } else if (right_cnt > 0 and right_cnt + cnt >= k) {
+                ll right_cost = ss[r + 1] + ll(1) * (a[r + 1] - 1 - a[r]) * right_cnt;
+                chmin(res, right_cost + ll(1) * (k - cnt));
+            } else if (left_cnt > 0 and right_cnt > 0 and left_cnt + cnt + right_cnt >= k) {
+                ll left_cost = ps[l] + ll(1) * (a[l] - 1 - a[l - 1]) * left_cnt;
+                ll right_cost = ss[r + 1] + ll(1) * (a[r + 1] - 1 - a[r]) * right_cnt;
+                chmin(res, left_cost + right_cost + ll(1) * (k - cnt));
+            }
+            prev = i;
+        }
+    }
+    int l = prev, r = n - 1;
+    int left_cnt = prev;
+    int cnt = r - l + 1;
+    if (k <= cnt) {
+        chmin(res, 0);
+    } else if (left_cnt > 0 and left_cnt + cnt >= k) {
+        ll left_cost = ps[l] + ll(1) * (a[l] - 1 - a[l - 1]) * left_cnt;
+        chmin(res, left_cost + ll(1) * (k - cnt));
+    }
+
+    cout << res << endl;
 }
 
 int main() {

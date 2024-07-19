@@ -483,19 +483,22 @@ void solve() {
     dp[0][0] = 1;
     for (int i = 1; i <= n; ++i) {
         for (int j = 0; j <= m; ++j) {
-            dp[i][j] = dp[i - 1][j];  // append
+            dp[i][j] = (j == 0 ? 2 : 1) * dp[i - 1][j];  // append
             if (j > 0 and rev[j - 1] == s[i - 1]) {
                 dp[i][j] += dp[i - 1][j - 1];  // prepend
             }
         }
+        debug(dp[i][m]);
         res += dp[i][m];
     }
+    debug(res);
 
     // Not splitting & append
     // Without any prepending characters, not allowing to discard
     if (s.substr(0, m) == t) {
         res += n - m + 1;
     }
+    debug(res);
 
     // Splitting
     // Excluding full prepend
