@@ -59,7 +59,7 @@ constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
 
 /* random */
 
-mt19937 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
+mt19937_64 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
 
 /* bit-wise operations */
 #define lowbit(x) ((x) & -(x))
@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,17 +469,6 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
-    }
-
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
-    }
 }
 
 int main() {

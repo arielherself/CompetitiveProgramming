@@ -3,6 +3,7 @@
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #pragma GCC diagnostic ignored "-Wshift-op-parentheses"
 #pragma GCC diagnostic ignored "-Wlogical-op-parentheses"
+// #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
 #pragma GCC optimize("Ofast")
 /************* This code requires C++17. ***************/
 
@@ -59,7 +60,7 @@ constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
 
 /* random */
 
-mt19937 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
+mt19937_64 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
 
 /* bit-wise operations */
 #define lowbit(x) ((x) & -(x))
@@ -468,18 +469,112 @@ void dump_ignore() {}
 void prep() {
 }
 
+struct LCA {
+    vector<int> depth;
+    vector<vector<int>> pa;
+    LCA(const vector<vector<int>>& g, int root = 1) {
+        int n = g.size() - 1;
+        int m = 32 - __builtin_clz(n);
+        depth.resize(n + 1);
+        pa.resize(n + 1, vector<int>(m, -1));
+        function<void(int, int)> dfs = [&](int x, int fa) {
+            pa[x][0] = fa;
+            for (int y: g[x]) {
+                if (y != fa) {
+                    depth[y] = depth[x] + 1;
+                    dfs(y, x);
+                }
+            }
+        };
+        dfs(root, 0);
+        for (int i = 0; i < m - 1; i++)
+            for (int x = 1; x <= n; x++)
+                if (int p = pa[x][i]; p != -1)
+                    pa[x][i + 1] = pa[p][i];
+    }
+    int get_kth_ancestor(int node, int k) {
+        for (; k; k &= k - 1)
+            node = pa[node][__builtin_ctz(k)];
+        return node;
+    }
+    int query(int x, int y) {
+        if (depth[x] > depth[y])
+            swap(x, y);
+        y = get_kth_ancestor(y, depth[y] - depth[x]);
+        if (y == x)
+            return x;
+        for (int i = pa[x].size() - 1; i >= 0; i--) {
+            int px = pa[x][i], py = pa[y][i];
+            if (px != py) {
+                x = px;
+                y = py;
+            }
+        }
+        return pa[x][0];
+    }
+};
+
 void solve() {
     read(int, n);
-    readvec1(int, c, n);
+    readvec1(int, a, n);
+
     adj(ch, n);
     for (int i = 0; i < n - 1; ++i) {
         read(int, u, v);
         edge(ch, u, v);
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    vector<array<int, 31>> ps(n + 1);
+    vector<array<int, 31>> b(n + 1);
+    vector<array<int, 31>> prev(n + 1);
+    auto dfs = [&] (auto dfs, int v, int pa) -> void {
+        for (int i = 0; i < 31; ++i) {
+            b[v][i] = a[v] >> i & 1;
+            ps[v][i] = ps[pa][i] + b[v][i];
+        }
+        for (int i = 0; i < 31; ++i) {
+            if (ps[v][i] > ps[pa][i]) {
+                prev[v][i] = v;
+            } else {
+                prev[v][i] = prev[pa][i];
+            }
+        }
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            dfs(dfs, u, v);
+        }
+    };
+    dfs(dfs, 1, 0);
+
+    LCA lca(ch);
+
+    auto range_popcnt = [&] (int u, int v, int l) {
+        int res = 0;
+        for (int i = 0; i < 31; ++i) {
+            res += !!(ps[u][i] + ps[v][i] - 2 * ps[l][i] + b[l][i]);
+        }
+        return res;
+    };
+
+    read(int, q);
+    while (q--) {
+        read(int, u, v);
+
+        int l = lca.query(u, v);
+        int res = 0;
+
+        for (auto&& i : { u, v }) {
+            int x = i;
+            for (int j = 0; j < 31; ++j) {
+                int y = prev[x][j];
+                if (lca.depth[y] >= lca.depth[l])
+                chmax(res, range_popcnt(u, y, i == u ? y : l) + range_popcnt(v, y, i == v ? y : l));
+            }
+        }
+
+        cout << res << ' ';
     }
+    cout << '\n';
 }
 
 int main() {

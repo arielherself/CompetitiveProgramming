@@ -470,16 +470,27 @@ void prep() {
 
 void solve() {
     read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    readvec(int, a, n);
+    int res = n;
+    int j = 0;
+    auto cmp = [&] (int i, int j) {
+        if (a[i] == a[j]) return i > j;
+        return a[i] > a[j];
+    };
+    set<int, decltype(cmp)> st(cmp);
+    for (int i = 0; i < n; ++i) {
+        st.emplace(i);
+        while (j <= i and st.size() and (a[*st.begin()] > 4 or a[j] > 2)) {
+            st.erase(j++);
+        }
+        if (a[i] == 0 or a[i] <= 2 and st.size() >= 2 and st.size() % 2 == 0) {
+            res -= 1;
+            while (j <= i) {
+                st.erase(j++);
+            }
+        }
     }
-
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
-    }
+    cout << res << '\n';
 }
 
 int main() {

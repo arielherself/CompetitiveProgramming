@@ -470,16 +470,18 @@ void prep() {
 
 void solve() {
     read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    vector<int> bk(n + 1);
+    for (int i = 0; i < n; ++i) {
+        read(int, x);
+        bk[x] += 1;
     }
-
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    for (int i = 1; i <= n; ++i) {
+        if (bk[i] % 2) {
+            cout << "YES\n";
+            return;
+        }
     }
+    cout << "NO\n";
 }
 
 int main() {

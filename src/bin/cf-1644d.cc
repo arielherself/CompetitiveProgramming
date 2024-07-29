@@ -458,28 +458,49 @@ array<T, N> __initarray(const T& init) {
 /*******************************************************/
 
 // #define SINGLE_TEST_CASE
-// #define DUMP_TEST_CASE 7219
+// #define DUMP_TEST_CASE 141
 // #define TOT_TEST_CASE 10000
 
-void dump() {}
+void dump() {
+    read(int, n, m, k, q);
+    cout << n << ' ' << m << ' ' << k << ' ' << q << endl;
+    while (q--) {
+        read(int, u, v);
+        cout <<  u<< ' ' << v << endl;
+    }
+}
 
-void dump_ignore() {}
+void dump_ignore() {
+    read(int, n, m, k, q);
+    readvec(pii, a, q);
+}
 
 void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(int, n, m, k, q);
+    MLL<PRIME> res = 1;
+    readvec(pii, a, q);
+    reverse(a.begin(), a.end());
+    unordered_set<int, safe_hash> row, col;
+    int cntrow = 0, cntcol = 0;
+    for (auto&& [x, y] : a) {
+        if (not row.count(x) and not col.count(y)) {
+            row.emplace(x), col.emplace(y);
+            cntrow += 1, cntcol += 1;
+            res *= k;
+        } else if (not row.count(x) and m != 1 and cntcol != m) {
+            row.emplace(x);
+            cntrow += 1;
+            res *= k;
+        } else if (not col.count(y) and n != 1 and cntrow != n) {
+            col.emplace(y);
+            cntcol += 1;
+            res *= k;
+        }
     }
-
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
-    }
+    cout << res << '\n';
 }
 
 int main() {

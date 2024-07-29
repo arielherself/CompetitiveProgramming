@@ -469,17 +469,57 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(int, n, k);
+    vector<pii> a(n);
+    for (int i = 0; i < n; ++i) cin >> a[i].first;
+    for (int i = 0; i < n; ++i) cin >> a[i].second;
+
+    auto work = [&] (int z) -> ll {
+        ll cnt = 0;
+        // ll val = 0;
+        for (auto&& [v, c] : a) {
+            if (v < z) continue;
+            int use = 1 + (v - z) / c;
+            cnt += use;
+            // val += ll(1) * use * v - ll(1) * c * use * (use - 1) / 2;
+        }
+        return cnt;
+    };
+
+    int l = 0, r = 1e9 + 10;
+    while (l < r) {
+        int mid = l + r >> 1;
+        if (work(mid) > k) {
+            l = mid + 1;
+        } else {
+            r = mid;
+        }
+    }
+    // debug(l);
+
+    ll res = 0;
+    vector<int> cand;
+    for (auto&& [v, c] : a) {
+        if (v < l) {
+            cand.emplace_back(v);
+            continue;
+        }
+        int use = 1 + (v - l) / c;
+        // deb(use, v, l, c);
+        k -= use;
+        res += ll(1) * use * v - ll(1) * c * use * (use - 1) / 2;
+        cand.emplace_back(v - use * c);
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    // deb(k, res, l);
+    // debug(cand);
+    sort(cand.begin(), cand.end(), greater());
+    for (auto&& x : cand) {
+        if (k == 0 or x < 0) break;
+        res += x;
+        k -= 1;
     }
+    cout << res << '\n';
 }
 
 int main() {

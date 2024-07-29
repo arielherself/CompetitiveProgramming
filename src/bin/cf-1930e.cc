@@ -465,21 +465,32 @@ void dump() {}
 
 void dump_ignore() {}
 
+using mll = MLL<PRIME>;
+constexpr int N = 1e6 + 10;
+mll fact[N], factrev[N];
 void prep() {
+    fact[0] = 1;
+    factrev[0] = 1;
+    for (int i = 1; i < N; ++i) {
+        fact[i] = fact[i - 1] * i;
+        factrev[i] = 1 / fact[i];
+    }
 }
 
 void solve() {
     read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+
+    for (int k = 1; k <= (n - 1) / 2; ++k) {
+        mll res = 1;
+        for (int i = 1; 2 * i * k <= n; ++i) {
+            // deb(k, i, n - 2 * k * i, n - 2 * i + 1);
+            int t = 2 * k * i - 2 * k + 1;
+            res += fastcomb(n, 2 * k * i) - fastcomb(n - t, n - 2 * k * i);
+        }
+        cout << res << ' ';
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
-    }
+    cout << '\n';
 }
 
 int main() {

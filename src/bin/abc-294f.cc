@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,17 +469,50 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
-    }
+    read(int, n, m);
+    read(ll, k);
+    readvec(pii, a, n);
+    readvec(pii, b, m);
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    vector<int> bk(m + 1);
+    vector<int> ps(m + 1);
+
+    auto work = [&] (ld tar) -> ll {
+        ll ret = 0;
+
+        map<ld, int> mp;
+        for (auto&& [x, y] : b) mp[y - tar * x] = 0;
+        int N = 0;
+        for (auto&& [k, _] : mp) mp[k] = ++N;
+
+        bk.assign(m + 1, 0);
+        for (auto&& [x, y] : b) {
+            bk[mp[y - tar * x]] += 1;
+        }
+        ps.assign(m + 1, 0);
+        partial_sum(bk.begin(), bk.end(), ps.begin());
+
+        for (auto&& [x, y] : a) {
+            ld curr = tar * x - y;
+            auto it = mp.upper_bound(curr);
+            if (it != mp.begin()) {
+                ret += ps[(--it)->second];
+            }
+        }
+        // deb(tar, ret);
+        return ret;
+    };
+
+    ld l = 0, r = 1e10;
+    while (r - l > 1e-11) {
+        ld mid = (l + r) / 2;
+        if (work(mid) >= k) {
+            r = mid;
+        } else {
+            l = mid;
+        }
     }
+    cout << setprecision(50) << 100 / (1 + l) << endl;
 }
 
 int main() {

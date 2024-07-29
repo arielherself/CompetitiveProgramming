@@ -470,16 +470,27 @@ void prep() {
 
 void solve() {
     read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
-    }
+    readvec(int, a, n);
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    ll res = 0;
+    int prev = a[0];
+    int prev_pw = 0;
+    for (int i = 1; i < n; ++i) {
+        if (prev == 1) {
+            prev = a[i];
+            prev_pw = 0;
+        } else if (a[i] == 1) {
+            cout << -1 << '\n';
+            return;
+        } else {
+            ll curr = a[i];
+            ll curr_pw = max(ld(0), prev_pw + ceil(log2(log2(ld(prev)) / log2(ld(curr)))));
+            res += curr_pw;
+            prev = curr;
+            prev_pw = curr_pw;
+        }
     }
+    cout << res << '\n';
 }
 
 int main() {

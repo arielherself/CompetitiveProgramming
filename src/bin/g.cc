@@ -1,9 +1,10 @@
+#pragma GCC diagnostic ignored "-Wunused-const-variable"
+#pragma GCC diagnostic ignored "-Wreorder"
+#pragma GCC diagnostic ignored "-Wunknown-pragmas"
+#pragma GCC diagnostic ignored "-Wshift-op-parentheses"
+#pragma GCC diagnostic ignored "-Wlogical-op-parentheses"
 #pragma GCC optimize("Ofast")
-/////////////////////////////////////////////////////////
-/**
- * This code should require C++14.
- * However, it's only been tested with C++17.
- */
+/************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
 using namespace std;
@@ -23,47 +24,22 @@ using ull = uint64_t;
 #else
 using ll = long long;
 using ull = unsigned long long;
-using ld = long double;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
 using ld = long double;
-using pii = pair<int, int>;
-using pil = pair<int, ll>;
-using pli = pair<ll, int>;
-using pll = pair<ll, ll>;
-using pid = pair<int, ld>;
-using pdi = pair<ld, int>;
-using pld = pair<ll, ld>;
-using pdl = pair<ld, ll>;
-using pdd = pair<ld, ld>;
-using tlll = tuple<ll, ll, ll>;
-using tlld = tuple<ll, ll, ld>;
-using tlli = tuple<ll, ll, int>;
-using tldl = tuple<ll, ld, ll>;
-using tldd = tuple<ll, ld, ld>;
-using tldi = tuple<ll, ld, int>;
-using tlil = tuple<ll, int, ll>;
-using tlid = tuple<ll, int, ld>;
-using tlii = tuple<ll, int, int>;
-using tdll = tuple<ld, ll, ll>;
-using tdld = tuple<ld, ll, ld>;
-using tdli = tuple<ld, ll, int>;
-using tddl = tuple<ld, ld, ll>;
-using tddd = tuple<ld, ld, ld>;
-using tddi = tuple<ld, ld, int>;
-using tdil = tuple<ld, int, ll>;
-using tdid = tuple<ld, int, ld>;
-using tdii = tuple<ld, int, int>;
-using till = tuple<int, ll, ll>;
-using tild = tuple<int, ll, ld>;
-using tili = tuple<int, ll, int>;
-using tidl = tuple<int, ld, ll>;
-using tidd = tuple<int, ld, ld>;
-using tidi = tuple<int, ld, int>;
-using tiil = tuple<int, int, ll>;
-using tiid = tuple<int, int, ld>;
-using tiii = tuple<int, int, int>;
+using pii = pair<int, int>;           using pil = pair<int, ll>;           using pid = pair<int, ld>;
+using pli = pair<ll, int>;            using pll = pair<ll, ll>;            using pld = pair<ll, ld>;
+using pdi = pair<ld, int>;            using pdl = pair<ld, ll>;            using pdd = pair<ld, ld>;
+using tiii = tuple<int, int, int>;    using tiil = tuple<int, int, ll>;    using tiid = tuple<int, int, ld>;
+using tili = tuple<int, ll, int>;     using till = tuple<int, ll, ll>;     using tild = tuple<int, ll, ld>;
+using tidi = tuple<int, ld, int>;     using tidl = tuple<int, ld, ll>;     using tidd = tuple<int, ld, ld>;
+using tlii = tuple<ll, int, int>;     using tlil = tuple<ll, int, ll>;     using tlid = tuple<ll, int, ld>;
+using tlli = tuple<ll, ll, int>;      using tlll = tuple<ll, ll, ll>;      using tlld = tuple<ll, ll, ld>;
+using tldi = tuple<ll, ld, int>;      using tldl = tuple<ll, ld, ll>;      using tldd = tuple<ll, ld, ld>;
+using tdii = tuple<ld, int, int>;     using tdil = tuple<ld, int, ll>;     using tdid = tuple<ld, int, ld>;
+using tdli = tuple<ld, ll, int>;      using tdll = tuple<ld, ll, ll>;      using tdld = tuple<ld, ll, ld>;
+using tddi = tuple<ld, ld, int>;      using tddl = tuple<ld, ld, ll>;      using tddd = tuple<ld, ld, ld>;
 template <typename T> using max_heap = priority_queue<T>;
 template <typename T> using min_heap = priority_queue<T, vector<T>, greater<>>;
 template <typename T> using oi = ostream_iterator<T>;
@@ -180,9 +156,9 @@ struct array_hash {
 #define sa(a) __AS_PROCEDURE(__typeof(a) sa(a.size() + 1); {int n = a.size(); for (int i = n - 1; i >= 0; --i) sa[i] = sa[i + 1] + a[i];};)
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
-#define edgew(ch, u, v, w) __AS_PROCEDURE(ch[u].emplace_back(v, w), ch[v].emplace_back(u, w);)
+#define edgew(ch, u, v, ...) __AS_PROCEDURE(ch[u].emplace_back(v, __VA_ARGS__), ch[v].emplace_back(u, __VA_ARGS__);)
 #define Edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v);)
-#define Edgew(ch, u, v, w) __AS_PROCEDURE(ch[u].emplace_back(v, w);)
+#define Edgew(ch, u, v, ...) __AS_PROCEDURE(ch[u].emplace_back(v, __VA_ARGS__);)
 template <typename T, typename Iterator> pair<size_t, map<T, size_t>> discretize(Iterator __first, Iterator __last) {
     set<T> st(__first, __last);
     size_t N = 0;
@@ -200,17 +176,6 @@ template <typename T, typename Iterator> pair<size_t, unordered_map<T, size_t, s
 
 /* io */
 #define untie __AS_PROCEDURE(ios_base::sync_with_stdio(0), cin.tie(NULL))
-template<typename T> void __read(T& x) { cin >> x; }
-template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __read(args...); }
-#define read(type, ...) __AS_PROCEDURE(type __VA_ARGS__; __read(__VA_ARGS__);)
-#define readvec(type, a, n) __AS_PROCEDURE(vector<type> a(n); for (auto& x : a) cin >> x;)
-#define readvec1(type, a, n) __AS_PROCEDURE(vector<type> a((n) + 1); copy_n(ii<type>(cin), (n), a.begin() + 1);)
-#define putvec(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
-#define putvec1(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
-#define putvec_eol(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
-#define putvec1_eol(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
-#define debug(x) __AS_PROCEDURE(cerr << #x" = " << (x) << endl;)
-#define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : a) cerr << x << ' '; cerr << endl;)
 template<typename T, typename U> istream& operator>>(istream& in, pair<T, U>& p) {
     return in >> p.first >> p.second;
 }
@@ -256,6 +221,18 @@ std::ostream& operator<<(std::ostream& dest, const int128& value) {
     }
     return dest;
 }
+template<typename T> void __read(T& x) { cin >> x; }
+template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __read(args...); }
+#define read(type, ...) __AS_PROCEDURE(type __VA_ARGS__; __read(__VA_ARGS__);)
+#define readvec(type, a, n) __AS_PROCEDURE(vector<type> a(n); for (auto& x : a) cin >> x;)
+#define readvec1(type, a, n) __AS_PROCEDURE(vector<type> a((n) + 1); copy_n(ii<type>(cin), (n), a.begin() + 1);)
+#define putvec(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
+#define putvec1(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
+#define putvec_eol(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
+#define putvec1_eol(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
+#define debug(x) __AS_PROCEDURE(cerr << #x" = " << (x) << endl;)
+#define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : a) cerr << x << ' '; cerr << endl;)
+#define deb(...) debug(make_tuple(__VA_ARGS__))
 
 /* pops */
 #define poptop(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.top(); q.pop();)
@@ -273,6 +250,7 @@ return_t qpow(ll b, ll p) {
 }
 
 #define comb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] / fact[k] / fact[(n) - (k)])
+#define fastcomb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] * factrev[k] * factrev[(n) - (k)])
 
 constexpr inline int lg2(ll x) { return x == 0 ? -1 : sizeof(ll) * 8 - 1 - __builtin_clzll(x); }
 
@@ -392,30 +370,9 @@ template <ll mdl> struct MLL {
     void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
     void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
 };
-struct MLLd {
-    ll val, mdl;
-    MLLd(ll mdl, ll v = 0) : mdl(mdl), val(mod(v, mdl)) {}
-    MLLd(const MLLd& other) : mdl(other.mdl), val(other.val) {}
-    friend MLLd operator+(const MLLd& lhs, const MLLd& rhs) { return MLLd(lhs.mdl, mod(lhs.val + rhs.val, lhs.mdl)); }
-    friend MLLd operator-(const MLLd& lhs, const MLLd& rhs) { return MLLd(lhs.mdl, mod(lhs.val - rhs.val, lhs.mdl)); }
-    friend MLLd operator*(const MLLd& lhs, const MLLd& rhs) { return MLLd(lhs.mdl, mod(lhs.val * rhs.val, lhs.mdl)); }
-    friend MLLd operator/(const MLLd& lhs, const MLLd& rhs) { return MLLd(lhs.mdl, mod(lhs.val * mod(inverse(rhs.val, lhs.mdl), lhs.mdl), lhs.mdl)); }
-    friend MLLd operator%(const MLLd& lhs, const MLLd& rhs) { return MLLd(lhs.mdl, mod(lhs.val - (lhs / rhs).val, lhs.mdl)); }
-    friend bool operator==(const MLLd& lhs, const MLLd& rhs) { return lhs.val == rhs.val; }
-    friend bool operator!=(const MLLd& lhs, const MLLd& rhs) { return lhs.val != rhs.val; }
-    void operator+=(const MLLd& rhs) { val = (*this + rhs).val; }
-    void operator-=(const MLLd& rhs) { val = (*this - rhs).val; }
-    void operator*=(const MLLd& rhs) { val = (*this * rhs).val; }
-    void operator/=(const MLLd& rhs) { val = (*this / rhs).val; }
-    void operator%=(const MLLd& rhs) { val = (*this % rhs).val; }
-};
 
 template <ll mdl>
 ostream& operator<<(ostream& out, const MLL<mdl>& num) {
-    return out << num.val;
-}
-
-ostream& operator<<(ostream& out, const MLLd& num) {
     return out << num.val;
 }
 
@@ -424,11 +381,24 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
     return in >> num.val;
 }
 
-istream& operator>>(istream& in, MLLd& num) {
-    return in >> num.val;
+// miscancellous
+template <typename T, typename U>
+bool chmax(T& lhs, const U& rhs) {
+    bool ret = lhs < rhs;
+    if (ret) {
+        lhs = rhs;
+    }
+    return ret;
+}
+template <typename T, typename U>
+bool chmin(T& lhs, const U& rhs) {
+    bool ret = lhs > rhs;
+    if (ret) {
+        lhs = rhs;
+    }
+    return ret;
 }
 
-// miscancellous
 #define functor(func) [&](auto&&... val) \
 noexcept(noexcept(func(std::forward<decltype(val)>(val)...))) -> decltype(auto) \
 {return func(std::forward<decltype(val)>(val)...);}
@@ -485,7 +455,7 @@ array<T, N> __initarray(const T& init) {
     }
     return res;
 }
-/////////////////////////////////////////////////////////
+/*******************************************************/
 
 // #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
@@ -498,11 +468,8 @@ void dump_ignore() {}
 void prep() {
 }
 
-using mll = MLL<MDL>;
-
 void solve() {
-    read(int, l, r, k);
-    cout << qpow<mll>(9 / k + 1, r) - qpow<mll>(9 / k + 1, l) << '\n';
+    
 }
 
 int main() {

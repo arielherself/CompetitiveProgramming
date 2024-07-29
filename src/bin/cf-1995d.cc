@@ -469,17 +469,44 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(int, n, c, k);
+    readvec(char, a, n);
+    transform(a.begin(), a.end(), a.begin(), [] (char c) { return c - 'A'; });
+
+    vector<vector<int>> bk(c + 1);
+    for (int i = 0; i < (1 << c); ++i) {
+        bk[popcount(i)].emplace_back(i);
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    auto check = [&] (int t) {
+        for (auto&& mask : bk[t]) {
+            vector<bool> dp(n + 1);
+            dp[0] = 1;
+            int tot = 1;
+            for (int i = 1; i <= n; ++i) {
+                if (mask >> a[i - 1] & 1 and tot > 0) {
+                    dp[i] = 1;
+                    tot += 1;
+                }
+                if (i - k >= 0) {
+                    tot -= dp[i - k];
+                }
+            }
+            if (dp[n]) return true;
+        }
+        return false;
+    };
+
+    int l = 1, r = c;
+    while (l < r) {
+        int mid = l + r >> 1;
+        if (check(mid)) {
+            r = mid;
+        } else {
+            l = mid + 1;
+        }
     }
+    cout << l << '\n';
 }
 
 int main() {

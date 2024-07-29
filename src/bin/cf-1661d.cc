@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,17 +469,36 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(int, n, k);
+    readvec(ll, a, n);
+
+    ll sum = 0;
+    ll s1 = 0, s2 = 0;
+    deque<till> q;
+    for (int i = n - 1; i >= k - 1; --i) {
+        while (q.size() and get<0>(q.front()) >= i + k) {
+            auto [j, x, y] = q.front();
+            q.pop_front();
+            s1 -= x, s2 -= y;
+        }
+        ll curr = (max(ll(0), a[i] - s1 * (i + k) + s2) + k - 1) / k;
+        s1 += curr;
+        s2 += curr * i;
+        q.emplace_back(i, curr, curr * i);
+        sum += curr;
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    ll rem = 0;
+    for (int i = k - 2; i >= 0; --i) {
+        while (q.size() and get<0>(q.front()) >= i + k) {
+            auto [j, x, y] = q.front();
+            q.pop_front();
+            s1 -= x, s2 -= y;
+        }
+        chmax(rem, (max(ll(0), a[i] - s1 * (i + k) + s2) + i) / (i + 1));
     }
+
+    cout << sum + rem << endl;
 }
 
 int main() {

@@ -3,6 +3,7 @@
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #pragma GCC diagnostic ignored "-Wshift-op-parentheses"
 #pragma GCC diagnostic ignored "-Wlogical-op-parentheses"
+// #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
 #pragma GCC optimize("Ofast")
 /************* This code requires C++17. ***************/
 
@@ -59,7 +60,7 @@ constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
 
 /* random */
 
-mt19937 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
+mt19937_64 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
 
 /* bit-wise operations */
 #define lowbit(x) ((x) & -(x))
@@ -469,16 +470,27 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
-    }
+    read(int, a, b, c, d, m);
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    deque<tiii> q = {{ a, b, 0 }};
+    unordered_map<pii, int, pair_hash> vis;
+    while (q.size()) {
+        popfront(q, x, y, t);
+        if (vis.count({x, y})) {
+            continue;
+        }
+        vis[{x, y}] = t;
+        q.emplace_back(x & y, y, t + 1);
+        q.emplace_back(x | y, y, t + 1);
+        q.emplace_back(x, x ^ y, t + 1);
+        q.emplace_back(x, y ^ m, t + 1);
+    }
+    debugvec(vis);
+
+    if (vis.count({c, d})) {
+        cout << vis[{c, d}] << '\n';
+    } else {
+        cout << -1 << '\n';
     }
 }
 

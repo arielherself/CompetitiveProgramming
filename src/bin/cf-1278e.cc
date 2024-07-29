@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,15 +470,34 @@ void prep() {
 
 void solve() {
     read(int, n);
-    readvec1(int, c, n);
     adj(ch, n);
     for (int i = 0; i < n - 1; ++i) {
         read(int, u, v);
         edge(ch, u, v);
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    vector<int> res = {1};
+    auto dfs = [&] (auto dfs, int v, int pa) -> void {
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            res.emplace_back(u);
+        }
+        res.emplace_back(v);
+        reverse(ch[v].begin(), ch[v].end());
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            dfs(dfs, u, v);
+        }
+    };
+    dfs(dfs, 1, 0);
+
+    vector<vector<int>> bk(n + 1);
+    for (auto&& [i, x] : enumerate(res)) {
+        bk[x].emplace_back(i + 1);
+    }
+
+    for (int i = 1; i <= n; ++i) {
+        cout << bk[i][0] << ' ' << bk[i][1] << '\n';
     }
 }
 

@@ -470,16 +470,43 @@ void prep() {
 
 void solve() {
     read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(string, a);
+    int m = a.size();
+    vector<int> ssr(m + 1), ssd(m + 1);
+    for (int i = m - 1; ~i; --i) {
+        ssr[i] = ssr[i + 1] + (a[i] == 'R');
+        ssd[i] = ssd[i + 1] + (a[i] == 'D');
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    int x = 1, y = 1;
+    int down = 0, right = 0;
+    int prev = 0;
+    ll res = 1;
+    for (int i = 0; i < m - 1; ++i) {
+        res += 1;
+        if (a[i] == 'R') y += 1, right = 1;
+        else x += 1, down = 1;
+        if (i + 1 < m and a[i] != a[i + 1]) {
+            if (a[i] == 'R') {
+                prev = max(0, n - ssr[i + 1] - y);
+            } else {
+                prev = max(0, n - ssd[i + 1] - x);
+            }
+        }
+        res += prev;
+        // deb(i, res);
     }
+
+    if (a[m - 1] == 'R') y += 1, right = 1;
+    else x += 1, down = 1;
+    if (down and right) {
+        res += ll(n - x + 1) * (n - y + 1);
+    } else if (down) {
+        res += n - x + 1;
+    } else if (right) {
+        res += n - y + 1;
+    }
+    cout << res << '\n';
 }
 
 int main() {

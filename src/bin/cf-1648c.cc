@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -465,21 +465,72 @@ void dump() {}
 
 void dump_ignore() {}
 
+constexpr int N = 2e5;
+using mll = MLL<PRIME>;
+
+mll fact[N + 1];
 void prep() {
+    fact[0] = 1;
+    for (int i = 1; i <= N; ++i) {
+        fact[i] = fact[i - 1] * i;
+    }
 }
 
+template<typename T>
+struct BIT {
+    int n;
+    vector<T> c;
+    BIT(size_t n) : n(n), c(n + 1) {}
+    void add(size_t i, const T& k) {
+        while (i <= n) {
+            c[i] += k;
+            i += lowbit(i);
+        }
+    }
+    T getsum(size_t i) {
+        T res = {};
+        while (i) {
+            res += c[i];
+            i -= lowbit(i);
+        }
+        return res;
+    }
+};
+
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(int, n, m);
+    BIT<int> tr(N);
+
+    for (int i = 0; i < n; ++i) {
+        read(int, x);
+        tr.add(x, 1);
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    mll permu = 1;
+    int prev = 0;
+    for (int i = 1; i <= N; ++i) {
+        int curr = tr.getsum(i);
+        permu /= fact[curr - prev];
+        prev = curr;
     }
+
+    mll res = 0;
+    int f = 1;
+    for (int i = 0; i < m; ++i) {
+        read(int, x);
+        if (f == 0 or i >= n) continue;
+        res += tr.getsum(x - 1) * fact[n - i - 1] * permu;
+        int rem = tr.getsum(x) - tr.getsum(x - 1);
+        if (rem == 0) {
+            f = 0;
+        }
+        tr.add(x, -1);
+        permu *= rem;
+    }
+    if (f == 1 and n < m) {
+        res += 1;
+    }
+    cout << res << endl;
 }
 
 int main() {

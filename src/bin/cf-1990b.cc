@@ -469,17 +469,26 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(int, n, x, y);
+    vector<int> res(n + 1);
+    for (int i = y - 1; i >= 1; --i) {
+        if ((y - 1 - i) % 2 == 0) {
+            res[i] = -1;
+        } else {
+            res[i] = 1;
+        }
     }
-
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    for (int i = x + 1; i <= n; ++i) {
+        if ((i - x - 1) % 2 == 0) {
+            res[i] = -1;
+        } else {
+            res[i] = 1;
+        }
     }
+    for (int i = y; i <= x; ++i) {
+        res[i] = 1;
+    }
+    putvec1(res);
 }
 
 int main() {

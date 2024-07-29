@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,17 +469,51 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(int, n, C);
+    vector<ll> bk(C + 1);
+    for (int i = 0; i < n; ++i) {
+        read(int, c);
+        read(int, d, h);
+        chmax(bk[c], ll(d) * h);
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    read(int, m);
+    vector<pil> query;
+    for (int i = 0; i < m; ++i) {
+        read(int, d);
+        read(ll, h);
+        query.emplace_back(i, d * h);
     }
+    sort_by_key(query.begin(), query.end(), [] (auto&& x) { return -x.second; });
+    vector<int> diff(m, INF);
+
+    for (int i = 1; i <= C; ++i) {
+        for (int j = 1; j * i <= C; ++j) {
+            ll target = j * bk[i];
+            int l = 0, r = m - 1;
+            while (l < r) {
+                int mid = l + r >> 1;
+                if (target > query[mid].second) {
+                    r = mid;
+                } else {
+                    l = mid + 1;
+                }
+            }
+            if (target > query[l].second) {
+                chmin(diff[l], i * j);
+            }
+        }
+    }
+
+    vector<int> res(m);
+    int curr = INF;
+    for (int i = 0; i < m; ++i) {
+        chmin(curr, diff[i]);
+        res[query[i].first] = curr;
+    }
+
+    replace(res.begin(), res.end(), INF, -1);
+    putvec(res);
 }
 
 int main() {

@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,15 +470,55 @@ void prep() {
 
 void solve() {
     read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    readvec(int, a, n - 1);
+
+    int root = a[0];
+    int father = 0;
+    int curr = n;
+    int ptr = 0;
+    vector<int> oc(n + 1);
+    vector<pii> res;
+    while (curr > 0) {
+        int prev = curr;
+        while (ptr < n) {
+            if (ptr == n - 1) {
+                oc[curr] = 1;
+                res.emplace_back(father, curr);
+                ++ptr;
+                break;
+            } else if (a[ptr] == curr) {
+                oc[a[ptr]] = 1;
+                res.emplace_back(father, a[ptr]);
+                father = a[ptr];
+                ++ptr;
+                break;
+            } else if (oc[a[ptr]]) {
+                oc[curr] = 1;
+                res.emplace_back(father, curr);
+                father = a[ptr];
+                ++ptr;
+                break;
+            } else {
+                oc[a[ptr]] = 1;
+                res.emplace_back(father, a[ptr]);
+                father = a[ptr];
+                ++ptr;
+            }
+        }
+        while (curr > 0 and oc[curr]) --curr;
+        if (curr == prev) {
+            debug(res);
+            cout << -1 << endl;
+            return;
+        }
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    cout << root << '\n';
+    for (auto&& [u, v] : res) {
+        if (u == 0) {
+            continue;
+        }
+        cout << u << ' ' << v << '\n';
     }
 }
 

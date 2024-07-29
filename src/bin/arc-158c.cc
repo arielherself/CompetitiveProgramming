@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -468,18 +468,64 @@ void dump_ignore() {}
 void prep() {
 }
 
+int calc(ll x) {
+    int ret = 0;
+    while (x) {
+        ret += x % 10;
+        x /= 10;
+    }
+    return ret;
+}
+
+int get_msd(ll x) {
+    int ret = -1;
+    while (x) {
+        ret += 1;
+        x /= 10;
+    }
+    return max(0, ret);
+}
+
+ll strip(ll x, int d) {
+    ll pw = 1;
+    while (d--) {
+        pw *= 10;
+    }
+    return x % pw;
+}
+
 void solve() {
     read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    readvec(ll, a, n);
+
+    ll res = 0;
+    for (auto&& x : a) res += calc(x);
+    res *= 2 * n;
+    // debug(res);
+
+    array<vector<ll>, 15> suf;
+    for (auto&& x : a) {
+        for (int j = 1; j <= 15; ++j) {
+            suf[j - 1].emplace_back(strip(x, j));
+        }
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    for (int j = 0; j < 15; ++j) {
+        sort(suf[j].begin(), suf[j].end());
+        int l = 0;
+        for (int i = n - 1; ~i; --i) {
+            while (l <= i and get_msd(suf[j][l] + suf[j][i]) <= j) {
+                ++l;
+            }
+            if (i + 1 - l > 0) {
+                res -= (1 + (i - l) * 2) * 9;
+            }
+            // deb(j, i, l, suf[j][i], l < n ? suf[j][l] : -1, max(0, i + 1 - l) * 9);
+            // res -= max(0, i + 1 - l) * 9;
+        }
     }
+
+    cout << res << endl;
 }
 
 int main() {

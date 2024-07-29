@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -468,17 +468,62 @@ void dump_ignore() {}
 void prep() {
 }
 
+template<typename T>
+struct BIT {
+    int n;
+    vector<T> c;
+    BIT(size_t n) : n(n), c(n + 1) {}
+    void add(size_t i, const T& k) {
+        while (i <= n) {
+            c[i] += k;
+            i += lowbit(i);
+        }
+    }
+    T getsum(size_t i) {
+        T res = {};
+        while (i) {
+            res += c[i];
+            i -= lowbit(i);
+        }
+        return res;
+    }
+};
+
 void solve() {
     read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
-    }
+    readvec(int, a, n);
+    readvec(int, b, n);
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    vector<int> cnta(n + 1), cntb(n + 1);
+    int f = 0;
+    for (auto&& x : a) {
+        if (++cnta[x] > 1) {
+            f = 1;
+        }
+    }
+    for (auto&& x : b) {
+        cntb[x] += 1;
+    }
+    if (cnta == cntb) {
+        if (f == 1) {
+            cout << "Yes\n";
+        } else {
+            auto v = enumerate(b);
+            sort_by_key(v.begin(), v.end(), [&] (auto&& p) { return a[p.first]; });
+            BIT<int> tr(n);
+            int res = 0;
+            for (auto&& [_, x] : v) {
+                res ^= (tr.getsum(n) - tr.getsum(x)) & 1;
+                tr.add(x, 1);
+            }
+            if (res == 0) {
+                cout << "Yes\n";
+            } else {
+                cout << "No\n";
+            }
+        }
+    } else {
+        cout << "No\n";
     }
 }
 

@@ -469,16 +469,27 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(int, n, q);
+    read(string, a, b);
+    vector psa(26, vector<int>(n + 1));
+    vector psb(26, vector<int>(n + 1));
+    for (int i = 1; i <= n; ++i) {
+        for (int j = 0; j < 26; ++j) {
+            psa[j][i] = psa[j][i - 1];
+            psb[j][i] = psb[j][i - 1];
+        }
+        psa[a[i - 1] - 'a'][i] += 1;
+        psb[b[i - 1] - 'a'][i] += 1;
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    while (q--) {
+        read(int, l, r);
+        --l, --r;
+        int res = 0;
+        for (int j = 0; j < 26; ++j) {
+            res += max(0, psb[j][r + 1] - psb[j][l] - (psa[j][r + 1] - psa[j][l]));
+        }
+        cout << res << '\n';
     }
 }
 

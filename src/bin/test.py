@@ -7,11 +7,7 @@ import io
 PRIME = 998_244_353
 
 if __name__ == '__main__':
-    N = 100000
-    Q = 100000
-    print(N)
-    for i in range(N):
-        print("+3 *2")
-    print(Q)
-    for i in range(Q):
-        print(f"2 1 {N}")
+    N = 200000
+    print(1, N)
+    for i in range(2, N + 1):
+        print(randint(1, i - 1), i, randint(1, N), randint(1, N))

@@ -470,16 +470,31 @@ void prep() {
 
 void solve() {
     read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    readvec(int, a, n);
+    readvec(int, b, n);
+
+    ll sum = 0;
+    for (auto&& x : a) sum += x * x * (n - 1);
+    for (auto&& x : b) sum += x * x * (n - 1);
+
+    vector dp(n + 1, vector<ll>(100 * n + 1, INFLL));
+    dp[0][0] = 0;
+    int ps = 0;
+    for (int i = 1; i <= n; ++i) {
+        // not swapping
+        for (int j = 0; j + a[i - 1] <= 100 * n; ++j) {
+            chmin(dp[i][j + a[i - 1]], dp[i - 1][j] + j * a[i - 1] + (ps - j) * b[i - 1]);
+        }
+
+        // swapping
+        for (int j = 0; j + b[i - 1] <= 100 * n; ++j) {
+            chmin(dp[i][j + b[i - 1]], dp[i - 1][j] + j * b[i - 1] + (ps - j) * a[i - 1]);
+        }
+
+        ps += a[i - 1] + b[i - 1];
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
-    }
+    cout << sum + 2 * *min_element(dp[n].begin(), dp[n].end()) << '\n';
 }
 
 int main() {

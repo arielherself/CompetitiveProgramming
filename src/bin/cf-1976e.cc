@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,17 +469,76 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(int, n, q);
+    vector<pii> a(q);
+    for (int i = 0; i < q; ++i) {
+        cin >> a[i].first;
+    }
+    for (int i = 0; i < q; ++i) {
+        cin >> a[i].second;
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    vector<pii> tr(1);
+    vector<int> val(1);
+    vector<int> ptr(n + 1, -1);
+    ptr[n] = 0;
+    val[0] = n;
+
+    for (auto&& [x, y] : a) {
+        int m = tr.size();
+        tr.emplace_back();
+        tr.emplace_back();
+        val.emplace_back(x);
+        val.emplace_back(y);
+        if (ptr[x] != -1) {
+            tr[ptr[x]] = { m, m + 1 };
+        } else {
+            tr[ptr[y]] = { m, m + 1 };
+        }
+        ptr[x] = m;
+        ptr[y] = m + 1;
     }
+
+    vector<int> b;
+    auto dfs = [&] (auto dfs, int v) -> void {
+        auto [l, r] = tr[v];
+        if (l == 0 and r == 0) {
+            b.emplace_back(val[v]);
+        }
+        if (l != 0) dfs(dfs, l);
+        if (r != 0) dfs(dfs, r);
+    };
+    dfs(dfs, 0);
+
+    vector<int> gaps;
+    int m = b.size();
+    for (int i = 1; i < m; ++i) {
+        gaps.emplace_back(max(b[i], b[i - 1]));
+    }
+    gaps.emplace_back(b[0]);
+    gaps.emplace_back(b[m - 1]);
+    m += 1;
+    sort(gaps.begin(), gaps.end());
+    // debug(gaps);
+
+    vector<int> oc(n + 1);
+    for (auto&& x : b) {
+        oc[x] = 1;
+    }
+
+    MLL<PRIME> res = 1;
+    int j = m - 1;
+    int cnt = 0;
+    for (int i = n; i; --i) {
+        if (oc[i]) continue;
+        // debug(i);
+        while (j >= 0 and i < gaps[j]) --j;
+        // deb(j, cnt + m - 1 - j);
+        res *= cnt + m - 1 - j;
+        cnt += 1;
+    }
+
+    cout << res << endl;
 }
 
 int main() {

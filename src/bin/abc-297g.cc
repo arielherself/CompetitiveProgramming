@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,16 +469,21 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(int, n, l, r);
+    readvec(int, a, n);
+    int cnt = 0;
+    for (int i = 0; i < n; ++i) {
+        if (a[i] >= l) {
+            if ((a[i] - l) % (l + r) < r) {
+                cnt += 1;
+                debug(i);
+            }
+        }
     }
-
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    if (cnt % 2 == 1) {
+        cout << "First\n";
+    } else {
+        cout << "Second\n";
     }
 }
 

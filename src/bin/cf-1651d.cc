@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -468,17 +468,80 @@ void dump_ignore() {}
 void prep() {
 }
 
+int dt(const pii& x, const pii& y) {
+    return abs(x.first - y.first) + abs(x.second - y.second);
+}
+
 void solve() {
+    constexpr int N = 2e5;
     read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    readvec(pii, a, n);
+    vector<vector<int>> grid(N + 1);
+    vector<vector<int>> prev(N + 1);
+    vector<vector<int>> next(N + 1);
+    vector<int> ptr(N + 1);
+
+    for (auto&& [x, y] : a) {
+        grid[x].emplace_back(y);
+        prev[x].emplace_back();
+        next[x].emplace_back();
+    }
+    for (int i = 1; i <= N; ++i) {
+        sort(grid[i].begin(), grid[i].end());
+        int pre = -INF;
+        int m = grid[i].size();
+        for (int j = 0; j < m; ++j) {
+            if (grid[i][j] - pre > 1) {
+                prev[i][j] = grid[i][j] - 1;
+            } else {
+                prev[i][j] = prev[i][j - 1];
+            }
+            pre = grid[i][j];
+        }
+        int nxt = INF;
+        for (int j = m - 1; ~j; --j) {
+            if (nxt - grid[i][j] > 1) {
+                next[i][j] = grid[i][j] + 1;
+            } else {
+                next[i][j] = next[i][j + 1];
+            }
+            nxt = grid[i][j];
+        }
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+
+    int m = sqrt(n) + 1;
+    vector<int> idx(n);
+    iota(idx.begin(), idx.end(), 0);
+    sort_by_key(idx.begin(), idx.end(), [&] (auto&& p) { return a[p].second; });
+    sort_by_key(a.begin(), a.end(), [] (auto&& p) { return p.second; });
+    vector<pii> res(n);
+    for (int i = 0; i < n; ++i) {
+        auto&& [x, y] = a[i];
+        pii curr = {x - m - 1, y};
+
+        auto update = [&] (int x1, int y1) {
+            if (dt({x, y}, {x1, y1}) < dt({x, y}, curr)) {
+                curr = {x1, y1};
+            }
+        };
+        for (int j = x - m; j <= x + m; ++j) {
+            if (j < 0 or j > N) {
+                update(j, y);
+                continue;
+            }
+            while (ptr[j] < grid[j].size() and grid[j][ptr[j]] < y) ++ptr[j];
+            if (ptr[j] < grid[j].size() and grid[j][ptr[j]] == y) {
+                update(j, next[j][ptr[j]]);
+                update(j, prev[j][ptr[j]]);
+            } else {
+                update(j, y);
+            }
+        }
+        res[idx[i]] = curr;
+    }
+    for (auto&& [x, y] : res) {
+        cout << x <<' ' << y << '\n';
     }
 }
 

@@ -469,16 +469,24 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(ll, n);
+    if (popcount(n) & 1) {
+        cout << "second" << endl;
+    } else {
+        cout << "first" << endl;
+        ll x = ll(1) << msp(n);
+        ll y = n - x;
+        cout << x << ' ' << y << endl;
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    while (1) {
+        read(ll, u, v);
+        if (u == 0 and v == 0) return;
+        assert(popcount(u) % 2 == 0 or popcount(v) % 2 == 0);
+        n = popcount(u) % 2 == 0 ? u : v;
+        ll x = ll(1) << msp(n);
+        ll y = n - x;
+        cout << x << ' ' << y << endl;
     }
 }
 

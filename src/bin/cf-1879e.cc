@@ -3,6 +3,7 @@
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #pragma GCC diagnostic ignored "-Wshift-op-parentheses"
 #pragma GCC diagnostic ignored "-Wlogical-op-parentheses"
+// #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
 #pragma GCC optimize("Ofast")
 /************* This code requires C++17. ***************/
 
@@ -59,7 +60,7 @@ constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
 
 /* random */
 
-mt19937 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
+mt19937_64 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
 
 /* bit-wise operations */
 #define lowbit(x) ((x) & -(x))
@@ -457,7 +458,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,15 +471,24 @@ void prep() {
 
 void solve() {
     read(int, n);
-    readvec1(int, c, n);
     adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    vector<int> cnt(n + 1);
+    for (int i = 2; i <= n; ++i) {
+        read(int, j);
+        edge(ch, i, j);
+        cnt[j] += 1;
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    if (count_if(cnt.begin(), cnt.end(), [] (int x) { return x == 1; }) <= 1) {
+        vector<int> col(n + 1);
+        auto dfs = [&] (auto dfs, int v, int pa, int curr) -> void {
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                col[u] = curr;
+                dfs(dfs, u, v, 1 ^ curr);
+            }
+        };
+        dfs(dfs, 1, 0, 0);
     }
 }
 

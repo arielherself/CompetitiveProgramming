@@ -469,17 +469,43 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(int, n, c);
+    vector<int> a(c + 1);
+    for (int i = 0; i < n; ++i) {
+        read(int, x);
+        a[x] = 1;
+    }
+    if (a[1] == 0) {
+        cout << "No\n";
+        return;
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    vector<int> diff(c + 1);
+
+    int cnt = 0;
+    int curr = 0;
+    for (int i = 1; i <= c; ++i) {
+        curr += diff[i];
+        if (a[i] == 0) continue;
+        ++cnt;
+        if (cnt - 1 != curr) {
+            cout << "No\n";
+            return;
+        }
+        for (int j = 1; j * i <= c; ++j) {
+            if (a[j] == 1) {
+                diff[j * i] += 1;
+                if (j == 1) curr += 1;
+                if ((j + 1) * i <= c) {
+                    diff[(j + 1) * i] -= 1;
+                }
+            }
+        }
+        // debug(diff);
     }
+
+    cout << "Yes\n";
+    return;
 }
 
 int main() {

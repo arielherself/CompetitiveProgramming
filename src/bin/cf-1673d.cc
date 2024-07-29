@@ -469,17 +469,34 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    using mll = MLL<MDL>;
+
+    read(ll, b, q, y, c, r, z);
+    if (r % q or (c - b) % q or c < b or c + r * (z - 1) > b + q * (y - 1)) {
+        cout << 0 << '\n';
+        return;
+    } else if (c - r < b or c + r * z > b + q * (y - 1)) {
+        cout << -1 << '\n';
+        return;
+    }
+    int sq = sqrt(q);
+
+    unordered_set<int, safe_hash> factors;
+    for (int i = 1; i <= sq; ++i) {
+        if (q % i == 0) {
+            factors.emplace(i);
+            factors.emplace(q / i);
+        }
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    mll res = 0;
+    for (auto&& f : factors) {
+        ll p = r / q * f;
+        if (lcm(p, q) != r) continue;
+        res += mll(r / p) * (r / p);
     }
+
+    cout << res << '\n';
 }
 
 int main() {

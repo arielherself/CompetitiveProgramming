@@ -469,17 +469,36 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(int, n, d);
+    readvec(int, a, n);
+    vector<int> prev(n);
+
+    multiset<int> segs;
+    segs.emplace(a[0]);
+    for (int i = 1; i < n; ++i) {
+        segs.emplace(a[i] - a[i - 1]);
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    int res=0;
+    for (int i=0;i<n;++i){
+        int left=i==0?a[i]:a[i]-a[i-1],right=0;
+        segs.erase(segs.lower_bound(left));
+        if(i!=n-1){
+            right=a[i+1]-a[i];
+            segs.erase(segs.lower_bound(right));
+            segs.emplace(left+right);
+        }
+        int mx=max(i!=n-1?d-a[n-1]:d-a[n-2],*segs.rbegin()/2);
+        chmax(res,min(mx,*segs.begin()));
+        if(i!=n-1){
+            segs.erase(segs.lower_bound(left+right));
+            segs.emplace(right);
+        }
+        segs.emplace(left);
     }
+
+
+    cout <<res-1<<'\n';
 }
 
 int main() {

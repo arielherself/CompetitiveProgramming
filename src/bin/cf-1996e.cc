@@ -469,17 +469,28 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(string, s);
+    int n = s.size();
+    vector<int> ps(n + 1);
+    unordered_map<int, vector<int>, safe_hash> bk;
+    bk[0].emplace_back(0);
+    for (int i = 1; i <= n; ++i) {
+        ps[i] = ps[i - 1] + (s[i - 1] == '0' ? 1 : -1);
+        bk[ps[i]].emplace_back(i);
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    using mll = MLL<MDL>;
+    mll res = 0;
+    for (auto&& [k, v] : bk) {
+        // debug(k), debug(v);
+        mll prev = 0;
+        for (auto&& x : v) {
+            res += (n - x + 1) * prev;
+            prev += x + 1;
+        }
     }
+
+    cout << res << '\n';
 }
 
 int main() {

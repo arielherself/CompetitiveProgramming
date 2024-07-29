@@ -469,17 +469,14 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(ll, n, x);
+    ll res = 0;
+    for (ll a = 1; a <= x; ++a) {
+        for (ll b = 1; a * b <= n; ++b) {
+            res += max<ll>(0, min<ll>((n - a * b) / (a + b), x - a - b));
+        }
     }
-
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
-    }
+    cout << res << '\n';
 }
 
 int main() {

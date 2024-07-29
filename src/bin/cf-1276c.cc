@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,15 +470,53 @@ void prep() {
 
 void solve() {
     read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+
+    unordered_map<int, int, safe_hash> cnt;
+    vector<pii> seq;
+    for (int i = 0; i < n; ++i) {
+        read(int, x);
+        ++cnt[x];
+        seq.emplace_back(cnt[x], x);
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    sort(seq.begin(), seq.end());
+    int j = 0;
+    pii mx;
+    for (int i = 1; i <= n; ++i) {
+        while (j < n and seq[j].first <= i) ++j;
+        int col = j / i;
+        if (col >= i and i * col > mx.first * mx.second ) {
+            mx = { i, col };
+        }
+    }
+
+    auto [x, y] = mx;
+    vector res(x, vector<int>(y));
+    unordered_set<int, safe_hash> oc;
+    vector<pii> final;
+    for (int i = x * y - 1; ~i; --i) {
+        if (not oc.count(seq[i].second)) {
+            oc.emplace(seq[i].second);
+            final.emplace_back(seq[i].second, seq[i].first);
+        }
+    }
+    // debugvec(final);
+    int t = 0;
+    for (auto&& [k, v] : final) {
+        // deb(k, v);
+        for (int i = 0; i < v; ++i) {
+            res[t % x][(t / x + t % x) % y] = k;
+            // deb(k, t, t % x, (t / x + t % x) % y);
+            ++t;
+        }
+    }
+
+    cout << x * y << '\n';
+    cout << x << ' ' << y << '\n';
+    for (int i = 0; i < x; ++i) {
+        for (int j = 0; j < y; ++j) {
+            cout << res[i][j] << " \n"[j + 1 == y];
+        }
     }
 }
 

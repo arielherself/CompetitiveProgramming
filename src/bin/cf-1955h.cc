@@ -465,21 +465,60 @@ void dump() {}
 
 void dump_ignore() {}
 
+constexpr int M = 13;
+int pw[M + 1];
 void prep() {
+    pw[0] = 1;
+    for (int i = 1; i <= M; ++i) {
+        pw[i] = pw[i - 1] * 3;
+    }
 }
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(int, n, m, k);
+    vector a(n, vector<int>(m));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            read(char, c);
+            a[i][j] = c == '#';
+        }
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    // vector val(k, vector<int>(M + 1));
+    vector<ll> val(1 << M);
+    for (int i = 0; i < k; ++i) {
+        read(int, x, y, p);
+        --x, --y;
+        vector<int> diff(M + 1);
+
+        for (int j = 0; j < n; ++j) {
+            for (int k = 0; k < m; ++k) {
+                if (a[j][k] == 0) continue;
+                int d = ceil(sqrt((x - j) * (x - j) + (y - k) * (y - k)));
+                if (d <= M) {
+                    diff[d] += 1;
+                }
+            }
+        }
+
+        vector<int> cnt(M + 1);
+        for (int j = 1; j <= M; ++j) {
+            cnt[j] = cnt[j - 1] + diff[j];
+        }
+
+        vector<ll> curr = val;
+        for (int j = 1; j <= M; ++j) {
+            for (int k = 0; k < (1 << M); ++k) {
+                if (k >> (j - 1) & 1) continue;
+                chmax(curr[k | 1 << (j - 1)], val[k] + cnt[j] * p - pw[j]);
+            }
+            // deb(j, cnt[j], p, pw[j]);
+            // chmax(val[j], cnt[j] * p - pw[j]);
+        }
+        swap(val, curr);
     }
+
+    cout << *max_element(val.begin(), val.end()) << '\n';
 }
 
 int main() {

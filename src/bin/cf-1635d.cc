@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -465,21 +465,55 @@ void dump() {}
 
 void dump_ignore() {}
 
-void prep() {
-}
+using mll = MLL<MDL>;
+void prep() {}
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(int, n, p);
+    readvec(int, a, n);
+    sort(a.begin(), a.end());
+
+    unordered_set<int, safe_hash> b;
+    for (int i = 0; i < n; ++i) {
+        int x = a[i];
+        int f = 1;
+
+        while (x) {
+            if (x % 2 == 1) {
+                x >>= 1;
+            } else if (x % 4 == 0) {
+                x >>= 2;
+            } else if (x % 4 == 2) {
+                break;
+            }
+            if (b.count(x)) {
+                f = 0;
+                break;
+            }
+        }
+
+        if (f) {
+            b.emplace(a[i]);
+        }
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    vector<mll> dp(p + 1);
+    dp[0] = dp[1] = 1;
+    for (int i = 2; i <= p; ++i) {
+        dp[i] = dp[i - 1] + dp[i - 2];
     }
+
+    vector<mll> ps(p + 1);
+    partial_sum(dp.begin(), dp.end(), ps.begin());
+
+    mll res = 0;
+    for (auto&& x : b) {
+        if (p - msp(x) - 1 >= 0)
+        res += ps[p - msp(x) - 1];
+        // debug(p - msp(x) - 1);
+    }
+
+    cout << res << endl;
 }
 
 int main() {

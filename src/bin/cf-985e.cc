@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,16 +469,29 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
-    }
+    read(int, n, k, d);
+    readvec(int, a, n);
+    sort(a.begin(), a.end());
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    vector<int> dp(n + 1);
+    vector<int> ps(n + 2);
+    dp[0] = 1;
+    ps[1] = 1;
+    int j = 1;
+    for (int i = 1; i <= n; ++i) {
+        ps[i + 1] = ps[i];
+        while (j <= i and a[i - 1] - a[j - 1] > d) ++j;
+        // deb(i, j, i - k);
+        if (i - k < 0) continue;
+        dp[i] = ps[i - k + 1] - ps[j - 1] > 0;
+        ps[i + 1] += dp[i];
+    }
+    // debug(dp);
+
+    if (dp[n]) {
+        cout << "YES\n";
+    } else {
+        cout << "NO\n";
     }
 }
 

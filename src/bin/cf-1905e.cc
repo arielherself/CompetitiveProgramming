@@ -59,7 +59,7 @@ constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
 
 /* random */
 
-mt19937 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
+mt19937_64 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
 
 /* bit-wise operations */
 #define lowbit(x) ((x) & -(x))
@@ -468,18 +468,28 @@ void dump_ignore() {}
 void prep() {
 }
 
-void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
-    }
+using mll = MLL<PRIME>;
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+// calculates f(n + 1) - f(n)
+mll calc_delta(ll n) {
+    if (n == 0) return 1;
+    return 2 * calc_delta(n / 2) + qpow<mll>(2, n) - qpow<mll>(2, n / 2);
+}
+
+mll calc(ll n) {
+    if (n == 0) return 0;
+    if (n == 1) return 1;
+    if (n % 2 == 0) {
+        return 4 * calc(n / 2) + qpow<mll>(2, n) - qpow<mll>(2, n / 2);
+    } else {
+        return 2 * calc(n / 2 + 1) + 2 * calc(n / 2) + qpow<mll>(2, n) - qpow<mll>(2, n / 2 + 1);
+        // return calc_delta(n - 1) + 4 * calc(n / 2) + qpow<mll>(2, n - 1) - qpow<mll>(2, n / 2);
     }
+}
+
+void solve() {
+    read(ll, x);
+    cout << calc(x) << '\n';
 }
 
 int main() {

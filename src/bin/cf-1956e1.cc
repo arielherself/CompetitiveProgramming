@@ -470,16 +470,28 @@ void prep() {
 
 void solve() {
     read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    readvec(int, a, n);
+
+    auto work = [&] {
+        for (int i = 0; i < n; ++i) {
+            a[(i + 1) % n] = max(0, a[(i + 1) % n] - a[i]);
+        }
+    };
+
+    int m = sqrt(4e5) + 1;
+    while (m--) work();
+
+    vector<int> b = a;
+    work();
+    vector<int> res;
+    for (int i = 0; i < n; ++i) {
+        if (b[i] == a[i] and a[i] != 0) {
+            res.emplace_back(i + 1);
+        }
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
-    }
+    cout << res.size() << '\n';
+    putvec(res);
 }
 
 int main() {

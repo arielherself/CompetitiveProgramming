@@ -457,7 +457,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,17 +469,47 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(int, n, m);
+    read(ll, k);
+    read(string, s);
+
+    ll res = 0;
+
+    int p = count(s.begin(), s.end(), 'x');
+    if (m >= 2) {
+        int full = min(m - 2, int((k - 1) / p));
+        int rem = k - ll(1) * full * p;
+        deb(rem, ll(1) * full * n);
+        ll curr = 0;
+        string t = s + s;
+        cerr << s << ' ' << s << endl;
+        int j = 0;
+        int cnt = 0;
+        for (int i = 0; i < 2 * n; ++i) {
+            cnt += t[i] == 'x';
+            while (cnt > rem) {
+                cnt -= t[j++] == 'x';
+            }
+            if (j <= n and i >= n - 1) chmax(curr, i - j + 1);
+            else if (i - j + 1 == 14) {
+                deb(i, j);
+            }
+        }
+        chmax(res, ll(1) * full * n + curr);
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    int curr = 0;
+    int j = 0, cnt = 0;
+    for (int i = 0; i < n; ++i) {
+        cnt += s[i] == 'x';
+        while (cnt > k) {
+            cnt -= s[j++] == 'x';
+        }
+        chmax(curr, i - j + 1);
     }
+    chmax(res, curr);
+
+    cout << res << endl;
 }
 
 int main() {

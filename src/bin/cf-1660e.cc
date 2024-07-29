@@ -470,16 +470,19 @@ void prep() {
 
 void solve() {
     read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+
+    int sum = 0;
+    vector<int> bk(n);
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            read(char, c);
+            c -= '0';
+            sum += c;
+            bk[mod(j - i, n)] += c;
+        }
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
-    }
+    cout << n + sum - 2 * *max_element(bk.begin(), bk.end()) << '\n';
 }
 
 int main() {

@@ -470,16 +470,28 @@ void prep() {
 
 void solve() {
     read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    readvec(int, a, n);
+
+    ll res = accumulate(a.begin(), a.end(), ll(0));
+    vector<int> cnt(n + 1);
+    vector<int> b(n);
+    int mx = 0;
+    for (int i = 0; i < n; ++i) {
+        if (++cnt[a[i]] >= 2) {
+            chmax(mx, a[i]);
+        }
+        b[i] = mx;
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    int prev = 0;
+    cnt.assign(n + 1, 0);
+    for (int i = 1; i <= n; ++i) {
+        if (i != n and b[i - 1] == b[i]) {
+            prev = b[i];
+        }
+        res += b[i - 1] + ll(prev) * (n - i);
     }
+    cout << res << '\n';
 }
 
 int main() {

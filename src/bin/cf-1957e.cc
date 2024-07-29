@@ -465,21 +465,42 @@ void dump() {}
 
 void dump_ignore() {}
 
+using mll = MLL<MDL>;
+constexpr int N = 1e6;
+mll ps1[N + 1], ps2[N + 1];
+
+vector<int> soe(int n) {
+    vector<bool> not_prime(n + 1);
+    vector<int> res;
+    for (int i = 2; i <= n; ++i) {
+        if (not not_prime[i]) {
+            res.emplace_back(i);
+        }
+        for (auto&& x : res) {
+            if (i * x > n) break;
+            not_prime[i * x] = 1;
+            if (i % x == 0) break;
+        }
+    }
+    return res;
+}
+
 void prep() {
+    for (auto&& x : soe(N)) {
+        ps1[x] = x - 1;
+        ps2[x] = mll(x) * (x - 1);
+    }
+    ps1[4] = 2;
+    ps2[4] = 8;
+    for (int i = 1; i <= N; ++i) {
+        ps1[i] += ps1[i - 1];
+        ps2[i] += ps2[i - 1];
+    }
 }
 
 void solve() {
     read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
-    }
-
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
-    }
+    cout << (n + 1) * ps1[n] - ps2[n] << '\n';
 }
 
 int main() {

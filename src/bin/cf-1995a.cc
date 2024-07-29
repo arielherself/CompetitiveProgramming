@@ -469,16 +469,21 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(int, n, k);
+    if (k == 0) {
+        cout << 0 << '\n';
+        return;
     }
-
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    for (int i = 0; i < 2 * n - 1; ++i) {
+        if (i == 0) {
+            k = max(0, k - n);
+        } else {
+            k = max(0, k - (n - (i + 1) / 2));
+        }
+        if (k == 0) {
+            cout << i + 1 << '\n';
+            return;
+        }
     }
 }
 

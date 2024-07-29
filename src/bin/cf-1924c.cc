@@ -59,7 +59,7 @@ constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
 
 /* random */
 
-mt19937 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
+mt19937_64 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
 
 /* bit-wise operations */
 #define lowbit(x) ((x) & -(x))
@@ -469,17 +469,13 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
-    }
+    using mll = MLL<999999893>;
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
-    }
+    read(int, n);
+    mll a = 4 * (qpow<mll>(2, n / 2) - 1);
+    mll b = 2 * (qpow<mll>(2, (n + 1) / 2) - 1);
+
+    cout << 4 * a / (2 * (b + 2) * (b + 2) - a * a) << '\n';
 }
 
 int main() {

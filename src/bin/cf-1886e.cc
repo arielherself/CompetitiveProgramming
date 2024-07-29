@@ -3,6 +3,7 @@
 #pragma GCC diagnostic ignored "-Wunknown-pragmas"
 #pragma GCC diagnostic ignored "-Wshift-op-parentheses"
 #pragma GCC diagnostic ignored "-Wlogical-op-parentheses"
+// #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
 #pragma GCC optimize("Ofast")
 /************* This code requires C++17. ***************/
 
@@ -59,7 +60,7 @@ constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
 
 /* random */
 
-mt19937 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
+mt19937_64 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
 
 /* bit-wise operations */
 #define lowbit(x) ((x) & -(x))
@@ -457,7 +458,7 @@ array<T, N> __initarray(const T& init) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,16 +470,43 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(int, n, m);
+    readvec(int, a, n);
+    readvec(int, b, m);
+
+    vector<int> idx(n);
+    iota(idx.begin(), idx.end(), 0);
+    sort_by_key(idx.begin(), idx.end(), [&] (int i) { return a[i]; });
+
+    vector<int> idy(m);
+    iota(idy.begin(), idy.end(), 0);
+    sort_by_key(idy.begin(), idy.end(), [&] (int i) { return b[i]; });
+
+    vector<vector<int>> res(m);
+    pii prev = { 0, 0 };
+    for (int j = 0; j < m; ++j) {
+        int x = b[idy[j]];
+        pii curr = {n + 1, n + 1};
+        for (int i = prev.first + prev.second; i < n; ++i) {
+            int k = (x + a[idx[i]] - 1) / a[idx[i]];
+            if (i + k < min(n, curr.first + curr.second)) {
+                curr = { i, k };
+            }
+        }
+        if (curr.first == n + 1) {
+            cout << "NO\n";
+            return;
+        }
+        for (int i = curr.first; i < curr.first + curr.second; ++i) {
+            res[idy[j]].emplace_back(idx[i] + 1);
+        }
+        prev = curr;
     }
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    cout << "YES\n";
+    for (auto&& v : res) {
+        cout << v.size() << ' ';
+        putvec(v);
     }
 }
 

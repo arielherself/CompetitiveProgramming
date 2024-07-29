@@ -59,7 +59,7 @@ constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
 
 /* random */
 
-mt19937 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
+mt19937_64 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
 
 /* bit-wise operations */
 #define lowbit(x) ((x) & -(x))
@@ -469,17 +469,83 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    readvec1(int, c, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
-    }
+    read(int, n, m, k);
 
-    auto dfs = [&] (auto dfs, int v, int pa) {
-        
+    auto work = [k] (const vector<vector<int>>& a) -> int {
+        int n = a.size(), m = a[0].size();
+
+        vector ps(m, vector<int>(n + 1));
+        for (int j = 0; j < m; ++j) {
+            for (int i = 1; i <= n; ++i) {
+                ps[j][i] = ps[j][i - 1] + a[i - 1][j];
+            }
+        }
+
+        vector<vector<int>> psd(n + m);
+        for (int j = 0; j < n + m - 1; ++j) {
+            psd[j].emplace_back(0);
+            int delta = max(0, j - m + 1);
+            int x = delta, y = j - delta;
+            while (y >= 0 and x < n) {
+                psd[j].emplace_back(psd[j].back() + a[x][y]);
+                x += 1, y -= 1;
+            }
+        }
+
+        int res = 0;
+        for (int i = 0; i < n; ++i) {
+            int curr = 0;
+            chmax(res, curr);
+
+            for (int j = 0; j < m; ++j) {
+                curr += ps[j][i + 1] - ps[j][max(0, i - k)];
+                chmax(res, curr);
+                if (i + j - k >= 0) {
+                    int t = i + j - k;
+                    curr -= psd[t][min<int>(psd[t].size() - 1, max(0, min(t, m - 1) - j + k + 1))] - psd[t][max(0, min(t, m - 1) - j)];
+                }
+            }
+        }
+
+        return res;
+    };
+
+    int res = 0;
+
+    vector a(n, vector<int>(m));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            read(char, x);
+            a[i][j] = x == '#';
+        }
     }
+    chmax(res, work(a));
+
+    vector b(n, vector<int>(m));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            b[i][j] = a[n - 1 - i][m - 1 - j];
+        }
+    }
+    chmax(res, work(b));
+
+    vector c(m, vector<int>(n));
+    for (int i = 0; i < m; ++i) {
+        for (int j = 0; j < n; ++j) {
+            c[i][j] = a[j][m - 1 - i];
+        }
+    }
+    chmax(res, work(c));
+
+    vector d(m, vector<int>(n));
+    for (int i = 0; i < m; ++i) {
+        for (int j = 0; j < n; ++j) {
+            d[i][j] = a[n - 1 - j][i];
+        }
+    }
+    chmax(res, work(d));
+
+    cout << res << '\n';
 }
 
 int main() {
