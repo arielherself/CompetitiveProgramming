@@ -444,17 +444,13 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
 #define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
-namespace detail {
-    template <typename T, std::size_t...Is>
-    constexpr std::array<T, sizeof...(Is)>
-    make_array(const T& value, std::index_sequence<Is...>) {
-        return {{(static_cast<void>(Is), value)...}};
+template <typename T, size_t N>
+array<T, N> __initarray(const T& init) {
+    array<T, N> res;
+    for (size_t i = 0; i < N; ++i) {
+        res[i] = init;
     }
-}
-
-template <typename T, std::size_t N>
-constexpr std::array<T, N> __initarray(const T& value) {
-    return detail::make_array(value, std::make_index_sequence<N>());
+    return res;
 }
 /*******************************************************/
 
@@ -471,18 +467,40 @@ void prep() {
 
 void solve() {
     read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
-    }
-    ll res = 0;
+    vector<int> a(n), b(n);
     for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+        cin >> a[i] >> b[i];
     }
-    cout << res << '\n';
+
+    if (k <= a[0]) {
+        cout << "YES\n";
+        return;
+    }
+
+    vector<int> idx(n);
+    iota(idx.begin(), idx.end(), 0);
+    sort_by_key(idx.begin(), idx.end(), expr(a[i], int i));
+
+    int curr = 0;
+    for (auto&& i : idx) {
+        if (i == 0) continue;
+        if (curr == 0) {
+            curr = a[i];
+        } else {
+            chmin(curr, a[i]);
+            curr = max(a[i], b[i] + curr);
+        }
+        // deb(i, a[i], b[i], curr);
+    }
+    chmin(curr, a[0]);
+    // deb(curr, b[0] + curr, k);
+
+    if (curr != 0 and b[0] + curr >= k) {
+        cout << "YES\n";
+    } else {
+        cout << "NO\n";
+    }
+
 }
 
 int main() {

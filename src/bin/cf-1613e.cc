@@ -395,10 +395,9 @@ bool chmin(T& lhs, const U& rhs) {
     return ret;
 }
 
-#define functor(func) ([&](auto&&... val) \
+#define functor(func) [&](auto&&... val) \
 noexcept(noexcept(func(std::forward<decltype(val)>(val)...))) -> decltype(auto) \
-{return func(std::forward<decltype(val)>(val)...);})
-#define expr(ret, ...) ([&] (__VA_ARGS__) { return (ret); })
+{return func(std::forward<decltype(val)>(val)...);}
 template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
     std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
 }
@@ -444,17 +443,13 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
 #define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
-namespace detail {
-    template <typename T, std::size_t...Is>
-    constexpr std::array<T, sizeof...(Is)>
-    make_array(const T& value, std::index_sequence<Is...>) {
-        return {{(static_cast<void>(Is), value)...}};
+template <typename T, size_t N>
+array<T, N> __initarray(const T& init) {
+    array<T, N> res;
+    for (size_t i = 0; i < N; ++i) {
+        res[i] = init;
     }
-}
-
-template <typename T, std::size_t N>
-constexpr std::array<T, N> __initarray(const T& value) {
-    return detail::make_array(value, std::make_index_sequence<N>());
+    return res;
 }
 /*******************************************************/
 
@@ -469,20 +464,113 @@ void dump_ignore() {}
 void prep() {
 }
 
+class quick_union {
+private:
+    vector<size_t> c;
+    vector<int> mark;
+public:
+    quick_union(size_t n) : c(n), mark(n) {
+        iota(c.begin(), c.end(), 0);
+    }
+    
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        mark[query(j)] |= mark[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_mark(size_t i) {
+        return mark[query(i)];
+    }
+    void set_mark(size_t i) {
+        mark[query(i)] = 1;
+    }
+};
+
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
-    }
-    ll res = 0;
+    read(int, n, m);
+    vector a(n, vector<char>(m));
     for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+        for (int j = 0; j < m; ++j) {
+            cin >> a[i][j];
+        }
     }
-    cout << res << '\n';
+
+    quick_union qu(n * m);
+
+    auto work = [&] (int x1, int y1, int x2, int y2) {
+        if (x1 < 0 or x1 >= n or x2 < 0 or x2 >= n or y1 < 0 or y1 >= m or y2 < 0 or y2 >= m or a[x1][y1] != '.' or a[x2][y2] != '.') return;
+        if (qu.connected(x1 * m + y1, x2 * m + y2)) {
+            qu.set_mark(x1 * m + y1);
+        } else {
+            qu.merge(x1 * m + y1, x2 * m + y2);
+        }
+    };
+
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            work(i, j, i + 1, j);
+            work(i, j, i, j + 1);
+            work(i, j, i - 1, j);
+            work(i, j, i, j - 1);
+        }
+    }
+
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            cerr << qu.query_mark(i * m + j) << ' ';
+        }
+        cerr <<  endl;
+    }
+
+    deque<pii> q;
+    vector res(n, vector<int>(m));
+
+    auto add = [&] (int x, int y) {
+        if (x >= 0 and x < n  and y >= 0 and y < m and a[x][y] != '#' and not res[x][y]) {
+            q.emplace_back(x, y);
+        }
+    };
+
+    for (int i = 0; i < n; ++i) {
+        for (int j =0 ; j < m; ++j) {
+            if (a[i][j] == 'L') {
+                add(i, j);
+            }
+        }
+    }
+
+    while (q.size()) {
+        popfront(q, x, y);
+        if (res[x][y]) continue;
+        if (not qu.query_mark(x * m + y)) {
+            res[x][y] = 1;
+        } else {
+            res[x][y] = -1;
+        }
+        add(x - 1, y);
+        add(x + 1, y);
+        add(x, y - 1);
+        add(x, y + 1);
+    }
+
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            if (a[i][j] == '.' and res[i][j] == 1) {
+                cout << '+';
+            } else {
+                cout << a[i][j];
+            }
+        }
+        cout << '\n';
+    }
 }
 
 int main() {

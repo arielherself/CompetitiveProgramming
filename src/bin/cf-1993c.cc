@@ -395,10 +395,9 @@ bool chmin(T& lhs, const U& rhs) {
     return ret;
 }
 
-#define functor(func) ([&](auto&&... val) \
+#define functor(func) [&](auto&&... val) \
 noexcept(noexcept(func(std::forward<decltype(val)>(val)...))) -> decltype(auto) \
-{return func(std::forward<decltype(val)>(val)...);})
-#define expr(ret, ...) ([&] (__VA_ARGS__) { return (ret); })
+{return func(std::forward<decltype(val)>(val)...);}
 template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
     std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
 }
@@ -444,17 +443,13 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
 #define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
-namespace detail {
-    template <typename T, std::size_t...Is>
-    constexpr std::array<T, sizeof...(Is)>
-    make_array(const T& value, std::index_sequence<Is...>) {
-        return {{(static_cast<void>(Is), value)...}};
+template <typename T, size_t N>
+array<T, N> __initarray(const T& init) {
+    array<T, N> res;
+    for (size_t i = 0; i < N; ++i) {
+        res[i] = init;
     }
-}
-
-template <typename T, std::size_t N>
-constexpr std::array<T, N> __initarray(const T& value) {
-    return detail::make_array(value, std::make_index_sequence<N>());
+    return res;
 }
 /*******************************************************/
 
@@ -471,18 +466,37 @@ void prep() {
 
 void solve() {
     read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
-    }
-    ll res = 0;
+    readvec(int, a, n);
+    vector<vector<int>> b(2  * k);
     for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+        b[a[i] % k].emplace_back(i);
+        b[((a[i] % k) + k) % (2 * k)].emplace_back(i);
     }
-    cout << res << '\n';
+    int start = *max_element(a.begin(), a.end());
+    vector<int> stat(n);
+    int cnt = 0;
+    for (int i = 0; i < n; ++i) {
+        if (start - 1 - a[i] >= 0 and (start - 1 - a[i]) % (2 * k) < k) {
+            cnt += 1;
+            stat[i] = 1;
+        }
+    }
+    for (int i = 0; i < 6 * k; ++i) {
+        for (auto&& j : b[(start + i) % (2 * k)]) {
+            if (stat[j]) {
+                stat[j] = 0;
+                cnt -= 1;
+            } else {
+                stat[j] = 1;
+                cnt += 1;
+            }
+        }
+        if (cnt == n) {
+            cout << start + i << '\n';
+            return;
+        }
+    }
+    cout << -1 << '\n';
 }
 
 int main() {

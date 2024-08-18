@@ -67,31 +67,6 @@ mt19937_64 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::
 /* arithmetic operations */
 #define mod(x, y) ((((x) % (y)) + (y)) % (y))
 
-/* fast pairs */
-#define upair ull
-#define umake(x, y) (ull(x) << 32 | (ull(y) & ((1ULL << 32) - 1)))
-#define u1(p) ((p) >> 32)
-#define u2(p) ((p) & ((1ULL << 32) - 1))
-#define ult std::less<upair>
-#define ugt std::greater<upair>
-
-#define ipair ull
-#define imake(x, y) (umake(x, y))
-#define i1(p) (int(u1(ll(p))))
-#define i2(p) (ll(u2(p) << 32) >> 32)
-struct ilt {
-    bool operator()(const ipair& a, const ipair& b) const {
-        if (i1(a) == i1(b)) return i2(a) < i2(b);
-        else return i1(a) < i1(b);
-    }
-};
-struct igt {
-    bool operator()(const ipair& a, const ipair& b) const {
-        if (i1(a) == i1(b)) return i2(a) > i2(b);
-        else return i1(a) > i1(b);
-    }
-};
-
 /* conditions */
 #define loop while (1)
 #define if_or(var, val) if (!(var == val)) var = val; else
@@ -470,19 +445,46 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
+    read(int, n, q);
+    readvec(int, a, n);
+
+    ll sum = accumulate(a.begin(), a.end(), ll(0));
+
+    multiset<ll> res = { sum };
+
+    vector<vector<ll>> bk(n);
+    vector<int> t;
+    for (int i = 2; i < n; ++i) {
+        if (n % i == 0) {
+            t.emplace_back(i);
+            bk[i].resize(i);
+            for (int j = 0; j < n; ++j) {
+                bk[i][j % i] += ll(1) * a[j] * i;
+            }
+            for (int j = 0; j < i; ++j) {
+                res.emplace(bk[i][j]);
+            }
+        }
+
     }
-    ll res = 0;
-    for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+
+    cout << *res.rbegin() << '\n';
+
+    while (q--) {
+        read(int, j, x);
+        --j;
+        for (auto&& i : t) {
+            res.erase(res.lower_bound(bk[i][j % i]));
+            bk[i][j % i] += ll(1) * (x - a[j]) * i;
+            res.emplace(bk[i][j % i]);
+        }
+        res.erase(res.lower_bound(sum));
+        sum += x - a[j];
+        a[j] = x;
+        res.emplace(sum);
+
+        cout << *res.rbegin() << '\n';
     }
-    cout << res << '\n';
 }
 
 int main() {

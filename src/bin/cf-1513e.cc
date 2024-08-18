@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -466,23 +466,57 @@ void dump() {}
 
 void dump_ignore() {}
 
+constexpr int N = 1e5 + 10;
+using mll = MLL<MDL>;
+mll fact[N];
+
 void prep() {
+    fact[0] = 1;
+    for (int i = 1; i < N; ++i) {
+        fact[i] = fact[i - 1] * i;
+    }
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
+    read(int, n);
+    readvec(int, a, n);
+    ll avg = accumulate(a.begin(), a.end(), ll(0));
+    if (avg % n) {
+        cout << 0 << '\n';
+        return;
     }
-    ll res = 0;
+    avg /= n;
+
+    unordered_map<int, int, safe_hash> cnt, gt, lt;
+    int cnt_gt = 0, cnt_lt = 0, cnt_eq = 0;
     for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+        cnt[a[i]] += 1;
+        if (a[i] > avg) cnt_gt += 1, gt[a[i]] += 1;
+        else if (a[i] < avg) cnt_lt += 1, lt[a[i]] += 1;
+        else cnt_eq += 1;
     }
-    cout << res << '\n';
+
+    if (cnt_gt <= 1 or cnt_lt <= 1) {
+        mll res = fact[n];
+        for (auto&& [k, v] : cnt) {
+            res /= fact[v];
+        }
+        cout << res << '\n';
+    } else {
+        mll left = fact[cnt_lt];
+        mll right = fact[cnt_gt];
+        for (auto&& [k, v] : lt) {
+            left /= fact[v];
+        }
+        for (auto&& [k, v] : gt) {
+            right /= fact[v];
+        }
+        if (cnt_lt or cnt_gt) {
+            cout << 2 * left * right * comb(n, cnt_eq) << '\n';
+        } else {
+            cout << 1 << '\n';
+        }
+    }
 }
 
 int main() {

@@ -395,10 +395,9 @@ bool chmin(T& lhs, const U& rhs) {
     return ret;
 }
 
-#define functor(func) ([&](auto&&... val) \
+#define functor(func) [&](auto&&... val) \
 noexcept(noexcept(func(std::forward<decltype(val)>(val)...))) -> decltype(auto) \
-{return func(std::forward<decltype(val)>(val)...);})
-#define expr(ret, ...) ([&] (__VA_ARGS__) { return (ret); })
+{return func(std::forward<decltype(val)>(val)...);}
 template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
     std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
 }
@@ -444,43 +443,104 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
 #define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
-namespace detail {
-    template <typename T, std::size_t...Is>
-    constexpr std::array<T, sizeof...(Is)>
-    make_array(const T& value, std::index_sequence<Is...>) {
-        return {{(static_cast<void>(Is), value)...}};
+template <typename T, size_t N>
+array<T, N> __initarray(const T& init) {
+    array<T, N> res;
+    for (size_t i = 0; i < N; ++i) {
+        res[i] = init;
     }
-}
-
-template <typename T, std::size_t N>
-constexpr std::array<T, N> __initarray(const T& value) {
-    return detail::make_array(value, std::make_index_sequence<N>());
+    return res;
 }
 /*******************************************************/
 
 // #define SINGLE_TEST_CASE
-// #define DUMP_TEST_CASE 7219
-// #define TOT_TEST_CASE 10000
+// #define DUMP_TEST_CASE 65
+// #define TOT_TEST_CASE 530
 
-void dump() {}
+void dump() {
+    read(int, n, k);
+    cout << n << ' ' << k << endl;
+    for (int i = 0; i < k; ++i) {
+        read(int, l, r);
+        cout << l << ' ' << r << endl;
+    }
+}
 
-void dump_ignore() {}
+void dump_ignore() {
+    read(int, n, k);
+    for (int i = 0; i < k; ++i) {
+        read(int, l, r);
+    }
+}
+
+using mll = MLL<PRIME>;
+constexpr int N = 3e5;
+mll fact[N + 1], f[N + 1];
 
 void prep() {
+    fact[0] = 1;
+    for (int i = 1; i <= N; ++i) {
+        fact[i] = fact[i - 1] * i;
+    }
+
+    for (int i = 0; 2 * i <= N; ++i) {
+        f[2 * i] = comb(2 * i, i) / (i + 1);
+    }
 }
 
 void solve() {
     read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
+    vector<vector<int>> open(n + 1), close(n + 1);
+    vector<int> left(k + 1), right(k + 1);
+    left[0] = 1, right[0] = n;
+    open[1].emplace_back(0), close[n].emplace_back(0);
+    for (int i = 1; i <= k; ++i) {
+        read(int, l, r);
+        left[i] = l;
+        right[i] = r;
+        open[l].emplace_back(i);
+        close[r].emplace_back(i);
     }
-    ll res = 0;
-    for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+
+    mll res = 1;
+
+    vector<int> cnt(k + 1);
+    auto cmp = [&] (int i, int j) {
+        if (left[i] == left[j]) {
+            if (right[i] == right[j]) {
+                return i < j;
+            } else {
+                return right[i] < right[j];
+            }
+        } else {
+            return left[i] > left[j];
+        }
+    };
+    set<int, decltype(cmp)> curr(cmp);
+    set<int, decltype(cmp)> has(cmp);
+    for (int i = 1; i <= n; ++i) {
+        for (auto&& x : open[i]) {
+            curr.emplace(x);
+        }
+
+        cnt[*curr.begin()] += 1;
+        has.emplace(*curr.begin());
+
+        for (auto&& x : close[i]) {
+            while (has.size() and left[*has.begin()] > left[x]) {
+                res *= f[cnt[*has.begin()]];
+                cnt[*has.begin()] = 0;
+                has.erase(has.begin());
+            }
+            curr.erase(x);
+            has.erase(x);
+        }
+    }
+
+    for (int i = 0; i <= k; ++i) {
+        if (cnt[i]) {
+            res *= f[cnt[i]];
+        }
     }
     cout << res << '\n';
 }

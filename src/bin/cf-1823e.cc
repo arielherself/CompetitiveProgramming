@@ -395,10 +395,9 @@ bool chmin(T& lhs, const U& rhs) {
     return ret;
 }
 
-#define functor(func) ([&](auto&&... val) \
+#define functor(func) [&](auto&&... val) \
 noexcept(noexcept(func(std::forward<decltype(val)>(val)...))) -> decltype(auto) \
-{return func(std::forward<decltype(val)>(val)...);})
-#define expr(ret, ...) ([&] (__VA_ARGS__) { return (ret); })
+{return func(std::forward<decltype(val)>(val)...);}
 template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
     std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
 }
@@ -444,21 +443,17 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
 #define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
-namespace detail {
-    template <typename T, std::size_t...Is>
-    constexpr std::array<T, sizeof...(Is)>
-    make_array(const T& value, std::index_sequence<Is...>) {
-        return {{(static_cast<void>(Is), value)...}};
+template <typename T, size_t N>
+array<T, N> __initarray(const T& init) {
+    array<T, N> res;
+    for (size_t i = 0; i < N; ++i) {
+        res[i] = init;
     }
-}
-
-template <typename T, std::size_t N>
-constexpr std::array<T, N> __initarray(const T& value) {
-    return detail::make_array(value, std::make_index_sequence<N>());
+    return res;
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,19 +465,59 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
-    }
-    ll res = 0;
+    read(int, n, l, r);
+
+    adj(ch, n);
     for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+        read(int, u, v);
+        edge(ch, u, v);
     }
-    cout << res << '\n';
+
+    vector<bool> vis(n + 1);
+    int cnt = 0;
+    auto dfs = [&] (auto dfs, int v) -> void {
+        vis[v] = 1;
+        ++cnt;
+        for (auto&& u : ch[v]) {
+            if (vis[u]) continue;
+            dfs(dfs, u);
+        }
+    };
+
+    int x = 0, y = 0;
+
+    for (int i = 1; i <= n; ++i) {
+        if (not vis[i]) {
+            cnt = 0;
+            dfs(dfs, i);
+            if (cnt == 3) ++x;
+            else y += cnt;
+        }
+    }
+
+    if (l <= 1 and r >= 3) {
+        deb(x, y);
+        if (3 * (x % 2) + (y % 3) == 0) {
+            cout << "Alice\n";
+        } else {
+            cout << "Bob\n";
+        }
+    } else if (l <= 2 and r >= 3) {
+        if (x % 2 == 0) {
+            if (((y + 3 * (x / 2)) / 2) % 2 == 0) {
+                cout << "Alice\n";
+            } else {
+                cout << "Bob\n";
+            }
+        } else {
+            // array<int, 4> p = { 2, 0, 3, 1 };
+            if ((y + 3 * (x / 2 + 1)) % 4 == 1) {
+                cout << "Alice\n";
+            } else {
+                cout << "Bob\n";
+            }
+        }
+    }
 }
 
 int main() {

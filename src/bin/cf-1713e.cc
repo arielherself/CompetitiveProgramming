@@ -470,19 +470,56 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
-    }
-    ll res = 0;
+    read(int, n);
+    vector a(n, vector<int>(n));
+
     for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+        for (int j = 0; j < n; ++j) {
+            cin >> a[i][j];
+        }
     }
-    cout << res << '\n';
+
+    vector<int> b(n, -1);
+    for (int i = 0; i < n; ++i) {
+        if (b[i] == -1) {
+            // try to fix the current line greedily
+            int oc[2] = { INF, INF };
+            for (int j = i + 1; j < n; ++j) {
+                if (b[j] != -1) {
+                    if (a[i][j] > a[j][i]) {
+                        chmin(oc[1 - b[j]], j);
+                    } else if (a[i][j] < a[j][i]) {
+                        chmin(oc[b[j]], j);
+                    }
+                }
+            }
+            if (oc[0] <= oc[1]) {
+                b[i] = 0;
+            } else {
+                b[i] = 1;
+            }
+        }
+        for (int j = i + 1; j < n; ++j) {
+            if (a[i][j] > a[j][i]) {
+                if (b[j] == -1 or b[j] + b[i] == 1) {
+                    b[j] = 1 - b[i];
+                    swap(a[i][j], a[j][i]);
+                }
+            } else if (a[i][j] < a[j][i]) {
+                if (b[j] == -1 or b[j] == b[i]) {
+                    b[j] = b[i];
+                } else {
+                    swap(a[i][j], a[j][i]);
+                }
+            }
+        }
+    }
+
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            cout << a[i][j] << " \n"[j + 1 == n];
+        }
+    }
 }
 
 int main() {

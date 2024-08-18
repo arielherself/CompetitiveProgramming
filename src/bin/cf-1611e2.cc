@@ -471,18 +471,44 @@ void prep() {
 
 void solve() {
     read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
+    vector<bool> mark(n + 1);
+    for (int i = 0; i < k; ++i) {
+        read(int, x);
+        mark[x] = 1;
     }
-    ll res = 0;
-    for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+
+    adj(ch, n);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
     }
-    cout << res << '\n';
+
+    vector<int> res(n + 1);
+    auto dfs = [&] (auto dfs, int v, int pa, int layer) -> int {
+        if (v != 1 and ch[v].size() == 1) {
+            if (mark[v]) {
+                res[v] = 1;
+                return layer;
+            } else {
+                res[v] = INF;
+                return INF;
+            }
+        } else {
+            int mn = INF;
+            if (mark[v]) mn = layer;
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                chmin(mn, dfs(dfs, u, v, layer + 1));
+                res[v] = min(res[v] + res[u], INF);
+            }
+            if (mn - layer <= layer) {
+                res[v] = 1;
+            }
+            return mn;
+        }
+    };
+    dfs(dfs, 1, 0, 0);
+    cout << (res[1] == INF ? -1 : res[1]) << '\n';
 }
 
 int main() {

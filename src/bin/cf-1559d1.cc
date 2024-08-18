@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,20 +469,58 @@ void dump_ignore() {}
 void prep() {
 }
 
+class quick_union {
+private:
+    vector<size_t> c, sz;
+public:
+    quick_union(size_t n) : c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
+    }
+
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] += sz[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_size(size_t i) {
+        return sz[query(i)];
+    }
+};
+
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
+    read(int, n, m1, m2);
+    quick_union qu1(n + 1), qu2(n + 1);
+    while (m1--) {
+        read(int, u, v);
+        qu1.merge(u, v);
     }
-    ll res = 0;
-    for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+    while (m2--) {
+        read(int, u, v);
+        qu2.merge(u, v);
     }
-    cout << res << '\n';
+    vector<pii> res;
+    for (int u = 1; u <= n; ++u) {
+        for (int v = u + 1; v <= n; ++v) {
+            if (not qu1.connected(u, v) and not qu2.connected(u, v)) {
+                qu1.merge(u, v);
+                qu2.merge(u, v);
+                res.emplace_back(u, v);
+            }
+        }
+    }
+    cout << res.size() << '\n';
+    for (auto&& [u, v] : res) {
+        cout << u << ' ' << v << '\n';
+    }
 }
 
 int main() {

@@ -395,10 +395,9 @@ bool chmin(T& lhs, const U& rhs) {
     return ret;
 }
 
-#define functor(func) ([&](auto&&... val) \
+#define functor(func) [&](auto&&... val) \
 noexcept(noexcept(func(std::forward<decltype(val)>(val)...))) -> decltype(auto) \
-{return func(std::forward<decltype(val)>(val)...);})
-#define expr(ret, ...) ([&] (__VA_ARGS__) { return (ret); })
+{return func(std::forward<decltype(val)>(val)...);}
 template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
     std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
 }
@@ -444,21 +443,17 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
 #define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
-namespace detail {
-    template <typename T, std::size_t...Is>
-    constexpr std::array<T, sizeof...(Is)>
-    make_array(const T& value, std::index_sequence<Is...>) {
-        return {{(static_cast<void>(Is), value)...}};
+template <typename T, size_t N>
+array<T, N> __initarray(const T& init) {
+    array<T, N> res;
+    for (size_t i = 0; i < N; ++i) {
+        res[i] = init;
     }
-}
-
-template <typename T, std::size_t N>
-constexpr std::array<T, N> __initarray(const T& value) {
-    return detail::make_array(value, std::make_index_sequence<N>());
+    return res;
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,19 +465,77 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
+    read(int, n, m);
+    adj(ch, n);
+    while (m--) {
+        read(int, u, v);
+        edge(ch, u, v);
     }
-    ll res = 0;
+
+    vector<int> c(1 << n);
+    for (int i = 1; i < (1 << n); ++i) {
+        c[i] = i;
+        int v = lsp(i) + 1;
+        for (auto&& u : ch[v]) {
+            c[i] |= 1 << u - 1;
+        }
+        c[i] |= c[i ^ (1 << v - 1)];
+    }
+
+    vector<int> seq;
+
+    vector<bool> vis(1 << n + 5);
+    int start;
+    auto dfs = [&] (auto dfs, int v, int mask) -> bool {
+        if (vis[mask << 5 | v]) return false;
+        vis[mask << 5 | v] = 1;
+        if (c[mask] == (1 << n) - 1) {
+            for (auto&& u : ch[v]) {
+                if (u == start) {
+                    seq.emplace_back(v);
+                    return true;
+                }
+            }
+        }
+        for (auto&& u : ch[v]) {
+            if (mask >> (u - 1) & 1) {
+                ;;
+            } else {
+                if (dfs(dfs, u, mask | 1 << u - 1)) {
+                    seq.emplace_back(v);
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
+
     for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+        start = i + 1;
+        if (dfs(dfs, i + 1, 1 << i)) {
+            cout << "Yes\n";
+            vector<int> res(n + 1);
+            int m = seq.size();
+            if (m > 1) {
+                for (int i = 0; i < m; ++i) {
+                    res[seq[i]] = seq[(i + 1) % m];
+                    for (auto&& u : ch[seq[i]]) {
+                        if (not count(seq.begin(), seq.end(), u)) {
+                            res[u] = seq[i];
+                        }
+                    }
+                }
+            } else {
+                for (auto&& u : ch[seq[0]]) {
+                    res[u] = seq[0];
+                }
+                res[seq[0]] = ch[seq[0]][0];
+            }
+            putvec1(res);
+            return;
+        }
     }
-    cout << res << '\n';
+    cout << "No\n";
 }
 
 int main() {

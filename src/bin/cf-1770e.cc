@@ -395,10 +395,9 @@ bool chmin(T& lhs, const U& rhs) {
     return ret;
 }
 
-#define functor(func) ([&](auto&&... val) \
+#define functor(func) [&](auto&&... val) \
 noexcept(noexcept(func(std::forward<decltype(val)>(val)...))) -> decltype(auto) \
-{return func(std::forward<decltype(val)>(val)...);})
-#define expr(ret, ...) ([&] (__VA_ARGS__) { return (ret); })
+{return func(std::forward<decltype(val)>(val)...);}
 template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
     std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
 }
@@ -444,21 +443,17 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
 #define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
-namespace detail {
-    template <typename T, std::size_t...Is>
-    constexpr std::array<T, sizeof...(Is)>
-    make_array(const T& value, std::index_sequence<Is...>) {
-        return {{(static_cast<void>(Is), value)...}};
+template <typename T, size_t N>
+array<T, N> __initarray(const T& init) {
+    array<T, N> res;
+    for (size_t i = 0; i < N; ++i) {
+        res[i] = init;
     }
-}
-
-template <typename T, std::size_t N>
-constexpr std::array<T, N> __initarray(const T& value) {
-    return detail::make_array(value, std::make_index_sequence<N>());
+    return res;
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -466,22 +461,51 @@ void dump() {}
 
 void dump_ignore() {}
 
+using mll = MLL<PRIME>;
+
 void prep() {
 }
 
 void solve() {
     read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
+    vector<mll> prob(n + 1);
+    for (int i = 0; i < k; ++i) {
+        read(int, x);
+        prob[x] = 1;
     }
-    ll res = 0;
-    for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+    adj(ch, n);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
+        mll prob_v = mll(1) / 2 * (prob[v] + (1 - prob[v]) * prob[u]) + mll(1) / 2 * prob[v] * prob[u];
+        mll prob_u = mll(1) / 2 * (prob[u] + (1 - prob[u]) * prob[v]) + mll(1) / 2 * prob[u] * prob[v];
+        prob[v] = prob_v;
+        prob[u] = prob_u;
     }
+
+    vector<mll> sub(n + 1), sum(n + 1);
+    auto dfs = [&] (auto dfs, int v, int pa) -> void {
+        sum[v] = prob[v];
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            dfs(dfs, u, v);
+            sub[v] += sub[u] + sum[u];
+            sum[v] += sum[u];
+        }
+    };
+    dfs(dfs, 1, 0);
+
+    mll res = 0;
+    auto dfs2 = [&] (auto dfs2, int v, int pa, mll prev_sub, mll prev_sum) -> void {
+        res += prob[v] * (prev_sub + prev_sum);
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            res += prob[v] * (sub[u] + sum[u]);
+            dfs2(dfs2, u, v, prev_sub + prev_sum + (sub[v] - sub[u]), prev_sum + sum[v] - sum[u]);
+        }
+    };
+    dfs2(dfs2, 1, 0, 0, 0);
+
     cout << res << '\n';
 }
 

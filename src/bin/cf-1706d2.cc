@@ -1,10 +1,6 @@
+// #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
 #pragma GCC optimize("Ofast")
-/////////////////////////////////////////////////////////
-/**
- * Useful Macros
- *   by subcrip
- * (requires C++17)
- */
+/************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
 using namespace std;
@@ -15,15 +11,35 @@ using namespace std;
 #define __DECOMPOSE_N(a, ...) auto [__VA_ARGS__] = a;
 constexpr void __() {}
 #define __AS_PROCEDURE(...) __(); __VA_ARGS__; __()
-#define __as_typeof(container) decltype(container)::value_type
+#define __as_typeof(container) remove_reference<decltype(container)>::type
 
 /* type aliases */
+#if LONG_LONG_MAX != INT64_MAX
 using ll = int64_t;
 using ull = uint64_t;
-using pii = pair<int, int>;
-using pil = pair<int, ll>;
-using pli = pair<ll, int>;
-using pll = pair<ll, ll>;
+#else
+using ll = long long;
+using ull = unsigned long long;
+#endif
+using int128 = __int128_t;
+using uint128 = __uint128_t;
+using ld = long double;
+using pii = pair<int, int>;           using pil = pair<int, ll>;           using pid = pair<int, ld>;
+using pli = pair<ll, int>;            using pll = pair<ll, ll>;            using pld = pair<ll, ld>;
+using pdi = pair<ld, int>;            using pdl = pair<ld, ll>;            using pdd = pair<ld, ld>;
+using tiii = tuple<int, int, int>;    using tiil = tuple<int, int, ll>;    using tiid = tuple<int, int, ld>;
+using tili = tuple<int, ll, int>;     using till = tuple<int, ll, ll>;     using tild = tuple<int, ll, ld>;
+using tidi = tuple<int, ld, int>;     using tidl = tuple<int, ld, ll>;     using tidd = tuple<int, ld, ld>;
+using tlii = tuple<ll, int, int>;     using tlil = tuple<ll, int, ll>;     using tlid = tuple<ll, int, ld>;
+using tlli = tuple<ll, ll, int>;      using tlll = tuple<ll, ll, ll>;      using tlld = tuple<ll, ll, ld>;
+using tldi = tuple<ll, ld, int>;      using tldl = tuple<ll, ld, ll>;      using tldd = tuple<ll, ld, ld>;
+using tdii = tuple<ld, int, int>;     using tdil = tuple<ld, int, ll>;     using tdid = tuple<ld, int, ld>;
+using tdli = tuple<ld, ll, int>;      using tdll = tuple<ld, ll, ll>;      using tdld = tuple<ld, ll, ld>;
+using tddi = tuple<ld, ld, int>;      using tddl = tuple<ld, ld, ll>;      using tddd = tuple<ld, ld, ld>;
+template <typename T> using max_heap = priority_queue<T>;
+template <typename T> using min_heap = priority_queue<T, vector<T>, greater<>>;
+template <typename T> using oi = ostream_iterator<T>;
+template <typename T> using ii = istream_iterator<T>;
 
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
@@ -32,10 +48,14 @@ constexpr ll MDL = 1e9 + 7;
 constexpr ll PRIME = 998'244'353;
 constexpr ll MDL1 = 8784491;
 constexpr ll MDL2 = PRIME;
+constexpr int128 INT128_MAX = numeric_limits<int128>::max();
+constexpr uint128 UINT128_MAX = numeric_limits<uint128>::max();
+constexpr int128 INT128_MIN = numeric_limits<int128>::min();
+constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
 
 /* random */
 
-mt19937 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
+mt19937_64 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
 
 /* bit-wise operations */
 #define lowbit(x) ((x) & -(x))
@@ -107,14 +127,34 @@ struct pair_hash {
     }
 };
 
+uniform_int_distribution<mt19937::result_type> dist(PRIME);
+const size_t __array_hash_b = 31, __array_hash_mdl1 = dist(rd), __array_hash_mdl2 = dist(rd);
+struct array_hash {
+    template <typename Sequence>
+    size_t operator()(const Sequence& arr) const {
+        size_t pw1 = 1, pw2 = 1;
+        size_t res1 = 0, res2 = 0;
+        for (auto&& x : arr) {
+            res1 = (res1 + x * pw1) % __array_hash_mdl1;
+            res2 = (res2 + x * pw2) % __array_hash_mdl2;
+            pw1 = (pw1 * __array_hash_b) % __array_hash_mdl1;
+            pw2 = (pw2 * __array_hash_b) % __array_hash_mdl2;
+        }
+        return res1 + res2;
+    }
+};
+
 /* build data structures */
+#define faster(um) __AS_PROCEDURE((um).reserve(1024); (um).max_load_factor(0.25);)
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
 #define pa(a) __AS_PROCEDURE(__typeof(a) pa; pa.push_back({}); for (auto&&x : a) pa.push_back(pa.back() + x);)
 #define sa(a) __AS_PROCEDURE(__typeof(a) sa(a.size() + 1); {int n = a.size(); for (int i = n - 1; i >= 0; --i) sa[i] = sa[i + 1] + a[i];};)
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
+#define edgew(ch, u, v, ...) __AS_PROCEDURE(ch[u].emplace_back(v, __VA_ARGS__), ch[v].emplace_back(u, __VA_ARGS__);)
 #define Edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v);)
+#define Edgew(ch, u, v, ...) __AS_PROCEDURE(ch[u].emplace_back(v, __VA_ARGS__);)
 template <typename T, typename Iterator> pair<size_t, map<T, size_t>> discretize(Iterator __first, Iterator __last) {
     set<T> st(__first, __last);
     size_t N = 0;
@@ -132,13 +172,9 @@ template <typename T, typename Iterator> pair<size_t, unordered_map<T, size_t, s
 
 /* io */
 #define untie __AS_PROCEDURE(ios_base::sync_with_stdio(0), cin.tie(NULL))
-template<typename T> void __read(T& x) { cin >> x; }
-template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __read(args...); }
-#define read(type, ...) __AS_PROCEDURE(type __VA_ARGS__; __read(__VA_ARGS__);)
-#define readvec(type, a, n) __AS_PROCEDURE(vector<type> a(n); for (int i = 0; i < (n); ++i) cin >> a[i];)
-#define putvec(a) __AS_PROCEDURE(for (auto&& x : a) cout << x << ' '; cout << endl;)
-#define debug(x) __AS_PROCEDURE(cerr << #x" = " << (x) << endl;)
-#define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : a) cerr << x << ' '; cerr << endl;)
+template<typename T, typename U> istream& operator>>(istream& in, pair<T, U>& p) {
+    return in >> p.first >> p.second;
+}
 template<typename T, typename U> ostream& operator<<(ostream& out, const pair<T, U>& p) {
     out << "{" << p.first << ", " << p.second << "}";
     return out;
@@ -158,6 +194,41 @@ template<typename T> ostream& operator<<(ostream& out, const vector<T>& vec) {
     for (auto&& i : vec) out << i << ' ';
     return out;
 }
+std::ostream& operator<<(std::ostream& dest, const int128& value) {
+    // https://stackoverflow.com/a/25115163/23881100
+    std::ostream::sentry s( dest );
+    if ( s ) {
+        uint128 tmp = value < 0 ? -value : value;
+        char buffer[ 128 ];
+        char* d = std::end( buffer );
+        do {
+            -- d;
+            *d = "0123456789"[ tmp % 10 ];
+            tmp /= 10;
+        } while ( tmp != 0 );
+        if ( value < 0 ) {
+            -- d;
+            *d = '-';
+        }
+        int len = std::end( buffer ) - d;
+        if ( dest.rdbuf()->sputn( d, len ) != len ) {
+            dest.setstate( std::ios_base::badbit );
+        }
+    }
+    return dest;
+}
+template<typename T> void __read(T& x) { cin >> x; }
+template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __read(args...); }
+#define read(type, ...) __AS_PROCEDURE(type __VA_ARGS__; __read(__VA_ARGS__);)
+#define readvec(type, a, n) __AS_PROCEDURE(vector<type> a(n); for (auto& x : a) cin >> x;)
+#define readvec1(type, a, n) __AS_PROCEDURE(vector<type> a((n) + 1); copy_n(ii<type>(cin), (n), a.begin() + 1);)
+#define putvec(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
+#define putvec1(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
+#define putvec_eol(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
+#define putvec1_eol(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
+#define debug(x) __AS_PROCEDURE(cerr << #x" = " << (x) << endl;)
+#define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : a) cerr << x << ' '; cerr << endl;)
+#define deb(...) debug(make_tuple(__VA_ARGS__))
 
 /* pops */
 #define poptop(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.top(); q.pop();)
@@ -165,6 +236,18 @@ template<typename T> ostream& operator<<(ostream& out, const vector<T>& vec) {
 #define popfront(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.front();q.pop_front();)
 
 /* math */
+template <typename return_t>
+return_t qpow(ll b, ll p) {
+    if (b == 0 and p != 0) return 0;
+    if (p == 0) return 1;
+    return_t half = qpow<return_t>(b, p / 2);
+    if (p % 2 == 1) return half * half * b;
+    else return half * half;
+}
+
+#define comb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] / fact[k] / fact[(n) - (k)])
+#define fastcomb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] * factrev[k] * factrev[(n) - (k)])
+
 constexpr inline int lg2(ll x) { return x == 0 ? -1 : sizeof(ll) * 8 - 1 - __builtin_clzll(x); }
 
 void __exgcd(ll a, ll b, ll& x, ll& y) {
@@ -180,6 +263,39 @@ ll inverse(ll a, ll b) {
     ll x, y;
     __exgcd(a, b, x, y);
     return mod(x, b);
+}
+
+vector<tuple<int, int, ll>> decompose(ll x) {
+    // return (factor, count, factor ** count)
+    vector<tuple<int, int, ll>> res;
+    for (int i = 2; i * i <= x; i++) {
+        if (x % i == 0) {
+            int cnt = 0;
+            ll pw = 1;
+            while (x % i == 0) ++cnt, x /= i, pw *= i;
+            res.emplace_back(i, cnt, pw);
+        }
+    }
+    if (x != 1) {
+        res.emplace_back(x, 1, x);
+    }
+    return res;
+}
+
+vector<pii> decompose_prime(int N) {
+    // return (factor, count)
+    vector<pii> result;
+    for (int i = 2; i * i <= N; i++) {
+        if (N % i == 0) {
+            int cnt = 0;
+            while (N % i == 0) N /= i, ++cnt;
+            result.emplace_back(i, cnt);
+        }
+    }
+    if (N != 1) {
+        result.emplace_back(N, 1);
+    }
+    return result;
 }
 
 /* string algorithms */
@@ -231,174 +347,172 @@ int period(string s) {  // find the length of shortest recurring period
     }
     return n;
 }
-/////////////////////////////////////////////////////////
+
+/* modular arithmetic */
+template <ll mdl> struct MLL {
+    ll val;
+    MLL(ll v = 0) : val(mod(v, mdl)) {}
+    MLL(const MLL<mdl>& other) : val(other.val) {}
+    friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
+    friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
+    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
+    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
+    friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
+    friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
+    friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
+    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
+    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
+    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
+    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
+    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
+};
+
+template <ll mdl>
+ostream& operator<<(ostream& out, const MLL<mdl>& num) {
+    return out << num.val;
+}
+
+template <ll mdl>
+istream& operator>>(istream& in, MLL<mdl>& num) {
+    return in >> num.val;
+}
+
+// miscancellous
+template <typename T, typename U>
+bool chmax(T& lhs, const U& rhs) {
+    bool ret = lhs < rhs;
+    if (ret) {
+        lhs = rhs;
+    }
+    return ret;
+}
+template <typename T, typename U>
+bool chmin(T& lhs, const U& rhs) {
+    bool ret = lhs > rhs;
+    if (ret) {
+        lhs = rhs;
+    }
+    return ret;
+}
+
+#define functor(func) ([&](auto&&... val) \
+noexcept(noexcept(func(std::forward<decltype(val)>(val)...))) -> decltype(auto) \
+{return func(std::forward<decltype(val)>(val)...);})
+#define expr(ret, ...) ([&] (__VA_ARGS__) { return (ret); })
+template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
+    std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
+}
+template <typename Func, typename RandomIt, typename Compare> void sort_by_key(RandomIt first, RandomIt last, Func extractor, Compare comp) {
+    std::sort(first, last, [&] (auto&& a, auto&& b) { return comp(extractor(a), extractor(b)); });
+}
+template <typename T, typename U, typename Iterator_T, typename Iterator_U>
+vector<pair<T, U>> zip(Iterator_T a_first, Iterator_T a_last, Iterator_U b_first, Iterator_U b_last) {
+    vector<pair<T, U>> res;
+    auto a_it = a_first;
+    auto b_it = b_first;
+    for (; not (a_it == a_last) and not (b_it == b_last); ++a_it, ++b_it) {
+        res.emplace_back(*a_it, *b_it);
+    }
+    return res;
+}
+template <typename T, typename U, typename Iterator_T, typename Iterator_U>
+vector<pair<T, U>> zip_n(Iterator_T a_first, Iterator_U b_first, size_t n) {
+    vector<pair<T, U>> res;
+    if (n > 0) {
+        res.emplace_back(*a_first, *b_first);
+        for (size_t i = 1; i != n; ++i) {
+            res.emplace_back(*++a_first, *++b_first);
+        }
+    }
+    return res;
+}
+template <typename T>
+class ArithmeticIterator : bidirectional_iterator_tag {
+public:
+    using difference_type = ptrdiff_t;
+    using value_type = T;
+private:
+    value_type value;
+public:
+    ArithmeticIterator(const T& value) : value(value) {}
+    value_type operator*() const { return value; }
+    ArithmeticIterator<T>& operator++() { ++value; return *this; }
+    ArithmeticIterator<T>& operator--() { --value; return *this; }
+    bool operator==(const ArithmeticIterator<T>& rhs) const { return value == rhs.value; }
+};
+template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container) {
+    return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
+}
+#define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
+namespace detail {
+    template <typename T, std::size_t...Is>
+    constexpr std::array<T, sizeof...(Is)>
+    make_array(const T& value, std::index_sequence<Is...>) {
+        return {{(static_cast<void>(Is), value)...}};
+    }
+}
+
+template <typename T, std::size_t N>
+constexpr std::array<T, N> __initarray(const T& value) {
+    return detail::make_array(value, std::make_index_sequence<N>());
+}
+/*******************************************************/
 
 // #define SINGLE_TEST_CASE
-// #define DUMP_TEST_CASE 512
+// #define DUMP_TEST_CASE 7219
+// #define TOT_TEST_CASE 10000
 
 void dump() {}
 
-void prep() {}
+void dump_ignore() {}
 
-template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
-private:
-    using size_type = uint64_t;
-    using info_type = Addable_Info_t;
-    using tag_type = Tag_t;
-    size_type _max;
-    vector<info_type> d;
-    vector<tag_type> b;
-
-    void pull(size_type p) {
-        d[p] = d[p * 2] + d[p * 2 + 1];
-    }
-
-    void push(size_type p) {
-        d[p * 2].apply(b[p]), d[p * 2 + 1].apply(b[p]);
-        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
-        b[p] = tag_type();
-    }
-
-    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
-        if (s == t) {
-            d[p] = c;
-            return;
-        }
-        size_type m = s + (t - s >> 1);
-        if (s != t) push(p);
-        if (x <= m) set(s, m, p * 2, x, c);
-        else set(m + 1, t, p * 2 + 1, x, c);
-        d[p] = d[p * 2] + d[p * 2 + 1];
-    }
-    
-    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
-        if (l <= s && t <= r) {
-            d[p].apply(c);
-            b[p].apply(c);
-            return;
-        }
-        size_type m = s + (t - s >> 1);
-        push(p);
-        if (l <= m) range_apply(s, m, p * 2, l, r, c);
-        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
-        pull(p);
-    }
-
-    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
-        if (l <= s && t <= r) {
-            return d[p];
-        }
-        size_type m = s + (t - s >> 1);
-        info_type res = {};
-        push(p);
-        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
-        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
-        return res;
-    }
-
-    void build(const Sequence& a, size_type s, size_type t, size_type p) {
-        if (s == t) {
-            d[p] = a[s];
-            return;
-        }
-        int m = s + (t - s >> 1);
-        build(a, s, m, p * 2);
-        build(a, m + 1, t, p * 2 + 1);
-        pull(p);
-    }
-public:
-    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
-    segtree(const Sequence& a) : segtree(a.size()) {
-        build(a, {}, _max, 1);
-    }
-
-    void set(size_type i, const info_type& c) {
-        set({}, _max, 1, i, c);
-    }
-    
-    void range_apply(size_type l, size_type r, const tag_type& c) {
-        range_apply({}, _max, 1, l, r, c);
-    }
-
-    void apply(size_type i, const tag_type& c) {
-        range_apply(i, i, c);
-    }
-
-    info_type range_query(size_type l, size_type r) {
-        return range_query({}, _max, 1, l, r);
-    }
-
-    info_type query(size_type i) {
-        return range_query(i, i);
-    }
-
-    Sequence serialize() {
-        Sequence res = {};
-        for (size_type i = 0; i <= _max; ++i) {
-            res.push_back(query(i));
-        }
-        return res;
-    }
-
-    const vector<info_type>& get_d() {
-        return d;
-    }
-};
-
-struct Set_Tag {
-    int val = -2;
-    void apply(const Set_Tag& rhs) {
-        if (rhs.val != -2)
-        val = rhs.val;
-    }
-};
-
-struct Set_Info {
-    int val = 0;
-    void apply(const Set_Tag& rhs) {
-        if (rhs.val != -2)
-        val = rhs.val;
-    }
-};
-
-Set_Info operator+(const Set_Info &a, const Set_Info &b) {
-    return { min(a.val, b.val) };
+void prep() {
 }
+
 void solve() {
     read(int, n, k);
     readvec(int, a, n);
-    vector<vector<int>> slot(3001);
+
+    set<pii> q;
+    multiset<int> st(a.begin(), a.end());
+    vector<int> curr(a.begin(), a.end());
     for (int i = 0; i < n; ++i) {
-        for (int j = 1; j <= k; ++j) {
-            slot[a[i] / j].push_back(i);
+        int nxt = (a[i] + curr[i]) / curr[i];
+        if (nxt <= k) {
+            q.emplace(a[i] / nxt, i);
         }
     }
+
+    int mn = *min_element(a.begin(), a.end());
     int res = INF;
-    segtree<Set_Info, Set_Tag> tr(n - 1);
-    // vector<int> tr(n, -1);
-    for (int i = 0; i < n; ++i) {
-        tr.set(i, {-1});
-    }
-    debug(tr.range_query(0, n - 1).val);
-    for (int i = 0; i <= 3000; ++i) {
-        int f = 0;
-        for (auto&& j : slot[i]) {
-            f = 1;
-            tr.set(j, {i});
-            // tr[j] = i;
+    for (int i = mn; ~i; --i) {
+        // debugvec(q);
+        while (q.size() and q.rbegin()->first >= i) {
+            auto [val, idx] = *q.rbegin();
+            q.erase(prev(q.end()));
+            st.erase(st.lower_bound(curr[idx]));
+            curr[idx] = val;
+            st.emplace(val);
+            if (val) {
+                int nxt = (a[idx] + val) / val;
+                if (nxt <= k) {
+                    q.emplace(a[idx] / nxt, idx);
+                }
+            }
         }
-        if (!f) continue;
-        int mn = tr.range_query(0, n - 1).val;
-        // int mn = *min_element(tr.begin(), tr.end());
-        if (mn != -1) {
-            res = min(res, i - mn);
-        }
+        // debugvec(q);
+        // deb(i, res);
+        chmin(res, *st.rbegin() - i);
     }
-    cout << res << endl;
+
+    cout << res << '\n';
 }
 
 int main() {
-    untie, cout.tie(NULL);
+#if __cplusplus < 201402L or defined(_MSC_VER) and not defined(__clang__)
+    assert(false && "incompatible compiler variant detected.");
+#endif
+    untie;
     prep();
 #ifdef SINGLE_TEST_CASE
     solve();
@@ -406,10 +520,12 @@ int main() {
     read(int, t);
     for (int i = 0; i < t; ++i) {
 #ifdef DUMP_TEST_CASE
-        if (i + 1 == (DUMP_TEST_CASE)) {
+        if (t != (TOT_TEST_CASE)) {
+            solve();
+        } else if (i + 1 == (DUMP_TEST_CASE)) {
             dump();
         } else {
-            solve();
+            dump_ignore();
         }
 #else
         solve();

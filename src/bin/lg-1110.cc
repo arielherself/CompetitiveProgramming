@@ -1,5 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#pragma GCC optimize("Ofast")
+// #pragma GCC optimize("Ofast")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,19 +470,67 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
-    }
-    ll res = 0;
+    read(int, n, m);
+    list<int> a;
+    vector<list<int>::iterator> head(n + 1), tail(n + 1);
+    multiset<int> gap;
+    int p = -1;
     for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+        read(int, x);
+        a.emplace_back(x);
+        head[i] = tail[i] = prev(a.end());
+        if (i) {
+            gap.emplace(abs(x - p));
+        }
+        p = x;
     }
-    cout << res << '\n';
+    set<int> elements(a.begin(), a.end());
+    int min_sort_gap = INF;
+    if (elements.size() != n) {
+        min_sort_gap = 0;
+    } else {
+        p = -1;
+        for (auto&& x : elements) {
+            if (p != -1) {
+                chmin(min_sort_gap, x - p);
+            }
+            p = x;
+        }
+    }
+    head[n] = a.end();
+    while (m--) {
+        read(string, op);
+        if (op == "INSERT") {
+            read(int, i, x);
+            --i;
+            if (i + 1 < n) {
+                gap.erase(gap.lower_bound(abs(*head[i + 1] - *tail[i])));
+            }
+            tail[i] = a.insert(head[i + 1], x);
+            gap.emplace(abs(*tail[i] - *prev(tail[i])));
+            if (i + 1 < n) {
+                gap.emplace(abs(*head[i + 1] - *tail[i]));
+            }
+            if (min_sort_gap) {
+                auto it = elements.lower_bound(x);
+                if (it != elements.end() and *it == x) {
+                    min_sort_gap = 0;
+                } else {
+                    if (it != elements.end()) {
+                        chmin(min_sort_gap, *it - x);
+                    }
+                    if (it != elements.begin()) {
+                        chmin(min_sort_gap, x - *prev(it));
+                    }
+                }
+                elements.emplace(x);
+            }
+        } else if (op == "MIN_GAP") {
+            cout << *min_element(gap.begin(), gap.end()) << '\n';
+        } else if (op == "MIN_SORT_GAP") {
+            cout << min_sort_gap << '\n';
+        }
+    }
 }
 
 int main() {

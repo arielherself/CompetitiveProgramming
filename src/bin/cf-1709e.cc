@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,18 +470,104 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
+    read(int, n);
+    readvec1(int, a, n);
+
+    adj(ch, n);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
     }
-    ll res = 0;
-    for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
-    }
+
+    vector<int> heavy(n + 1);
+    vector<int> sz(n + 1);
+    vector<int> b(n + 1);
+    vector<int> fa(n + 1);
+    auto calc = [&] (auto calc, int v, int pa) -> void {
+        fa[v] = pa;
+        sz[v] = 1;
+        b[v] = b[pa] ^ a[v];
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            calc(calc, u, v);
+            sz[v] += sz[u];
+            if (sz[u] > sz[heavy[v]]) {
+                heavy[v] = u;
+            }
+        }
+    };
+    calc(calc, 1, 0);
+
+    // sack
+    int res = 0;
+    vector<int> mark(n + 1);
+
+    unordered_multiset<int, safe_hash> oc;
+
+    auto apply = [&] (auto apply, int v, int pa) -> void {
+        if (mark[v]) return;
+        oc.emplace(b[v]);
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            apply(apply, u, v);
+        }
+    };
+
+    auto remove = [&] (auto remove, int v, int pa) -> void {
+        auto it = oc.find(b[v]);
+        if (it != oc.end()) oc.erase(it);
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            remove(remove, u, v);
+        }
+    };
+
+    auto check = [&] (auto check, int v, int pa, int root) -> bool {
+        if (mark[v]) return false;
+        if (b[v] == b[fa[root]] or oc.count(b[v] ^ a[root])) return true;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            if (check(check, u, v, root)) return true;
+        }
+        return false;
+    };
+
+    auto dfs = [&] (auto dfs, int v, int pa, bool is_heavy) -> void {
+        for (auto&& u : ch[v]) {
+            if (u == pa or u == heavy[v]) continue;
+            dfs(dfs, u, v, false);
+        }
+        if (heavy[v]) dfs(dfs, heavy[v], v, true);
+        bool f = oc.count(b[fa[v]]);
+        for (auto&& u : ch[v]) {
+            if (u == pa or u == heavy[v]) continue;
+            if (check(check, u, v, v)) {
+                f = 1;
+                break;
+            } else {
+                apply(apply, u, v);
+            }
+        }
+        oc.emplace(b[v]);
+        // if (v == 1) {
+        //     debugvec(oc);
+        // }
+        // if (v == 4) {
+        //     debug(f);
+        // }
+        if (f) {
+            res += 1;
+            mark[v] = 1;
+        }
+        if (mark[v] or not is_heavy) {
+            // remove the subtree
+            remove(remove, v, pa);
+        }
+    };
+    dfs(dfs, 1, 0, true);
+    // debug(b);
+    // debug(mark);
+
     cout << res << '\n';
 }
 

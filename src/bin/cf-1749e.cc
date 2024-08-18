@@ -459,30 +459,118 @@ constexpr std::array<T, N> __initarray(const T& value) {
 /*******************************************************/
 
 // #define SINGLE_TEST_CASE
-// #define DUMP_TEST_CASE 7219
-// #define TOT_TEST_CASE 10000
+// #define DUMP_TEST_CASE 563
+// #define TOT_TEST_CASE 1000
 
-void dump() {}
+void dump() {
+    read(int, n, m);
+    cout << n << ' ' << m <<   endl;
+    for (int i = 0; i < n; ++i) {
+        read(string, s);
+        cout << s << endl;
+    }
+}
 
-void dump_ignore() {}
+void dump_ignore() {
+    read(int, n, m);
+    for (int i = 0; i < n; ++i) {
+        read(string, s);
+    }
+}
 
 void prep() {
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
-    }
-    ll res = 0;
+    read(int, n, m);
+    vector a(n, vector<int>(m));
     for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+        for (int j = 0; j < m; ++j) {
+            read(char, x);
+            a[i][j] = x == '#';
+        }
     }
-    cout << res << '\n';
+
+    vector b(n, vector<int>(m));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            b[i][j] = 1;
+            if (i - 1 >= 0 and a[i - 1][j]) b[i][j] = 0;
+            if (i + 1 < n and a[i + 1][j]) b[i][j] = 0;
+            if (j - 1 >= 0 and a[i][j - 1]) b[i][j] = 0;
+            if (j + 1 < m and a[i][j + 1]) b[i][j] = 0;
+        }
+    }
+
+    auto ch = initarray(vector<vector<pii>>(n * m + 2), 2);
+    int s = n * m, t = n * m + 1;
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            if (not a[i][j] and not b[i][j]) continue;
+            int x = i * m + j;
+            int par = (i + j) % 2;
+            if (j == 0) {
+                Edgew(ch[par], s, x, a[i][j] == 0);
+                Edgew(ch[par], x, s, 0);
+            }
+            if (j + 1 == m) {
+                Edgew(ch[par], x, t, 0);
+                Edgew(ch[par], t, x, a[i][j] == 0);
+            }
+            auto add = [&] (int i1, int j1) {
+                if (i1 >= 0 and i1 < n and j1 >= 0 and j1 < m and b[i1][j1]) {
+                    Edgew(ch[par], x, i1 * m + j1, a[i1][j1] == 0);
+                    Edgew(ch[par], i1 * m + j1, x, a[i][j] == 0);
+                }
+            };
+            add(i - 1, j + 1);
+            add(i + 1, j + 1);
+            add(i - 1, j - 1);
+            add(i + 1, j - 1);
+        }
+    }
+
+    auto dis = initarray(vector<pii>(n * m + 2, { INFLL, 0 }), 2);
+    auto vis = initarray(vector<bool>(n * m + 2), 2);
+    array<int, 2> res = { INF, INF };
+    for (int i = 0; i < 2; ++i) {
+        dis[i][s] = { 0, 0 };
+        min_heap<pii> q;
+        q.emplace(0, s);
+        while (q.size()) {
+            poptop(q, d, v);
+            continue_or(vis[i][v], 1);
+            for (auto&& [u, w] : ch[i][v]) {
+                if (not vis[i][u] and d + w < dis[i][u].first) {
+                    dis[i][u] = { d + w, v };
+                    q.emplace(d + w, u);
+                }
+            }
+        }
+        if (dis[i][t].first < INF) {
+            res[i] = dis[i][t].first;
+        }
+    }
+
+    if (res == array<int, 2> { INF, INF }) {
+        cout << "NO\n";
+    } else {
+        // debug(min(res[0], res[1]));
+        cout << "YES\n";
+        int i = res[0] < res[1] ? 0 : 1;
+        int ptr = t;
+        while (dis[i][ptr].second != s) {
+            int x = dis[i][ptr].second / m, y = dis[i][ptr].second % m;
+            a[x][y] = 1;
+            ptr = dis[i][ptr].second;
+        }
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < m; ++j) {
+                cout << (a[i][j] ? '#' : '.');
+            }
+            cout << '\n';
+        }
+    }
 }
 
 int main() {

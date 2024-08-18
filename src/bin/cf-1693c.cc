@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,19 +470,23 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
+    read(int, n, m);
+    adj(ch, n);
+    for (int i = 0; i < m; ++i) {
+        read(int, u, v);
+        Edge(ch, v, u);
     }
-    ll res = 0;
-    for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+    vector<int> dis(n + 1, INF);
+    vector<bool> vis(n + 1);
+    deque<pii> q = {{ 0, n }};
+    while (q.size()) {
+        popfront(q, d, v);
+        continue_or(vis[v], 1);
+        dis[v] = d;
+        for (auto&& u : ch[v]) {
+            
+        }
     }
-    cout << res << '\n';
 }
 
 int main() {

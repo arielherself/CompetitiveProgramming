@@ -444,21 +444,17 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
 #define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
-namespace detail {
-    template <typename T, std::size_t...Is>
-    constexpr std::array<T, sizeof...(Is)>
-    make_array(const T& value, std::index_sequence<Is...>) {
-        return {{(static_cast<void>(Is), value)...}};
+template <typename T, size_t N>
+array<T, N> __initarray(const T& init) {
+    array<T, N> res;
+    for (size_t i = 0; i < N; ++i) {
+        res[i] = init;
     }
-}
-
-template <typename T, std::size_t N>
-constexpr std::array<T, N> __initarray(const T& value) {
-    return detail::make_array(value, std::make_index_sequence<N>());
+    return res;
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,18 +466,45 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
-    }
+    read(int, n);
+    readvec(int, a, n);
+
     ll res = 0;
+
+    array<ll, 64> dp = {};
+
     for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+        if (a[i] == 0) {
+            res += ll(i + 1) * (n - i);
+            dp[0] += 1;
+        } else {
+            array<ll, 64> ndp = {};
+            for (int j = 0; j < 64; ++j) {
+                if ((j >> 4 & a[i]) or (j >> 4) == 0) {
+                    ndp[a[i] << 4 | (j & 0b001111)] += dp[j];
+                } else if ((j >> 2 & 0b11 & a[i]) or (j >> 2 & 3) == 0) {
+                    ndp[a[i] << 2 | (j & 0b110011)] += dp[j];
+                } else {
+                    ndp[a[i] | (j & 0b111100)] += dp[j];
+                }
+            }
+            swap(dp, ndp);
+            dp[a[i] << 4] += 1;
+        }
+
+        for (int j = 0; j < 64; ++j) {
+            if ((j & 0b111111) == 0) {
+                res += 0;
+            } else if ((j & 0b001111) == 0) {
+                res += dp[j];
+            } else if ((j & 0b000011) == 0) {
+                res += dp[j] * 2;
+            } else {
+                res += dp[j] * 3;
+            }
+        }
     }
+
     cout << res << '\n';
 }
 

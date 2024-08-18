@@ -1,5 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#pragma GCC optimize("Ofast")
+// #pragma GCC optimize("Ofast")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,19 +470,34 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, k);
+    read(int, n);
     readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
-    }
+    vector<array<ll, 2>> dp(n);
     ll res = 0;
+    unordered_map<int, int, safe_hash> last;
     for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+        ll mx = 1, cnt = 1;
+        for (auto&& [v, j] : last) {
+            if (v > a[i]) {
+                if (dp[j][0] + 1 > mx) {
+                    mx = dp[j][0] + 1;
+                    cnt = dp[j][1];
+                } else if (dp[j][0] + 1 == mx) {
+                    cnt = min(INFLL, cnt + dp[j][1]);
+                }
+            }
+        }
+        dp[i] = { mx, cnt };
+        chmax(res, mx);
+        last[a[i]] = i;
     }
-    cout << res << '\n';
+    ll cnt = 0;
+    for (auto&& [v, i] : last) {
+        if (dp[i][0] == res) {
+            cnt += dp[i][1];
+        }
+    }
+    cout << res << ' ' << cnt << endl;
 }
 
 int main() {

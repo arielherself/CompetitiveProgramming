@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,18 +470,51 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
+    read(int, n, m);
+
+    vector c(n + 1, vector<ll>(n + 1));
+    vector<ll> fact(n + 1);
+    fact[0] = 1 % m;
+    for (int i = 0; i <= n; ++i) {
+        if (i) fact[i] = (fact[i - 1] * i) % m;
+        c[i][0] = 1 % m;
+        for (int j = 1; j <= i; ++j) {
+            c[i][j] = (c[i - 1][j - 1] + c[i - 1][j]) % m;
+        }
     }
+
+    vector dp(n + 1, vector<ll>(2 * n * n));
+    vector ps(n + 1, vector<ll>(2 * n * n + 1));
+    dp[0][n * n] = 1 % m;
+    for (int j = 1; j <= n * n; ++j) {
+        ps[0][n * n + j] = 1 % m;
+    }
+    for (int i = 1; i <= n; ++i) {
+        for (int j = - n * n; j < n * n; ++j) {
+            for (int k = 1; k <= i; ++k) {
+                int right = n * n + min(n * n - 1, j - k + i);
+                int left = n * n + max(- n * n, j - k + 1);
+                if (left <= right) {
+                    // ll curr = mod(ps[i - 1][right + 1] - ps[i - 1][left], m);
+                    ll curr = mod(ps[i - 1][right + 1] - ps[i - 1][left], m);
+                    dp[i][j + n * n] = (dp[i][j + n * n] + curr) % m;
+                }
+            }
+            ps[i][n * n + j + 1] = (ps[i][n * n + j] + dp[i][n * n + j]) % m;
+        }
+    }
+
     ll res = 0;
-    for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+    for (int i = 1; i <= n; ++i) {  // the position of first difference
+        for (int j = 1; j <= n - i + 1; ++j) {
+            for (int k = j + 1; k <= n - i + 1; ++k) {
+                ll prev_choice = (c[n][i - 1] * fact[i - 1]) % m;
+                res = (res + ((prev_choice * mod(ps[n - i][2 * n * n] - ps[n - i][n * n + 1 - j + k], m)) % m)) % m;
+                // res = mod(res - (prev_choice * mod(ps[n - i][2 * n * n] - ps[n - i][n * n + 1 - j + k], m)) % m, m);
+            }
+        }
     }
+
     cout << res << '\n';
 }
 

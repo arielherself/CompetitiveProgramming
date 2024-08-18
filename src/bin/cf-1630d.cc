@@ -470,17 +470,27 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
+    read(int, n, m);
+    readvec(int, a, n);
+    readvec(int, b, m);
+    int g = b[0];
+    for (int i = 1; i < m; ++i) {
+        g = gcd(g, b[i]);
     }
-    ll res = 0;
+    vector<min_heap<int>> bk(g);
     for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+        bk[i % g].emplace(a[i]);
+    }
+    ll res = accumulate(a.begin(), a.end(), ll(0));
+    ll curr = res;
+    for (int i = 0; i <= n / g + 1; ++i) {
+        for (min_heap<int>& v : bk) {
+            int t = v.top();
+            v.pop();
+            v.push(-t);
+            curr -= 2 * t;
+        }
+        chmax(res, curr);
     }
     cout << res << '\n';
 }

@@ -470,17 +470,15 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
-    }
+    read(int, n);
+    readvec(int, a, n);
+
     ll res = 0;
+
+    int j = 0;
     for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+        while (j < n and (j < i or a[j] - j + i - 1 >= 0)) ++j;
+        res += j - i;
     }
     cout << res << '\n';
 }

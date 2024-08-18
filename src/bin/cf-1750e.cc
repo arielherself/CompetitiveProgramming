@@ -444,17 +444,13 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
 #define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
-namespace detail {
-    template <typename T, std::size_t...Is>
-    constexpr std::array<T, sizeof...(Is)>
-    make_array(const T& value, std::index_sequence<Is...>) {
-        return {{(static_cast<void>(Is), value)...}};
+template <typename T, size_t N>
+array<T, N> __initarray(const T& init) {
+    array<T, N> res;
+    for (size_t i = 0; i < N; ++i) {
+        res[i] = init;
     }
-}
-
-template <typename T, std::size_t N>
-constexpr std::array<T, N> __initarray(const T& value) {
-    return detail::make_array(value, std::make_index_sequence<N>());
+    return res;
 }
 /*******************************************************/
 
@@ -469,19 +465,90 @@ void dump_ignore() {}
 void prep() {
 }
 
-void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
+template<typename T>
+struct BIT {
+    int n;
+    vector<T> c;
+    BIT(size_t n) : n(n), c(n + 1) {}
+    void add(size_t i, const T& k) {
+        while (i <= n) {
+            c[i] += k;
+            i += lowbit(i);
+        }
     }
+    T getsum(size_t i) {
+        T res = {};
+        while (i) {
+            res += c[i];
+            i -= lowbit(i);
+        }
+        return res;
+    }
+};
+
+void solve() {
+    read(int, n);
+    read(string, a);
+
+    vector<int> b(n);
+    int prev = 0;
+    for (int i = 0; i < n; ++i) {
+        b[i] = prev + (a[i] == '(' ? 1 : -1);
+        prev = b[i];
+    }
+
+    vector<int> ps(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        ps[i] = ps[i - 1] + b[i - 1];
+    }
+
+    vector<int> left(n);
+    vector<int> st;
+    for (int i = 0; i < n; ++i) {
+        while (st.size() and b[st.back()] > b[i]) st.pop_back();
+        if (st.size()) {
+            left[i] = st.back();
+        } else {
+            left[i] = -1;
+        }
+        st.emplace_back(i);
+    }
+
+    vector<int> right(n);
+    st.clear();
+    for (int i = n - 1; ~i; --i) {
+        while (st.size() and b[st.back()] >= b[i]) st.pop_back();
+        if (st.size()) {
+            right[i] = st.back();
+        } else {
+            right[i] = n;
+        }
+        st.emplace_back(i);
+    }
+
     ll res = 0;
     for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+        if (a[i] == ')') {
+            res += ll(1) * (ps[i] - (left[i] == -1 ? 0 : ps[left[i]]) - ll(i - left[i]) * b[i]) * (right[i] - i);
+            // deb(i, left[i], right[i], b[i], res);
+        }
     }
+
+    vector<pii> c;
+    for (int i = 0; i < n; ++i) {
+        c.emplace_back(b[i], i + 1);
+    }
+    c.emplace_back(0, 0);
+
+    sort(c.begin(), c.end());
+
+    BIT<ll> tr(n + 1), cnt(n + 1);
+    for (auto&& [x, i] : c) {
+        res += x * cnt.getsum(i + 1) - tr.getsum(i + 1);
+        tr.add(i + 1, x);
+        cnt.add(i + 1, 1);
+    }
+
     cout << res << '\n';
 }
 

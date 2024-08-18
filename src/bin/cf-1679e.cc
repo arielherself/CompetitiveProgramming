@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -466,23 +466,94 @@ void dump() {}
 
 void dump_ignore() {}
 
+using mll = MLL<PRIME>;
+constexpr int M = 17;
+constexpr int N = 1000;
+mll pw[M + 1][N + 1], bk[M + 1][1 << M];
+
 void prep() {
+    for (int i = 1; i <= M; ++i) {
+        pw[i][0] = 1;
+        for (int j = 1; j <= N; ++j) {
+            pw[i][j] = pw[i][j - 1] * i;
+        }
+    }
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
+    read(int, n);
+    readvec1(char, a, n);
+
+    int tot = count(a.begin(), a.end(), '?');
+    vector cnt(n + 2, vector<int>(n + 2));
+    for (int i = 1; i <= n; ++i) {
+        for (int j = i; j <= n; ++j) {
+            cnt[i][j] = cnt[i][j - 1] + (a[j] == '?');
+        }
     }
-    ll res = 0;
-    for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+
+    // pair (mask of required bits, free bits count)
+    vector dp(n + 2, vector<pii>(n + 2));
+    for (int i = n; i > 0; --i) {
+        for (int j = i; j <= n; ++j) {
+            int f = 1;
+            if (dp[i + 1][j - 1].first >> M + 1) {
+                f = 0;
+            } else if (i == j) {
+                if (a[i] == '?') {
+                    dp[i][j] = { 0, 1 };
+                } else {
+                    dp[i][j] = { 0, 0 };
+                }
+            } else {
+                if (a[i] == '?' and a[j] == '?') {
+                    dp[i][j] = { dp[i + 1][j - 1].first, dp[i + 1][j - 1].second + 1 };
+                } else if (a[i] == '?' or a[j] == '?') {
+                    char c = a[i] == '?' ? a[j] : a[i];
+                    dp[i][j] = { dp[i + 1][j - 1].first | 1 << c - 'a', dp[i + 1][j - 1].second };
+                } else if (a[i] != a[j]) {
+                    f = 0;
+                } else {
+                    dp[i][j] = dp[i + 1][j - 1];
+                }
+            }
+            if (f) {
+                for (int k = 1; k <= M; ++k) {
+                    bk[k][dp[i][j].first] += pw[k][dp[i][j].second] * pw[k][tot - cnt[i][j]];
+                }
+            } else {
+                dp[i][j].first |= 1 << M + 1;
+            }
+        }
     }
-    cout << res << '\n';
+
+    read(int, q);
+    vector<vector<int>> query(1 << M);
+    for (int i = 0; i < q; ++i) {
+        read(string, s);
+        int mask = 0;
+        for (auto&& c : s) {
+            mask |= 1 << c - 'a';
+        }
+        query[mask].emplace_back(i);
+    }
+
+    // WARN: time
+    vector<mll> res(q);
+    for (int i = 0; i < (1 << M); ++i) {
+        if (query[i].empty()) continue;
+        mll curr = 0;
+        int pop = popcount(i);
+        for (int j = i; ; j = (j - 1) & i) {
+            curr += bk[pop][j];
+            if (j == 0) break;
+        }
+        for (auto&& j : query[i]) {
+            res[j] = curr;
+        }
+    }
+
+    putvec_eol(res);
 }
 
 int main() {

@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,19 +470,28 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
-    }
-    ll res = 0;
+    read(int, n, q);
+    readvec(int, a, n);
+    readvec(int, b, n);
+    unordered_map<int, ll, safe_hash> mp;
+    vector<int> psa(n + 1), psb(n + 1);
     for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+        if (not mp.count(a[i])) mp[a[i]] = rd();
+        psa[i + 1] = psa[i] + mp[a[i]];
     }
-    cout << res << '\n';
+    for (int i = 0; i < n; ++i) {
+        if (not mp.count(b[i])) mp[b[i]] = rd();
+        psb[i + 1] = psb[i] + mp[b[i]];
+    }
+    while (q--) {
+        read(int, l, r, L, R);
+        --l, --r, --L, --R;
+        if (r - l == R - L and psa[r + 1] - psa[l] == psb[R + 1] - psb[L]) {
+            cout << "Yes\n";
+        } else {
+            cout << "No\n";
+        }
+    }
 }
 
 int main() {

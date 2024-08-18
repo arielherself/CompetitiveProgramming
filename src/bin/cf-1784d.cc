@@ -395,10 +395,9 @@ bool chmin(T& lhs, const U& rhs) {
     return ret;
 }
 
-#define functor(func) ([&](auto&&... val) \
+#define functor(func) [&](auto&&... val) \
 noexcept(noexcept(func(std::forward<decltype(val)>(val)...))) -> decltype(auto) \
-{return func(std::forward<decltype(val)>(val)...);})
-#define expr(ret, ...) ([&] (__VA_ARGS__) { return (ret); })
+{return func(std::forward<decltype(val)>(val)...);}
 template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
     std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
 }
@@ -444,21 +443,17 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
 #define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
-namespace detail {
-    template <typename T, std::size_t...Is>
-    constexpr std::array<T, sizeof...(Is)>
-    make_array(const T& value, std::index_sequence<Is...>) {
-        return {{(static_cast<void>(Is), value)...}};
+template <typename T, size_t N>
+array<T, N> __initarray(const T& init) {
+    array<T, N> res;
+    for (size_t i = 0; i < N; ++i) {
+        res[i] = init;
     }
-}
-
-template <typename T, std::size_t N>
-constexpr std::array<T, N> __initarray(const T& value) {
-    return detail::make_array(value, std::make_index_sequence<N>());
+    return res;
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -466,23 +461,60 @@ void dump() {}
 
 void dump_ignore() {}
 
+using mll = MLL<PRIME>;
+constexpr int N = 1 << 20;
+mll fact[N + 1];
+
 void prep() {
+    fact[0] = 1;
+    for (int i = 1; i <= N; ++i) {
+        fact[i] = i * fact[i - 1];
+    }
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
+    read(int, n);
+    for (int i = 1; i <= (1 << n); ++i) {
+        int cnt = i - 1;
+        vector<mll> dp(n + 1), c(n + 1), b(n + 1);
+        vector<int> t(n + 1);
+
+        // calculate t
+        for (int j = 1; j <= n; ++j) {
+            t[j] = 1 << n - j;
+        }
+
+        // calculate c
+        mll choices = 1;
+        int sum = 0;
+        for (int j = 1; j <= n; ++j) {
+            choices = comb(t[j] - 1, (1 << n - j) - 1) * choices;
+            // at least choose one overflowed element
+            sum += t[j];
+            deb(j, sum);
+            if (sum - cnt > 0) c[j] = comb((1 << n) - i, sum - cnt) * choices;
+        }
+
+        // calculate b
+        for (int j = 1; j <= n; ++j) {
+            b[j] = c[j] - c[j - 1] * comb((1 << n) - t[j - 1] - 2, (1 << n - j) - 1);
+        }
+
+        // calculate dp
+        dp[0] = 1;
+        for (int j = 1; j <= n; ++j) {
+            deb(j, dp[j - 1] * comb((1 << n) - t[j - 1] - 1, (1 << n - j) - 1));
+            dp[j] = dp[j - 1] * comb((1 << n) - t[j - 1] - 2, (1 << n - j) - 1) - b[j];
+        }
+        debug(t), debug(c), debug(b), debug(dp);
+
+        mll res = dp[n] * 2;
+        for (int j = 1; j <= n; ++j) {
+            res *= fact[t[j]];
+        }
+
+        cout << res << '\n';
     }
-    ll res = 0;
-    for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
-    }
-    cout << res << '\n';
 }
 
 int main() {

@@ -1,8 +1,3 @@
-#pragma GCC diagnostic ignored "-Wunused-const-variable"
-#pragma GCC diagnostic ignored "-Wreorder"
-#pragma GCC diagnostic ignored "-Wunknown-pragmas"
-#pragma GCC diagnostic ignored "-Wshift-op-parentheses"
-#pragma GCC diagnostic ignored "-Wlogical-op-parentheses"
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
 #pragma GCC optimize("Ofast")
 /************* This code requires C++17. ***************/
@@ -400,9 +395,10 @@ bool chmin(T& lhs, const U& rhs) {
     return ret;
 }
 
-#define functor(func) [&](auto&&... val) \
+#define functor(func) ([&](auto&&... val) \
 noexcept(noexcept(func(std::forward<decltype(val)>(val)...))) -> decltype(auto) \
-{return func(std::forward<decltype(val)>(val)...);}
+{return func(std::forward<decltype(val)>(val)...);})
+#define expr(ret, ...) ([&] (__VA_ARGS__) { return (ret); })
 template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
     std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
 }
@@ -448,13 +444,17 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
 #define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
-template <typename T, size_t N>
-array<T, N> __initarray(const T& init) {
-    array<T, N> res;
-    for (size_t i = 0; i < N; ++i) {
-        res[i] = init;
+namespace detail {
+    template <typename T, std::size_t...Is>
+    constexpr std::array<T, sizeof...(Is)>
+    make_array(const T& value, std::index_sequence<Is...>) {
+        return {{(static_cast<void>(Is), value)...}};
     }
-    return res;
+}
+
+template <typename T, std::size_t N>
+constexpr std::array<T, N> __initarray(const T& value) {
+    return detail::make_array(value, std::make_index_sequence<N>());
 }
 /*******************************************************/
 
@@ -469,26 +469,63 @@ void dump_ignore() {}
 void prep() {
 }
 
+unordered_map<char, int> mp = {
+    {'R', 0},
+    {'G', 1},
+    {'Y', 2},
+    {'B', 3},
+};
+
 void solve() {
-    read(int, n);
-    if (n == 1) {
-        cout << "1\n1\n";
-    } else if (n == 2) {
-        cout << "2\n1 2\n";
-    } else if (n == 3) {
-        cout << "2\n1 2 2\n";
-    } else {
-        vector<int> res(n + 1);
-        for (int i = 1; i <= n; ++i) {
-            res[i] = i % 2 ? 1 : 2;
-        }
-        for (int i = 1; i <= n; ++i) {
-            if ((i ^ 2) <= n and (i ^ 2) > i) {
-                res[i ^ 2] = i % 2 ? 3 : 4;
+    read(int, n, q);
+    vector<int> type(n);
+    for (int i = 0; i < n; ++i) {
+        read(string, s);
+        type[i] = mp[s[0]] * 4 + mp[s[1]];
+    }
+
+    vector left(n + 1, vector<int>(16, -1)), right(n + 1, vector<int>(16, -1));
+    for (int i = 1; i <= n; ++i) {
+        for (int j = 0; j < 16; ++j) {
+            if (type[i - 1] == j) {
+                left[i][j] = i - 1;
+            } else {
+                left[i][j] = left[i - 1][j];
             }
         }
-        cout << *max_element(res.begin() + 1, res.end()) << '\n';
-        putvec1(res);
+    }
+    for (int i = n - 1; ~i; --i) {
+        for (int j = 0; j < 16; ++j) {
+            if (type[i] == j) {
+                right[i][j] = i;
+            } else {
+                right[i][j] = right[i + 1][j];
+            }
+        }
+    }
+
+    auto check = [] (int x, int y) {
+        if ((x >> 2 & 3) != (y & 3) and (x >> 2 & 3) != (y >> 2 & 3) and (x & 3) != (y >> 2 & 3) and (x & 3) != (y & 3)) {
+            return false;
+        } else {
+            return true;
+        }
+    };
+
+    while (q--) {
+        read(int, u, v);
+        --u, --v;
+        int res = INF;
+        for (int j = 0; j < 16; ++j) {
+            if (not check(j, type[u]) or not check(j, type[v])) {
+                continue;
+            }
+            for (int w : { left[u][j], right[u][j] }) {
+                if (w == -1) continue;
+                chmin(res, abs(u - w) + abs(v - w));
+            }
+        }
+        cout << (res == INF ? -1 : res) << '\n';
     }
 }
 

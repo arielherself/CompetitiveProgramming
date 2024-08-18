@@ -1,4 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
+#include <numeric>
 #pragma GCC optimize("Ofast")
 /************* This code requires C++17. ***************/
 
@@ -458,7 +459,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -472,17 +473,64 @@ void prep() {
 void solve() {
     read(int, n, k);
     readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
+    a.insert(a.begin(), 0);
+    ++n;
+    vector<ll> ps(n + 1);
+    partial_sum(a.begin(), a.end(), ps.begin() + 1);
+    vector<int> cnt(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        cnt[i] = cnt[i - 1] + (i - 1 > 0 and a[i - 1] == 0);
     }
-    ll res = 0;
-    for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+    // debug(a);
+    // debug(cnt);
+
+    auto check = [&] (ll target) {
+        // /\0
+        for (int i = 0; i < n; ++i) {
+            for (int j = i; j < n; ++j) {
+                ll l0 = ps[j + 1] - ps[i + 1] - ll(1) * k * (cnt[j + 1] - cnt[i + 1]);
+                ll r0 = ps[j + 1] - ps[i + 1] + ll(1) * k * (cnt[j + 1] - cnt[i + 1]);
+                if (l0 <= -target) {
+                    ll l1 = ps[i + 1] - ll(1) * k * cnt[i + 1] + min(r0, -target), r1 = ps[i + 1] + ll(1) * k * cnt[i + 1] + min(r0, -target);
+                    ll l2 = ps[j + 1] - ps[n] - ll(1) * k * (cnt[n] - cnt[j + 1]), r2 = ps[j + 1] - ps[n] + ll(1) * k * (cnt[n] - cnt[j + 1]);
+                    if (not (l1 > r2 or l2 > r1)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        // \/0
+        for (int i = 0; i < n; ++i) {
+            for (int j = i; j < n; ++j) {
+                ll l0 = ps[j + 1] - ps[i + 1] - ll(1) * k * (cnt[j + 1] - cnt[i + 1]);
+                ll r0 = ps[j + 1] - ps[i + 1] + ll(1) * k * (cnt[j + 1] - cnt[i + 1]);
+                if (r0 >= target) {
+                    ll l1 = ps[i + 1] - ll(1) * k * cnt[i + 1] + max(target, l0), r1 = ps[i + 1] + ll(1) * k * cnt[i + 1] + max(target, l0);
+                    ll l2 = ps[j + 1] - ps[n] - ll(1) * k * (cnt[n] - cnt[j + 1]), r2 = ps[j + 1] - ps[n] + ll(1) * k * (cnt[n] - cnt[j + 1]);
+                    if (not (l1 > r2 or l2 > r1)) {
+                        // deb(target, i, j);
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    };
+
+    ll l = 0, r = INFLL;
+    while (l < r) {
+        ll mid = l + r + 1 >> 1;
+        if (check(mid)) {
+            l = mid;
+        } else {
+            r = mid - 1;
+        }
     }
-    cout << res << '\n';
+    cout << (check(l) ? l + 1 : -1) << '\n';
+    // for (int i = 0; i < 10; ++i) {
+    //     deb(i, check(i));
+    // }
+
 }
 
 int main() {

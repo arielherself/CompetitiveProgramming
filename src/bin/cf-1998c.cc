@@ -471,17 +471,53 @@ void prep() {
 
 void solve() {
     read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
-    }
+    readvec(int, a, n);
+    readvec(int, b, n);
+
+    vector<int> idx(n);
+    iota(idx.begin(), idx.end(), 0);
+    sort_by_key(idx.begin(), idx.end(), expr(a[i], int i));
+
     ll res = 0;
-    for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+
+    for (int i = n - 1; ~i; --i) {
+        if (b[idx[i]]) {
+            int cnt = 0;
+            for (int j = 0; j < n; ++j) {
+                if (j == i) continue;
+                if (++cnt == n / 2) {
+                    chmax(res, ll(k) + a[idx[i]] + a[idx[j]]);
+                    break;
+                }
+            }
+            break;
+        }
     }
+    ll l = 0, r = INFLL;
+    while (l < r) {
+        ll mid = l + r + 1 >> 1;
+        int128 tot = 0;
+        int rem = (n - 1) / 2 + 1;
+        for (int j = n - 2; ~j; --j) {
+            if (a[idx[j]] >= mid) {
+                rem -= 1;
+            }
+        }
+        for (int j = n - 2; ~j; --j) {
+            if (rem <= 0) break;
+            if (b[idx[j]] and a[idx[j]] < mid) {
+                tot += max<ll>(0, mid - a[idx[j]]);
+                rem -= 1;
+            }
+        }
+        if (tot <= k and rem <= 0) {
+            l = mid;
+        } else {
+            r = mid - 1;
+        }
+    }
+    // debug(l);
+    chmax(res, l + a[idx[n - 1]]);
     cout << res << '\n';
 }
 

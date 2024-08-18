@@ -8,6 +8,8 @@ PRIME = 998_244_353
 
 if __name__ == '__main__':
     N = 200000
-    print(1, N)
-    for i in range(2, N + 1):
-        print(randint(1, i - 1), i, randint(1, N), randint(1, N))
+    M = 60
+    P = 15
+    print(N, M, P)
+    for i in range(N):
+        print('1' * P + '0' * (M - P))

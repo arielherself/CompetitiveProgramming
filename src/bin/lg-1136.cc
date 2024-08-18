@@ -1,5 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#pragma GCC optimize("Ofast")
+// #pragma GCC optimize("Ofast")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -466,21 +466,44 @@ void dump() {}
 
 void dump_ignore() {}
 
-void prep() {
-}
+void prep() {}
+
+int dp[501][201][2];
+int ndp[501][201][2];
 
 void solve() {
     read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
-    }
-    ll res = 0;
+    vector<int> a(n);
     for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+        read(char, c);
+        a[i] = c == 'z';
+    }
+    for (int j = 0; j <= n; ++j) {
+        for (int l = 0; l <= 2 * k; ++l) {
+            dp[j][l][0] = dp[j][l][1] = -INF;
+        }
+    }
+    dp[0][0][1] = 0;
+    for (int i = 1; i <= n; ++i) {
+        for (int j = 0; j <= n; ++j) {
+            for (int l = 0; l <= 2 * k; ++l) {
+                ndp[j][l][0] = ndp[j][l][1] = -INF;
+                // use 0
+                if (j - 1 >= 0 and l - (a[i - 1] != 0) >= 0) {
+                    chmax(ndp[j][l][0], max(dp[j - 1][l - (a[i - 1] != 0)][0], dp[j - 1][l - (a[i - 1] != 0)][1]));
+                }
+                // use 1
+                if (l - (a[i - 1] != 1) >= 0) {
+                    chmax(ndp[j][l][1], max(dp[j][l - (a[i - 1] != 1)][0] + 1, dp[j][l - (a[i - 1] != 1)][1]));
+                }
+            }
+        }
+        swap(dp, ndp);
+    }
+    int res = 0;
+    int zer = count(a.begin(), a.end(), 0);
+    for (int l = 0; l <= 2 * k; ++l) {
+        chmax(res, max(dp[zer][l][0], dp[zer][l][1]));
     }
     cout << res << '\n';
 }

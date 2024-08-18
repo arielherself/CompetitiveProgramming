@@ -231,9 +231,9 @@ template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __
 #define deb(...) debug(make_tuple(__VA_ARGS__))
 
 /* pops */
-#define poptop(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.top(); q.pop();)
-#define popback(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.back(); q.pop_back();)
-#define popfront(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.front();q.pop_front();)
+#define poptop(n, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.top(); q.pop();)
+#define popback(n, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.back(); q.pop_back();)
+#define popfront(n, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.front();q.pop_front();)
 
 /* math */
 template <typename return_t>
@@ -444,21 +444,17 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
 #define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
-namespace detail {
-    template <typename T, std::size_t...Is>
-    constexpr std::array<T, sizeof...(Is)>
-    make_array(const T& value, std::index_sequence<Is...>) {
-        return {{(static_cast<void>(Is), value)...}};
+template <typename T, size_t N>
+array<T, N> __initarray(const T& init) {
+    array<T, N> res;
+    for (size_t i = 0; i < N; ++i) {
+        res[i] = init;
     }
-}
-
-template <typename T, std::size_t N>
-constexpr std::array<T, N> __initarray(const T& value) {
-    return detail::make_array(value, std::make_index_sequence<N>());
+    return res;
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,19 +466,25 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
-    }
-    ll res = 0;
+    read(int, n);
+    unordered_set<ll, safe_hash> st;
+    unordered_map<ll, ll, safe_hash> history;
     for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+        read(char, op);
+        if (op == '+') {
+            read(ll, x);
+            st.emplace(x);
+        } else {
+            read(ll, x);
+            for (ll j = history.count(x) ? history[x] : 1; ; ++j) {
+                if (not st.count(j * x)) {
+                    history[x] = j;
+                    break;
+                }
+            }
+            cout << history[x] * x << '\n';
+        }
     }
-    cout << res << '\n';
 }
 
 int main() {

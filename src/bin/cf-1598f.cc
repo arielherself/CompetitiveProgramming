@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,19 +470,68 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
-    }
-    ll res = 0;
+    read(int, n);
+    readvec(string, a, n);
+    vector<unordered_map<int, vector<int>, safe_hash>> rev(n);
+    vector<vector<int>> ps(n);
+    vector<int> mn(n);
+    vector<int> b(n);
     for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+        int m = a[i].size();
+        int mxj = 0;
+        vector<int> curr(m + 1);
+        for (int j = 0; j < m; ++j) {
+            curr[j + 1] = curr[j] + (a[i][j] == '(' ? 1 : -1);
+            if (curr[j + 1] <= curr[mxj]) mxj = j + 1;
+        }
+        mn[i] = mxj;
+        b[i] = curr.back();
+        for (int j = 1; j <= m; ++j) {
+            rev[i][curr[j]].emplace_back(j);
+        }
+        ps[i] = std::move(curr);
     }
-    cout << res << '\n';
+
+    vector<int> sum(1 << n);
+    for (int i = 0; i < (1 << n); ++i) {
+        for (int j = 0; j < n; ++j) {
+            if (i >> j & 1) {
+                sum[i] += b[j];
+            }
+        }
+    }
+
+    vector<int> seq(1 << n);
+    iota(seq.begin(), seq.end(), 0);
+    sort_by_key(seq.begin(), seq.end(), expr(popcount(i), int i));
+    vector<int> dp(1 << n, -1);
+    dp[0] = 0;
+    int res = 0;
+    for (auto&& i : seq) {
+        for (int j = 0; j < n; ++j) {
+            if (i >> j & 1) {
+                int other = i ^ 1 << j;
+                if (dp[other] == -1) continue;
+                if (sum[other] + ps[j][mn[j]] >= 0) {
+                    // deb(i);
+                    if (rev[j].count(-sum[other])) {
+                        chmax(dp[i], int(rev[j][-sum[other]].size() + dp[other]));
+                    } else {
+                        chmax(dp[i], dp[other]);
+                    }
+                } else {
+                    // assert(rev[j].count(-1 - sum[other]));
+                    int pos = *rev[j][-1 - sum[other]].begin();
+                    auto it = lower_bound(rev[j][-sum[other]].begin(), rev[j][-sum[other]].end(), pos);
+                    chmax(res, dp[other] + int(it - rev[j][-sum[other]].begin()));
+                }
+                // deb(i, j, other, sum[other], dp[other], mn[j], dp[i]);
+                // deb(sum[other] + ps[j][mn[j]]);
+            }
+        }
+    }
+
+    cout << max(res, *max_element(dp.begin(), dp.end())) << '\n';
 }
 
 int main() {

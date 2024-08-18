@@ -472,24 +472,140 @@ void prep() {
 void solve() {
     read(int, n);
     adj(ch, n);
-    vector<int> cnt(n + 1);
     for (int i = 2; i <= n; ++i) {
         read(int, j);
         edge(ch, i, j);
-        cnt[j] += 1;
     }
 
-    if (count_if(cnt.begin(), cnt.end(), [] (int x) { return x == 1; }) <= 1) {
-        vector<int> col(n + 1);
-        auto dfs = [&] (auto dfs, int v, int pa, int curr) -> void {
+    int f = 1;
+
+    vector<int> col(n + 1);
+    int prev = -1;
+    auto dfs = [&] (auto dfs, int v, int pa, int curr) -> void {
+        col[v] = curr;
+
+        if (ch[v].size() == 2) {
+            // link
+            if (prev == -1) {
+                prev = curr;
+            } else if (prev != curr) {
+                f = 0;
+                return;
+            }
+        }
+
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            dfs(dfs, u, v, curr == 1 ? 2 : 1);
+        }
+    };
+
+    // Reverse a subtree
+    auto dfs2 = [&] (auto dfs2, int v, int pa) -> void {
+        col[v] = col[v] == 1 ? 2 : 1;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            dfs2(dfs2, u, v);
+        }
+    };
+
+    int prev_prev = -1;
+    for (auto&& u : ch[1]) {
+        prev = -1;
+        dfs(dfs, u, 1, 1);
+        if (f == 0) {
+            break;
+        }
+        if (prev_prev == -1) {
+            prev_prev = prev;
+        } else if (prev_prev != prev) {
+            dfs2(dfs2, u, 1);
+        }
+    }
+
+    if (f) {
+        int k = *max_element(col.begin(), col.end());
+        cout << k << endl;
+        for (int i = 2; i <= n; ++i) {
+            cout << col[i] << " \n"[i == n];
+        }
+        cout << flush;
+
+        while (1) {
+            read(int, op);
+            if (op == 1) {
+                return;
+            } else if (op == -1) {
+                exit(0);
+            } else {
+                readvec1(int, e, k);
+                int prev = -1;
+                for (int i = 1; i <= k; ++i) {
+                    if (e[i] == 1) {
+                        if (prev == -1) {
+                            prev = i;
+                        } else {
+                            cout << prev_prev << endl;
+                            prev = -1;
+                            break;
+                        }
+                    }
+                }
+                if (prev != -1) {
+                    cout << prev << endl;
+                }
+            }
+        }
+    } else {
+        int k = 3;
+
+        auto dfs3 = [&] (auto dfs3, int v, int pa, int curr) -> void {
+            col[v] = curr;
+
+            curr += 1;
+            if (curr == 4) curr = 1;
+
             for (auto&& u : ch[v]) {
                 if (u == pa) continue;
-                col[u] = curr;
-                dfs(dfs, u, v, 1 ^ curr);
+                dfs3(dfs3, u, v, curr);
             }
         };
-        dfs(dfs, 1, 0, 0);
+        dfs3(dfs3, 1, 0, 1);
+
+        cout << k << endl;
+        for (int i = 2; i <= n; ++i) {
+            cout << col[i] << " \n"[i == n];
+        }
+        cout << flush;
+
+        while (1) {
+            read(int, op);
+            if (op == 1) {
+                return;
+            } else if (op == -1) {
+                exit(0);
+            } else {
+                readvec1(int, e, k);
+                if (k - count(e.begin() + 1, e.end(), 0) == 1) {
+                    for (int i = 1; i <= k; ++i) {
+                        if (e[i]) {
+                            cout << i << endl;
+                            break;
+                        }
+                    }
+                } else {
+                    if (e[1] and e[2]) {
+                        cout << 1 << endl;
+                    } else if (e[2] and e[3]) {
+                        cout << 2 << endl;
+                    } else if (e[3] and e[1]) {
+                        cout << 3 << endl;
+                    }
+                }
+            }
+        }
     }
+
 }
 
 int main() {

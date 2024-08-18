@@ -470,19 +470,54 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
+    read(int, n, q);
+    readvec(int, ignore, n - 1);
+    readvec1(int, p, n);
+    vector<int> valid(n + 1);
+    int cnt = 0;
+    vector<int> fa(n + 1);
+    vector<int> order(n + 1);
+    vector<pii> son(n + 1, { INF, INF });
+    int curr = 0;
+    auto dfs = [&] (auto dfs, int v, int pa) -> int {
+        order[v] = ++curr;
+        fa[order[v]] = order[pa];
+        if (v * 2 <= n) son[order[v]].first = dfs(dfs, v * 2, v);
+        if (v * 2 + 1 <= n) son[order[v]].second = dfs(dfs, v * 2 + 1, v);
+        return order[v];
+    };
+    dfs(dfs, 1, 0);
+    for (int i = 1; i <= n; ++i) {
+        if (p[fa[i]] == p[i] / 2) {
+            valid[i] = 1;
+            cnt += 1;
+        }
     }
-    ll res = 0;
-    for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+    while (q--) {
+        read(int, i, j);
+        for (auto&& k : { i, j, son[i].first, son[i].second, son[j].first, son[j].second }) {
+            if (k > n) continue;
+            if (valid[k]) {
+                valid[k] = 0;
+                cnt -= 1;
+            }
+        }
+        swap(p[i], p[j]);
+        for (auto&& k : { i, j, son[i].first, son[i].second, son[j].first, son[j].second }) {
+            if (k > n) continue;
+            if (not valid[k] and p[fa[k]] == p[k] / 2) {
+                valid[k] = 1;
+                cnt += 1;
+            }
+        }
+        // debug(valid);
+        // debug(cnt);
+        if (cnt == n) {
+            cout << "YES\n";
+        } else {
+            cout << "NO\n";
+        }
     }
-    cout << res << '\n';
 }
 
 int main() {

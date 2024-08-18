@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,19 +470,56 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
-    }
+    read(int, n);
+    readvec(int, a, n);
+
     ll res = 0;
+
+    vector<int> pivot(n);
+    vector<vector<int>> bk(n + 1);
+    vector<ll> ps(n + 1);
+    int j = 0;
     for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+        while (j < n and (j < i or a[j] - j + i - 1 >= 0)) ++j;
+        pivot[i] = j;
+        bk[j].emplace_back(i);
+        res += j - i;
+        ps[i + 1] = ps[i] + j - i;
     }
-    cout << res << '\n';
+
+    vector<int> second(n);
+    vector<ll> ps2(n + 1);
+    j = 0;
+    for (int i = 0; i < n; ++i) {
+        while (j < n and (j <= pivot[i] or a[j] - j + i - 1 >= 0)) ++j;
+        second[i] = j;
+        ps2[i + 1] = ps2[i] + j - i;
+    }
+
+    read(int, q);
+    while (q--) {
+        read(int, i, x);
+        --i;
+
+        if (x < a[i]) {
+            int l = lower_bound(pivot.begin(), pivot.end(), i + 1) - pivot.begin();
+            int r = min(n - 1, i - x);
+            if (l <= r) {
+                cout << res - (ps[r + 1] - ps[l]) + ll(1) * (r - l + 1) * i - ll(1) * (l + r) * (r - l + 1) / 2 << '\n';
+            } else {
+                cout << res << '\n';
+            }
+        } else {
+            auto it = lower_bound(bk[i].begin(), bk[i].end(), i - x + 1);
+            if (it != bk[i].end()) {
+                int l = *it;
+                int r = bk[i].back();
+                cout << res - (ps[r + 1] - ps[l]) + (ps2[r + 1] - ps2[l]) << '\n';
+            } else {
+                cout << res << '\n';
+            }
+        }
+    }
 }
 
 int main() {

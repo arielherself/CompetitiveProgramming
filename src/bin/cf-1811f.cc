@@ -395,10 +395,9 @@ bool chmin(T& lhs, const U& rhs) {
     return ret;
 }
 
-#define functor(func) ([&](auto&&... val) \
+#define functor(func) [&](auto&&... val) \
 noexcept(noexcept(func(std::forward<decltype(val)>(val)...))) -> decltype(auto) \
-{return func(std::forward<decltype(val)>(val)...);})
-#define expr(ret, ...) ([&] (__VA_ARGS__) { return (ret); })
+{return func(std::forward<decltype(val)>(val)...);}
 template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
     std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
 }
@@ -444,17 +443,13 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
 #define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
-namespace detail {
-    template <typename T, std::size_t...Is>
-    constexpr std::array<T, sizeof...(Is)>
-    make_array(const T& value, std::index_sequence<Is...>) {
-        return {{(static_cast<void>(Is), value)...}};
+template <typename T, size_t N>
+array<T, N> __initarray(const T& init) {
+    array<T, N> res;
+    for (size_t i = 0; i < N; ++i) {
+        res[i] = init;
     }
-}
-
-template <typename T, std::size_t N>
-constexpr std::array<T, N> __initarray(const T& value) {
-    return detail::make_array(value, std::make_index_sequence<N>());
+    return res;
 }
 /*******************************************************/
 
@@ -470,19 +465,81 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
+    read(int,n, m);
+
+    adj(ch, n);
+    for (int i = 0; i < m; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
     }
-    ll res = 0;
-    for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+
+    vector<bool> vis(n + 1);
+    int k = 0;
+    auto dfs = [&] (auto dfs, int v, int pa) -> void {
+        if (vis[v]) {
+            k = count(vis.begin(), vis.end(), 1);
+            return;
+        } else {
+            vis[v] = 1;
+        }
+        for (auto&& u : ch[v]) {
+            if (ch[u].size() == 4 and u != pa) {
+                dfs(dfs, u, v);
+                return;
+            }
+        }
+    };
+
+
+    for (int i = 1; i <= n; ++i) {
+        if (ch[i].size() == 4) {
+            dfs(dfs, i, 0);
+            break;
+        }
     }
-    cout << res << '\n';
+
+    if (k < 3) {
+        cout << "NO\n";
+        return;
+    } else {
+        int cnt = 0;
+        int close = 0;
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            ++cnt;
+            vis[v] = 1;
+            for (auto&& u : ch[v]) {
+                if (ch[v].size() == 2 and ch[u].size() == 4 and u != pa) {
+                    close = u;
+                    return;
+                }
+            }
+            for (auto&& u : ch[v]) {
+                if (ch[u].size() == 2 and u != pa) {
+                    dfs(dfs, u, v);
+                    break;
+                }
+            }
+        };
+
+        for (int i = 1; i <= n; ++i) {
+            if (ch[i].size() == 4 and vis[i]) {
+                cnt = 0;
+                close = 0;
+                vis[i] = 0;
+                dfs(dfs, i, 0);
+                if (close != i or cnt != k) {
+                    cout << "NO\n";
+                    return;
+                }
+            }
+        }
+
+        if (count(vis.begin(), vis.end(), 1) == n) {
+            cout << "YES\n";
+        } else {
+            cout << "NO\n";
+        }
+    }
 }
 
 int main() {

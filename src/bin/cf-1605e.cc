@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,19 +470,77 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
+    constexpr int M = 1e6;
+    read(int, n);
+    readvec1(ll, a, n);
+    readvec1(ll, b, n);
+    b[1] = 0;
+
+    vector<ll> c = a;
+    vector<ll> e(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        ll d = b[i] - c[i];
+        e[i] = d;
+        for (int j = i; j <= n; j += i) {
+            c[j] += d;
+        }
     }
-    ll res = 0;
-    for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+
+    vector<ll> p_diff(M + 2), q_diff(M + 2);
+
+    c.assign(n + 1, 0);
+    c[1] = 1;
+    for (int i = 1; i <= n; ++i) {
+        ll d = -c[i];
+        for (int j = i; j <= n; j += i) {
+            c[j] += d;
+        }
+
+        if (d == 0) {
+            p_diff[0] += abs(e[i]), p_diff[M + 1] -= abs(e[i]);
+        } else if (e[i] >= 0 and d > 0) {
+            // curr -> zero -> positive
+            int last = min<ll>(M, e[i] / d);
+            p_diff[0] += e[i], p_diff[last + 1] -= e[i];
+            q_diff[0] += -d, q_diff[last + 1] -= -d;
+            if (last + 1 <= M) {
+                p_diff[last + 1] += -e[i], p_diff[M + 1] -= -e[i];
+                q_diff[last + 1] += d, q_diff[M + 1] -= d;
+            }
+        } else if (e[i] >= 0 and d < 0) {
+            // negative <- curr <- zero
+            p_diff[0] += e[i], p_diff[M + 1] -= e[i];
+            q_diff[0] += -d, q_diff[M + 1] -= -d;
+        } else if (e[i] < 0 and d > 0) {
+            // zero -> curr -> positive
+            p_diff[0] += -e[i], p_diff[M + 1] -= e[i];
+            q_diff[0] += d, q_diff[M + 1] -= d;
+        } else {
+            // negative <- zero <- curr
+            int last = min<ll>(M, (-e[i]) / (-d));
+            p_diff[0] += -e[i], p_diff[last + 1] -= -e[i];
+            q_diff[0] += d, q_diff[last + 1] -= d;
+            if (last + 1 <= M) {
+                p_diff[last + 1] += e[i], p_diff[M + 1] -= e[i];
+                q_diff[last + 1] += -d, q_diff[M + 1] -= -d;
+            }
+        }
     }
-    cout << res << '\n';
+
+    vector<ll> p(M + 1), q(M + 1);
+    ll p_curr = 0, q_curr = 0;
+    for (int i = 0; i <= M; ++i) {
+        p_curr += p_diff[i];
+        q_curr += q_diff[i];
+        p[i] = p_curr;
+        q[i] = q_curr;
+    }
+
+    read(int, qq);
+    while (qq--) {
+        read(int, x);
+        cout << p[x] + q[x] * x << '\n';
+    }
 }
 
 int main() {

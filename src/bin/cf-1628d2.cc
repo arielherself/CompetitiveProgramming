@@ -466,23 +466,31 @@ void dump() {}
 
 void dump_ignore() {}
 
+using mll = MLL<MDL>;
+constexpr int N = 1e6 + 10;
+mll pw[N], fact[N], factrev[N];
+
 void prep() {
+    pw[0] = fact[0] = factrev[0] = 1;
+    for (int i = 1; i < N; ++i) {
+        pw[i] = pw[i - 1] * 2;
+        fact[i] = fact[i - 1] * i;
+        factrev[i] = 1 / fact[i];
+    }
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
+    read(int, n, m, k);
+    mll pws = 0;
+    for (int i = 2; i <= m; ++i) {
+        pws += pw[i - 2] * fastcomb(n - i, m - i);
     }
-    ll res = 0;
-    for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+    mll res = 0;
+    for (int i = 1; i <= m; ++i) {
+        res += (fastcomb(n - i, m - i) + pws) / pw[n - i];
+        pws = (pws - fastcomb(n - i - 1, m - i - 1)) / 2;
     }
-    cout << res << '\n';
+    cout << res * k << '\n';
 }
 
 int main() {

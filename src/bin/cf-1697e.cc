@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -466,21 +466,117 @@ void dump() {}
 
 void dump_ignore() {}
 
+using mll = MLL<PRIME>;
+constexpr int N = 110;
+mll fact[N];
+
 void prep() {
+    fact[0] = 1;
+    for (int i = 1; i < N; ++i) {
+        fact[i] = fact[i - 1] * i;
+    }
 }
 
-void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
+class quick_union {
+private:
+    vector<size_t> c;
+    vector<int> discard;
+public:
+    quick_union(size_t n) : c(n), discard(n) {
+        iota(c.begin(), c.end(), 0);
     }
-    ll res = 0;
+
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        discard[query(j)] |= discard[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_discard(size_t i) {
+        return discard[query(i)];
+    }
+    void set_discard(int i) {
+        discard[query(i)] = 1;
+    }
+};
+
+void solve() {
+    read(int, n);
+    readvec(pii, a, n);
+
+    auto dis = [&] (int i, int j) {
+        return abs(a[i].first - a[j].first) + abs(a[i].second - a[j].second);
+    };
+
+    vector<int> head(n, INF);
     for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+        for (int j = i + 1; j < n; ++j) {
+            chmin(head[i], dis(i, j));
+            chmin(head[j], dis(i, j));
+        }
+    }
+
+    quick_union qu(n);
+
+    vector<tiii> edges;
+    for (int i = 0; i < n; ++i) {
+        for (int j = i + 1; j < n; ++j) {
+            edges.emplace_back(dis(i, j), i, j);
+        }
+    }
+
+    sort(edges.begin(), edges.end());
+
+    for (auto&& [w, u, v] : edges) {
+        // deb(w, u, v);
+        if (w == head[u] and w == head[v]) {
+            qu.merge(u, v);
+        } else if (w == head[u]) {
+            qu.set_discard(u);
+        } else if (w == head[v]) {
+            qu.set_discard(v);
+        } else if (qu.connected(u, v)) {
+            qu.set_discard(v);
+        }
+    }
+
+    // debug(head);
+    // for (int i = 0; i < n; ++i) {
+    //     cerr << qu.query(i) << ' ';
+    // }
+    // cerr << endl;
+
+    vector<pii> bk(n);  // pair(count, allowed to sync)
+    for (int i = 0; i < n; ++i) {
+        bk[i].second = not qu.query_discard(i);
+        bk[qu.query(i)].first += 1;
+    }
+    // debugvec(bk);
+
+    vector dp(n + 1, vector<mll>(n + 1));
+    dp[0][0] = 1;
+    for (int i = 1; i <= n; ++i) {
+        if (bk[i - 1].first > 1 and bk[i - 1].second) {
+            for (int j = 0; j < n; ++j) {
+                dp[i][j + 1] += dp[i - 1][j];
+            }
+        }
+        for (int j = 0; j + bk[i - 1].first <= n; ++j) {
+            dp[i][j + bk[i - 1].first] += dp[i - 1][j];
+        }
+    }
+
+    mll res = 0;
+    for (int i = 0; i <= n; ++i) {
+        // deb(i, dp[n][i]);
+        res += comb(n, i) * fact[i] * dp[n][i];
     }
     cout << res << '\n';
 }

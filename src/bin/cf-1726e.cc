@@ -469,20 +469,15 @@ void dump_ignore() {}
 void prep() {
 }
 
+using mll = MLL<PRIME>;
+
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
+    read(int, n);
+    mll sum = 0;
+    for (int i = 1; i < n; ++i) {
+        sum = sum * 2 + 1;
     }
-    ll res = 0;
-    for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
-    }
-    cout << res << '\n';
+    cout << sum + 1 << '\n';
 }
 
 int main() {

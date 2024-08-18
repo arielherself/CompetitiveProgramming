@@ -395,10 +395,9 @@ bool chmin(T& lhs, const U& rhs) {
     return ret;
 }
 
-#define functor(func) ([&](auto&&... val) \
+#define functor(func) [&](auto&&... val) \
 noexcept(noexcept(func(std::forward<decltype(val)>(val)...))) -> decltype(auto) \
-{return func(std::forward<decltype(val)>(val)...);})
-#define expr(ret, ...) ([&] (__VA_ARGS__) { return (ret); })
+{return func(std::forward<decltype(val)>(val)...);}
 template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
     std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
 }
@@ -444,21 +443,17 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
 #define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
-namespace detail {
-    template <typename T, std::size_t...Is>
-    constexpr std::array<T, sizeof...(Is)>
-    make_array(const T& value, std::index_sequence<Is...>) {
-        return {{(static_cast<void>(Is), value)...}};
+template <typename T, size_t N>
+array<T, N> __initarray(const T& init) {
+    array<T, N> res;
+    for (size_t i = 0; i < N; ++i) {
+        res[i] = init;
     }
-}
-
-template <typename T, std::size_t N>
-constexpr std::array<T, N> __initarray(const T& value) {
-    return detail::make_array(value, std::make_index_sequence<N>());
+    return res;
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,19 +465,92 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
+    read(int, n);
+    readvec(int, a, n);
+
+    unordered_map<int, int, safe_hash> left, right;
+
+    int t = accumulate(a.begin(), a.end(), 0);
+    int first = 0;  // whether to choose the first player
+    if (t % 2) {
+        first = 1;
+    } else {
+        t /= 2;
+        vector dp(n + 1, vector<int>(t + 1));
+        dp[0][0] = 1;
+
+        for (int i = 1; i <= n; ++i) {
+            dp[i] = dp[i - 1];
+            for (int j = 0; j + a[i - 1] <= t; ++j) {
+                dp[i][j + a[i - 1]] |= dp[i - 1][j];
+            }
+        }
+
+        if (dp[n][t]) {
+            int curr = t;
+            for (int i = n; i; --i) {
+                if (not dp[i - 1][curr]) {
+                    assert(dp[i][curr]);
+                    left[i] = a[i - 1];
+                    curr -= a[i - 1];
+                } else {
+                    right[i] = a[i - 1];
+                }
+            }
+        } else {
+            first = 1;
+        }
     }
-    ll res = 0;
-    for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+
+    if (first) {
+        cout << "First" << endl;
+
+        unordered_map<int, int, safe_hash> choices;
+        for (int i = 0; i < n; ++i) {
+            choices[i + 1] = a[i];
+            // deb(i + 1, a[i]);
+        }
+        while (1) {
+            // debugvec(choices);
+            int i = choices.begin()->first;
+            cout << i << endl;
+            read(int, j);
+            if (j == -1) {
+                exit(0);
+            } else if (j == 0) {
+                return;
+            } else {
+                int d = min(choices[i], choices[j]);
+                if ((choices[i] -= d) == 0) choices.erase(i);
+                if ((choices[j] -= d) == 0) choices.erase(j);
+            }
+        }
+    } else {
+        cout << "Second" << endl;
+
+        while (1) {
+            read(int, i);
+            if (i == -1) {
+                exit(0);
+            } else if (i == 0) {
+                return;
+            } else {
+                if (left.count(i)) {
+                    int j = right.begin()->first;
+                    cout << j << endl;
+                    int d = min(left[i], right[j]);
+                    if ((left[i] -= d) == 0) left.erase(i);
+                    if ((right[j] -= d) == 0) right.erase(j);
+                } else {
+                    int j = left.begin()->first;
+                    cout << j << endl;
+                    int d = min(left[j], right[i]);
+                    if ((left[j] -= d) == 0) left.erase(j);
+                    if ((right[i] -= d) == 0) right.erase(i);
+                }
+            }
+        }
     }
-    cout << res << '\n';
 }
 
 int main() {

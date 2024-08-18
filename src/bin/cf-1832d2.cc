@@ -1,4 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
+#include <numeric>
 #pragma GCC optimize("Ofast")
 /************* This code requires C++17. ***************/
 
@@ -395,10 +396,9 @@ bool chmin(T& lhs, const U& rhs) {
     return ret;
 }
 
-#define functor(func) ([&](auto&&... val) \
+#define functor(func) [&](auto&&... val) \
 noexcept(noexcept(func(std::forward<decltype(val)>(val)...))) -> decltype(auto) \
-{return func(std::forward<decltype(val)>(val)...);})
-#define expr(ret, ...) ([&] (__VA_ARGS__) { return (ret); })
+{return func(std::forward<decltype(val)>(val)...);}
 template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
     std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
 }
@@ -444,21 +444,17 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
 #define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
-namespace detail {
-    template <typename T, std::size_t...Is>
-    constexpr std::array<T, sizeof...(Is)>
-    make_array(const T& value, std::index_sequence<Is...>) {
-        return {{(static_cast<void>(Is), value)...}};
+template <typename T, size_t N>
+array<T, N> __initarray(const T& init) {
+    array<T, N> res;
+    for (size_t i = 0; i < N; ++i) {
+        res[i] = init;
     }
-}
-
-template <typename T, std::size_t N>
-constexpr std::array<T, N> __initarray(const T& value) {
-    return detail::make_array(value, std::make_index_sequence<N>());
+    return res;
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,19 +466,35 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
-    }
-    ll res = 0;
+    read(int, n, q);
+    readvec(int, a, n);
+    sort(a.begin(), a.end());
+    ll s = accumulate(a.begin(), a.end(), ll(0));
+
+    vector<int> b(n + 1, INF);
     for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+        b[i + 1] = min(b[i], a[i] - i);
     }
-    cout << res << '\n';
+
+    while (q--) {
+        read(int, x);
+        int use;
+        if (x % 2 == n % 2) {
+            use = min(x, n);
+        } else {
+            use = min(x, n - 1);
+        }
+
+        int res = b[use] + x;
+        if (use < n) {
+            chmin(res, a[use]);
+        }
+        chmin(res, (s + ll(1) * (x + x - use + 1) * use / 2 - (x - use) / 2) / n);
+
+        cout << res << ' ';
+    }
+
+    cout << '\n';
 }
 
 int main() {

@@ -469,20 +469,74 @@ void dump_ignore() {}
 void prep() {
 }
 
+class quick_union {
+private:
+    vector<size_t> c, sz;
+public:
+    quick_union(size_t n) : c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
+    }
+
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] += sz[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_size(size_t i) {
+        return sz[query(i)];
+    }
+};
+
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
+    read(int, n);
+    readvec1(int, a, n);
+
+    vector<int> idx(n);
+    iota(idx.begin(), idx.end(), 1);
+    sort_by_key(idx.begin(), idx.end(), expr(-a[i], int i));
+
+    quick_union qu(n + 1);
+    vector<bool> vis(n + 1);
+    for (auto&& i : idx) {
+        if (not vis[i]) {
+            vis[i] = 1;
+            for (int j = 0; j < a[i]; ++j) {
+                cout << "? " << i << endl;
+                read(int, x);
+                qu.merge(i, x);
+                if (vis[x]) break;
+                vis[x] = 1;
+            }
+        }
     }
-    ll res = 0;
-    for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+
+    vector<vector<int>> bk(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        bk[qu.query(i)].emplace_back(i);
     }
-    cout << res << '\n';
+
+    int cnt = 0;
+    vector<int> res(n + 1);
+    for (auto&& v : bk) {
+        if (v.size()) {
+            ++cnt;
+            for (auto&& u : v) {
+                res[u] = cnt;
+            }
+        }
+    }
+
+    cout << "! ";
+    putvec1(res);
 }
 
 int main() {

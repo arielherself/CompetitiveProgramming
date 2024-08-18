@@ -1,5 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#pragma GCC optimize("Ofast")
+// #pragma GCC optimize("Ofast")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,19 +470,51 @@ void prep() {
 }
 
 void solve() {
-    read(int, n, k);
-    readvec(ll, a, n);
-    sort(a.begin(), a.end(), greater());
-    for (int i = 1; i < n; i += 2) {
-        int use = min<int>(k, a[i - 1] - a[i]);
-        k -= use;
-        a[i] += use;
+    read(int, n, l);
+    readvec(int, a, n);
+
+    vector<int128> b(n + 1);
+    int128 sum = 0;
+    for (int i = 1; i <= n; ++i) {
+        sum += a[i - 1];
+        b[i] = i + sum;
+        // cerr << i << ' ' << b[i] << endl;
     }
-    ll res = 0;
-    for (int i = 0; i < n; ++i) {
-        res += (i % 2 == 0 ? 1 : -1) * a[i];
+
+    vector<int128> dp(n + 1);
+    deque<int> q;
+    q.emplace_back(0);
+    for (int i = 1; i <= n; ++i) {
+        while (q.size() >= 2) {
+            int128 x1 = b[q[0]], y1 = dp[q[0]] + b[q[0]] * b[q[0]];
+            int128 x2 = b[q[1]], y2 = dp[q[1]] + b[q[1]] * b[q[1]];
+
+            // cerr << "  " << x1 << ' ' << y1 << ' ' << x2 << ' ' << y2 << endl;
+            if (y2 - y1 < 2 * (b[i] - l - 1) * (x2 - x1)) {
+                q.pop_front();
+            } else {
+                break;
+            }
+        }
+        int j = q.front();
+        dp[i] = dp[j] + b[j] * b[j] - 2 * (b[i] - l - 1) * b[j] + (b[i] - l - 1) * (b[i] - l - 1);
+        int128 x = b[i], y = dp[i] + b[i] * b[i];
+        // cerr << i << ' ' << dp[i] << ' ' << x << ' ' << y << endl;
+        while (q.size() >= 2) {
+            int j = q.back(), k = q[q.size() - 2];
+            int128 x1 = b[k], y1 = dp[k] + b[k] * b[k];
+            int128 x2 = b[j], y2 = dp[j] + b[j] * b[j];
+            if ((y2 - y1) * (x - x2) > (y - y2) * (x2 - x1)) {
+                q.pop_back();
+            } else {
+                break;
+            }
+        }
+        q.emplace_back(i);
+        // debug(q.size());
     }
-    cout << res << '\n';
+
+    cout << dp[n] << '\n';
 }
 
 int main() {

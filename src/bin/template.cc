@@ -1,8 +1,3 @@
-#pragma GCC diagnostic ignored "-Wunused-const-variable"
-#pragma GCC diagnostic ignored "-Wreorder"
-#pragma GCC diagnostic ignored "-Wunknown-pragmas"
-#pragma GCC diagnostic ignored "-Wshift-op-parentheses"
-#pragma GCC diagnostic ignored "-Wlogical-op-parentheses"
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
 #pragma GCC optimize("Ofast")
 /************* This code requires C++17. ***************/
@@ -400,9 +395,10 @@ bool chmin(T& lhs, const U& rhs) {
     return ret;
 }
 
-#define functor(func) [&](auto&&... val) \
+#define functor(func) ([&](auto&&... val) \
 noexcept(noexcept(func(std::forward<decltype(val)>(val)...))) -> decltype(auto) \
-{return func(std::forward<decltype(val)>(val)...);}
+{return func(std::forward<decltype(val)>(val)...);})
+#define expr(ret, ...) ([&] (__VA_ARGS__) { return (ret); })
 template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
     std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
 }
@@ -448,13 +444,17 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
 #define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
-template <typename T, size_t N>
-array<T, N> __initarray(const T& init) {
-    array<T, N> res;
-    for (size_t i = 0; i < N; ++i) {
-        res[i] = init;
+namespace detail {
+    template <typename T, std::size_t...Is>
+    constexpr std::array<T, sizeof...(Is)>
+    make_array(const T& value, std::index_sequence<Is...>) {
+        return {{(static_cast<void>(Is), value)...}};
     }
-    return res;
+}
+
+template <typename T, std::size_t N>
+constexpr std::array<T, N> __initarray(const T& value) {
+    return detail::make_array(value, std::make_index_sequence<N>());
 }
 /*******************************************************/
 
