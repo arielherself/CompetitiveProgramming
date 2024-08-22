@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,20 +470,69 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    if (n % 2 == 0) {
-        cout << -1 << '\n';
-    } else {
-        vector<int> res(n);
-        for (int i = 0; i <= n / 2; ++i) {
-            res[i] = 2 * i + 1;
-        }
-        int x = 0;
-        for (int i = n - 1; i > n / 2; --i) {
-            res[i] = (x += 2);
-        }
-        putvec(res);
+    constexpr int N = 2e5;
+
+    read(int, n, m, k);
+    vector<vector<pii>> e(n + 1);
+    for (int i = 0; i < m; ++i) {
+        read(int, u, v, w);
+        Edgew(e, u, v, w);
     }
+    vector<bitset<N>> oc((k + 1) * (k + 1) + 1);
+    vector exclude(k + 1, vector<bool>(k + 1));
+    vector mutex((k + 1) * (k + 1) + 1, vector<bool>((k + 1) * (k + 1) + 1));
+    for (int i = 1; i <= n; ++i) {
+        sort_by_key(e[i].begin(), e[i].end(), expr(p.second, auto&& p));
+        int s = e[i].size();
+        for (int j = 0; j < s; ++j) {
+            if (oc[s * (k + 1) + j + 1][e[i][j].first]) {
+                exclude[s][j + 1] = true;
+            } else {
+                oc[s * (k + 1) + j + 1][e[i][j].first] = 1;
+            }
+        }
+    }
+    for (int i = 1; i <= k; ++i) {
+        for (int j = 1; j <= i; ++j) {
+            for (int l = 1; l < i; ++l) {
+                for (int p = 1; p <= l; ++p) {
+                    if ((oc[i * (k + 1) + j] & oc[l * (k + 1) + p]).any()) {
+                        mutex[i * (k + 1) + j][l * (k + 1) + p] = true;
+                        mutex[l * (k + 1) + p][i * (k + 1) + j] = true;
+                    }
+                }
+            }
+        }
+    }
+
+    int res = 0;
+    vector<int> st = { 0 };
+    auto dfs = [&] (auto dfs, int curr) -> void {
+        if (curr == k + 1) {
+            for (int i = 1; i <= k; ++i) {
+                if (exclude[i][st[i]]) {
+                    goto fi;
+                }
+            }
+            for (int i = 1; i <= k; ++i) {
+                for (int j = 1; j < i; ++j) {
+                    if (mutex[i * (k + 1) + st[i]][j * (k + 1) + st[j]]) {
+                        goto fi;
+                    }
+                }
+            }
+            res += 1;
+        fi:
+            return;
+        }
+        for (int j = 1; j <= curr; ++j) {
+            st.emplace_back(j);
+            dfs(dfs, curr + 1);
+            st.pop_back();
+        }
+    };
+    dfs(dfs, 1);
+    cout << res << '\n';
 }
 
 int main() {

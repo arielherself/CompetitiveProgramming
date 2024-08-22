@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,19 +470,41 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    if (n % 2 == 0) {
-        cout << -1 << '\n';
-    } else {
-        vector<int> res(n);
-        for (int i = 0; i <= n / 2; ++i) {
-            res[i] = 2 * i + 1;
+    read(int, n, m);
+    vector<unordered_map<int, char, safe_hash>> ch(n + 1);
+    int oc = 0, eq = 0;;
+    while (m--) {
+        read(char, op);
+        if (op == '+') {
+            read(int, u, v);
+            read(char, c);
+            ch[u][v] = c;
+            if (ch[v].count(u)) {
+                int d = ch[v][u];
+                if (c == d) {
+                    eq += 1;
+                }
+                oc += 1;
+            }
+        } else if (op == '-') {
+            read(int, u, v);
+            if (ch[v].count(u)) {
+                int c = ch[u][v];
+                int d = ch[v][u];
+                if (c == d) {
+                    eq -= 1;
+                }
+                oc -= 1;
+            }
+            ch[u].erase(v);
+        } else {
+            read(int, k);
+            if (k % 2 == 0 and eq or k % 2 == 1 and oc) {
+                cout << "YES\n";
+            } else {
+                cout << "NO\n";
+            }
         }
-        int x = 0;
-        for (int i = n - 1; i > n / 2; --i) {
-            res[i] = (x += 2);
-        }
-        putvec(res);
     }
 }
 

@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -471,19 +471,39 @@ void prep() {
 
 void solve() {
     read(int, n);
-    if (n % 2 == 0) {
-        cout << -1 << '\n';
-    } else {
-        vector<int> res(n);
-        for (int i = 0; i <= n / 2; ++i) {
-            res[i] = 2 * i + 1;
-        }
-        int x = 0;
-        for (int i = n - 1; i > n / 2; --i) {
-            res[i] = (x += 2);
-        }
-        putvec(res);
+    read(ll, s);
+    vector<int> a;
+    for (int i = 0; i < n; ++i) {
+        read(char, c);
+        a.emplace_back(c - 'a');
+        s += ll(1) << a.back();
     }
+
+    s -= ll(1) << a.back() + 1;
+    if (s < 0) {
+        cout << "No\n";
+        return;
+    }
+    debug(s);
+
+    vector<int> cnt(61);
+    for (int i = 1; i < n - 1; ++i) {
+        cnt[a[i] + 1] += 1;
+    }
+
+    for (int i = 0; i < 60; ++i) {
+        if (s & 1) {
+            if (not cnt[i]) {
+                cout << "No\n";
+                return;
+            }
+            cnt[i] -= 1;
+        }
+        s >>= 1;
+        cnt[i + 1] += cnt[i] / 2;
+    }
+
+    cout << "Yes\n";
 }
 
 int main() {

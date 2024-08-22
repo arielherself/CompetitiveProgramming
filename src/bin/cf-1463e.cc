@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,19 +470,88 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    if (n % 2 == 0) {
-        cout << -1 << '\n';
+    read(int, n, k);
+    readvec1(int, a, n);
+
+    vector<int> nxt(n + 1), ind(n + 1);
+    for (int i = 0; i < k; ++i) {
+        read(int, u, v);
+        nxt[u] = v;
+        ++ind[v];
+    }
+    vector<int> head(n + 1);
+    vector<vector<int>> link(n + 1);
+    vector<int> link_order(n + 1);
+    vector<int> vis(n + 1);
+    int m = 0;
+    for (int i = 1; i <= n; ++i) {
+        if (ind[i] == 0) {
+            int v = i;
+            int o = 0;
+            while (1) {
+                if (vis[v]) {
+                    cout << 0 << '\n';
+                    return;
+                }
+                vis[v] = 1;
+                link[m].emplace_back(v);
+                head[v] = m;
+                link_order[v] = o++;
+                if (nxt[v]) {
+                    v = nxt[v];
+                } else {
+                    break;
+                }
+            }
+            ++m;
+        }
+    }
+    if (count(vis.begin() + 1, vis.end(), 0)) {
+        cout << 0 << '\n';
+        return;
+    }
+    // debug(m);
+    // debug(head);
+    // debugvec(link);
+    adj(ch, m);
+    ind.assign(m, 0);
+    for (int i = 1; i <= n; ++i) {
+        if (a[i] == 0) continue;
+        if (head[a[i]] == head[i]) {
+            if (link_order[a[i]] > link_order[i]) {
+                cout << 0 << '\n';
+                return;
+            }
+        } else {
+            Edge(ch, head[a[i]], head[i]);
+            ++ind[head[i]];
+        }
+    }
+    // debug(ind);
+    deque<int> q;
+    for (int i = 0; i < m; ++i) {
+        if (ind[i] == 0) q.emplace_back(i);
+    }
+    vector<int> seq;
+    while (q.size()) {
+        int v = q.front(); q.pop_front();
+        seq.emplace_back(v);
+        for (auto&& u : ch[v]) {
+            if (--ind[u] == 0) {
+                q.emplace_back(u);
+            }
+        }
+    }
+    // debug(seq);
+    if (seq.size() != m) {
+        cout << 0 << '\n';
     } else {
-        vector<int> res(n);
-        for (int i = 0; i <= n / 2; ++i) {
-            res[i] = 2 * i + 1;
+        for (auto&& v : seq) {
+            for (auto&& u : link[v]) {
+                cout << u << ' ';
+            }
         }
-        int x = 0;
-        for (int i = n - 1; i > n / 2; --i) {
-            res[i] = (x += 2);
-        }
-        putvec(res);
+        cout << '\n';
     }
 }
 

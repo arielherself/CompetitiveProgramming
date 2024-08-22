@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,20 +470,43 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    if (n % 2 == 0) {
-        cout << -1 << '\n';
-    } else {
-        vector<int> res(n);
-        for (int i = 0; i <= n / 2; ++i) {
-            res[i] = 2 * i + 1;
+    using mll = MLL<PRIME>;
+
+    read(string, a, b);
+    int n = a.size(), m = b.size();
+    a.insert(a.begin(), 0);
+    b.insert(b.begin(), 1);
+
+    vector dp(n + 1, vector(m + 1, vector<mll>(2)));
+    dp[0][0][0] = dp[0][0][1] = 1;
+    mll res = 0;
+    for (int i = 0; i <= n; ++i) {
+        for (int j = 0; j <= m; ++j) {
+            if (i + j == 0) continue;
+            if (a[i] != b[j]) {
+                if (i != 0) dp[i][j][0] += dp[0][j][1];
+                if (j != 0) dp[i][j][1] += dp[i][0][0];
+            }
+            if (i > 1 and a[i] != b[j]) {
+                dp[i][j][0] += dp[i - 1][j][1];
+            }
+            if (i > 1 and a[i] != a[i - 1]) {
+                dp[i][j][0] += dp[i - 1][j][0];
+            }
+            if (j > 1 and a[i] != b[j]) {
+                dp[i][j][1] += dp[i][j - 1][0];
+            }
+            if (j > 1 and b[j] != b[j - 1]) {
+                dp[i][j][1] += dp[i][j - 1][1];
+            }
+            if (i and j) {
+                // deb(i, j, dp[i][j][0], dp[i][j][1]);
+                res += dp[i][j][0] + dp[i][j][1];
+            }
         }
-        int x = 0;
-        for (int i = n - 1; i > n / 2; --i) {
-            res[i] = (x += 2);
-        }
-        putvec(res);
     }
+
+    cout << res << '\n';
 }
 
 int main() {

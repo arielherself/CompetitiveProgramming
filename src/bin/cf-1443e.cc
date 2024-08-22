@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,19 +470,47 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    if (n % 2 == 0) {
-        cout << -1 << '\n';
-    } else {
-        vector<int> res(n);
-        for (int i = 0; i <= n / 2; ++i) {
-            res[i] = 2 * i + 1;
+    read(int, n, q);
+    int N = min(n, 14);
+    vector<ll> fact(N + 1);
+    fact[0] = 1;
+    for (int i = 1; i <= N; ++i) {
+        fact[i] = fact[i - 1] * i;
+    }
+
+    ll cnt = 0;
+    while (q--) {
+        read(int, op);
+        if (op == 1) {
+            read(int, l, r);
+            if (r <= n - N) {
+                cout << ll(l + r) * (r - l + 1) / 2 << '\n';
+            } else {
+                int r1 = n - N;
+                ll res = max<ll>(0, ll(l + r1) * (r1 - l + 1) / 2);
+                vector<bool> used(N + 1);
+                ll curr = cnt;
+                for (int j = 1; j <= N; ++j) {
+                    int k = curr / fact[N - j];
+                    int c = 0;
+                    for (int p = 1; p <= N; ++p) {
+                        if (used[p]) continue;
+                        if (c++ == k) {
+                            used[p] = 1;
+                            if (r1 + j <= r and r1 + j >= l) {
+                                res += r1 + p;
+                            }
+                            break;
+                        }
+                    }
+                    curr -= k * fact[N - j];
+                }
+                cout << res << '\n';
+            }
+        } else {
+            read(int, x);
+            cnt += x;
         }
-        int x = 0;
-        for (int i = n - 1; i > n / 2; --i) {
-            res[i] = (x += 2);
-        }
-        putvec(res);
     }
 }
 

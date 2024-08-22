@@ -472,13 +472,11 @@ void prep() {
 void solve() {
     read(int, n);
     readvec(int, a, n);
-    sort(a.begin(), a.end());
-    int m = unique(a.begin(), a.end()) - a.begin();
-    if (m == 1 or m == 2 and a[1] - a[0] > 1) {
-        cout << "YES\n";
-    } else {
-        cout << "NO\n";
+    vector<int> cnt(n + 1);
+    for (int i = 0; i < n; ++i) {
+        cnt[a[i]] += 1;
     }
+    cout << n - *max_element(cnt.begin(), cnt.end()) << '\n';
 }
 
 int main() {

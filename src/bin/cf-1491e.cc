@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -471,18 +471,58 @@ void prep() {
 
 void solve() {
     read(int, n);
-    if (n % 2 == 0) {
-        cout << -1 << '\n';
+
+    vector<int> fib = { 1, 1 };
+    while (fib.back() < n) {
+        fib.emplace_back(fib.back() + fib[fib.size() - 2]);
+    }
+
+    adj(ch, n);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
+    }
+
+    unordered_set<pii, pair_hash> lock;
+
+    vector<int> sz(n + 1);
+
+    auto dfs = [&] (auto dfs, int root, int up, int m) -> bool {
+        int n = fib[m];
+        if (n == 1) return true;
+        auto dfs1 = [&] (auto dfs1, int v, int pa) -> void {
+            sz[v] = 1;
+            for (auto&& u : ch[v]) {
+                if (u == pa or lock.count(minmax(u, v))) continue;
+                dfs1(dfs1, u, v);
+                sz[v] += sz[u];
+            }
+        };
+        dfs1(dfs1, root, up);
+        int s = -1, t = -1, layer;
+        auto dfs2 = [&] (auto dfs2, int v, int pa) -> void {
+            for (auto&& u : ch[v]) {
+                if (u == pa or lock.count(minmax(u, v))) continue;
+                if (sz[u] == fib[m - 1] or sz[u] == fib[m - 2]) {
+                    s = v, t = u, layer = sz[u] == fib[m - 1] ? m - 1 : m - 2;
+                    return;
+                }
+                dfs2(dfs2, u, v);
+            }
+        };
+        dfs2(dfs2, root, up);
+        if (s == -1) {
+            return false;
+        } else {
+            lock.emplace(minmax(s, t));
+            return dfs(dfs, t, s, layer) and dfs(dfs, s, t, layer == m - 1 ? m - 2 : m - 1);
+        }
+    };
+
+    if (fib.back() == n and dfs(dfs, 1, 0, fib.size() - 1)) {
+        cout << "YES\n";
     } else {
-        vector<int> res(n);
-        for (int i = 0; i <= n / 2; ++i) {
-            res[i] = 2 * i + 1;
-        }
-        int x = 0;
-        for (int i = n - 1; i > n / 2; --i) {
-            res[i] = (x += 2);
-        }
-        putvec(res);
+        cout << "NO\n";
     }
 }
 

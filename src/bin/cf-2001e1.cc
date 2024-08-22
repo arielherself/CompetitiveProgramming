@@ -470,20 +470,31 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    if (n % 2 == 0) {
-        cout << -1 << '\n';
-    } else {
-        vector<int> res(n);
-        for (int i = 0; i <= n / 2; ++i) {
-            res[i] = 2 * i + 1;
-        }
-        int x = 0;
-        for (int i = n - 1; i > n / 2; --i) {
-            res[i] = (x += 2);
-        }
-        putvec(res);
+    read(int, n, k, p);
+    vector dp(n + 1, vector<ll>(k + 1));
+    vector dp1(n + 1, vector<ll>(k + 1));
+    for (int j = 0; j <= k; ++j) {
+        dp[1][j] = 1;
+        dp1[1][j] = 1;
     }
+    for (int i = 2; i <= n; ++i) {
+        vector<ll> curr(k + 1);
+        vector<ll> curr1(k + 1);
+        for (int j = 0; j <= k; ++j) {
+            for (int l = 0; l <= j; ++l) {
+                curr1[j] = (curr1[j] + ((dp1[i - 1][l] * dp1[i - 1][j - l]) % p)) % p;
+                if (l == j - l) continue;
+                if (l > j - l) {
+                    curr[j] = (curr[j] + ((dp[i - 1][l] * dp1[i - 1][j - l]) % p)) % p;
+                } else {
+                    curr[j] = (curr[j] + ((dp1[i - 1][l] * dp[i - 1][j - l]) % p)) % p;
+                }
+            }
+        }
+        partial_sum(curr.begin(), curr.end(), dp[i].begin(), expr((x + y) % p, ll x, ll y));
+        partial_sum(curr1.begin(), curr1.end(), dp1[i].begin(), expr((x + y) % p, ll x, ll y));
+    }
+    cout << dp[n][k] << '\n';
 }
 
 int main() {

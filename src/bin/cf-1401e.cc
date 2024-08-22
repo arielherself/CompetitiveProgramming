@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,21 +469,89 @@ void dump_ignore() {}
 void prep() {
 }
 
-void solve() {
-    read(int, n);
-    if (n % 2 == 0) {
-        cout << -1 << '\n';
-    } else {
-        vector<int> res(n);
-        for (int i = 0; i <= n / 2; ++i) {
-            res[i] = 2 * i + 1;
+template<typename T>
+struct BIT {
+    int n;
+    vector<T> c;
+    BIT(size_t n) : n(n), c(n + 1) {}
+    void add(size_t i, const T& k) {
+        while (i <= n) {
+            c[i] += k;
+            i += lowbit(i);
         }
-        int x = 0;
-        for (int i = n - 1; i > n / 2; --i) {
-            res[i] = (x += 2);
-        }
-        putvec(res);
     }
+    T getsum(size_t i) {
+        T res = {};
+        while (i) {
+            res += c[i];
+            i -= lowbit(i);
+        }
+        return res;
+    }
+};
+
+void solve() {
+    constexpr int N = 1e6;
+    read(int, n, m);
+    vector<pii> line(N + 1);
+    line[N] = { 0, N };
+    vector<vector<int>> open(N + 1), close(N + 1);
+    for (int i = 0; i < n; ++i) {
+        read(int, y, l, r);
+        open[l].emplace_back(y);
+        close[r].emplace_back(y);
+    }
+    for (int i = 0; i < m; ++i) {
+        read(int, x, l, r);
+        if (l == 0) {
+            line[x] = { 0, r };
+        } else {
+            line[x] = { 1, l };
+        }
+    }
+    BIT<int> tr(N + 1);
+    tr.add(1, 1);
+    tr.add(N + 1, 1);
+    ll res = 0;
+    int prev = 1;
+    int prev_l = 0, prev_r = N;
+    for (auto&& y : open[0]) {
+        tr.add(y + 1, 1);
+    }
+    for (auto&& y : close[0]) {
+        if (tr.getsum(y + 1) - tr.getsum(y)) {
+            tr.add(y + 1, -1);
+        }
+    }
+    for (int i = 1; i <= N; ++i) {
+        if (line[i] == pii { 0, 0 }) {
+            continue;
+        }
+        for (int j = prev; j < i; ++j) {
+            for (auto&& y : close[j]) {
+                if (tr.getsum(y + 1) - tr.getsum(y)) {
+                    tr.add(y + 1, -1);
+                }
+            }
+        }
+        if (line[i].first == 0) {
+            res += tr.getsum(line[i].second + 1) - tr.getsum(1);
+        } else {
+            res += tr.getsum(N) - tr.getsum(line[i].second);
+        }
+        for (int j = prev; j <= i; ++j) {
+            for (auto&& y : open[j]) {
+                tr.add(y + 1, 1);
+            }
+            for (auto&& y : close[j]) {
+                if (tr.getsum(y + 1) - tr.getsum(y)) {
+                    tr.add(y + 1, -1);
+                }
+            }
+        }
+        prev = i + 1;
+    }
+    cout << res << '\n';
 }
 
 int main() {

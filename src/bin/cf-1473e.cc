@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -470,19 +470,38 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    if (n % 2 == 0) {
-        cout << -1 << '\n';
-    } else {
-        vector<int> res(n);
-        for (int i = 0; i <= n / 2; ++i) {
-            res[i] = 2 * i + 1;
+    read(int, n, m);
+    vector<vector<pii>> e(n + 1);
+    while (m--) {
+        read(int, u, v, w);
+        edgew(e, u, v, w);
+    }
+    vector<ll> dis(n + 1, INFLL);
+    vector<array<int, 2>> mm(n + 1, { -INF, INF });
+    vector<array<bool, 2>> vis(n + 1);
+    dis[1] = 0;
+    min_heap<tuple<ll, ll, int, int, int, bool>> q;
+    q.emplace(0, 0, INF, -INF, 1, 0);
+    while (q.size()) {
+        poptop(q, d, s, mn, mx, v, dir);
+        continue_or(vis[v][dir], 1);
+        for (auto&& [u, w] : e[v]) {
+            ll s1 = s + w;
+            int mn1 = min(mn, w);
+            int mx1 = max(mx, w);
+            ll d1 = s1 - mx1 + mn1;
+            if (d1 < dis[u] or d1 == dis[u] and mn1 > mm[u][0]) {
+                dis[u] = d1, mm[u][0] = mn1;
+                q.emplace(dis[u], s1, mn1, mx1, u, 0);
+            }
+            if (d1 < dis[u] or d1 == dis[u] and mx1 < mm[u][1]) {
+                dis[u] = d1, mm[u][1] = mx1;
+                q.emplace(dis[u], s1, mn1, mx1, u, 1);
+            }
         }
-        int x = 0;
-        for (int i = n - 1; i > n / 2; --i) {
-            res[i] = (x += 2);
-        }
-        putvec(res);
+    }
+    for (int i = 2; i <= n; ++i) {
+        cout << dis[i] << " \n"[i == n];
     }
 }
 

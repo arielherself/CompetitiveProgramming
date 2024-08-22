@@ -466,23 +466,66 @@ void dump() {}
 
 void dump_ignore() {}
 
+using mll1 = MLL<MDL1>;
+using mll2 = MLL<MDL2>;
+constexpr int N = 1e6 + 10;
+mll1 pw1[N];
+mll2 pw2[N];
+
 void prep() {
+    pw1[0] = 1, pw2[0] = 1;
+    for (int i = 1; i < N; ++i) {
+        pw1[i] = pw1[i - 1] * 2;
+        pw2[i] = pw2[i - 1] * 2;
+    }
 }
 
 void solve() {
-    read(int, n);
-    if (n % 2 == 0) {
-        cout << -1 << '\n';
+    read(int, n, k);
+    vector<int> a;
+    for (int i = 0; i < n; ++i) {
+        read(char, c);
+        a.emplace_back(c == '1');
+    }
+
+    unordered_set<pll, pair_hash> oc;
+
+    mll1 h1 = 0;
+    mll2 h2 = 0;
+    for (int i = 0; i < n; ++i) {
+        h1 = h1 * 2 + (a[i] ^ 1);
+        h2 = h2 * 2 + (a[i] ^ 1);
+        if (i >= k) {
+            h1 -= pw1[k] * (a[i - k] ^ 1);
+            h2 -= pw2[k] * (a[i - k] ^ 1);
+        }
+        if (i + 1 >= k) {
+            oc.emplace(h1.val, h2.val);
+        }
+    }
+
+    int res = -1;
+    for (int i = 0; i < n + 2; ++i) {
+        if (i and lsp(i) >= k) {
+            break;
+        }
+        if (not oc.count({ i, i })) {
+            res = i;
+            break;
+        }
+    }
+
+    if (res == -1) {
+        cout << "NO\n";
     } else {
-        vector<int> res(n);
-        for (int i = 0; i <= n / 2; ++i) {
-            res[i] = 2 * i + 1;
+        cout << "YES\n";
+        string out;
+        for (int i = 0; i < k; ++i) {
+            out.push_back('0' + (res & 1));
+            res >>= 1;
         }
-        int x = 0;
-        for (int i = n - 1; i > n / 2; --i) {
-            res[i] = (x += 2);
-        }
-        putvec(res);
+        reverse(out.begin(), out.end());
+        cout << out << '\n';
     }
 }
 

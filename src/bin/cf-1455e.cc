@@ -470,20 +470,39 @@ void prep() {
 }
 
 void solve() {
-    read(int, n);
-    if (n % 2 == 0) {
-        cout << -1 << '\n';
-    } else {
-        vector<int> res(n);
-        for (int i = 0; i <= n / 2; ++i) {
-            res[i] = 2 * i + 1;
+    readvec(pll, a, 4);
+    ll res = INFLL;
+    for (int i = 0; i < 2; ++i) {
+        sort(a.begin(), a.end());
+        ll x_min, x_max, y_min, y_max, base;
+        if (max(a[0].second, a[1].second) <= min(a[2].second, a[3].second)) {
+            x_min = a[2].first - a[1].first, x_max = a[3].first - a[0].first;
+            y_min = 0, y_max = max(a[2].second, a[3].second) - min(a[1].second, a[0].second);
+            base = a[1].first - a[0].first + a[3].first - a[2].first + a[2].second + a[3].second - a[0].second - a[1].second;
+        } else if (min(a[0].second, a[1].second) >= max(a[2].second, a[3].second)) {
+            x_min = a[2].first - a[1].first, x_max = a[3].first - a[0].first;
+            y_min = 0, y_max = max(a[1].second, a[0].second) - min(a[2].second, a[3].second);
+            base = a[1].first - a[0].first + a[3].first - a[2].first - a[2].second - a[3].second + a[0].second + a[1].second;
+        } else {
+            vector<ll> b(4);
+            transform(a.begin(), a.end(), b.begin(), expr(p.second, auto&& p));
+            sort(b.begin(), b.end());
+            x_min = a[2].first - a[1].first, x_max = a[3].first - a[0].first;
+            y_min = b[2] - b[1], y_max = b[3] - b[0];
+            base = a[1].first - a[0].first + a[3].first - a[2].first + b[1] - b[0] + b[3] - b[2];
         }
-        int x = 0;
-        for (int i = n - 1; i > n / 2; --i) {
-            res[i] = (x += 2);
+        if (x_min > y_max) {
+            chmin(res, base + 2 * (x_min - y_max));
+        } else if (y_min > x_max) {
+            chmin(res, base + 2 * (y_min - x_max));
+        } else {
+            chmin(res, base);
         }
-        putvec(res);
+        for (int j = 0; j < 4; ++j) {
+            swap(a[j].first, a[j].second);
+        }
     }
+    cout << res << '\n';
 }
 
 int main() {
