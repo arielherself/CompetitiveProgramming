@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -466,50 +466,45 @@ void dump() {}
 
 void dump_ignore() {}
 
-constexpr int N = 1e7 + 10;
-bool not_prime[N + 1];
-int minp[N + 1];
-int cnt[N + 1];
-
-vector<int> soe(int n) {
-    vector<int> res;
-    minp[1] = 1;
-    cnt[1] = 1;
-    int c = 1;
-    for (int i = 2; i <= n; ++i) {
-        if (not not_prime[i]) {
-            res.emplace_back(i);
-            minp[i] = i;
-            if (i % 2) cnt[i] = ++c;
-        }
-        for (auto&& x : res) {
-            if (ll(1) * i * x > n) break;
-            not_prime[i * x] = 1;
-            minp[i * x] = x;
-            if (i % x == 0) break;
-        }
-    }
-    return res;
-}
-
-
 void prep() {
-    soe(N);
 }
 
+// __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
-    int val = 0;
+    readvec(int, a, n);
+    while (n % 2 != 1) {
+        a.emplace_back(0);
+        n += 1;
+    }
+    min_heap<pli> q;
     for (int i = 0; i < n; ++i) {
-        read(int, x);
-        if (x % 2 == 1)
-        val ^= cnt[minp[x]];
+        q.emplace(a[i], i);
     }
-    if (val != 0) {
-        cout << "Alice\n";
-    } else {
-        cout << "Bob\n";
+    vector<vector<int>> ch(n);
+    while (q.size() > 1) {
+        vector<int> son;
+        ll tot = 0;
+        if (q.size()) tot += q.top().first, son.emplace_back(q.top().second), q.pop();
+        if (q.size()) tot += q.top().first, son.emplace_back(q.top().second), q.pop();
+        if (q.size()) tot += q.top().first, son.emplace_back(q.top().second), q.pop();
+        ch.emplace_back(son);
+        q.emplace(tot, ch.size() - 1);
     }
+    ll res = 0;
+    auto dfs = [&] (auto dfs, int v, int pa, int depth) -> void {
+        // deb(v, depth);
+        if (ch[v].size() == 0) {
+            res += ll(1) * a[v] * depth;
+        } else {
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v, depth + 1);
+            }
+        }
+    };
+    dfs(dfs, q.top().second, -1, 0);
+    cout << res << '\n';
 }
 
 int main() {

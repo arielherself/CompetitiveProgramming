@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,21 +469,51 @@ void dump_ignore() {}
 void prep() {
 }
 
+// __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    if (n % 2 == 0) {
-        cout << -1 << '\n';
-    } else {
-        vector<int> res(n);
-        for (int i = 0; i <= n / 2; ++i) {
-            res[i] = 2 * i + 1;
-        }
-        int x = 0;
-        for (int i = n - 1; i > n / 2; --i) {
-            res[i] = (x += 2);
-        }
-        putvec(res);
+    using mll = MLL<PRIME>;
+
+    read(int, n, k);
+    readvec(int, a, n);
+
+    vector<mll> same(n + 1), diff(n + 1);
+    diff[2] = 1;
+    for (int i = 3; i <= n; ++i) {
+        same[i] = diff[i - 1] * (k - 1);
+        diff[i] = diff[i - 1] * (k - 2) + same[i - 1];
     }
+
+    vector seq(2, vector<int>());
+    for (int i = 0 ;i  < n; ++i) {
+        seq[i % 2].emplace_back(a[i]);
+    }
+    mll res = 1;
+    for (int t = 0; t < 2; ++t) {
+        int m = seq[t].size();
+        if (count(seq[t].begin(), seq[t].end(), -1) == m) {
+            res *= k * qpow<mll>(k - 1, m - 1);
+            continue;
+        }
+        int f = -1;
+        for (int i = 0; i < m; ++i) {
+            if (seq[t][i] == -1) {
+                ;;
+            } else {
+                if (f != -1) {
+                    if (seq[t][f] == seq[t][i]) {
+                        res *= same[i - f + 1];
+                    } else {
+                        res *= diff[i - f + 1];
+                    }
+                } else {
+                    res *= qpow<mll>(k - 1, i);
+                }
+                f = i;
+            }
+        }
+        res *= qpow<mll>(k - 1, m - 1 - f);
+    }
+    cout << res << '\n';
 }
 
 int main() {

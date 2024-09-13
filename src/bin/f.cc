@@ -1,8 +1,3 @@
-#pragma GCC diagnostic ignored "-Wunused-const-variable"
-#pragma GCC diagnostic ignored "-Wreorder"
-#pragma GCC diagnostic ignored "-Wunknown-pragmas"
-#pragma GCC diagnostic ignored "-Wshift-op-parentheses"
-#pragma GCC diagnostic ignored "-Wlogical-op-parentheses"
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
 #pragma GCC optimize("Ofast")
 /************* This code requires C++17. ***************/
@@ -400,9 +395,10 @@ bool chmin(T& lhs, const U& rhs) {
     return ret;
 }
 
-#define functor(func) [&](auto&&... val) \
+#define functor(func) ([&](auto&&... val) \
 noexcept(noexcept(func(std::forward<decltype(val)>(val)...))) -> decltype(auto) \
-{return func(std::forward<decltype(val)>(val)...);}
+{return func(std::forward<decltype(val)>(val)...);})
+#define expr(ret, ...) ([&] (__VA_ARGS__) { return (ret); })
 template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
     std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
 }
@@ -448,17 +444,21 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
 #define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
-template <typename T, size_t N>
-array<T, N> __initarray(const T& init) {
-    array<T, N> res;
-    for (size_t i = 0; i < N; ++i) {
-        res[i] = init;
+namespace detail {
+    template <typename T, std::size_t...Is>
+    constexpr std::array<T, sizeof...(Is)>
+    make_array(const T& value, std::index_sequence<Is...>) {
+        return {{(static_cast<void>(Is), value)...}};
     }
-    return res;
+}
+
+template <typename T, std::size_t N>
+constexpr std::array<T, N> __initarray(const T& value) {
+    return detail::make_array(value, std::make_index_sequence<N>());
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,60 +469,40 @@ void dump_ignore() {}
 void prep() {
 }
 
+// __attribute__((target("popcnt")))
 void solve() {
-    read(int, n, q);
-    readvec(int, a, n);
-
-    auto check = [&a] (int l, int r) {
-        int m = r - l + 1;
-        vector<int> b(a.begin() + l, a.begin() + r + 1);
-        sort(b.begin(), b.end());
-        for (int i = 0; i < m; ++i) {
-            for (int j = 0; j < i; ++j) {
-                if (j + 1 == i) {
-                    if (j - 4 >= 0) {
-                        ll sum = ll(b[j - 1]) + b[j - 2] + b[j - 3] + b[j - 4];
-                        for (int k = j - 4; k <= j - 1; ++k) {
-                            for (int p = k + 1; p <= j - 1; ++p) {
-                                if (b[k] + b[p] > b[j] and sum - b[k] - b[p] > b[i]) {
-                                    return true;
-                                }
-                            }
-                        }
-                    }
-                } else if (j + 2 == i) {
-                    int idx = upper_bound(b.begin(), b.end(), b[i] - b[i - 1]) - b.begin();
-                    if (idx < j and j - 3 >= 0) {
-                        int val_j = b[j - 1] + b[j - 2];
-                        int val_i = b[i - 1] + b[idx];
-                        if (idx == j - 1 or idx == j - 2) {
-                            val_j += b[j - 3] - b[idx];
-                        }
-                        if (val_j > b[j] and val_i > b[i]) {
-                            return true;
-                        }
-                    }
-                } else {
-                    if (b[i - 2] + b[i - 1] > b[i] and j - 2 >= 0 and b[j - 2] + b[j - 1] > b[j]) {
-                        return true;
-                    }
-                }
+    read(int, n, k);
+    vector<vector<pii>> e(n + 1);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v, w);
+        edgew(e, u, v, w);
+    }
+    vector dp(n + 1, vector<ll>(2));
+    auto dfs = [&] (auto dfs, int v, int pa) -> void {
+        vector<ll> cand;
+        ll tot = 0;
+        for (auto&& [u, w] : e[v]) {
+            if (u == pa) continue;
+            dfs(dfs, u, v);
+            tot += dp[u][1];
+            if (dp[u][0] + w > dp[u][1]) {
+                cand.emplace_back(dp[u][0] + w - dp[u][1]);
             }
         }
-        return false;
-    };
-    // debug(check(4, 9));
-
-    while (q--) {
-        read(int, l, r);
-        --l, --r;
-        if (r >= l + 50 or check(l, r)) {
-            // deb(l, res[l]);
-            cout << "YES\n";
-        } else {
-            cout << "NO\n";
+        sort(cand.begin(), cand.end(), greater());
+        int m = cand.size();
+        // k - 1
+        dp[v][0] = dp[v][1] = tot;
+        for (int i = 0; i < min(m, k - 1); ++i) {
+            dp[v][0] += cand[i];
+            dp[v][1] += cand[i];
         }
-    }
+        if (cand.size() >= k) {
+            dp[v][1] += cand[k - 1];
+        }
+    };
+    dfs(dfs, 1, 0);
+    cout << dp[1][1] << '\n';
 }
 
 int main() {

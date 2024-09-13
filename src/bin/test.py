@@ -7,9 +7,10 @@ import io
 PRIME = 998_244_353
 
 if __name__ == '__main__':
-    N = 200000
-    M = 60
-    P = 15
-    print(N, M, P)
-    for i in range(N):
-        print('1' * P + '0' * (M - P))
+    N = 10 ** 6
+    print(N)
+    for _ in range(N):
+        x, y = randint(1, 10 ** 9), randint(1, 10 ** 9)
+        if x > y:
+            x, y = y, x
+        print(x, y)

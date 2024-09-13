@@ -1,8 +1,4 @@
-#pragma GCC diagnostic ignored "-Wunused-const-variable"
-#pragma GCC diagnostic ignored "-Wreorder"
-#pragma GCC diagnostic ignored "-Wunknown-pragmas"
-#pragma GCC diagnostic ignored "-Wshift-op-parentheses"
-#pragma GCC diagnostic ignored "-Wlogical-op-parentheses"
+// #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
 #pragma GCC optimize("Ofast")
 /************* This code requires C++17. ***************/
 
@@ -59,7 +55,7 @@ constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
 
 /* random */
 
-mt19937 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
+mt19937_64 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
 
 /* bit-wise operations */
 #define lowbit(x) ((x) & -(x))
@@ -399,9 +395,10 @@ bool chmin(T& lhs, const U& rhs) {
     return ret;
 }
 
-#define functor(func) [&](auto&&... val) \
+#define functor(func) ([&](auto&&... val) \
 noexcept(noexcept(func(std::forward<decltype(val)>(val)...))) -> decltype(auto) \
-{return func(std::forward<decltype(val)>(val)...);}
+{return func(std::forward<decltype(val)>(val)...);})
+#define expr(ret, ...) ([&] (__VA_ARGS__) { return (ret); })
 template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
     std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
 }
@@ -447,17 +444,21 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
 #define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
-template <typename T, size_t N>
-array<T, N> __initarray(const T& init) {
-    array<T, N> res;
-    for (size_t i = 0; i < N; ++i) {
-        res[i] = init;
+namespace detail {
+    template <typename T, std::size_t...Is>
+    constexpr std::array<T, sizeof...(Is)>
+    make_array(const T& value, std::index_sequence<Is...>) {
+        return {{(static_cast<void>(Is), value)...}};
     }
-    return res;
+}
+
+template <typename T, std::size_t N>
+constexpr std::array<T, N> __initarray(const T& value) {
+    return detail::make_array(value, std::make_index_sequence<N>());
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -468,8 +469,50 @@ void dump_ignore() {}
 void prep() {
 }
 
+// __attribute__((target("popcnt")))
 void solve() {
-    
+    read(int, n);
+    readvec1(int, a, n);
+    adj(ch, n);
+    for (int i = 2; i <= n ;++i) {
+        read(int, j);
+        edge(ch, i, j);
+    }
+    vector<int> sz(n + 1);
+    auto get = [&] (auto get, int v, int pa) -> void {
+        if (v != 1 and ch[v].size() == 1) sz[v] = 1;
+        for (auto&& u: ch[v]) {
+            if (u == pa) continue;
+            get(get, u, v);
+            sz[v] += sz[u];
+        }
+    };
+    get(get, 1, 0);
+    auto dfs = [&] (auto dfs, int v, int pa) -> int {
+        if (v != 1 and ch[v].size() == 1) {
+            return 1;
+        }
+        if (a[v]) {
+            // max
+            int res = INF;
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                chmin(res, sz[u] - dfs(dfs, u, v));
+            }
+            // deb(v, sz[v] - res);
+            return sz[v] - res;
+        } else {
+            // min
+            int need = 0;
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                need += sz[u] - dfs(dfs, u, v) + 1;
+            }
+            // deb(v, sz[v] - need + 1);
+            return sz[v] - need + 1;
+        }
+    };
+    cout << dfs(dfs, 1, 0) << '\n';
 }
 
 int main() {

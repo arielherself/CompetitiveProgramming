@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,31 +469,16 @@ void dump_ignore() {}
 void prep() {
 }
 
+// __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
-    vector<bool> vis(n + 1);
-    vector<pii> edges;
-    for (int i = 2; i <= n; ++i) {
-        if (not vis[i]) {
-            vis[i] = 1;
-            int j = 1;
-            while (1) {
-                cout << "? " << j << ' ' << i << endl;
-                read(int, k);
-                if (k == j) {
-                    edges.emplace_back(i, j);
-                    break;
-                } else {
-                    j = k;
-                }
-            }
-        }
+    readvec(int, a, n);
+    int x = *min_element(a.begin(), a.end());
+    if (count(a.begin(), a.end(), x) <= n / 2) {
+        cout << "Alice\n";
+    } else {
+        cout << "Bob\n";
     }
-    cout << "! ";
-    for (auto&& [u, v] : edges) {
-        cout << u << ' ' << v << ' ';
-    }
-    cout << endl;
 }
 
 int main() {
