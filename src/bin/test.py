@@ -7,10 +7,8 @@ import io
 PRIME = 998_244_353
 
 if __name__ == '__main__':
-    N = 10 ** 6
-    print(N)
-    for _ in range(N):
-        x, y = randint(1, 10 ** 9), randint(1, 10 ** 9)
-        if x > y:
-            x, y = y, x
-        print(x, y)
+    N = 400000
+    M = 200000
+    print(N, M)
+    print('64 ' * N)
+    print(f'TOTIENT 1 {N} ' * M)

@@ -68,30 +68,6 @@ mt19937_64 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::
 #define mod(x, y) ((((x) % (y)) + (y)) % (y))
 
 /* fast pairs */
-#define upair ull
-#define umake(x, y) (ull(x) << 32 | (ull(y) & ((1ULL << 32) - 1)))
-#define u1(p) ((p) >> 32)
-#define u2(p) ((p) & ((1ULL << 32) - 1))
-#define ult std::less<upair>
-#define ugt std::greater<upair>
-
-#define ipair ull
-#define imake(x, y) (umake(x, y))
-#define i1(p) (int(u1(ll(p))))
-#define i2(p) (ll(u2(p) << 32) >> 32)
-struct ilt {
-    bool operator()(const ipair& a, const ipair& b) const {
-        if (i1(a) == i1(b)) return i2(a) < i2(b);
-        else return i1(a) < i1(b);
-    }
-};
-struct igt {
-    bool operator()(const ipair& a, const ipair& b) const {
-        if (i1(a) == i1(b)) return i2(a) > i2(b);
-        else return i1(a) > i1(b);
-    }
-};
-
 /* conditions */
 #define loop while (1)
 #define if_or(var, val) if (!(var == val)) var = val; else
@@ -115,35 +91,6 @@ struct safe_hash {
     }
 };
 
-struct pair_hash {
-    template <typename T, typename U>
-    size_t operator()(const pair<T, U>& a) const {
-        auto hash1 = safe_hash()(a.first);
-        auto hash2 = safe_hash()(a.second);
-        if (hash1 != hash2) {
-            return hash1 ^ hash2;
-        }
-        return hash1;
-    }
-};
-
-uniform_int_distribution<mt19937::result_type> dist(PRIME);
-const size_t __array_hash_b = 31, __array_hash_mdl1 = dist(rd), __array_hash_mdl2 = dist(rd);
-struct array_hash {
-    template <typename Sequence>
-    size_t operator()(const Sequence& arr) const {
-        size_t pw1 = 1, pw2 = 1;
-        size_t res1 = 0, res2 = 0;
-        for (auto&& x : arr) {
-            res1 = (res1 + x * pw1) % __array_hash_mdl1;
-            res2 = (res2 + x * pw2) % __array_hash_mdl2;
-            pw1 = (pw1 * __array_hash_b) % __array_hash_mdl1;
-            pw2 = (pw2 * __array_hash_b) % __array_hash_mdl2;
-        }
-        return res1 + res2;
-    }
-};
-
 /* build data structures */
 #define faster(um) __AS_PROCEDURE((um).reserve(1024); (um).max_load_factor(0.25);)
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
@@ -155,20 +102,6 @@ struct array_hash {
 #define edgew(ch, u, v, ...) __AS_PROCEDURE(ch[u].emplace_back(v, __VA_ARGS__), ch[v].emplace_back(u, __VA_ARGS__);)
 #define Edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v);)
 #define Edgew(ch, u, v, ...) __AS_PROCEDURE(ch[u].emplace_back(v, __VA_ARGS__);)
-template <typename T, typename Iterator> pair<size_t, map<T, size_t>> discretize(Iterator __first, Iterator __last) {
-    set<T> st(__first, __last);
-    size_t N = 0;
-    map<T, size_t> mp;
-    for (auto&& x : st) mp[x] = ++N;
-    return {N, mp};
-}
-template <typename T, typename Iterator> pair<size_t, unordered_map<T, size_t, safe_hash>> unordered_discretize(Iterator __first, Iterator __last) {
-    set<T> st(__first, __last);
-    size_t N = 0;
-    unordered_map<T, size_t, safe_hash> mp;
-    for (auto&& x : st) mp[x] = ++N;
-    return {N, mp};
-}
 
 /* io */
 #define untie __AS_PROCEDURE(ios_base::sync_with_stdio(0), cin.tie(NULL))
@@ -236,146 +169,8 @@ template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __
 #define popfront(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.front();q.pop_front();)
 
 /* math */
-template <typename return_t>
-return_t qpow(ll b, ll p) {
-    if (b == 0 and p != 0) return 0;
-    if (p == 0) return 1;
-    return_t half = qpow<return_t>(b, p / 2);
-    if (p % 2 == 1) return half * half * b;
-    else return half * half;
-}
-
-#define comb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] / fact[k] / fact[(n) - (k)])
-#define fastcomb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] * factrev[k] * factrev[(n) - (k)])
-
-constexpr inline int lg2(ll x) { return x == 0 ? -1 : sizeof(ll) * 8 - 1 - __builtin_clzll(x); }
-
-void __exgcd(ll a, ll b, ll& x, ll& y) {
-  if (b == 0) {
-    x = 1, y = 0;
-    return;
-  }
-  __exgcd(b, a % b, y, x);
-  y -= a / b * x;
-}
-
-ll inverse(ll a, ll b) {
-    ll x, y;
-    __exgcd(a, b, x, y);
-    return mod(x, b);
-}
-
-vector<tuple<int, int, ll>> decompose(ll x) {
-    // return (factor, count, factor ** count)
-    vector<tuple<int, int, ll>> res;
-    for (int i = 2; i * i <= x; i++) {
-        if (x % i == 0) {
-            int cnt = 0;
-            ll pw = 1;
-            while (x % i == 0) ++cnt, x /= i, pw *= i;
-            res.emplace_back(i, cnt, pw);
-        }
-    }
-    if (x != 1) {
-        res.emplace_back(x, 1, x);
-    }
-    return res;
-}
-
-vector<pii> decompose_prime(int N) {
-    // return (factor, count)
-    vector<pii> result;
-    for (int i = 2; i * i <= N; i++) {
-        if (N % i == 0) {
-            int cnt = 0;
-            while (N % i == 0) N /= i, ++cnt;
-            result.emplace_back(i, cnt);
-        }
-    }
-    if (N != 1) {
-        result.emplace_back(N, 1);
-    }
-    return result;
-}
 
 /* string algorithms */
-vector<int> calc_next(string t) {  // pi function of t
-  int n = (int)t.length();
-  vector<int> pi(n);
-  for (int i = 1; i < n; i++) {
-    int j = pi[i - 1];
-    while (j > 0 && t[i] != t[j]) j = pi[j - 1];
-    if (t[i] == t[j]) j++;
-    pi[i] = j;
-  }
-  return pi;
-}
-vector<int> calc_z(string t) {  // z function of t
-    int m = t.length();
-    vector<int> z;
-    z.push_back(m);
-    pair<int, int> prev = {1, -1};
-    for (int i = 1; i < m; ++i) {
-        if (z[i - prev.first] + i <= prev.second) {
-            z.push_back(z[i - prev.first]);
-        } else {
-            int j = max(i, prev.second + 1);
-            while (j < m && t[j] == t[j - i]) ++j;
-            z.push_back(j - i);
-            prev = {i, j - 1};
-        }
-    }
-    return z;
-}
-vector<int> kmp(string s, string t) {  // find all t in s
-  string cur = t + '#' + s;
-  int sz1 = s.size(), sz2 = t.size();
-  vector<int> v;
-  vector<int> lps = calc_next(cur);
-  for (int i = sz2 + 1; i <= sz1 + sz2; i++) {
-    if (lps[i] == sz2) v.push_back(i - 2 * sz2);
-  }
-  return v;
-}
-int period(string s) {  // find the length of shortest recurring period
-    int n = s.length();
-    auto z = calc_z(s);
-    for (int i = 1; i <= n / 2; ++i) {
-        if (n % i == 0 && z[i] == n - i) {
-            return i;
-        }
-    }
-    return n;
-}
-
-/* modular arithmetic */
-template <ll mdl> struct MLL {
-    ll val;
-    MLL(ll v = 0) : val(mod(v, mdl)) {}
-    MLL(const MLL<mdl>& other) : val(other.val) {}
-    friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
-    friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
-    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
-    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
-    friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
-    friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
-    friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
-    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
-    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
-    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
-    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
-    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
-};
-
-template <ll mdl>
-ostream& operator<<(ostream& out, const MLL<mdl>& num) {
-    return out << num.val;
-}
-
-template <ll mdl>
-istream& operator>>(istream& in, MLL<mdl>& num) {
-    return in >> num.val;
-}
 
 // miscancellous
 template <typename T, typename U>
@@ -395,70 +190,9 @@ bool chmin(T& lhs, const U& rhs) {
     return ret;
 }
 
-#define functor(func) ([&](auto&&... val) \
-noexcept(noexcept(func(std::forward<decltype(val)>(val)...))) -> decltype(auto) \
-{return func(std::forward<decltype(val)>(val)...);})
-#define expr(ret, ...) ([&] (__VA_ARGS__) { return (ret); })
-template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
-    std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
-}
-template <typename Func, typename RandomIt, typename Compare> void sort_by_key(RandomIt first, RandomIt last, Func extractor, Compare comp) {
-    std::sort(first, last, [&] (auto&& a, auto&& b) { return comp(extractor(a), extractor(b)); });
-}
-template <typename T, typename U, typename Iterator_T, typename Iterator_U>
-vector<pair<T, U>> zip(Iterator_T a_first, Iterator_T a_last, Iterator_U b_first, Iterator_U b_last) {
-    vector<pair<T, U>> res;
-    auto a_it = a_first;
-    auto b_it = b_first;
-    for (; not (a_it == a_last) and not (b_it == b_last); ++a_it, ++b_it) {
-        res.emplace_back(*a_it, *b_it);
-    }
-    return res;
-}
-template <typename T, typename U, typename Iterator_T, typename Iterator_U>
-vector<pair<T, U>> zip_n(Iterator_T a_first, Iterator_U b_first, size_t n) {
-    vector<pair<T, U>> res;
-    if (n > 0) {
-        res.emplace_back(*a_first, *b_first);
-        for (size_t i = 1; i != n; ++i) {
-            res.emplace_back(*++a_first, *++b_first);
-        }
-    }
-    return res;
-}
-template <typename T>
-class ArithmeticIterator : bidirectional_iterator_tag {
-public:
-    using difference_type = ptrdiff_t;
-    using value_type = T;
-private:
-    value_type value;
-public:
-    ArithmeticIterator(const T& value) : value(value) {}
-    value_type operator*() const { return value; }
-    ArithmeticIterator<T>& operator++() { ++value; return *this; }
-    ArithmeticIterator<T>& operator--() { --value; return *this; }
-    bool operator==(const ArithmeticIterator<T>& rhs) const { return value == rhs.value; }
-};
-template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container) {
-    return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
-}
-#define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
-namespace detail {
-    template <typename T, std::size_t...Is>
-    constexpr std::array<T, sizeof...(Is)>
-    make_array(const T& value, std::index_sequence<Is...>) {
-        return {{(static_cast<void>(Is), value)...}};
-    }
-}
-
-template <typename T, std::size_t N>
-constexpr std::array<T, N> __initarray(const T& value) {
-    return detail::make_array(value, std::make_index_sequence<N>());
-}
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,14 +203,49 @@ void dump_ignore() {}
 void prep() {
 }
 
+struct Tag {
+    int val;
+    Tag() : val(INF) {}
+    Tag(int val) : val(val) {}
+    void apply(const Tag& rhs) {
+        chmin(val, rhs.val);
+    }
+};
+struct Info {
+    int val;
+    Info() : val(INF) {}
+    Info(int val) : val(val) {}
+    void apply(const Tag& rhs, size_t len) {
+        chmin(val, rhs.val);
+    }
+};
+Info operator+(const Info &a, const Info &b) {
+    return {min(a.val, b.val)};
+}
+
+struct node_info {
+    int father, depth, hson, size, head, dfn;
+};
+
+constexpr int N = 1e6 + 10;
+int st[N], cnt[N], dp[N], to[N], seq[N];
+int sz[N];
+int dfn[N];
+int depth[N];
+Info d[N << 2];
+Tag b[N << 2];
+vector<int> ch[N];
+int idx[N];
+int n;
+int st_sz;
+int seq_sz;
+
 template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
 private:
     using size_type = uint64_t;
     using info_type = Addable_Info_t;
     using tag_type = Tag_t;
     size_type _max;
-    vector<info_type> d;
-    vector<tag_type> b;
     void pull(size_type p) {
         d[p] = d[p * 2] + d[p * 2 + 1];
     }
@@ -496,7 +265,7 @@ private:
         else set(m + 1, t, p * 2 + 1, x, c);
         pull(p);
     }
-    
+
     void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
         if (l <= s && t <= r) {
             d[p].apply(c, t - s + 1);
@@ -531,14 +300,14 @@ private:
         pull(p);
     }
 public:
-    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+    segtree(size_type __max) : _max(__max - 1) {}
     segtree(const Sequence& a) : segtree(a.size()) {
         build(a, {}, _max, 1);
     }
     void set(size_type i, const info_type& c) {
         set({}, _max, 1, i, c);
     }
-    
+
     void range_apply(size_type l, size_type r, const tag_type& c) {
         range_apply({}, _max, 1, l, r, c);
     }
@@ -562,60 +331,79 @@ public:
         return d;
     }
 };
-struct Tag {
-    void apply(const Tag& rhs) { }
-};
-struct Info {
-    int val = 0;
-    void apply(const Tag& rhs, size_t len) { }
-};
-Info operator+(const Info &a, const Info &b) {
-    return {a.val + b.val};
+
+int k;
+int t;
+
+void dfs0(int v, int pa) {
+    dfn[v] = t++;
+    seq[seq_sz++] = v;
+    depth[v] = depth[pa] + 1;
+    sz[v] = 1;
+    for (auto&& u : ch[v]) {
+        if (u == pa) continue;
+        dfs0(u, v);
+        sz[v] += sz[u];
+    }
+}
+
+void dfs1(int v, int pa) {
+    st[st_sz++] = v;
+    to[v] = st[max(0, st_sz - 1 - k)];
+    for (auto&& u : ch[v]) {
+        if (u == pa) continue;
+        dfs1(u, v);
+    }
+    --st_sz;
+}
+
+void dfs2(int v, int pa) {
+    for (auto&& u : ch[v]) {
+        if (u == pa) continue;
+        dfs2(u, v);
+    }
+    int m = cnt[v];
+    for (auto&& u : ch[v]) {
+        if (u == pa) continue;
+        chmax(dp[v], dp[u] + m);
+    }
 }
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, l, n, m);
-    readvec(int, a, l);
-    vector b(n, vector<int>(m));
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < m; ++j) {
-            cin >> b[i][j];
-        }
+    cin >> n >> k;
+    for (int i = 2; i <= n; ++i) {
+        read(int, j);
+        edge(ch, i, j);
     }
-    vector cnt(l + 1, vector(n + 1, vector<int>(m + 1)));
-    for (int i = n - 1; ~i; --i) {
-        for (int j = m - 1; ~j; --j) {
-            for (int k = 0; k < l; ++k) {
-                cnt[k][i][j] = cnt[k][i + 1][j] + cnt[k][i][j + 1] - cnt[k][i + 1][j + 1];
-                if (b[i][j] == a[k]) {
-                    cnt[k][i][j] += 1;
-                }
-            }
+
+    dfs0(1, 0);
+
+    iota(idx, idx + n, 1);
+    sort(idx, idx + n, [&] (int i, int j) {
+        return depth[i] < depth[j];
+    });
+
+    dfs1(1, 0);
+
+    segtree<Info, Tag> tr(n);
+
+    for (int i = 0; i < n; ++i) {
+        int v = idx[i];
+        tr.apply(dfn[v], { dfn[v] });
+        if (ch[v].size() == 1 and v != 1) {
+            // `v` is a leaf
+            int u = to[v];
+            // deb(i, v, to, u);
+            int back = tr.range_query(dfn[u], dfn[u] + sz[u] - 1).val;
+            tr.apply(dfn[v], { back });
+            cnt[seq[back]] += 1;
         }
     }
 
-    vector ss(l + 1, vector(n + 1, vector<int>(m + 1)));
-    for (int i = 0; i < l; ++i) {
-        if (b[n - 1][m - 1] == a[i]) {
-            ss[i][n - 1][m - 1] = 1;
-        }
-    }
-    for (int i = n - 1; ~i; --i) {
-        for (int j = m - 1; ~j; --j) {
-            if (i == n - 1 and j == m - 1) continue;
-            for (int k = 0; k < l; ++k) {
-                int curr = 0;
-                if (b[i][j] == a[k]) {
-                    if (i + 1 >= n or j + 1 >= m or ss[k + 1][i + 1][j + 1] == 0) {
-                        curr = 1;
-                    }
-                }
-                ss[k][i][j] = curr + ss[k][i + 1][j] + ss[k][i][j + 1] - ss[k][i + 1][j + 1];
-            }
-        }
-    }
-    cout << (ss[0][0][0] ? 'T' : 'N') << '\n';
+    dfs2(1, 0);
+
+    cout << dp[1] << '\n';
 }
 
 int main() {

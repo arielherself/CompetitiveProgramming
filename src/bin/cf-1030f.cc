@@ -1,10 +1,6 @@
+// #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
 #pragma GCC optimize("Ofast")
-/////////////////////////////////////////////////////////
-/**
- * Useful Macros
- *   by subcrip
- * (requires C++17)
- */
+/************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
 using namespace std;
@@ -24,47 +20,22 @@ using ull = uint64_t;
 #else
 using ll = long long;
 using ull = unsigned long long;
-using ld = long double;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
 using ld = long double;
-using pii = pair<int, int>;
-using pil = pair<int, ll>;
-using pli = pair<ll, int>;
-using pll = pair<ll, ll>;
-using pid = pair<int, ld>;
-using pdi = pair<ld, int>;
-using pld = pair<ll, ld>;
-using pdl = pair<ld, ll>;
-using pdd = pair<ld, ld>;
-using tlll = tuple<ll, ll, ll>;
-using tlld = tuple<ll, ll, ld>;
-using tlli = tuple<ll, ll, int>;
-using tldl = tuple<ll, ld, ll>;
-using tldd = tuple<ll, ld, ld>;
-using tldi = tuple<ll, ld, int>;
-using tlil = tuple<ll, int, ll>;
-using tlid = tuple<ll, int, ld>;
-using tlii = tuple<ll, int, int>;
-using tdll = tuple<ld, ll, ll>;
-using tdld = tuple<ld, ll, ld>;
-using tdli = tuple<ld, ll, int>;
-using tddl = tuple<ld, ld, ll>;
-using tddd = tuple<ld, ld, ld>;
-using tddi = tuple<ld, ld, int>;
-using tdil = tuple<ld, int, ll>;
-using tdid = tuple<ld, int, ld>;
-using tdii = tuple<ld, int, int>;
-using till = tuple<int, ll, ll>;
-using tild = tuple<int, ll, ld>;
-using tili = tuple<int, ll, int>;
-using tidl = tuple<int, ld, ll>;
-using tidd = tuple<int, ld, ld>;
-using tidi = tuple<int, ld, int>;
-using tiil = tuple<int, int, ll>;
-using tiid = tuple<int, int, ld>;
-using tiii = tuple<int, int, int>;
+using pii = pair<int, int>;           using pil = pair<int, ll>;           using pid = pair<int, ld>;
+using pli = pair<ll, int>;            using pll = pair<ll, ll>;            using pld = pair<ll, ld>;
+using pdi = pair<ld, int>;            using pdl = pair<ld, ll>;            using pdd = pair<ld, ld>;
+using tiii = tuple<int, int, int>;    using tiil = tuple<int, int, ll>;    using tiid = tuple<int, int, ld>;
+using tili = tuple<int, ll, int>;     using till = tuple<int, ll, ll>;     using tild = tuple<int, ll, ld>;
+using tidi = tuple<int, ld, int>;     using tidl = tuple<int, ld, ll>;     using tidd = tuple<int, ld, ld>;
+using tlii = tuple<ll, int, int>;     using tlil = tuple<ll, int, ll>;     using tlid = tuple<ll, int, ld>;
+using tlli = tuple<ll, ll, int>;      using tlll = tuple<ll, ll, ll>;      using tlld = tuple<ll, ll, ld>;
+using tldi = tuple<ll, ld, int>;      using tldl = tuple<ll, ld, ll>;      using tldd = tuple<ll, ld, ld>;
+using tdii = tuple<ld, int, int>;     using tdil = tuple<ld, int, ll>;     using tdid = tuple<ld, int, ld>;
+using tdli = tuple<ld, ll, int>;      using tdll = tuple<ld, ll, ll>;      using tdld = tuple<ld, ll, ld>;
+using tddi = tuple<ld, ld, int>;      using tddl = tuple<ld, ld, ll>;      using tddd = tuple<ld, ld, ld>;
 template <typename T> using max_heap = priority_queue<T>;
 template <typename T> using min_heap = priority_queue<T, vector<T>, greater<>>;
 template <typename T> using oi = ostream_iterator<T>;
@@ -84,7 +55,7 @@ constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
 
 /* random */
 
-mt19937 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
+mt19937_64 rd(chrono::duration_cast<chrono::milliseconds>(chrono::system_clock::now().time_since_epoch()).count());
 
 /* bit-wise operations */
 #define lowbit(x) ((x) & -(x))
@@ -174,15 +145,16 @@ struct array_hash {
 };
 
 /* build data structures */
+#define faster(um) __AS_PROCEDURE((um).reserve(1024); (um).max_load_factor(0.25);)
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
 #define pa(a) __AS_PROCEDURE(__typeof(a) pa; pa.push_back({}); for (auto&&x : a) pa.push_back(pa.back() + x);)
 #define sa(a) __AS_PROCEDURE(__typeof(a) sa(a.size() + 1); {int n = a.size(); for (int i = n - 1; i >= 0; --i) sa[i] = sa[i + 1] + a[i];};)
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
-#define edgew(ch, u, v, w) __AS_PROCEDURE(ch[u].emplace_back(v, w), ch[v].emplace_back(u, w);)
+#define edgew(ch, u, v, ...) __AS_PROCEDURE(ch[u].emplace_back(v, __VA_ARGS__), ch[v].emplace_back(u, __VA_ARGS__);)
 #define Edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v);)
-#define Edgew(ch, u, v, w) __AS_PROCEDURE(ch[u].emplace_back(v, w);)
+#define Edgew(ch, u, v, ...) __AS_PROCEDURE(ch[u].emplace_back(v, __VA_ARGS__);)
 template <typename T, typename Iterator> pair<size_t, map<T, size_t>> discretize(Iterator __first, Iterator __last) {
     set<T> st(__first, __last);
     size_t N = 0;
@@ -200,17 +172,6 @@ template <typename T, typename Iterator> pair<size_t, unordered_map<T, size_t, s
 
 /* io */
 #define untie __AS_PROCEDURE(ios_base::sync_with_stdio(0), cin.tie(NULL))
-template<typename T> void __read(T& x) { cin >> x; }
-template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __read(args...); }
-#define read(type, ...) __AS_PROCEDURE(type __VA_ARGS__; __read(__VA_ARGS__);)
-#define readvec(type, a, n) __AS_PROCEDURE(vector<type> a(n); for (auto& x : a) cin >> x;)
-#define readvec1(type, a, n) __AS_PROCEDURE(vector<type> a((n) + 1); copy_n(ii<type>(cin), (n), a.begin() + 1);)
-#define putvec(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
-#define putvec1(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
-#define putvec_eol(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
-#define putvec1_eol(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
-#define debug(x) __AS_PROCEDURE(cerr << #x" = " << (x) << endl;)
-#define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : a) cerr << x << ' '; cerr << endl;)
 template<typename T, typename U> istream& operator>>(istream& in, pair<T, U>& p) {
     return in >> p.first >> p.second;
 }
@@ -256,6 +217,18 @@ std::ostream& operator<<(std::ostream& dest, const int128& value) {
     }
     return dest;
 }
+template<typename T> void __read(T& x) { cin >> x; }
+template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __read(args...); }
+#define read(type, ...) __AS_PROCEDURE(type __VA_ARGS__; __read(__VA_ARGS__);)
+#define readvec(type, a, n) __AS_PROCEDURE(vector<type> a(n); for (auto& x : a) cin >> x;)
+#define readvec1(type, a, n) __AS_PROCEDURE(vector<type> a((n) + 1); copy_n(ii<type>(cin), (n), a.begin() + 1);)
+#define putvec(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
+#define putvec1(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
+#define putvec_eol(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
+#define putvec1_eol(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
+#define debug(x) __AS_PROCEDURE(cerr << #x" = " << (x) << endl;)
+#define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : a) cerr << x << ' '; cerr << endl;)
+#define deb(...) debug(make_tuple(__VA_ARGS__))
 
 /* pops */
 #define poptop(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.top(); q.pop();)
@@ -263,6 +236,18 @@ std::ostream& operator<<(std::ostream& dest, const int128& value) {
 #define popfront(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.front();q.pop_front();)
 
 /* math */
+template <typename return_t>
+return_t qpow(ll b, ll p) {
+    if (b == 0 and p != 0) return 0;
+    if (p == 0) return 1;
+    return_t half = qpow<return_t>(b, p / 2);
+    if (p % 2 == 1) return half * half * b;
+    else return half * half;
+}
+
+#define comb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] / fact[k] / fact[(n) - (k)])
+#define fastcomb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] * factrev[k] * factrev[(n) - (k)])
+
 constexpr inline int lg2(ll x) { return x == 0 ? -1 : sizeof(ll) * 8 - 1 - __builtin_clzll(x); }
 
 void __exgcd(ll a, ll b, ll& x, ll& y) {
@@ -381,30 +366,9 @@ template <ll mdl> struct MLL {
     void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
     void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
 };
-struct MLLd {
-    ll val, mdl;
-    MLLd(ll mdl, ll v = 0) : mdl(mdl), val(mod(v, mdl)) {}
-    MLLd(const MLLd& other) : val(other.val) {}
-    friend MLLd operator+(const MLLd& lhs, const MLLd& rhs) { return mod(lhs.val + rhs.val, lhs.mdl); }
-    friend MLLd operator-(const MLLd& lhs, const MLLd& rhs) { return mod(lhs.val - rhs.val, lhs.mdl); }
-    friend MLLd operator*(const MLLd& lhs, const MLLd& rhs) { return mod(lhs.val * rhs.val, lhs.mdl); }
-    friend MLLd operator/(const MLLd& lhs, const MLLd& rhs) { return mod(lhs.val * mod(inverse(rhs.val, lhs.mdl), lhs.mdl), lhs.mdl); }
-    friend MLLd operator%(const MLLd& lhs, const MLLd& rhs) { return mod(lhs.val - (lhs / rhs).val, lhs.mdl); }
-    friend bool operator==(const MLLd& lhs, const MLLd& rhs) { return lhs.val == rhs.val; }
-    friend bool operator!=(const MLLd& lhs, const MLLd& rhs) { return lhs.val != rhs.val; }
-    void operator+=(const MLLd& rhs) { val = (*this + rhs).val; }
-    void operator-=(const MLLd& rhs) { val = (*this - rhs).val; }
-    void operator*=(const MLLd& rhs) { val = (*this * rhs).val; }
-    void operator/=(const MLLd& rhs) { val = (*this / rhs).val; }
-    void operator%=(const MLLd& rhs) { val = (*this % rhs).val; }
-};
 
 template <ll mdl>
 ostream& operator<<(ostream& out, const MLL<mdl>& num) {
-    return out << num.val;
-}
-
-ostream& operator<<(ostream& out, const MLLd& num) {
     return out << num.val;
 }
 
@@ -413,11 +377,28 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
     return in >> num.val;
 }
 
-istream& operator>>(istream& in, MLLd& num) {
-    return in >> num.val;
+// miscancellous
+template <typename T, typename U>
+bool chmax(T& lhs, const U& rhs) {
+    bool ret = lhs < rhs;
+    if (ret) {
+        lhs = rhs;
+    }
+    return ret;
+}
+template <typename T, typename U>
+bool chmin(T& lhs, const U& rhs) {
+    bool ret = lhs > rhs;
+    if (ret) {
+        lhs = rhs;
+    }
+    return ret;
 }
 
-// miscancellous
+#define functor(func) ([&](auto&&... val) \
+noexcept(noexcept(func(std::forward<decltype(val)>(val)...))) -> decltype(auto) \
+{return func(std::forward<decltype(val)>(val)...);})
+#define expr(ret, ...) ([&] (__VA_ARGS__) { return (ret); })
 template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
     std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
 }
@@ -462,7 +443,20 @@ public:
 template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container) {
     return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
 }
-/////////////////////////////////////////////////////////
+#define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
+namespace detail {
+    template <typename T, std::size_t...Is>
+    constexpr std::array<T, sizeof...(Is)>
+    make_array(const T& value, std::index_sequence<Is...>) {
+        return {{(static_cast<void>(Is), value)...}};
+    }
+}
+
+template <typename T, std::size_t N>
+constexpr std::array<T, N> __initarray(const T& value) {
+    return detail::make_array(value, std::make_index_sequence<N>());
+}
+/*******************************************************/
 
 #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
@@ -475,211 +469,173 @@ void dump_ignore() {}
 void prep() {
 }
 
-struct mcmf {
-    struct edge {
-        int to;
-        ll cap;
-        ll flow;
-        ll cost;
-        int rev;
-        int mark;
-    };
-    vector<vector<edge>> edges;
-    vector<ll> dis;
-    vector<bool> vis;
-    ll ret;
-    mcmf(int n) : edges(n + 1), dis(n + 1), vis(n + 1) {}
-    void add_edge(int from, int to, ll cap, ll cost, int mark = 0, int mark_rev = 0) {
-        edges[from].push_back({ to, cap, 0, cost, int(edges[to].size()), mark });
-        edges[to].push_back({ from, 0, 0, -cost, int(edges[from].size() - 1), mark_rev });
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+    using size_type = uint64_t;
+    using info_type = Addable_Info_t;
+    using tag_type = Tag_t;
+    size_type _max;
+    vector<info_type> d;
+    vector<tag_type> b;
+    void pull(size_type p) {
+        d[p] = d[p * 2] + d[p * 2 + 1];
     }
-    bool sp(int s, int t) {
-        dis.assign(edges.size(), INFLL);
-        dis[s] = 0;
-        int n = edges.size();
-        int f = 1;
-        while (f) {
-            f = 0;
-            for (int i = 0; i < n; ++i) {
-                for (auto&& [to, cap, flow, cost, rev, mark] : edges[i]) {
-                    if (cap > flow and dis[to] > dis[i] + cost) {
-                        dis[to] = dis[i] + cost;
-                        f = 1;
-                    }
-                }
-            }
-        }
-        return dis[t] != INFLL;
+    void push(size_type p, size_type left_len, size_type right_len) {
+        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
+        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+        b[p] = tag_type();
     }
-    ll dfs(int s, int t, ll cap) {
-        if (vis[s]) {
-            return 0;
-        }
-        vis[s] = 1;
+    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
         if (s == t) {
-            return cap;
+            d[p] = c;
+            return;
         }
-        ll res = 0;
-        int n = edges[s].size();
-        for (int i = 0; i < n; ++i) {
-            auto e = edges[s][i];
-            if (e.cap > e.flow and dis[e.to] == dis[s] + e.cost) {
-                ll nw = dfs(e.to, t, min(cap - res, e.cap - e.flow));
-                edges[s][i].flow += nw;
-                edges[e.to][e.rev].flow -= nw;
-                res += nw;
-                ret += nw * e.cost;
-                if (res == cap) {
-                    return res;
-                }
-            }
+        size_type m = s + (t - s >> 1);
+        if (s != t) push(p, m - s + 1, t - m);
+        if (x <= m) set(s, m, p * 2, x, c);
+        else set(m + 1, t, p * 2 + 1, x, c);
+        pull(p);
+    }
+
+    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+        if (l <= s && t <= r) {
+            d[p].apply(c, t - s + 1);
+            b[p].apply(c);
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        push(p, m - s + 1, t - m);
+        if (l <= m) range_apply(s, m, p * 2, l, r, c);
+        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
+        pull(p);
+    }
+    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+        if (l <= s && t <= r) {
+            return d[p];
+        }
+        size_type m = s + (t - s >> 1);
+        info_type res = {};
+        push(p, m - s + 1, t - m);
+        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+        return res;
+    }
+    void build(const Sequence& a, size_type s, size_type t, size_type p) {
+        if (s == t) {
+            d[p] = a[s];
+            return;
+        }
+        int m = s + (t - s >> 1);
+        build(a, s, m, p * 2);
+        build(a, m + 1, t, p * 2 + 1);
+        pull(p);
+    }
+public:
+    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+    segtree(const Sequence& a) : segtree(a.size()) {
+        build(a, {}, _max, 1);
+    }
+    void set(size_type i, const info_type& c) {
+        set({}, _max, 1, i, c);
+    }
+
+    void range_apply(size_type l, size_type r, const tag_type& c) {
+        range_apply({}, _max, 1, l, r, c);
+    }
+    void apply(size_type i, const tag_type& c) {
+        range_apply(i, i, c);
+    }
+    info_type range_query(size_type l, size_type r) {
+        return range_query({}, _max, 1, l, r);
+    }
+    info_type query(size_type i) {
+        return range_query(i, i);
+    }
+    Sequence serialize() {
+        Sequence res = {};
+        for (size_type i = 0; i <= _max; ++i) {
+            res.push_back(query(i));
         }
         return res;
     }
-    // returns: (flow, cost)
-    pll run(int s, int t) {
-        ll res = 0; ret = 0;
-        while (sp(s, t)) {
-            vis.assign(edges.size(), 0);
-            ll curr = dfs(s, t, LLONG_MAX);
-            res += curr;
-        }
-        return { res, ret };
+    const vector<info_type>& get_d() {
+        return d;
     }
 };
-
-struct bounded_mcmf {
-    int n, m, S, T;
-    mcmf net;
-    ll sum, pre;
-    vector<ll> fl;
-    vector<ll> init;
-    vector<ll> costs;
-    bounded_mcmf(int n, int m) : sum(0), pre(0), n(n), m(m), S(0), T(n + 1), net(n + 1), fl(m), init(n + 1), costs(m) {}
-    // handle negative loop case
-    void add_edge(int from, int to, ll low, ll high, ll cost, int edge_id = -1) {
-        if (cost < 0) {
-            __add_edge(from, to, high, high, cost, -1);
-            __add_edge(to, from, 0, high - low, -cost, edge_id);
-        } else {
-            __add_edge(from, to, low, high, cost, edge_id);
-        }
-        if (edge_id != -1) {
-            costs[edge_id] = cost;
-            if (cost < 0) {
-                fl[edge_id] += high;  // RealFlow = UpperBound - Flow
-            } else {
-                fl[edge_id] += low;   // RealFlow = LowerBound + Flow
-            }
-        }
-    }
-    void __add_edge(int from, int to, ll low, ll high, ll cost, int edge_id = -1) {
-        net.add_edge(from, to, high - low, cost, edge_id, -1);
-        init[to] += low, init[from] -= low;
-        pre += low * cost;
-    }
-    void prep(int s, int t) {
-        for (int i = 1; i <= n; ++i) {
-            if (init[i] > 0) {
-                net.add_edge(S, i, init[i], 0, -1, -1);
-                sum += init[i];
-            } else if (init[i] < 0) {
-                net.add_edge(i, T, -init[i], 0, -1, -1);
-            }
-        }
-        net.add_edge(t, s, INFLL, 0, -1, -1);
-    }
-    // min-cost max-flow
-    optional<tuple<ll, ll, vector<ll>>> run_mcmf(int s, int t) {  // BUG: unchecked code
-        prep(s, t);
-        if (sum != net.run(S, T).first) {
-            return nullopt;
-        } else {
-            auto [res_flow, res_cost] = net.run(s, t);
-            for (int from = 1; from <= n; ++from) {
-                for (auto&& [to, cap, flow, cost, rev, mark] : net.edges[from]) {
-                    if (mark != -1) {
-                        if (costs[mark] < 0) {
-                            fl[mark] -= flow;
-                        } else {
-                            fl[mark] += flow;
-                        }
-                    }
-                }
-            }
-            return {{res_flow, res_cost, fl}};
-        }
-    }
-    // min-cost flow
-    optional<tuple<ll, ll, vector<ll>>> run_mcf(int s, int t) {
-        prep(s, t);
-        auto [res_flow, res_cost] = net.run(S, T);
-        res_cost += pre;
-        if (sum != res_flow) {
-            return nullopt;
-        } else {
-            for (int from = 1; from <= n; ++from) {
-                for (auto&& [to, cap, flow, cost, rev, mark] : net.edges[from]) {
-                    if (mark != -1) {
-                        if (costs[mark] < 0) {
-                            fl[mark] -= flow;
-                        } else {
-                            fl[mark] += flow;
-                        }
-                    }
-                }
-            }
-            return {{res_flow, res_cost, fl}};
-        }
-    }
+struct Tag {
+    void apply(const Tag& rhs) { }
 };
+struct Info {
+    ll sum = 0;
+    ll cnt = 0;
+    void apply(const Tag& rhs, size_t len) { }
+};
+Info operator+(const Info &a, const Info &b) {
+    return {
+        .sum = (a.sum + b.sum) % MDL,
+        .cnt = a.cnt + b.cnt,
+    };
+}
 
+// __attribute__((target("popcnt")))
 void solve() {
-    read(int, n, m);
-    bounded_mcmf net(n, m);
-    int S = 0, T = n + 1;
-    vector<int> init(n + 1);
-    vector<int> res(m);
-    for (int i = 0; i < m; ++i) {
-        read(int, u, v, c, w);
-        if (c & 1) {
-            // set lower bound for edge
-            init[v] += 1;
-            init[u] -= 1;
-            res[i] += 1;
-        }
-        net.add_edge(u, v, 0, c / 2, w, i);
+    read(int, n, q);
+    readvec(int, x, n);
+
+    vector<int> t(n);
+    for (int i = 0; i < n; ++i) {
+        t[i] = x[i] - i;
     }
-    for (int i = 1; i <= n; ++i) {
-        if (i == 1 or i == n) continue;
-        if (init[i] & 1) {  // TODO: why.
-            cout << "Impossible\n";
-            return;
-        }
-        if (init[i] > 0) {
-            net.add_edge(1, i, init[i] / 2, init[i] / 2, 0, -1);  // TODO: add_edge(S, i, ...)
-        } else if (init[i] < 0) {
-            net.add_edge(i, n, -init[i] / 2, -init[i] / 2, 0, -1);
-        }
+
+    readvec(int, w, n);
+    segtree<Info, Tag> tr(n);
+    for (int i = 0; i < n; ++i) {
+        tr.set(i, { (ll(1) * w[i] * t[i]) % MDL, w[i] });
     }
-    auto ret = net.run_mcf(1, n);
-    if (ret == nullopt) {
-        cout << "Impossible\n";
-    } else {
-        cout << "Possible\n";
-        auto [flow, cost, fl] = ret.value();
-        for (int i = 0; i < m; ++i) {
-            res[i] += fl[i] * 2;
+
+    while (q--) {
+        read(int, l, r);
+        if (l < 0) {
+            int i = -l, c = r;
+            --i;
+            w[i] = c;
+            tr.set(i, { (ll(1) * w[i] * t[i]) % MDL, w[i] });
+        } else {
+            --l, --r;
+            // binary search the medium
+            // debug(t);
+            int x;
+            {
+                ll half = (tr.range_query(l, r).cnt + 1) / 2;
+                // debug(half);
+                int left = 0, right = INF;
+                while (left < right) {
+                    int mid = left + right >> 1;
+                    int end = min<int>(r + 1, upper_bound(t.begin(), t.end(), mid) - t.begin());
+                    ll cnt = l <= end - 1 ? tr.range_query(l, end - 1).cnt : 0;
+                    if (cnt >= half) {
+                        right = mid;
+                    } else {
+                        left = mid + 1;
+                    }
+                }
+                x = left;
+            }
+            int pos = min<int>(r + 1, upper_bound(t.begin(), t.end(), x) - t.begin()) - 1;
+            // deb(x, pos);
+            auto [right_sum, right_cnt] = tr.range_query(pos, r);
+            auto [left_sum, left_cnt] = tr.range_query(l, pos);
+            ll res = mod(((mod(right_sum - (((right_cnt % MDL) * x) % MDL), MDL) + (((left_cnt % MDL) * x) % MDL)) % MDL) - left_sum, MDL);
+            cout << res << '\n';
         }
-        putvec(res);
     }
 }
 
 int main() {
-#if __cplusplus < 201703L || defined(_MSC_VER) && !defined(__clang__)
+#if __cplusplus < 201402L or defined(_MSC_VER) and not defined(__clang__)
     assert(false && "incompatible compiler variant detected.");
 #endif
-    untie, cout.tie(NULL);
+    untie;
     prep();
 #ifdef SINGLE_TEST_CASE
     solve();

@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -471,33 +471,30 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n, m, k);
-    vector a(n, vector<int>(m));
+    read(int, n);
+    readvec(ll, a, n);
+
+    max_heap<ll> q;
     for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < m; ++j) {
-            read(int, x);
-            a[i][j] = x - 1;
+        if (q.size() and q.top() > a[i]) {
+            ll v = q.top(); q.pop();
+            ll v1 = (v + a[i]) / 2;
+            ll v2 = v + a[i] - v1;
+            q.emplace(v1);
+            q.emplace(v2);
+        } else {
+            q.emplace(a[i]);
         }
     }
-    for (int i = 0; i < k; ++i) {
-        int x = 0;
-        read(int, y);
-        --y;
-        while (x < n) {
-            while (a[x][y] != 1) {
-                if (a[x][y] == 0) {
-                    a[x][y] = 1;
-                    ++y;
-                } else {
-                    a[x][y] = 1;
-                    --y;
-                }
-            }
-            x += 1;
-        }
-        cout << y + 1 << ' ';
+
+    ll mx = -INFLL, mn = INFLL;
+    while (q.size()) {
+        int v = q.top();
+        q.pop();
+        chmax(mx, v);
+        chmin(mn, v);
     }
-    cout << '\n';
+    cout << mx - mn << '\n';
 }
 
 int main() {
