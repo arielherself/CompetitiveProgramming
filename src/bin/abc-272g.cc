@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -466,37 +466,52 @@ void dump() {}
 
 void dump_ignore() {}
 
-using mll = MLL<PRIME>;
-constexpr int N = 50;
-mll fact[N];
-
-
 void prep() {
-    fact[0] = 1;
-    for (int i = 1; i < N; ++i) {
-        fact[i] = fact[i - 1] * i;
-    }
 }
 
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr int n = 34, m = 11;
-    vector dp(n + 1, vector<mll>(m + 1));
-    dp[0][0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        for (int j = 0; j <= m; ++j) {
-            for (int k = 0; k <= j; ++k) {
-                dp[i][j] += comb(j, k) * dp[i - 1][j - k];
+    read(int, n);
+    readvec(int, a, n);
+    sort(a.begin(), a.end());
+
+    auto check = [&] (int i, int j) -> optional<int> {
+        vector<int> factors;
+        {
+            int x = a[j] - a[i];
+            int sq = sqrt(x) + 1;
+            for (int k = 1; k <= sq; ++k) {
+                if (x % k == 0) {
+                    factors.emplace_back(k);
+                    factors.emplace_back(x / k);
+                }
             }
+        }
+        for (auto&& x : factors) {
+            if (x < 3) continue;
+            unordered_map<int, int, safe_hash> cnt;
+            for (int k = 0; k < n; ++k) {
+                if (++cnt[a[k] % x] > n / 2) {
+                    return x;
+                }
+            }
+        }
+        return nullopt;
+    };
+
+    for (int i = 0; i < 200; ++i) {
+        int x = 0, y = 0;
+        while (x == y) {
+            tie(x, y) = minmax(rd() % n, rd() % n);
+        }
+        auto curr = check(x, y);
+        if (curr != nullopt) {
+            cout << *curr << '\n';
+            return;
         }
     }
 
-    for (int i = 1; i <= n; ++i) {
-        for (int j = 1; j <= m; ++j) {
-            cout << dp[i][j] << ' ';
-        }
-        cout << endl;
-    }
+    cout << -1 << '\n';
 }
 
 int main() {

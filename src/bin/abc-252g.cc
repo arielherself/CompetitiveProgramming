@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -466,37 +466,37 @@ void dump() {}
 
 void dump_ignore() {}
 
-using mll = MLL<PRIME>;
-constexpr int N = 50;
-mll fact[N];
-
-
 void prep() {
-    fact[0] = 1;
-    for (int i = 1; i < N; ++i) {
-        fact[i] = fact[i - 1] * i;
-    }
 }
 
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr int n = 34, m = 11;
-    vector dp(n + 1, vector<mll>(m + 1));
-    dp[0][0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        for (int j = 0; j <= m; ++j) {
-            for (int k = 0; k <= j; ++k) {
-                dp[i][j] += comb(j, k) * dp[i - 1][j - k];
+    using mll = MLL<PRIME>;
+
+    read(int, n);
+    readvec(int, a, n);
+
+    vector dp(n, vector<array<mll, 2>>(n));
+    for (int i = n - 1; ~i; --i) {
+        for (int j = i; j < n; ++j) {
+            if (i == j) {
+                dp[i][j] = { 1, 1 };
+            } else {
+                // evaluate dp[i][j][1]
+                dp[i][j][1] = dp[i + 1][j][0];
+
+                // evaluate dp[i][j][0]
+                dp[i][j][0] = dp[i][j][1];
+                for (int k = i; k < j; ++k) {
+                    if (a[k + 1] > a[i]) {
+                        dp[i][j][0] += dp[i][k][1] * dp[k + 1][j][0];
+                    }
+                }
             }
         }
     }
 
-    for (int i = 1; i <= n; ++i) {
-        for (int j = 1; j <= m; ++j) {
-            cout << dp[i][j] << ' ';
-        }
-        cout << endl;
-    }
+    cout << dp[0][n - 1][1] << '\n';
 }
 
 int main() {

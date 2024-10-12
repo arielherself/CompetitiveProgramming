@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -466,37 +466,119 @@ void dump() {}
 
 void dump_ignore() {}
 
-using mll = MLL<PRIME>;
-constexpr int N = 50;
-mll fact[N];
-
-
 void prep() {
-    fact[0] = 1;
-    for (int i = 1; i < N; ++i) {
-        fact[i] = fact[i - 1] * i;
-    }
 }
+
+vector<ll> costs;
+
+struct mcmf {
+    struct edge {
+        int to;
+        ll cap;
+        ll flow;
+        ll cost;
+        int rev;
+        int mark;
+    };
+    vector<vector<edge>> edges;
+    vector<ll> dis;
+    vector<bool> vis;
+    ll ret;
+    mcmf(int n) : edges(n + 1), dis(n + 1), vis(n + 1) {}
+    void add_edge(int from, int to, ll cap, ll cost, int mark = 0, int mark_rev = 0) {
+        edges[from].push_back({ to, cap, 0, cost, int(edges[to].size()), mark });
+        edges[to].push_back({ from, 0, 0, -cost, int(edges[from].size() - 1), mark_rev });
+    }
+    bool sp(int s, int t) {
+        dis.assign(edges.size(), INFLL);
+        dis[s] = 0;
+        int n = edges.size();
+        int f = 1;
+        while (f) {
+            f = 0;
+            for (int i = 0; i < n; ++i) {
+                for (auto&& [to, cap, flow, cost, rev, mark] : edges[i]) {
+                    if (cap > flow and dis[to] > dis[i] + cost) {
+                        dis[to] = dis[i] + cost;
+                        f = 1;
+                    }
+                }
+            }
+        }
+        return dis[t] != INFLL;
+    }
+    ll dfs(int s, int t, ll cap) {
+        if (vis[s]) {
+            return 0;
+        }
+        vis[s] = 1;
+        if (s == t) {
+            return cap;
+        }
+        ll res = 0;
+        int n = edges[s].size();
+        for (int i = 0; i < n; ++i) {
+            auto e = edges[s][i];
+            if (e.cap > e.flow and dis[e.to] == dis[s] + e.cost) {
+                ll nw = dfs(e.to, t, min(cap - res, e.cap - e.flow));
+                edges[s][i].flow += nw;
+                edges[e.to][e.rev].flow -= nw;
+                res += nw;
+                ret += nw * e.cost;
+                if (res == cap) {
+                    return res;
+                }
+            }
+        }
+        return res;
+    }
+    // returns: (flow, cost)
+    pll run(int s, int t) {
+        ll res = 0; ret = 0;
+        while (sp(s, t)) {
+            vis.assign(edges.size(), 0);
+            ll curr = dfs(s, t, LLONG_MAX);
+            if (curr == 0) break;
+            res += curr;
+            costs.emplace_back(ret);
+        }
+        return { res, ret };
+    }
+};
+
+constexpr int N = 150;
+int mx[N + 1][N + 1];
 
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr int n = 34, m = 11;
-    vector dp(n + 1, vector<mll>(m + 1));
-    dp[0][0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        for (int j = 0; j <= m; ++j) {
-            for (int k = 0; k <= j; ++k) {
-                dp[i][j] += comb(j, k) * dp[i - 1][j - k];
+    memset(mx, 0xff, sizeof(mx));
+
+    mcmf net(2 * N + 5);
+    int S = 2 * N + 1, T = 2 * N + 2;
+
+    read(int, t);
+    while (t--) {
+        read(int, u, v, w);
+        chmax(mx[u][v], w);
+    }
+
+    for (int i = 1; i <= N; ++i) {
+        for (int j = 1; j <= N; ++j) {
+            if (mx[i][j] != -1) {
+                net.add_edge(i, N + j, 1, -mx[i][j]);
             }
         }
     }
 
-    for (int i = 1; i <= n; ++i) {
-        for (int j = 1; j <= m; ++j) {
-            cout << dp[i][j] << ' ';
-        }
-        cout << endl;
+    for (int i = 1; i <= N; ++i) {
+        net.add_edge(S, i, 1, 0);
+        net.add_edge(N + i, T, 1, 0);
     }
+
+    net.run(S, T);
+    cout << costs.size() << '\n';
+    transform(costs.begin(), costs.end(), costs.begin(), expr(-x, ll x));
+    putvec_eol(costs);
 }
 
 int main() {

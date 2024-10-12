@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -466,37 +466,88 @@ void dump() {}
 
 void dump_ignore() {}
 
-using mll = MLL<PRIME>;
-constexpr int N = 50;
-mll fact[N];
-
-
 void prep() {
-    fact[0] = 1;
-    for (int i = 1; i < N; ++i) {
-        fact[i] = fact[i - 1] * i;
-    }
 }
+
+class quick_union {
+private:
+    vector<size_t> c, sz;
+public:
+    quick_union(size_t n) : c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
+    }
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] += sz[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_size(size_t i) {
+        return sz[query(i)];
+    }
+};
 
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr int n = 34, m = 11;
-    vector dp(n + 1, vector<mll>(m + 1));
-    dp[0][0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        for (int j = 0; j <= m; ++j) {
-            for (int k = 0; k <= j; ++k) {
-                dp[i][j] += comb(j, k) * dp[i - 1][j - k];
-            }
+    read(int, n, m);
+    adj(ch, n);
+    quick_union qu(n + 1);
+    for (int i = 0; i < m; ++i) {
+        read(int, u, v);
+        if (not qu.connected(u, v)) {
+            qu.merge(u, v);
+            edge(ch, u, v);
         }
     }
 
+    vector<int> par(n + 1);
     for (int i = 1; i <= n; ++i) {
-        for (int j = 1; j <= m; ++j) {
-            cout << dp[i][j] << ' ';
-        }
-        cout << endl;
+        read(char, x);
+        par[i] = x == '1';
     }
+
+    vector<int> flip(n + 1);
+    {
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            flip[v] = par[v] ^ 1;
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v);
+                flip[v] ^= flip[u] ^ 1;
+            }
+        };
+        dfs(dfs, 1, 0);
+    }
+
+    vector<int> seq;
+    {
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            seq.emplace_back(v);
+            if (flip[v] and v != 1) {
+                seq.emplace_back(pa);
+                seq.emplace_back(v);
+            }
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v);
+                seq.emplace_back(v);
+            }
+        };
+        dfs(dfs, 1, 0);
+        if (flip[1]) {
+            seq.pop_back();
+        }
+    }
+
+    cout << seq.size() << '\n';
+    putvec(seq);
 }
 
 int main() {

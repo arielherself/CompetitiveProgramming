@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -466,37 +466,15 @@ void dump() {}
 
 void dump_ignore() {}
 
-using mll = MLL<PRIME>;
-constexpr int N = 50;
-mll fact[N];
-
-
 void prep() {
-    fact[0] = 1;
-    for (int i = 1; i < N; ++i) {
-        fact[i] = fact[i - 1] * i;
-    }
 }
 
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr int n = 34, m = 11;
-    vector dp(n + 1, vector<mll>(m + 1));
-    dp[0][0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        for (int j = 0; j <= m; ++j) {
-            for (int k = 0; k <= j; ++k) {
-                dp[i][j] += comb(j, k) * dp[i - 1][j - k];
-            }
-        }
-    }
+    using mll = MLL<PRIME>;
 
-    for (int i = 1; i <= n; ++i) {
-        for (int j = 1; j <= m; ++j) {
-            cout << dp[i][j] << ' ';
-        }
-        cout << endl;
-    }
+    read(int, n, m);
+    cout << qpow<mll>(m, n - 1) * qpow<mll>(n, m) << '\n';
 }
 
 int main() {
