@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,29 +469,81 @@ void dump_ignore() {}
 void prep() {
 }
 
-// __attribute__((target("popcnt")))
+inline ll sum(ll n) {
+    return (1 + n) * n / 2;
+}
+
+__attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    readvec(ll, a, n);
-    ll sum = a[n - 1];
-    ll debt = 0;
-    for (int i = n - 2; ~i; --i) {
-        ll curr = sum / (n - 1 - i);
-        if (a[i] > curr) {
-            debt += a[i] - curr;
-            a[i] = curr;
-        } else {
-            ll use = min(debt, curr - a[i]);
-            a[i] += use;
-            debt -= use;
+    constexpr int U = 10;
+
+    using mll = MLL<PRIME>;
+
+    vector<int> a;
+    {
+        read(string, s);
+        for (auto&& c : s) {
+            a.emplace_back(c - '0');
         }
-        sum += a[i];
     }
-    if (debt == 0) {
-        cout << "Yes\n";
-    } else {
-        cout << "No\n";
+    int n = a.size();
+
+    read(int, m);
+    int need = 0;
+    for (int i = 0; i < m; ++i) {
+        read(int, x);
+        need |= 1 << x;
     }
+
+    vector f(n + 1, vector<ll>(1 << U));
+    vector g(n + 1, vector<ll>(1 << U));
+    g[0][0] = 1;
+    for (int i = 1; i <= n; ++i) {
+        for (int j = 0; j < U; ++j) {
+            for (int k = 0; k < (1 << U); ++k) {
+                f[i][k | 1 << j] += (((f[i - 1][k] * 10) % PRIME) + (g[i - 1][k] * j) % PRIME) % PRIME;
+                f[i][k | 1 << j] %= PRIME;
+                g[i][k | 1 << j] += g[i - 1][k];
+                g[i][k | 1 << j] %= PRIME;
+            }
+        }
+    }
+
+    ll res = 0;
+
+    int has = 0;
+    ll pre = 0;
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < a[i]; ++j) {
+            if (i == 0 and j == 0) continue;
+            ll curr = (pre + ((j * qpow<mll>(10, n - 1 - i).val) % PRIME)) % PRIME;
+            int least = need ^ (need & (has | 1 << j));
+            for (int k = least; k < (1 << U); k = (k + 1) | least) {
+                res += (((g[n - 1 - i][k] * curr) % PRIME) + f[n - 1 - i][k]) % PRIME;
+                res %= PRIME;
+            }
+        }
+        has |= 1 << a[i];
+        pre = (pre + ((a[i] * qpow<mll>(10, n - 1 - i).val) % PRIME)) % PRIME;
+    }
+
+    if ((has & need) == need) {
+        res += pre;
+        res %= PRIME;
+    }
+
+    for (int i = 1; i < n; ++i) {
+        for (int j = 1; j < 10; ++j) {
+            ll curr = (j * qpow<mll>(10, n - 1 - i).val) % PRIME;
+            int least = need ^ (need & (1 << j));
+            for (int k = least; k < (1 << U); k = (k + 1) | least) {
+                res += (((g[n - i - 1][k] * curr) % PRIME) + f[n - i - 1][k]) % PRIME;
+                res %= PRIME;
+            }
+        }
+    }
+
+    cout << res << '\n';
 }
 
 int main() {

@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,29 +469,42 @@ void dump_ignore() {}
 void prep() {
 }
 
+namespace ns {
+    inline int128 abs(int128 x) {
+        return x < 0 ? -x : x;
+    }
+}
+
+
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
     readvec(ll, a, n);
-    ll sum = a[n - 1];
-    ll debt = 0;
-    for (int i = n - 2; ~i; --i) {
-        ll curr = sum / (n - 1 - i);
-        if (a[i] > curr) {
-            debt += a[i] - curr;
-            a[i] = curr;
-        } else {
-            ll use = min(debt, curr - a[i]);
-            a[i] += use;
-            debt -= use;
+
+    auto calc = [&] (int128 start) {
+        int128 b = start;
+        int128 c = a[0] - b;
+        int128 sum = ns::abs(b) + ns::abs(c);
+        for (int i = 1; i < n; ++i) {
+            b += max<int128>(0, a[i] - a[i - 1]);
+            c = a[i] - b;
+            sum += ns::abs(b) + ns::abs(c);
         }
-        sum += a[i];
+        return sum;
+    };
+
+    int128 l = -INFLL, r = INFLL;
+    while (l < r) {
+        int128 mid = l + (r - l) / 2;
+        if (calc(mid) <= calc(mid + 1)) {
+            r = mid;
+        } else {
+            l = mid + 1;
+        }
     }
-    if (debt == 0) {
-        cout << "Yes\n";
-    } else {
-        cout << "No\n";
-    }
+
+    cout << calc(l) << '\n';
+
 }
 
 int main() {

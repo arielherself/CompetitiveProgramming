@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -471,30 +471,18 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    readvec(ll, a, n);
-
-    max_heap<ll> q;
-    for (int i = 0; i < n; ++i) {
-        if (q.size() and q.top() > a[i]) {
-            ll v = q.top(); q.pop();
-            ll v1 = (v + a[i]) / 2;
-            ll v2 = v + a[i] - v1;
-            q.emplace(v1);
-            q.emplace(v2);
-        } else {
-            q.emplace(a[i]);
-        }
+    read(string, s);
+    int n = s.size();
+    array<int, 26> cnt = {};
+    array<ll, 26> sum = {};
+    ll res = 0;
+    for (int i = n - 1; ~i; --i) {
+        res += sum[s[i] - 'A'] - ll(i + 1) * cnt[s[i] - 'A'];
+        cnt[s[i] - 'A'] += 1;
+        sum[s[i] - 'A'] += i;
     }
 
-    ll mx = -INFLL, mn = INFLL;
-    while (q.size()) {
-        int v = q.top();
-        q.pop();
-        chmax(mx, v);
-        chmin(mn, v);
-    }
-    cout << mx - mn << '\n';
+    cout << res << '\n';
 }
 
 int main() {

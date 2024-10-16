@@ -7,8 +7,7 @@ import io
 PRIME = 998_244_353
 
 if __name__ == '__main__':
-    N = 400000
-    M = 200000
-    print(N, M)
-    print('64 ' * N)
-    print(f'TOTIENT 1 {N} ' * M)
+    N = 100000
+    print(1)
+    print(N, N, 0, 2 * N)
+    print(*[f'{randint(1, N)} {randint(1, N)} {randint(0, (1 << 30) - 1)}' for _ in range(2 * N)], sep = '\n')

@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -472,26 +472,42 @@ void prep() {
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
-    readvec(ll, a, n);
-    ll sum = a[n - 1];
-    ll debt = 0;
-    for (int i = n - 2; ~i; --i) {
-        ll curr = sum / (n - 1 - i);
-        if (a[i] > curr) {
-            debt += a[i] - curr;
-            a[i] = curr;
-        } else {
-            ll use = min(debt, curr - a[i]);
-            a[i] += use;
-            debt -= use;
+    vector<int> a(n), b(n);
+    for (int i = 0; i < n; ++i) {
+        cin >> a[i] >> b[i];
+    }
+
+    int target = accumulate(b.begin(), b.end(), 0);
+    if (target % 3) {
+        cout << -1 << '\n';
+        return;
+    }
+    target /= 3;
+
+    vector dp(n + 1, vector(target + 1, vector<int>(target + 1, INF)));
+    dp[0][0][0] = 0;
+    int sum = 0;
+    for (int i = 1; i <= n; ++i) {
+        for (int j = 0; j <= target; ++j) {
+            for (int k = 0; k <= target; ++k) {
+                // group 0
+                if (j + b[i - 1] <= target) {
+                    chmin(dp[i][j + b[i - 1]][k], dp[i - 1][j][k] + (a[i -1 ] != 1));
+                }
+                // group 1
+                if (k + b[i - 1] <= target) {
+                    chmin(dp[i][j][k + b[i - 1]], dp[i -1][j][k] + (a[i -1 ] != 2));
+                }
+                // group 2
+                if (sum - j - k + b[i - 1] <= target) {
+                    chmin(dp[i][j][k], dp[i - 1][j][k] + (a[i - 1] != 3));
+                }
+            }
         }
-        sum += a[i];
+        sum += b[i - 1];
     }
-    if (debt == 0) {
-        cout << "Yes\n";
-    } else {
-        cout << "No\n";
-    }
+
+    cout << (dp[n][target][target] == INF ? -1 : dp[n][target][target]) << '\n';
 }
 
 int main() {

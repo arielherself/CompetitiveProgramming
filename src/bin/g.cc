@@ -471,48 +471,84 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    readvec1(int, a, n);
-    adj(ch, n);
-    for (int i = 2; i <= n ;++i) {
-        read(int, j);
-        edge(ch, i, j);
+    read(int, n, m);
+    vector<tiii> edges;
+    vector<vector<tiii>> e(n + 1);
+    for (int i = 0; i < m; ++i) {
+        read(int, u, v, w);
+        edges.emplace_back(u, v, w);
+        edgew(e, u, v, w, i);
     }
-    vector<int> sz(n + 1);
-    auto get = [&] (auto get, int v, int pa) -> void {
-        if (v != 1 and ch[v].size() == 1) sz[v] = 1;
-        for (auto&& u: ch[v]) {
-            if (u == pa) continue;
-            get(get, u, v);
-            sz[v] += sz[u];
-        }
-    };
-    get(get, 1, 0);
-    auto dfs = [&] (auto dfs, int v, int pa) -> int {
-        if (v != 1 and ch[v].size() == 1) {
-            return 1;
-        }
-        if (a[v]) {
-            // max
-            int res = INF;
-            for (auto&& u : ch[v]) {
-                if (u == pa) continue;
-                chmin(res, sz[u] - dfs(dfs, u, v));
+
+    vector<ll> dis(n + 1, INFLL);
+    vector<vector<pii>> prev(n + 1);
+    {
+        vector<bool> vis(n + 1);
+        dis[1] = 0;
+        min_heap<pli> pq;
+        pq.emplace(0, 1);
+        while (pq.size()) {
+            auto [d, v] = pq.top(); pq.pop();
+            continue_or(vis[v], 1);
+            for (auto&& [u, w, i] : e[v]) {
+                if (d + w < dis[u]) {
+                    dis[u] = d + w;
+                    prev[u] = {{ v, i }};
+                    pq.emplace(dis[u], u);
+                } else if (d + w == dis[u]) {
+                    prev[u].emplace_back(v, i);
+                    pq.emplace(dis[u], u);
+                }
             }
-            // deb(v, sz[v] - res);
-            return sz[v] - res;
+        }
+    }
+
+    vector<vector<pii>> ch(n + 1);
+    vector<bool> vis(m);
+    {
+        auto dfs = [&] (auto dfs, int v) -> void {
+            for (auto&& [u, i] : prev[v]) {
+                continue_or(vis[i], 1);
+                edgew(ch, u, v, i);
+                dfs(dfs, u);
+            }
+        };
+        dfs(dfs, n);
+    }
+
+    vector<bool> isbridge(m);
+    {
+        vector<int> low(n + 1), dfn(n + 1), father(n + 1);
+        int dfs_clock = 0;
+        int cnt_bridge = 0;
+        auto dfs = [&] (auto dfs, int u, int fa) -> void {
+            father[u] = fa;
+            low[u] = dfn[u] = ++dfs_clock;
+            for (auto&& [v, i] : ch[u]) {
+                if (!dfn[v]) {
+                    dfs(dfs, v, u);
+                    low[u] = min(low[u], low[v]);
+                    if (low[v] > dfn[u]) {
+                        isbridge[i] = true;
+                        ++cnt_bridge;
+                    }
+                } else if (dfn[v] < dfn[u] && v != fa) {
+                    low[u] = min(low[u], dfn[v]);
+                }
+            }
+        };
+        for (int i = 1; i <= n; ++i) {
+            if (not dfn[i]) dfs(dfs, i, 0);
+        }
+    }
+
+    for (int i = 0; i < m; ++i) {
+        if (isbridge[i]) {
+            cout << "Yes\n";
         } else {
-            // min
-            int need = 0;
-            for (auto&& u : ch[v]) {
-                if (u == pa) continue;
-                need += sz[u] - dfs(dfs, u, v) + 1;
-            }
-            // deb(v, sz[v] - need + 1);
-            return sz[v] - need + 1;
+            cout << "No\n";
         }
-    };
-    cout << dfs(dfs, 1, 0) << '\n';
+    }
 }
 
 int main() {

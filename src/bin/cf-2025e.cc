@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -466,32 +466,64 @@ void dump() {}
 
 void dump_ignore() {}
 
+using mll = MLL<PRIME>;
+constexpr int N = 512;
+mll fact[N], factrev[N];
+
 void prep() {
+    fact[0] = factrev[0] = 1;
+    for (int i = 1; i < N; ++i) {
+        fact[i] = fact[i - 1] * i;
+        factrev[i] = 1 / fact[i];
+    }
 }
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    readvec(ll, a, n);
-    ll sum = a[n - 1];
-    ll debt = 0;
-    for (int i = n - 2; ~i; --i) {
-        ll curr = sum / (n - 1 - i);
-        if (a[i] > curr) {
-            debt += a[i] - curr;
-            a[i] = curr;
-        } else {
-            ll use = min(debt, curr - a[i]);
-            a[i] += use;
-            debt -= use;
+    read(int, n, m);
+
+    // f[i][j]: `m` items in total, the second player got `i`, and `j` unmatched
+    vector f(m + 1, vector<mll>(m + 1));
+    {
+        vector dp(m + 1, vector<mll>(m + 1));
+        f[0][0] = dp[0][0] = 1;
+        for (int i = 1; i <= m; ++i) {
+            vector ndp(m + 1, vector<mll>(m + 1));
+            for (int j = 0; j <= m; ++j) {
+                for (int k = 0; k <= m; ++k) {
+                    // give this to the second player
+                    if (j - 1 >= 0 and k - 1 >= 0) {
+                        ndp[j][k] += dp[j - 1][k - 1];
+                    }
+                    // give this to the first player
+                    if (k + 1 <= m) {
+                        ndp[j][k] += dp[j][k + 1];
+                    }
+                }
+                ndp[j][0] += dp[j][0];
+            }
+            dp = std::move(ndp);
         }
-        sum += a[i];
+        f = std::move(dp);
     }
-    if (debt == 0) {
-        cout << "Yes\n";
-    } else {
-        cout << "No\n";
+
+    vector dp(n + 1, vector<mll>(m + 1));
+    for (int i = 0; i <= m; ++i) {
+        if ((m - i) % 2 == 0) {
+            dp[1][i] = f[(m - i) / 2][0];
+        }
     }
+    for (int i = 2; i <= n; ++i) {
+        for (int j = 0; j <= m; ++j) {
+            for (int k = 0; k <= j; ++k) {
+                if ((m - k) % 2 == 0) {
+                    dp[i][j - k] += dp[i - 1][j] * f[k + (m - k) / 2][k];
+                }
+            }
+        }
+    }
+
+    cout << dp[n][0] << '\n';
 }
 
 int main() {

@@ -282,10 +282,10 @@ vector<tuple<int, int, ll>> decompose(ll x) {
     return res;
 }
 
-vector<pii> decompose_prime(int N) {
+vector<pli> decompose_prime(ll N) {
     // return (factor, count)
-    vector<pii> result;
-    for (int i = 2; i * i <= N; i++) {
+    vector<pli> result;
+    for (ll i = 2; i * i <= N; i++) {
         if (N % i == 0) {
             int cnt = 0;
             while (N % i == 0) N /= i, ++cnt;
@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,29 +469,25 @@ void dump_ignore() {}
 void prep() {
 }
 
+using mll = MLL<PRIME>;
+
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    readvec(ll, a, n);
-    ll sum = a[n - 1];
-    ll debt = 0;
-    for (int i = n - 2; ~i; --i) {
-        ll curr = sum / (n - 1 - i);
-        if (a[i] > curr) {
-            debt += a[i] - curr;
-            a[i] = curr;
-        } else {
-            ll use = min(debt, curr - a[i]);
-            a[i] += use;
-            debt -= use;
+    read(ll, n);
+    auto factors = decompose_prime(n - 1);
+
+    mll sum = 1;
+    for (auto&& [x, c] : factors) {
+        mll curr = 1;
+        for (int i = 1; i <= c; ++i) {
+            mll phi = (x - 1) * qpow<mll>(x, i - 1);
+            curr += qpow<mll>(x, i) * phi;
         }
-        sum += a[i];
+        sum *= curr;
     }
-    if (debt == 0) {
-        cout << "Yes\n";
-    } else {
-        cout << "No\n";
-    }
+
+    cout << 1 + sum << '\n';
+
 }
 
 int main() {

@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -471,27 +471,61 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    readvec(ll, a, n);
-    ll sum = a[n - 1];
-    ll debt = 0;
-    for (int i = n - 2; ~i; --i) {
-        ll curr = sum / (n - 1 - i);
-        if (a[i] > curr) {
-            debt += a[i] - curr;
-            a[i] = curr;
-        } else {
-            ll use = min(debt, curr - a[i]);
-            a[i] += use;
-            debt -= use;
+    read(int, n, m);
+    read(int, hb, wb, hw, ww);
+    chmin(hw, hb);
+    chmin(ww, wb);
+
+    vector a(n, vector<int>(m));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            cin >> a[i][j];
         }
-        sum += a[i];
     }
-    if (debt == 0) {
-        cout << "Yes\n";
-    } else {
-        cout << "No\n";
+
+    vector ps(n + 1, vector<ll>(m + 1));
+    for (int i = 1; i <= n; ++i) {
+        for (int j = 1; j <= m; ++j) {
+            ps[i][j] = ps[i - 1][j] + ps[i][j - 1] - ps[i - 1][j - 1] + a[i - 1][j - 1];
+        }
     }
+
+    int row_size = hb - hw + 1;
+    int col_size = wb - ww + 1;
+    // deb(row_size, col_size);
+
+    vector c(n, vector<ll>(m));
+
+    auto rect = [&] (int i, int j, int h, int w) {
+        return ps[i + h][j + w] - ps[i][j + w] - ps[i + h][j] + ps[i][j];
+    };
+
+    for (int j = 0; j + ww <= m; ++j) {
+        multiset<ll> curr;
+        for (int i = 0; i + hw <= n; ++i) {
+            curr.emplace(rect(i, j, hw, ww));
+            if (i >= row_size - 1) {
+                c[i - row_size + 1][j] = *curr.rbegin();
+                curr.erase(curr.lower_bound(rect(i - row_size + 1, j, hw, ww)));
+            }
+        }
+    }
+
+    ll res = 0;
+
+    for (int i = 0; i + hb <= n; ++i) {
+        multiset<ll> curr;
+        for (int j = 0; j - col_size + 1 + wb <= m; ++j) {
+            curr.emplace(c[i][j]);
+            if (j >= col_size - 1) {
+                // deb(i, j, rect(i, j - col_size + 1, hb, wb), *curr.rbegin());
+                chmax(res, rect(i, j - col_size + 1, hb, wb) - *curr.rbegin());
+                curr.erase(curr.lower_bound(c[i][j - col_size + 1]));
+            }
+        }
+    }
+
+    cout << res << '\n';
 }
 
 int main() {

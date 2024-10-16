@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -466,32 +466,85 @@ void dump() {}
 
 void dump_ignore() {}
 
+constexpr int N = 55;
+using mll = MLL<PRIME>;
+mll fact[N], factrev[N];
+
 void prep() {
+    fact[0] = factrev[0] = 1;
+    for (int i = 1; i < N; ++i) {
+        fact[i] = fact[i - 1] * i;
+        factrev[i] = 1 / fact[i];
+    }
 }
 
-// __attribute__((target("popcnt")))
+__attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    readvec(ll, a, n);
-    ll sum = a[n - 1];
-    ll debt = 0;
-    for (int i = n - 2; ~i; --i) {
-        ll curr = sum / (n - 1 - i);
-        if (a[i] > curr) {
-            debt += a[i] - curr;
-            a[i] = curr;
-        } else {
-            ll use = min(debt, curr - a[i]);
-            a[i] += use;
-            debt -= use;
+    constexpr int MX = 17;
+
+    read(int, n, m, k);
+    readvec(int, w, n);
+
+    n = MX * 3;
+    w.resize(n);
+
+    ll tot = 0;
+    for (int i = 0; i < n; ++i) {
+        tot = (tot + w[i]) % PRIME;
+    }
+    ll inv = inverse(tot, PRIME);
+
+
+    auto get = [inv] (int d, vector<int> a) -> vector<vector<ll>> {
+        int n = 0;
+        for (auto&& x : a) {
+            if (x) {
+                n += 1;
+            }
         }
-        sum += a[i];
+
+        vector dp(d + 1, vector<ll>(1 << n));
+        dp[0][0] = 1;
+        for (int i = 1; i <= d; ++i) {
+            for (int j = 0; j < (1 << n); ++j) {
+                for (int k = 0; k < n; ++k) {
+                    dp[i][j | 1 << k] = (dp[i][j | 1 << k] + ((((a[k] * inv) % PRIME) * dp[i - 1][j]) % PRIME)) % PRIME;
+                }
+            }
+        }
+
+        vector ret(d + 1, vector<ll>(a.size() + 1));
+        for (int i = 0; i <= d; ++i) {
+            for (int j = 0; j < (1 << n); ++j) {
+                int pop = popcount(j);
+                ret[i][pop] = (ret[i][pop] + dp[i][j]) % PRIME;
+            }
+        }
+
+        return ret;
+    };
+
+    auto p = get(k, vector(w.begin(), w.begin() + MX));
+    auto q = get(k, vector(w.begin() + MX, w.begin() + 2 * MX));
+    auto r = get(k, vector(w.begin() + 2 * MX, w.begin() + 3 * MX));
+
+    mll res = 0;
+
+    for (int a = 0; a <= k; ++a) {
+        for (int b = 0; a + b <= k; ++b) {
+            int c = k - a - b;
+            for (int x = 0; x <= min(min(MX, a), m); ++x) {
+                for (int y = 0; y <= min(MX, b) and x + y <= m; ++y) {
+                    int z = m - x - y;
+                    if (z > min(MX, c)) continue;
+
+                    res += mll(1) * p[a][x] * q[b][y] * r[c][z] * fastcomb(k, a + b) * fastcomb(a + b, a);
+                }
+            }
+        }
     }
-    if (debt == 0) {
-        cout << "Yes\n";
-    } else {
-        cout << "No\n";
-    }
+
+    cout << res << '\n';
 }
 
 int main() {

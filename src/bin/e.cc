@@ -472,39 +472,42 @@ void prep() {
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
-    readvec(int, a, n);
-    while (n % 2 != 1) {
-        a.emplace_back(0);
-        n += 1;
-    }
-    min_heap<pli> q;
+    vector<int> a(n), b(n);
     for (int i = 0; i < n; ++i) {
-        q.emplace(a[i], i);
+        cin >> a[i] >> b[i];
     }
-    vector<vector<int>> ch(n);
-    while (q.size() > 1) {
-        vector<int> son;
-        ll tot = 0;
-        if (q.size()) tot += q.top().first, son.emplace_back(q.top().second), q.pop();
-        if (q.size()) tot += q.top().first, son.emplace_back(q.top().second), q.pop();
-        if (q.size()) tot += q.top().first, son.emplace_back(q.top().second), q.pop();
-        ch.emplace_back(son);
-        q.emplace(tot, ch.size() - 1);
+
+    int target = accumulate(b.begin(), b.end(), 0);
+    if (target % 3) {
+        cout << -1 << '\n';
+        return;
     }
-    ll res = 0;
-    auto dfs = [&] (auto dfs, int v, int pa, int depth) -> void {
-        // deb(v, depth);
-        if (ch[v].size() == 0) {
-            res += ll(1) * a[v] * depth;
-        } else {
-            for (auto&& u : ch[v]) {
-                if (u == pa) continue;
-                dfs(dfs, u, v, depth + 1);
+    target /= 3;
+
+    vector dp(n + 1, vector(target + 1, vector<int>(target + 1, INF)));
+    dp[0][0][0] = 0;
+    int sum = 0;
+    for (int i = 1; i <= n; ++i) {
+        for (int j = 0; j <= target; ++j) {
+            for (int k = 0; k <= target; ++k) {
+                // group 1
+                if (j + b[i - 1] <= target) {
+                    chmin(dp[i][j + b[i - 1]][k], dp[i - 1][j][k] + (a[i -1 ] != 1));
+                }
+                // group 2
+                if (k + b[i - 1] <= target) {
+                    chmin(dp[i][j][k + b[i - 1]], dp[i -1][j][k] + (a[i -1 ] != 2));
+                }
+                // group 3
+                if (sum - j - k + b[i - 1] <= target) {
+                    chmin(dp[i][j][k], dp[i - 1][j][k] + (a[i - 1] != 3));
+                }
             }
         }
-    };
-    dfs(dfs, q.top().second, -1, 0);
-    cout << res << '\n';
+        sum += b[i - 1];
+    }
+
+    cout << (dp[n][target][target] == INF ? -1 : dp[n][target][target]) << '\n';
 }
 
 int main() {

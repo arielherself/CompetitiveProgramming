@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -472,26 +472,47 @@ void prep() {
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
-    readvec(ll, a, n);
-    ll sum = a[n - 1];
-    ll debt = 0;
-    for (int i = n - 2; ~i; --i) {
-        ll curr = sum / (n - 1 - i);
-        if (a[i] > curr) {
-            debt += a[i] - curr;
-            a[i] = curr;
+    readvec(int, a, n);
+
+    if (n <= 2) {
+        cout << *max_element(a.begin(), a.end()) << '\n';
+        return;
+    }
+
+    // vector<int> oc(a);
+    // sort(oc.begin(), oc.end());
+    // int m = unique(oc.begin(), oc.end()) - oc.begin();
+    // oc.resize(m);
+    // auto get = [&] (int x) {
+    //     return lower_bound(oc.begin(), oc.end(), x) - oc.begin();
+    // };
+
+    a.resize(2 * n);
+    copy(a.begin(), a.begin() + n, a.begin() + n);
+
+    vector<ll> diff(2 * n);
+    for (int i = 0; i < 2 * n; ++i) {
+        if (i == 0) {
+            diff[i] = a[i];
         } else {
-            ll use = min(debt, curr - a[i]);
-            a[i] += use;
-            debt -= use;
+            diff[i] = max(0, a[i] - a[i - 1]);
         }
-        sum += a[i];
     }
-    if (debt == 0) {
-        cout << "Yes\n";
-    } else {
-        cout << "No\n";
+
+    vector<ll> ps(2 * n + 1);
+    partial_sum(diff.begin(), diff.end(), ps.begin() + 1);
+
+
+    ll res = INFLL;
+
+    for (int l = 0, r = n - 1; r < 2 * n; ++l, ++r) {
+        int min_start = max(0, a[l] - a[r]);
+        int max_start = a[l];
+        int start = clamp(a[l + 1], min_start, max_start);
+        chmin(res, ps[r + 1] - ps[l + 2] + max<ll>(0, a[l + 1] - start) + start);
     }
+
+    cout << res << '\n';
 }
 
 int main() {

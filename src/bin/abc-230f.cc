@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -471,27 +471,26 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
+    using mll = MLL<PRIME>;
+
     read(int, n);
     readvec(ll, a, n);
-    ll sum = a[n - 1];
-    ll debt = 0;
-    for (int i = n - 2; ~i; --i) {
-        ll curr = sum / (n - 1 - i);
-        if (a[i] > curr) {
-            debt += a[i] - curr;
-            a[i] = curr;
-        } else {
-            ll use = min(debt, curr - a[i]);
-            a[i] += use;
-            debt -= use;
+
+    unordered_map<ll, mll, safe_hash> bk;
+    bk[-INFLL] = 1;
+    mll sum = 1;
+    ll ps = 0;
+    for (int i = 0; i < n; ++i) {
+        mll curr = sum;
+        ps += a[i];
+        if (bk.count(ps)) {
+            sum -= bk[ps];
         }
-        sum += a[i];
+        bk[ps] = curr;
+        sum += bk[ps];
     }
-    if (debt == 0) {
-        cout << "Yes\n";
-    } else {
-        cout << "No\n";
-    }
+
+    cout << bk[ps] << '\n';
 }
 
 int main() {

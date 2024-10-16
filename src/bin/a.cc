@@ -471,9 +471,13 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n, x, y);
-    int d = min(x, y);
-    cout << (n + d - 1) / d << '\n';
+    read(int, n, m);
+    int md = (ll(1) * (1 + n) * n) % m;
+    if (md > 0 and md <= n) {
+        cout << "Bob\n";
+    } else {
+        cout << "Alice\n";
+    }
 }
 
 int main() {

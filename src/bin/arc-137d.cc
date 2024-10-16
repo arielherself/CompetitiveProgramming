@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,28 +469,28 @@ void dump_ignore() {}
 void prep() {
 }
 
+constexpr int N = 21;
+int dp[1 << N];
+
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    readvec(ll, a, n);
-    ll sum = a[n - 1];
-    ll debt = 0;
-    for (int i = n - 2; ~i; --i) {
-        ll curr = sum / (n - 1 - i);
-        if (a[i] > curr) {
-            debt += a[i] - curr;
-            a[i] = curr;
-        } else {
-            ll use = min(debt, curr - a[i]);
-            a[i] += use;
-            debt -= use;
-        }
-        sum += a[i];
+    read(int, n, m);
+    readvec(int, a, n);
+
+    for (int i = 0; i < n; ++i) {
+        dp[n - i - 1] = a[i];
     }
-    if (debt == 0) {
-        cout << "Yes\n";
-    } else {
-        cout << "No\n";
+
+    for (int i = 0; i < N; ++i) {
+        for (int j = 0; j < (1 << N); ++j) {
+            if (j >> i & 1) {
+                dp[j] ^= dp[j ^ (1 << i)];
+            }
+        }
+    }
+
+    for (int i = 0; i < m; ++i) {
+        cout << dp[((1 << N) - 1) ^ i] << " \n"[i + 1 == m];
     }
 }
 
