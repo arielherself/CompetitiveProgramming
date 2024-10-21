@@ -469,42 +469,73 @@ void dump_ignore() {}
 void prep() {
 }
 
+bool query(int i, int j, int k) {
+    cout << "? " << i + 1 << ' ' << j + 1 << ' ' << k + 1 << endl;
+    read(string, ans);
+    if (ans == "-1") {
+        exit(825);
+    }
+    return ans == "Yes";
+}
+
 // __attribute__((target("popcnt")))
 void solve() {
-    using mll = MLL<MDL>;
-
     read(int, n);
-    readvec(int, a, n);
 
-    mll res = 1;
+    vector<int> a(n);
+    iota(a.begin(), a.end(), 0);
 
-    vector dp(n, vector<mll>(20 * n + 1));
-    vector<int> oc(20 + 1, -1);
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < i; ++j) {
-            for (int k = 0; k <= 20 * n; ++k) {
-                if (k == 10 * n or k + a[i] < 0 or k + a[i] > 20 * n) continue;
-                dp[i][k + a[i]] += dp[j][k];
+    vector<int> cand(n);
+    iota(cand.begin(), cand.end(), 0);
+    while (1) {
+        int curr = cand[0];
+        vector<int> nxt;
+        for (auto&& i : cand) {
+            if (i == curr) continue;
+            if (not query(a[i], a[i], a[curr])) {
+                nxt.emplace_back(i);
             }
         }
-
-        for (int j = 0; j <= 20; ++j) {
-            if (j == 10 or oc[j] == -1) continue;
-            dp[i][10 * n + j - 10 + a[i]] += 1;
-            for (int k = 0; k < oc[j]; ++k) {
-                dp[i][10 * n + j - 10 + a[i]] += dp[k][10 * n];
-            }
-        }
-        oc[a[i] + 10] = i;
-
-        for (int j = 0; j <= 20 * n; ++j) {
-            if (dp[i][j] != 0) {
-                res += dp[i][j];
-            }
+        if (nxt.size() == 0) {
+            swap(a[curr], a[0]);
+            break;
+        } else {
+            swap(cand, nxt);
         }
     }
 
-    cout << res << '\n';
+    auto is_geq = [&] (int i, int j) {
+        return query(i, a[0], j);
+    };
+
+    auto dfs = [&] (auto dfs, int l, int r) -> void {
+        if (l == r) return;
+        int mid = l + r >> 1;
+        dfs(dfs, l, mid);
+        dfs(dfs, mid + 1, r);
+        int i = l, j = mid + 1;
+        vector<int> res;
+        while (i <= mid or j <= r) {
+            if (i == mid + 1 or j != r + 1 and is_geq(a[i], a[j])) {
+                res.emplace_back(a[j++]);
+            } else {
+                res.emplace_back(a[i++]);
+            }
+        }
+        copy(res.begin(), res.end(), a.begin() + l);
+    };
+
+    if (n != 1) {
+        dfs(dfs, 1, n - 1);
+    }
+
+    vector<int> res(n);
+    for (int i = 0; i < n; ++i) {
+        res[a[i]] = i + 1;
+    }
+
+    cout << "! ";
+    putvec(res);
 }
 
 int main() {

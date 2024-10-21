@@ -471,40 +471,80 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    using mll = MLL<MDL>;
-
-    read(int, n);
-    readvec(int, a, n);
-
-    mll res = 1;
-
-    vector dp(n, vector<mll>(20 * n + 1));
-    vector<int> oc(20 + 1, -1);
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < i; ++j) {
-            for (int k = 0; k <= 20 * n; ++k) {
-                if (k == 10 * n or k + a[i] < 0 or k + a[i] > 20 * n) continue;
-                dp[i][k + a[i]] += dp[j][k];
-            }
-        }
-
-        for (int j = 0; j <= 20; ++j) {
-            if (j == 10 or oc[j] == -1) continue;
-            dp[i][10 * n + j - 10 + a[i]] += 1;
-            for (int k = 0; k < oc[j]; ++k) {
-                dp[i][10 * n + j - 10 + a[i]] += dp[k][10 * n];
-            }
-        }
-        oc[a[i] + 10] = i;
-
-        for (int j = 0; j <= 20 * n; ++j) {
-            if (dp[i][j] != 0) {
-                res += dp[i][j];
-            }
-        }
+    read(int, n, q);
+    vector<pii> ops;
+    for (int i = 0; i < q; ++i) {
+        read(char, hand);
+        read(int, pos);
+        hand = hand == 'R';
+        --pos;
+        ops.emplace_back(hand, pos);
     }
 
-    cout << res << '\n';
+    // determine if z is in the clockwise path from x to y
+    auto check = [&] (int x, int y, int z) {
+        if (x <= y) {
+            return z >= x and z <= y;
+        } else {
+            return z >= x or z <= y;
+        }
+    };
+
+    auto dis = [&] (int x, int y) {
+        if (x <= y) {
+            return y - x;
+        } else {
+            return y + n - x;
+        }
+    };
+
+    int last_hand = 0;
+    int last_pos = 0;
+    vector<int> dp(n, INF);
+    dp[1] = 0;
+    for (auto&& [hand, pos] : ops) {
+        vector<int> ndp(n, INF);
+        for (int j = 0; j < n; ++j) {
+            // move the current hand from x to y, while the other hand is initially at z
+            int x, y, z;
+            if (hand == last_hand) {
+                x = last_pos;
+                y = pos;
+                z = j;
+            } else {
+                x = j;
+                y = pos;
+                z = last_pos;
+            }
+            if (x == y and z == y) {
+                assert(dp[j] == INF);
+            }
+            if (z == y) {
+                // clockwise
+                chmin(ndp[(y + 1) % n], dp[j] + 1 + dis(x, y));
+                // counter-clockwise
+                chmin(ndp[mod(y - 1, n)], dp[j] + 1 + dis(y, x));
+            } else if (x == y) {
+                assert(dis(y, x) == 0);
+                chmin(ndp[z], dp[j]);
+            } else if (check(x, y, z)) {
+                // clockwise
+                chmin(ndp[(y + 1) % n], dp[j] + dis(z, (y + 1) % n) + dis(x, y));
+                // counter-clockwise
+                chmin(ndp[z], dp[j] + dis(y, x));
+            } else {
+                // clockwise
+                chmin(ndp[z], dp[j] + dis(x, y));
+                // counter-clockwise
+                chmin(ndp[mod(y - 1, n)], dp[j] + dis(mod(y - 1, n), z) + dis(y, x));
+            }
+        }
+        last_hand = hand;
+        last_pos = pos;
+        dp = std::move(ndp);
+    }
+
+    cout << *min_element(dp.begin(), dp.end()) << '\n';
 }
 
 int main() {

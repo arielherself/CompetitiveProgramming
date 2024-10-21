@@ -466,41 +466,82 @@ void dump() {}
 
 void dump_ignore() {}
 
+using mll = MLL<MDL>;
+constexpr int N = 2e5 + 10;
+mll fact[N];
+
 void prep() {
+    fact[0] = 1;
+    for (int i = 1; i < N; ++i) {
+        fact[i] = fact[i - 1] * i;
+    }
 }
 
 // __attribute__((target("popcnt")))
 void solve() {
-    using mll = MLL<MDL>;
+    int n;
+    vector<int> a;
+    {
+        read(string, s);
+        n = s.size();
+        for (auto&& c : s) {
+            a.emplace_back(c >= '0' and c <= '9' ? c - '0' : 10 + c - 'A');
+        }
+    }
 
-    read(int, n);
-    readvec(int, a, n);
+    read(int, k);
+    vector dp(n + 1, vector(k + 1, vector<mll>(k + 1)));
+    // j = total, l = preconfigured
+    for (int j = 0; j <= k; ++j) {
+        dp[0][j][j] = 1;
+    }
+    for (int i = 1; i <= n; ++i) {
+        for (int j = 0; j <= k; ++j) {
+            for (int l = 0; l <= j; ++l) {
+                dp[i][j][l] = j * dp[i - 1][j][l];
+                if (j) {
+                    dp[i][j][l] += (j - l) * dp[i - 1][j - 1][l];
+                }
+            }
+        }
+    }
 
-    mll res = 1;
+    array<int, 16> oc = {};
+    int cnt = 0;
 
-    vector dp(n, vector<mll>(20 * n + 1));
-    vector<int> oc(20 + 1, -1);
+    auto add = [&] (int i) {
+        if (oc[i]++ == 0) {
+            cnt += 1;
+        }
+    };
+
+    auto remove = [&] (int i) {
+        if (--oc[i] == 0) {
+            cnt -= 1;
+        }
+    };
+
+    mll res = 0;
+
     for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < i; ++j) {
-            for (int k = 0; k <= 20 * n; ++k) {
-                if (k == 10 * n or k + a[i] < 0 or k + a[i] > 20 * n) continue;
-                dp[i][k + a[i]] += dp[j][k];
+        for (int j = 0; j < a[i]; ++j) {
+            if (i + j == 0) continue;
+            add(j);
+            if (k - cnt >= 0) {
+                res += comb(16 - cnt, k - cnt) * dp[n - i - 1][k][cnt];
             }
+            remove(j);
         }
 
-        for (int j = 0; j <= 20; ++j) {
-            if (j == 10 or oc[j] == -1) continue;
-            dp[i][10 * n + j - 10 + a[i]] += 1;
-            for (int k = 0; k < oc[j]; ++k) {
-                dp[i][10 * n + j - 10 + a[i]] += dp[k][10 * n];
-            }
-        }
-        oc[a[i] + 10] = i;
+        add(a[i]);
+    }
+    if (cnt == k) {
+        res += 1;
+    }
 
-        for (int j = 0; j <= 20 * n; ++j) {
-            if (dp[i][j] != 0) {
-                res += dp[i][j];
-            }
+    for (int i = 1; i <= n - 1; ++i) {
+        for (int j = 1; j < 16; ++j) {
+            res += comb(15, k - 1) * dp[i - 1][k][1];
         }
     }
 

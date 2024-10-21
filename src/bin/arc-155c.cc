@@ -471,40 +471,87 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    using mll = MLL<MDL>;
-
     read(int, n);
     readvec(int, a, n);
+    readvec(int, b, n);
 
-    mll res = 1;
-
-    vector dp(n, vector<mll>(20 * n + 1));
-    vector<int> oc(20 + 1, -1);
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < i; ++j) {
-            for (int k = 0; k <= 20 * n; ++k) {
-                if (k == 10 * n or k + a[i] < 0 or k + a[i] > 20 * n) continue;
-                dp[i][k + a[i]] += dp[j][k];
-            }
-        }
-
-        for (int j = 0; j <= 20; ++j) {
-            if (j == 10 or oc[j] == -1) continue;
-            dp[i][10 * n + j - 10 + a[i]] += 1;
-            for (int k = 0; k < oc[j]; ++k) {
-                dp[i][10 * n + j - 10 + a[i]] += dp[k][10 * n];
-            }
-        }
-        oc[a[i] + 10] = i;
-
-        for (int j = 0; j <= 20 * n; ++j) {
-            if (dp[i][j] != 0) {
-                res += dp[i][j];
-            }
-        }
+    if (multiset(a.begin(), a.end()) != multiset(b.begin(), b.end())) {
+        cout << "No\n";
+        return;
     }
 
-    cout << res << '\n';
+    int a_can_change = 0, b_can_change = 0;
+    int a_has_even = 0;
+    int zeros = 0;
+    for (int i = 0; i < n; ++i) {
+        if (a[i] % 2 == 1 and (i - 1 >= 0 and a[i - 1] % 2 == 1 or i - 2 >= 0 and a[i - 2] % 2 == 1)) {
+            a_can_change = 1;
+        }
+        if (b[i] % 2 == 1 and (i - 1 >= 0 and b[i - 1] % 2 == 1 or i - 2 >= 0 and b[i - 2] % 2 == 1)) {
+            b_can_change = 1;
+        }
+        a_has_even |= a[i] % 2 == 0;
+        zeros += a[i] % 2 == 0;
+    }
+    a_can_change &= a_has_even;
+    b_can_change &= a_has_even;
+    zeros = zeros >= 3;
+
+    if (a_can_change) {
+        if (b_can_change) {
+            if (zeros) {
+                cout << "Yes\n";
+            } else {
+                vector<int> l, r;
+                for (int i = 0; i < n; ++i) {
+                    if (a[i] % 2 == 0) {
+                        l.emplace_back(a[i]);
+                    }
+                    if (b[i] % 2 == 0) {
+                        r.emplace_back(b[i]);
+                    }
+                }
+                if (l == r) {
+                    cout << "Yes\n";
+                } else {
+                    cout << "No\n";
+                }
+            }
+        } else {
+            cout << "No\n";
+        }
+    } else {
+        int f = 1;
+        vector<int> l, r;
+        for (int i = 0; i < n; ++i) {
+            if (a[i] % 2 == 1) {
+                if (l.size() >= 3) {
+                    sort(l.begin(), l.end());
+                    sort(r.begin(), r.end());
+                }
+                if (l != r or a[i] != b[i]) {
+                    f = 0;
+                    break;
+                }
+                l = r = {};
+            } else {
+                l.emplace_back(a[i]);
+                r.emplace_back(b[i]);
+            }
+        }
+        if (l.size() >= 3) {
+            sort(l.begin(), l.end());
+            sort(r.begin(), r.end());
+        }
+        if (l != r) {
+            f = 0;
+        }
+        if (f) {
+            cout << "Yes\n";
+        } else {
+            cout << "No\n";
+        }
+    }
 }
 
 int main() {

@@ -471,40 +471,59 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    using mll = MLL<MDL>;
+    read(int, n, m);
+    readvec(int, a, m);
+    readvec(int, b, m);
 
-    read(int, n);
-    readvec(int, a, n);
+    vector<vector<pii>> e(n + 1);
+    for (int i = 0; i < m; ++i) {
+        edgew(e, a[i], b[i], i);
+    }
 
-    mll res = 1;
+    vector<int> res(m, -1);
 
-    vector dp(n, vector<mll>(20 * n + 1));
-    vector<int> oc(20 + 1, -1);
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < i; ++j) {
-            for (int k = 0; k <= 20 * n; ++k) {
-                if (k == 10 * n or k + a[i] < 0 or k + a[i] > 20 * n) continue;
-                dp[i][k + a[i]] += dp[j][k];
+    vector<int> depth(n + 1);
+    {
+        vector<bool> vis(n + 1);
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            vis[v] = 1;
+            for (auto&& [u, i] : e[v]) {
+                if (u == pa or vis[u]) continue;
+                if (v == a[i]) {
+                    res[i] = 0;
+                } else {
+                    res[i] = 1;
+                }
+                depth[u] = depth[v] + 1;
+                dfs(dfs, u, v);
             }
-        }
-
-        for (int j = 0; j <= 20; ++j) {
-            if (j == 10 or oc[j] == -1) continue;
-            dp[i][10 * n + j - 10 + a[i]] += 1;
-            for (int k = 0; k < oc[j]; ++k) {
-                dp[i][10 * n + j - 10 + a[i]] += dp[k][10 * n];
-            }
-        }
-        oc[a[i] + 10] = i;
-
-        for (int j = 0; j <= 20 * n; ++j) {
-            if (dp[i][j] != 0) {
-                res += dp[i][j];
+        };
+        for (int i = 1; i <= n; ++i) {
+            if (not vis[i]) {
+                dfs(dfs, i, 0);
             }
         }
     }
 
-    cout << res << '\n';
+    for (int i = 0; i < m; ++i) {
+        if (res[i] != -1) continue;
+        int u = a[i], v = b[i];
+        if (u == v) {
+            res[i] = 0;
+            continue;
+        }
+        assert(depth[u] != depth[v]);
+        if (depth[u] < depth[v]) {
+            res[i] = 1;
+        } else {
+            res[i] = 0;
+        }
+    }
+
+    for (int i = 0; i < m; ++i) {
+        cout << res[i];
+    }
+    cout << endl;
 }
 
 int main() {

@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,111 +469,21 @@ void dump_ignore() {}
 void prep() {
 }
 
-void fft(vector<complex<ld>>& y, bool idft) {
-    int n = y.size();
-    vector<int> rev(n);
-    for (int i = 0; i < n; ++i) {
-        rev[i] = rev[i >> 1] >> 1;
-        if (i & 1) {
-            rev[i] |= n >> 1;
-        }
-    }
-    for (int i = 0; i < n; ++i) {
-        if (i < rev[i]) {
-            swap(y[i], y[rev[i]]);
-        }
-    }
-    for (int h = 2; h <= n; h <<= 1) {
-        complex<ld> wn(cos(2 * M_PI / h), sin(2 * M_PI / h));
-        for (int j = 0; j < n; j += h) {
-            complex<ld> w(1);
-            for (int k = j; k < j + h / 2; ++k) {
-                complex<ld> u = y[k], t = w * y[k + h / 2];
-                y[k] = u + t;
-                y[k + h / 2] = u - t;
-                w *= wn;
-            }
-        }
-    }
-    if (idft) {
-        reverse(y.begin() + 1, y.end());
-        for (int i = 0; i < n; ++i) {
-            y[i] /= n;
-        }
-    }
-}
-vector<ll> multiply(const vector<ll>& a, const vector<ll>& b) {
-    vector<complex<ld>> A(a.begin(), a.end()), B(b.begin(), b.end());
-    int n = 1;
-    while (n < a.size() + b.size()) n <<= 1;
-    A.resize(n), B.resize(n);
-    fft(A, false), fft(B, false);
-    for (int i = 0; i < n; ++i) {
-        A[i] *= B[i];
-    }
-    fft(A, true);
-    vector<ll> res(n);
-    transform(A.begin(), A.end(), res.begin(), expr(ll(round(x.real())), auto&& x));
-    res.resize(a.size() + b.size() - 1);
-    return res;
-}
-
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr int N = 1e6;
-
     read(int, n);
-    read(int, x);
-    readvec(int, a, n);
-
-    vector<int> cnt(x + 1);
-    vector<ll> poly_a(N + 1);
-    vector<ll> poly_b(N + 1);
-    for (int i = 0; i < n; ++i) {
-        cnt[a[i]] += 1;
-        poly_a[a[i]] += 1;
-        poly_b[a[i]] += 1;
-    }
-
-    // debug(1);
-    auto twosum = multiply(poly_a, poly_b);
-    // debug(2);
-    // for (int i = 0; i <= x; ++i) {
-    //     debug(twosum[i]);
-    // }
-
-    for (int i = 0; i < n; ++i) {
-        int p = a[i];
-        if (twosum[x - p] != 0) {
-            ll invalid = 0;
-            if ((x - p) % 2 == 0) {
-                invalid += cnt[(x - p) / 2];
-            }
-            if (a[i] <= x - p) {
-                invalid += 2 * cnt[x - p - a[i]];
-                if (a[i] * 2 == x - p) {
-                    invalid -= 2;
-                }
-            }
-            // deb(i, invalid);
-            if (twosum[x - p] - invalid > 0) {
-                vector<int> rev(N + 1);
-                for (int j = 0; j < n; ++j) {
-                    if (j == i) continue;
-                    if (x - p - a[j] >= 0 and rev[x - p - a[j]]) {
-                        vector<int> res = { i + 1, j + 1, rev[x - p - a[j]] + 1 };
-                        sort(res.begin(), res.end());
-                        putvec(res);
-                        return;
-                    }
-                    rev[a[j]] = j;
-                }
-                assert(false);
-            }
+    read(string, a);
+    for (int i = 1; i < n; ++i) {
+        if (a[i - 1] == '1' and a[i] == '1') {
+            cout << "YES\n";
+            return;
         }
     }
-
-    cout << -1 << '\n';
+    if (a[0] == '1' or a[n - 1] == '1') {
+        cout << "YES\n";
+    } else {
+        cout << "NO\n";
+    }
 }
 
 int main() {

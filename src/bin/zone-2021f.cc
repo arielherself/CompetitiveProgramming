@@ -469,42 +469,83 @@ void dump_ignore() {}
 void prep() {
 }
 
+// in-place modification
+int basis(vector<pll>& a) {
+    int n = a.size();
+    int has = 0;
+    for (int i = 63; ~i and has < n; --i) {
+        for (int j = has; j < n; ++j) {
+            if (a[j].first & (ll(1) << i)) {
+                swap(a[j], a[has]);
+                break;
+            }
+        }
+        if (not (a[has].first & (ll(1) << i))) continue;
+        for (int j = 0; j < n; ++j) {
+            if (j == has) continue;
+            if (a[j].first & (ll(1) << i)) {
+                a[j].first ^= a[has].first;
+            }
+        }
+        ++has;
+    }
+    return has;
+}
+
 // __attribute__((target("popcnt")))
 void solve() {
-    using mll = MLL<MDL>;
+    read(int, n, m);
+    int l = lg2(n);
+    vector<bool> available(n, 1);
+    for (int i = 0; i < m; ++i) {
+        read(int, x);
+        available[x] = 0;
+    }
 
-    read(int, n);
-    readvec(int, a, n);
-
-    mll res = 1;
-
-    vector dp(n, vector<mll>(20 * n + 1));
-    vector<int> oc(20 + 1, -1);
+    vector<pll> cand;
     for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < i; ++j) {
-            for (int k = 0; k <= 20 * n; ++k) {
-                if (k == 10 * n or k + a[i] < 0 or k + a[i] > 20 * n) continue;
-                dp[i][k + a[i]] += dp[j][k];
-            }
-        }
-
-        for (int j = 0; j <= 20; ++j) {
-            if (j == 10 or oc[j] == -1) continue;
-            dp[i][10 * n + j - 10 + a[i]] += 1;
-            for (int k = 0; k < oc[j]; ++k) {
-                dp[i][10 * n + j - 10 + a[i]] += dp[k][10 * n];
-            }
-        }
-        oc[a[i] + 10] = i;
-
-        for (int j = 0; j <= 20 * n; ++j) {
-            if (dp[i][j] != 0) {
-                res += dp[i][j];
-            }
+        if (available[i]) {
+            cand.emplace_back(i, i);
         }
     }
 
-    cout << res << '\n';
+    m = basis(cand);
+    if (m < l) {
+        cout << -1 << '\n';
+    } else {
+        // assert(m == l);
+
+        vector<int> gray = { 0 };
+        for (int i = 0; i < n - 1; ++i) {
+            int right;
+            if (i % 2 == 0) {
+                right = 0;
+            } else {
+                right = lsp(gray.back()) + 1;
+            }
+            gray.emplace_back(gray.back() ^ (1 << right));
+        }
+        // debug(gray);
+
+        int u = 0;
+        adj(ch, n - 1);
+        for (int i = 0; i < n - 1; ++i) {
+            int v = u xor cand[lsp(gray[i] ^ gray[i + 1])].second;
+            edge(ch, u, v);
+            u = v;
+        }
+
+        {
+            auto dfs = [&] (auto dfs, int v, int pa) -> void {
+                for (auto&& u : ch[v]) {
+                    if (u == pa) continue;
+                    cout << u << ' ' << v << '\n';
+                    dfs(dfs, u, v);
+                }
+            };
+            dfs(dfs, 0, 0);
+        }
+    }
 }
 
 int main() {

@@ -471,40 +471,90 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    using mll = MLL<MDL>;
-
-    read(int, n);
+    read(int, n, l);
     readvec(int, a, n);
+    readvec(int, b, n);
 
-    mll res = 1;
+    n += 2;
+    a.insert(a.begin(), 0);
+    a.emplace_back(l + 1);
+    b.insert(b.begin(), 0);
+    b.emplace_back(l + 1);
 
-    vector dp(n, vector<mll>(20 * n + 1));
-    vector<int> oc(20 + 1, -1);
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < i; ++j) {
-            for (int k = 0; k <= 20 * n; ++k) {
-                if (k == 10 * n or k + a[i] < 0 or k + a[i] > 20 * n) continue;
-                dp[i][k + a[i]] += dp[j][k];
+    auto dfs = [&] (auto dfs, int left, int right) -> ll {
+        if (left > right) return 0;
+        int direction = -1;
+        for (int i = left; i <= right; ++i) {
+            if (i != left and i != right and a[i] == b[i]) {
+                return min(INFLL, dfs(dfs, left, i) + dfs(dfs, i, right));
+            } else if (i > left and a[i] != b[i] and a[i - 1] != b[i - 1] and (a[i] < b[i]) != (a[i - 1] < b[i - 1])) {
+                return min(INFLL, dfs(dfs, left, i - 1) + dfs(dfs, i, right));
+            }
+            if (direction == -1 and a[i] != b[i]) {
+                direction = a[i] < b[i];
             }
         }
+        if (direction == -1) return 0;
 
-        for (int j = 0; j <= 20; ++j) {
-            if (j == 10 or oc[j] == -1) continue;
-            dp[i][10 * n + j - 10 + a[i]] += 1;
-            for (int k = 0; k < oc[j]; ++k) {
-                dp[i][10 * n + j - 10 + a[i]] += dp[k][10 * n];
+        unordered_map<int, int, safe_hash> rev;
+        vector<pii> segs(right - left + 1, { INF, -INF });
+        if (direction == 1) {
+            for (int i = right; i >= left; --i) {
+                if (not rev.count(i - b[i])) {
+                    if (a[i] != b[i]) {
+                        return INFLL;
+                    }
+                } else {
+                    chmin(segs[rev[i - b[i]] - left].first, i);
+                    chmax(segs[rev[i - b[i]] - left].second, i);
+                }
+                rev[i - a[i]] = i;
+            }
+        } else {
+            for (int i = left; i <= right; ++i) {
+                if (not rev.count(i - b[i])) {
+                    if (a[i] != b[i]) {
+                        return INFLL;
+                    }
+                } else {
+                    chmin(segs[rev[i - b[i]] - left].first, i);
+                    chmax(segs[rev[i - b[i]] - left].second, i);
+                }
+                rev[i - a[i]] = i;
             }
         }
-        oc[a[i] + 10] = i;
-
-        for (int j = 0; j <= 20 * n; ++j) {
-            if (dp[i][j] != 0) {
-                res += dp[i][j];
+        for (int i = left + 1; i <= right; ++i) {
+            if (segs[i - left].first != INF and segs[i - 1 - left].first != INF and segs[i - left].first < segs[i - 1 - left].second) {
+                return INFLL;
             }
         }
-    }
+        ll res = 0;
+        if (direction == 1) {
+            for (int i = left; i <= right; ++i) {
+                if (segs[i - left].first != INF) {
+                    if (i > left and a[i] == a[i - 1] + 1) {
+                        ;;
+                    } else {
+                        res += i - segs[i - left].first;
+                    }
+                }
+            }
+        } else {
+            for (int i = left; i <= right; ++i) {
+                if (segs[i - left].first != INF) {
+                    if (i < right and a[i] == a[i + 1] - 1) {
+                        ;;
+                    } else {
+                        res += segs[i - left].second - i;
+                    }
+                }
+            }
+        }
+        return res;
+    };
 
-    cout << res << '\n';
+    ll res = dfs(dfs, 0, n - 1);
+    cout << (res == INFLL ? -1 : res) << '\n';
 }
 
 int main() {

@@ -471,40 +471,105 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    using mll = MLL<MDL>;
-
     read(int, n);
-    readvec(int, a, n);
-
-    mll res = 1;
-
-    vector dp(n, vector<mll>(20 * n + 1));
-    vector<int> oc(20 + 1, -1);
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < i; ++j) {
-            for (int k = 0; k <= 20 * n; ++k) {
-                if (k == 10 * n or k + a[i] < 0 or k + a[i] > 20 * n) continue;
-                dp[i][k + a[i]] += dp[j][k];
-            }
-        }
-
-        for (int j = 0; j <= 20; ++j) {
-            if (j == 10 or oc[j] == -1) continue;
-            dp[i][10 * n + j - 10 + a[i]] += 1;
-            for (int k = 0; k < oc[j]; ++k) {
-                dp[i][10 * n + j - 10 + a[i]] += dp[k][10 * n];
-            }
-        }
-        oc[a[i] + 10] = i;
-
-        for (int j = 0; j <= 20 * n; ++j) {
-            if (dp[i][j] != 0) {
-                res += dp[i][j];
-            }
-        }
+    adj(ch, n);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
     }
 
-    cout << res << '\n';
+    vector<int> max_depth(n + 1);
+    vector<ll> son_depth(n + 1);
+    vector<ll> cost(n + 1);
+    vector<ll> son_cost(n + 1);
+    {
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            max_depth[v] = 1;
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v);
+                son_cost[v] += cost[u];
+                chmax(max_depth[v], max_depth[u] + 1);
+                son_depth[v] += max_depth[u];
+            }
+            cost[v] = 1 + son_cost[v] + son_depth[v] - max_depth[v] + 1;
+        };
+        dfs(dfs, 1, 0);
+    }
+
+    int varmin = 0;
+    ll min_cost = INFLL;
+    {
+        #define calc() (1 + son_cost[v] + up_cost + son_depth[v] + up_depth - *depth.rbegin())
+        auto dfs = [&] (auto dfs, int v, int pa, ll up_cost, int up_depth) -> void {
+            // deb(v, pa, up_cost, up_depth);
+            multiset<int> depth = { up_depth };
+            for (auto u : ch[v]) {
+                if (u == pa) continue;
+                depth.emplace(max_depth[u]);
+            }
+
+            if (chmin(min_cost, calc())) {
+                varmin = v;
+            }
+
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                son_depth[v] -= max_depth[u];
+                depth.erase(depth.lower_bound(max_depth[u]));
+                son_cost[v] -= cost[u];
+                ll next_up = calc();
+                dfs(dfs, u, v, next_up, 1 + *depth.rbegin());
+                son_depth[v] += max_depth[u];
+                depth.emplace(max_depth[u]);
+                son_cost[v] += cost[u];
+            }
+        };
+        #undef calc
+        dfs(dfs, 1, 0, 0, 0);
+    }
+    // deb(varmin, min_cost);
+
+    {
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            max_depth[v] = 1;
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v);
+                son_cost[v] += cost[u];
+                chmax(max_depth[v], max_depth[u] + 1);
+                son_depth[v] += max_depth[u];
+            }
+            cost[v] = 1 + son_cost[v] + son_depth[v] - max_depth[v] + 1;
+        };
+        dfs(dfs, varmin, 0);
+    }
+
+    vector<int> res(n + 1);
+    {
+        int idx = 1;
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            res[v] = idx++;
+
+            vector<int> seq;
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                seq.emplace_back(u);
+            }
+
+            int m = seq.size();
+            sort_by_key(seq.begin(), seq.end(), expr(max_depth[u], int u));
+            for (int i = 0; i < m; ++i) {
+                if (i) {
+                    idx += max_depth[seq[i - 1]];
+                }
+                dfs(dfs, seq[i], v);
+            }
+        };
+        dfs(dfs, varmin, 0);
+    }
+
+    putvec1(res);
 }
 
 int main() {

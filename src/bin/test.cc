@@ -471,16 +471,54 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr int N = 11;
-    for (int i = 1; i <= N; ++i) {
-        cerr << "i = " << i << ": ";
-        int curr = i;
-        do {
-            cerr << curr << ' ';
-            curr = (curr * i) % N;
-        } while (curr > 1);
-        cerr << endl;
+    read(int, n, m);
+    readvec(int, a, m);
+    readvec(int, b, m);
+    vector<vector<pii>> ch(2 * n + 1);
+    for (int i = 0; i < m; ++i) {
+        read(char, c);
+        c = c == '1';
+        if (c) {
+            edgew(ch, b[i], a[i] + n, i);
+        } else {
+            edgew(ch, a[i], b[i] + n, i);
+        }
     }
+    for (int i = 1; i <= n; ++i) {
+        debug(m - 1 + i);
+        edgew(ch, i, i + n, m - 1 + i);
+    }
+    n *= 2;
+    m += n;
+    debug(ch);
+
+    vector<bool> isbridge(m);
+    {
+        vector<int> low(n + 1), dfn(n + 1), father(n + 1);
+        int dfs_clock = 0;
+        int cnt_bridge = 0;
+        auto dfs = [&] (auto dfs, int u, int fa) -> void {
+            father[u] = fa;
+            low[u] = dfn[u] = ++dfs_clock;
+            for (auto&& [v, i] : ch[u]) {
+                if (!dfn[v]) {
+                    dfs(dfs, v, u);
+                    low[u] = min(low[u], low[v]);
+                    if (low[v] > dfn[u]) {
+                        isbridge[i] = true;
+                        ++cnt_bridge;
+                    }
+                } else if (dfn[v] < dfn[u] && v != fa) {
+                    low[u] = min(low[u], dfn[v]);
+                }
+            }
+        };
+        for (int i = 1; i <= n; ++i) {
+            if (not dfn[i]) dfs(dfs, i, 0);
+        }
+    }
+
+    cout << count(isbridge.begin(), isbridge.end(), true) << '\n';
 }
 
 int main() {
