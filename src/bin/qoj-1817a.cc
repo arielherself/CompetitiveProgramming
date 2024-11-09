@@ -148,8 +148,6 @@ struct array_hash {
 #define faster(um) __AS_PROCEDURE((um).reserve(1024); (um).max_load_factor(0.25);)
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
-#define pa(a) __AS_PROCEDURE(__typeof(a) pa; pa.push_back({}); for (auto&&x : a) pa.push_back(pa.back() + x);)
-#define sa(a) __AS_PROCEDURE(__typeof(a) sa(a.size() + 1); {int n = a.size(); for (int i = n - 1; i >= 0; --i) sa[i] = sa[i + 1] + a[i];};)
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
 #define edgew(ch, u, v, ...) __AS_PROCEDURE(ch[u].emplace_back(v, __VA_ARGS__), ch[v].emplace_back(u, __VA_ARGS__);)
@@ -458,7 +456,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,15 +467,144 @@ void dump_ignore() {}
 void prep() {
 }
 
-// __attribute__((target("popcnt")))
+__attribute__((target("lzcnt")))
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int res = n;
-    for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+    read(int, l, r);
+
+    if (l == r) {
+        cout << msp(l) + 2 << '\n';
+        int cnt = 0;
+        for (int i = msp(l); ~i; --i) {
+            cnt += 1;
+            cout << "1 " << cnt + 1 << ' ' << (l >> i & 1) << '\n';
+        }
+        cout << "0\n";
+    } else {
+        int dpos;
+        for (int i = msp(r); ~i; --i) {
+            if ((l >> i & 1) != (r >> i & 1)) {
+                dpos = i;
+                break;
+            }
+        }
+
+        vector<vector<pii>> e(2);
+        int start = 0, end = 1;
+
+        int head;
+        {
+            int curr = start;
+            for (int i = msp(r); i > dpos; --i) {
+                e[curr].emplace_back(e.size(), r >> i & 1);
+                e.emplace_back();
+                curr = e.size() - 1;
+            }
+            head = curr;
+        }
+
+        if (dpos == 0) {
+            e[head].emplace_back(end, 0);
+            e[head].emplace_back(end, 1);
+        } else {
+            // right half
+            e[head].emplace_back(e.size(), 1);
+            e.emplace_back();
+            int curr = e.size() - 1;
+            vector<int> mp_zero;
+            for (int i = dpos - 1; ~i; --i) {
+                int bit = r >> i & 1;
+                if (bit == 1) {
+                    if (mp_zero.empty()) {
+                        mp_zero.emplace_back(end);
+                        for (int j = 1; j <= i; ++j) {
+                            mp_zero.emplace_back(e.size());
+                            e.emplace_back();
+                        }
+                        for (int j = i - 1; ~j; --j) {
+                            e[mp_zero[j + 1]].emplace_back(mp_zero[j], 1);
+                            e[mp_zero[j + 1]].emplace_back(mp_zero[j], 0);
+                        }
+                    }
+                    e[curr].emplace_back(mp_zero[i], 0);
+                }
+                if (i == 0) {
+                    e[curr].emplace_back(end, bit);
+                } else {
+                    e[curr].emplace_back(e.size(), bit);
+                    e.emplace_back();
+                    curr = e.size() - 1;
+                }
+            }
+
+            // left half
+            vector<int> mp_one;
+            int s;
+            if (head == start) {
+                if (msp(l) == 0) {
+                    e[head].emplace_back(end, 1);
+                } else {
+                    e[head].emplace_back(e.size(), 1);
+                    e.emplace_back();
+                    curr = e.size() - 1;
+                }
+                s = msp(l) - 1;
+                for (int i = dpos - 1; i > msp(l); --i) {
+                    if (mp_one.empty()) {
+                        mp_one.emplace_back(end);
+                        for (int j = 1; j <= i; ++j) {
+                            mp_one.emplace_back(e.size());
+                            e.emplace_back();
+                        }
+                        for (int j = i - 1; ~j; --j) {
+                            e[mp_one[j + 1]].emplace_back(mp_one[j], 1);
+                            e[mp_one[j + 1]].emplace_back(mp_one[j], 0);
+                        }
+                    }
+                    e[head].emplace_back(mp_one[i], 1);
+                }
+            } else {
+                e[head].emplace_back(e.size(), 0);
+                e.emplace_back();
+                curr = e.size() - 1;
+                s = dpos - 1;
+            }
+            for (int i = s; ~i; --i) {
+                int bit = l >> i & 1;
+                if (bit == 0) {
+                    if (mp_one.empty()) {
+                        mp_one.emplace_back(end);
+                        for (int j = 1; j <= i; ++j) {
+                            mp_one.emplace_back(e.size());
+                            e.emplace_back();
+                        }
+                        for (int j = i - 1; ~j; --j) {
+                            e[mp_one[j + 1]].emplace_back(mp_one[j], 1);
+                            e[mp_one[j + 1]].emplace_back(mp_one[j], 0);
+                        }
+                    }
+                    e[curr].emplace_back(mp_one[i], 1);
+                }
+                if (i == 0) {
+                    e[curr].emplace_back(end, bit);
+                } else {
+                    e[curr].emplace_back(e.size(), bit);
+                    e.emplace_back();
+                    curr = e.size() - 1;
+                }
+            }
+        }
+
+
+        int n = e.size();
+        cout << n << '\n';
+        for (int i = 0; i < n; ++i) {
+            cout << e[i].size() << ' ';
+            for (auto&& [j, v] : e[i]) {
+                cout << j + 1 << ' ' << v << ' ';
+            }
+            cout << '\n';
+        }
     }
-    cout << res << '\n';
 }
 
 int main() {

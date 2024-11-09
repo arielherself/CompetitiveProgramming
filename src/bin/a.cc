@@ -1,5 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#pragma GCC optimize("Ofast")
+#pragma GCC optimize("Ofast,no-stack-protector,unroll-loops,fast-math")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -471,13 +471,14 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n, m);
-    int md = (ll(1) * (1 + n) * n) % m;
-    if (md > 0 and md <= n) {
-        cout << "Bob\n";
-    } else {
-        cout << "Alice\n";
+    read(int, n);
+    readvec(pii, a, n);
+    int h = 0, w = 0;
+    for (int i = 0; i < n; ++i) {
+        chmax(h, a[i].first);
+        chmax(w, a[i].second);
     }
+    cout << 2 * (h + w) << '\n';
 }
 
 int main() {

@@ -1,5 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#pragma GCC optimize("Ofast")
+#pragma GCC optimize("Ofast,no-stack-protector,unroll-loops,fast-math")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -472,18 +472,24 @@ void prep() {
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
-    read(string, a);
+    readvec(ll, a, n);
+    unordered_set<ll, safe_hash> oc;
+    vector<pll> e;
     for (int i = 1; i < n; ++i) {
-        if (a[i - 1] == '1' and a[i] == '1') {
-            cout << "YES\n";
-            return;
+        e.emplace_back(a[i] + i, a[i] + 2 * i);
+    }
+    sort(e.begin(), e.end());
+    oc.emplace(n);
+    for (auto&& [u, v] : e) {
+        if (oc.count(u)) {
+            oc.emplace(v);
         }
     }
-    if (a[0] == '1' or a[n - 1] == '1') {
-        cout << "YES\n";
-    } else {
-        cout << "NO\n";
+    ll mx = 0;
+    for (auto&& x : oc) {
+        chmax(mx, x);
     }
+    cout << mx << '\n';
 }
 
 int main() {

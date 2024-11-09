@@ -472,12 +472,101 @@ void prep() {
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
-    readvec(int, a, n);
-    int res = n;
-    for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+    adj(ch, n);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
     }
-    cout << res << '\n';
+
+    vector<array<int, 2>> dp(n + 1);
+    vector<array<pii, 2>> chain(n + 1);
+    vector<array<vector<pii>, 2>> extra(n + 1);
+    vector<array<vector<pii>, 2>> remove(n + 1);
+    vector<vector<pii>> cand(n + 1);
+    vector<int> c(n + 1);
+    {
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v);
+            }
+
+            int tot = 0;
+
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                cand[v].emplace_back(dp[u][1] - dp[u][0], u);
+                tot += dp[u][0];
+            }
+            int m = cand[v].size();
+            sort(cand[v].begin(), cand[v].end(), greater());
+
+            if (m == 0) {
+                dp[v] = { 0, 0 };
+                chain[v][0] = chain[v][1] = { v, v };
+                return;
+            }
+
+            // evaluate dp[v][1]
+            c[v] = 1;
+            dp[v][0] = dp[v][1] = 1 + cand[v][0].first + tot - (m - 1);
+            int prev = chain[cand[v][0].second][1].second;
+            for (int i = 1; i < m; ++i) {
+                remove[v][1].emplace_back(v, cand[v][i].second);
+                remove[v][0].emplace_back(v, cand[v][i].second);
+                extra[v][1].emplace_back(chain[cand[v][i].second][0].first, prev);
+                extra[v][0].emplace_back(chain[cand[v][i].second][0].first, prev);
+                prev = chain[cand[v][i].second][0].second;
+            }
+            chain[v][0] = chain[v][1] = { v, prev };
+
+            // evaluate dp[v][0]
+            if (m >= 2 and chmax(dp[v][0], 2 + cand[v][0].first + cand[v][1].first + tot - (m - 2))) {
+                c[v] = 0;
+                int prev = chain[cand[v][1].second][1].second;
+                remove[v][0] = {};
+                extra[v][0] = {};
+                for (int i = 2; i < m; ++i) {
+                    remove[v][0].emplace_back(v, cand[v][i].second);
+                    extra[v][0].emplace_back(chain[cand[v][i].second][0].first, prev);
+                    prev = chain[cand[v][i].second][0].second;
+                }
+                chain[v][0] = { chain[cand[v][0].second][1].second, prev };
+            }
+        };
+        dfs(dfs, 1, 0);
+    }
+
+    vector<pii> real_remove, real_add;
+    {
+        auto dfs = [&] (auto dfs, int v, int pa, int choice) -> void {
+            real_add.insert(real_add.end(), extra[v][choice].begin(), extra[v][choice].end());
+            real_remove.insert(real_remove.end(), remove[v][choice].begin(), remove[v][choice].end());
+            if (cand[v].size()) {
+                if (choice == 0) {
+                    dfs(dfs, cand[v][0].second, v, 1);
+                    dfs(dfs, cand[v][1].second, v, 1);
+                    for (int i = 2; i < cand[v].size(); ++i) {
+                        dfs(dfs, cand[v][i].second, v, c[cand[v][i].second]);
+                    }
+                } else {
+                    dfs(dfs, cand[v][0].second, v, 1);
+                    for (int i = 1; i < cand[v].size(); ++i) {
+                        dfs(dfs, cand[v][i].second, v, c[cand[v][i].second]);
+                    }
+                }
+            }
+        };
+        dfs(dfs, 1, 0, c[1]);
+    }
+
+    assert(real_remove.size() == real_add.size());
+    int m = real_remove.size();
+    cout << m << '\n';
+    for (int i = 0; i < m; ++i) {
+        cout << real_remove[i].first << ' ' << real_remove[i].second << ' ';
+        cout << real_add[i].first << ' ' << real_add[i].second << '\n';
+    }
 }
 
 int main() {

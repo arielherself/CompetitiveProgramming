@@ -148,8 +148,6 @@ struct array_hash {
 #define faster(um) __AS_PROCEDURE((um).reserve(1024); (um).max_load_factor(0.25);)
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
-#define pa(a) __AS_PROCEDURE(__typeof(a) pa; pa.push_back({}); for (auto&&x : a) pa.push_back(pa.back() + x);)
-#define sa(a) __AS_PROCEDURE(__typeof(a) sa(a.size() + 1); {int n = a.size(); for (int i = n - 1; i >= 0; --i) sa[i] = sa[i + 1] + a[i];};)
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
 #define edgew(ch, u, v, ...) __AS_PROCEDURE(ch[u].emplace_back(v, __VA_ARGS__), ch[v].emplace_back(u, __VA_ARGS__);)
@@ -458,7 +456,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,14 +467,74 @@ void dump_ignore() {}
 void prep() {
 }
 
-// __attribute__((target("popcnt")))
+__attribute__((target("popcnt,lzcnt")))
 void solve() {
+    using mll = MLL<MDL>;
+
     read(int, n);
     readvec(int, a, n);
-    int res = n;
-    for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+
+    auto compress = [&] (int mask, int curr) {
+        int cnt = 0;
+        int res = 0;
+        for (int i = 0; i < n; ++i) {
+            if (mask >> i & 1) {
+                res |= (curr >> i & 1) << (cnt++);
+            }
+        }
+        return res;
+    };
+
+    // auto expand = [&] (int mask, int curr) {
+    //     int res = 0;
+    //     for (int i = 0; i < n; ++i) {
+    //         if (mask >> i & 1) {
+    //             res |= (curr & 1) << i;
+    //             curr >>= 1;
+    //         }
+    //     }
+    //     return res;
+    // };
+
+    vector<vector<mll>> cut(1 << n);
+    for (int i = 0; i < (1 << n); ++i) {
+        int rev = ((1 << n) - 1) ^ i;
+        int m = popcount(rev);
+        cut[i].assign(1 << m, 1);
+
+        vector<int> s, t;
+        for (int j = 0; j < n; ++j) {
+            if (i >> j & 1) {
+                s.emplace_back(j);
+            } else {
+                t.emplace_back(j);
+            }
+        }
+
+        for (int j = 0; j < n - m; ++j) {
+            for (int k = 0; k < m; ++k) {
+                cut[i][1 << k] *= mll(1) * a[s[j]] / (a[s[j]] + a[t[k]]);
+            }
+        }
+
+        for (int j = 1; j < (1 << m); ++j) {
+            int last = 1 << msp(j);
+            cut[i][j] = cut[i][j ^ last] * cut[i][last];
+        }
     }
+
+    mll res = 0;
+    vector<mll> f(1 << n);
+    for (int i = 1; i < (1 << n); ++i) {
+        int rev = ((1 << n) - 1) ^ i;
+        int m = popcount(i);
+        f[i] = cut[i][(1 << n - m) - 1];
+        for (int j = (i - 1) & i; j; j = (j - 1) & i) {
+            f[i] -= f[j] * cut[i ^ j][compress(((1 << n) - 1) ^ i ^ j, rev)];
+        }
+        res += popcount(i) * f[i];
+    }
+
     cout << res << '\n';
 }
 

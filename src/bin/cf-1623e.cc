@@ -148,8 +148,6 @@ struct array_hash {
 #define faster(um) __AS_PROCEDURE((um).reserve(1024); (um).max_load_factor(0.25);)
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
-#define pa(a) __AS_PROCEDURE(__typeof(a) pa; pa.push_back({}); for (auto&&x : a) pa.push_back(pa.back() + x);)
-#define sa(a) __AS_PROCEDURE(__typeof(a) sa(a.size() + 1); {int n = a.size(); for (int i = n - 1; i >= 0; --i) sa[i] = sa[i + 1] + a[i];};)
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
 #define edgew(ch, u, v, ...) __AS_PROCEDURE(ch[u].emplace_back(v, __VA_ARGS__), ch[v].emplace_back(u, __VA_ARGS__);)
@@ -458,7 +456,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,15 +467,215 @@ void dump_ignore() {}
 void prep() {
 }
 
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+    using size_type = uint64_t;
+    using info_type = Addable_Info_t;
+    using tag_type = Tag_t;
+    size_type _max;
+    vector<info_type> d;
+    vector<tag_type> b;
+    void pull(size_type p) {
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+    void push(size_type p, size_type left_len, size_type right_len) {
+        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
+        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+        b[p] = tag_type();
+    }
+    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+        if (s == t) {
+            d[p] = c;
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        if (s != t) push(p, m - s + 1, t - m);
+        if (x <= m) set(s, m, p * 2, x, c);
+        else set(m + 1, t, p * 2 + 1, x, c);
+        pull(p);
+    }
+    
+    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+        if (l <= s && t <= r) {
+            d[p].apply(c, t - s + 1);
+            b[p].apply(c);
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        push(p, m - s + 1, t - m);
+        if (l <= m) range_apply(s, m, p * 2, l, r, c);
+        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
+        pull(p);
+    }
+    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+        if (l <= s && t <= r) {
+            return d[p];
+        }
+        size_type m = s + (t - s >> 1);
+        info_type res = {};
+        push(p, m - s + 1, t - m);
+        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+        return res;
+    }
+    void build(const Sequence& a, size_type s, size_type t, size_type p) {
+        if (s == t) {
+            d[p] = a[s];
+            return;
+        }
+        int m = s + (t - s >> 1);
+        build(a, s, m, p * 2);
+        build(a, m + 1, t, p * 2 + 1);
+        pull(p);
+    }
+public:
+    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+    segtree(const Sequence& a) : segtree(a.size()) {
+        build(a, {}, _max, 1);
+    }
+    void set(size_type i, const info_type& c) {
+        set({}, _max, 1, i, c);
+    }
+    
+    void range_apply(size_type l, size_type r, const tag_type& c) {
+        range_apply({}, _max, 1, l, r, c);
+    }
+    void apply(size_type i, const tag_type& c) {
+        range_apply(i, i, c);
+    }
+    info_type range_query(size_type l, size_type r) {
+        return range_query({}, _max, 1, l, r);
+    }
+    info_type query(size_type i) {
+        return range_query(i, i);
+    }
+    Sequence serialize() {
+        Sequence res = {};
+        for (size_type i = 0; i <= _max; ++i) {
+            res.push_back(query(i));
+        }
+        return res;
+    }
+    const vector<info_type>& get_d() {
+        return d;
+    }
+};
+struct Tag {
+    int val = 0;
+    void apply(const Tag& rhs) {
+        val += rhs.val;
+    }
+};
+struct Info {
+    int val = 0;
+    void apply(const Tag& rhs, size_t len) {
+        val += rhs.val * len;
+    }
+};
+Info operator+(const Info &a, const Info &b) {
+    return { a.val + b.val };
+}
+
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int res = n;
-    for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+    read(int, n, k);
+    vector<char> a(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        cin >> a[i];
     }
+
+    vector<pii> ch(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        cin >> ch[i];
+    }
+
+    vector<int> seq;
+    vector<int> dfn(n + 1);
+    vector<int> depth(n + 1);
+    vector<int> rev;
+    vector<int> sz(n + 1);
+    vector<int> fa(n + 1);
+    {
+        int t = 0;
+        auto dfs = [&] (auto dfs, int v, int pa, int d) -> void {
+            if (v == 0) return;
+            fa[v] = pa;
+            dfn[v] = t++;
+            rev.emplace_back(v);
+            depth[v] = d;
+            dfs(dfs, ch[v].first, v, d + 1);
+            seq.emplace_back(v);
+            dfs(dfs, ch[v].second, v, d + 1);
+            sz[v] = 1 + sz[ch[v].first] + sz[ch[v].second];
+        };
+        dfs(dfs, 1, 0, 1);
+    }
+
+    segtree<Info, Tag> tr(n);
+    for (int i = 0; i < n; ++i) {
+        tr.set(i, { depth[rev[i]] });
+    }
+
+    vector<int> cand;
+
+    char last = 0;
+    for (int i = n - 1; ~i; --i) {
+        if (i != n - 1 and a[seq[i]] != a[seq[i + 1]]) {
+            last = a[seq[i + 1]];
+        }
+
+        if (a[seq[i]] < last) {
+            cand.emplace_back(seq[i]);
+        }
+    }
+    reverse(cand.begin(), cand.end());
+
+    vector<int> mark(n + 1);
+    mark[0] = 1;
+
+    int rem = k;
+    for (auto&& v : cand) {
+        if (tr.query(dfn[v]).val > rem) {
+            continue;
+        }
+        int f = 1;
+        {
+            int u = v;
+            while (u and not mark[u] and not mark[fa[u]]) {
+                if (ch[fa[u]].second == u) {
+                    f = 0;
+                    break;
+                }
+                u = fa[u];
+            }
+        }
+        if (f) {
+            rem -= tr.query(dfn[v]).val;
+            int u = v;
+            while (u and not mark[u]) {
+                mark[u] = 1;
+                tr.range_apply(dfn[u], dfn[u] + sz[u] - 1, { -1 });
+                u = fa[u];
+            }
+        }
+    }
+    // deb(k, rem);
+    // debug(mark);
+
+    string res;
+    {
+        auto dfs = [&] (auto dfs, int v) -> void {
+            if (v == 0) return;
+            dfs(dfs, ch[v].first);
+            res += a[v];
+            if (mark[v]) res += a[v];
+            dfs(dfs, ch[v].second);
+        };
+        dfs(dfs, 1);
+    }
+
     cout << res << '\n';
+
 }
 
 int main() {

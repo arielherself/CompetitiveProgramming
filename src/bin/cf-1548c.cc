@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -466,18 +466,49 @@ void dump() {}
 
 void dump_ignore() {}
 
+constexpr int N = 3e6 + 10;
+ll fact[N], factrev[N + 1], s[N + 1];
+
 void prep() {
+    fact[0] = factrev[0] = 1;
+    for (int i = 1; i < N; ++i) {
+        fact[i] = (fact[i - 1] * i) % MDL;
+    }
+    s[0] = 1;
+    for (int i = 1; i <= N; ++i) {
+        s[i] = s[i - 1] * fact[i - 1] % MDL;
+    }
+    factrev[N] = inverse(s[N], MDL);
+    for (int i = N; i; --i) {
+        factrev[i - 1] = factrev[i] * fact[i - 1] % MDL;
+    }
+    for (int i = 0; i < N; ++i) {
+        factrev[i] = factrev[i + 1] * s[i] % MDL;
+    }
+}
+
+inline ll lightcomb(int n, int m) {
+    if (n < m or n < 0 or m < 0) return 0;
+    return (((fact[n] * factrev[m]) % MDL) * factrev[n - m]) % MDL;
 }
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int res = n;
-    for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+    read(int, n, q);
+
+    ll inv3 = inverse(3, MDL);
+
+    vector f(3 * n + 1, array<ll, 3>());
+    for (int i = 0; i <= 3 * n; ++i) {
+        f[i][0] = (mod(lightcomb(3 * n + 3, i + 1) - (i - 1 >= 0 ? 3 * f[i - 1][0] : 0) - (i - 2 >= 0 ? f[i - 2][0] : 0), MDL) * inv3) % MDL;
+        f[i][1] = (f[i][0] + (i - 1 >= 0 ? f[i - 1][0] : 0)) % MDL;
+        f[i][2] = (f[i][1] - (i - 1 >= 0 ? f[i - 1][1] : 0)) % MDL;
     }
-    cout << res << '\n';
+
+    while (q--) {
+        read(int, x);
+        cout << f[x][0] << '\n';
+    }
 }
 
 int main() {

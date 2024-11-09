@@ -1,5 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#pragma GCC optimize("Ofast,no-stack-protector,unroll-loops,fast-math")
+#pragma GCC optimize("Ofast")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -472,12 +472,35 @@ void prep() {
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
-    readvec(int, a, n);
-    int res = n;
-    for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+    readvec(ll, a, n);
+
+    ll ps = 0;
+    ll curr = 0;
+    for (int i = 1; i < n; ++i) {
+        curr += a[i];
+        ps += curr;
     }
-    cout << res << '\n';
+
+    if (curr != a[0] or mod(ps, n) != 0) {
+        cout << -1 << '\n';
+        return;
+    }
+
+    vector<ll> diff(n);
+    diff[1] = -ps / n;
+    for (int i = 2; i < n; ++i) {
+        diff[i] = diff[i - 1] + a[i - 1];
+    }
+
+    ll mn = 0, sum = 0;
+    curr = 0;
+    for (int i = 1; i < n; ++i) {
+        curr += diff[i];
+        chmin(mn, curr);
+        sum += curr;
+    }
+
+    cout << sum - mn * n << '\n';
 }
 
 int main() {

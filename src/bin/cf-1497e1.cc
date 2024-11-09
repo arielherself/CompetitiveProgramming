@@ -466,18 +466,75 @@ void dump() {}
 
 void dump_ignore() {}
 
+constexpr int N = 1e7 + 10;
+int minp[N];
+
+void soe(int n) {
+    vector<bool> not_prime(n + 1);
+    vector<int> res;
+    minp[1] = 1;
+    for (int i = 2; i <= n; ++i) {
+        if (not not_prime[i]) {
+            res.emplace_back(i);
+            minp[i] = i;
+        }
+        for (auto&& x : res) {
+            if (ll(1) * i * x > n) break;
+            not_prime[i * x] = 1;
+            minp[i * x] = x;
+            if (i % x == 0) break;
+        }
+    }
+}
+
+int last[N];
+
 void prep() {
+    soe(N - 1);
+    memset(last, 0xff, sizeof(last));
 }
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
+    read(int, n, k);
     readvec(int, a, n);
-    int res = n;
+    vector<int> restore;
+    vector<pii> segs;
     for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+        int x = a[i];
+        int rem = 1;
+        while (x != 1) {
+            int p = minp[x];
+            int par = 0;
+            while (x % p == 0) {
+                x /= p;
+                par ^= 1;
+            }
+            if (par) {
+                rem *= p;
+            }
+        }
+        if (last[rem] != -1) {
+            segs.emplace_back(last[rem], i);
+        }
+        restore.emplace_back(rem);
+        last[rem] = i;
+    }
+    sort_by_key(segs.begin(), segs.end(), expr(p.second, auto&& p));
+    int res = 1;
+    {
+        int last = -1;
+        for (auto&& [l, r] : segs) {
+            if (l >= last) {
+                last = r;
+                res += 1;
+            }
+        }
     }
     cout << res << '\n';
+    for (auto&& x : restore) {
+        last[x] = -1;
+    }
 }
 
 int main() {

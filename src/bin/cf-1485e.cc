@@ -469,14 +469,209 @@ void dump_ignore() {}
 void prep() {
 }
 
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+    using size_type = uint64_t;
+    using info_type = Addable_Info_t;
+    using tag_type = Tag_t;
+    size_type _max;
+    vector<info_type> d;
+    vector<tag_type> b;
+    void pull(size_type p) {
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+    void push(size_type p, size_type left_len, size_type right_len) {
+        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
+        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+        b[p] = tag_type();
+    }
+    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+        if (s == t) {
+            d[p] = c;
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        if (s != t) push(p, m - s + 1, t - m);
+        if (x <= m) set(s, m, p * 2, x, c);
+        else set(m + 1, t, p * 2 + 1, x, c);
+        pull(p);
+    }
+
+    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+        if (l <= s && t <= r) {
+            d[p].apply(c, t - s + 1);
+            b[p].apply(c);
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        push(p, m - s + 1, t - m);
+        if (l <= m) range_apply(s, m, p * 2, l, r, c);
+        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
+        pull(p);
+    }
+    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+        if (l <= s && t <= r) {
+            return d[p];
+        }
+        size_type m = s + (t - s >> 1);
+        info_type res = {};
+        push(p, m - s + 1, t - m);
+        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+        return res;
+    }
+    void build(const Sequence& a, size_type s, size_type t, size_type p) {
+        if (s == t) {
+            d[p] = a[s];
+            return;
+        }
+        int m = s + (t - s >> 1);
+        build(a, s, m, p * 2);
+        build(a, m + 1, t, p * 2 + 1);
+        pull(p);
+    }
+public:
+    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+    segtree(const Sequence& a) : segtree(a.size()) {
+        build(a, {}, _max, 1);
+    }
+    void set(size_type i, const info_type& c) {
+        set({}, _max, 1, i, c);
+    }
+
+    void range_apply(size_type l, size_type r, const tag_type& c) {
+        range_apply({}, _max, 1, l, r, c);
+    }
+    void apply(size_type i, const tag_type& c) {
+        range_apply(i, i, c);
+    }
+    info_type range_query(size_type l, size_type r) {
+        return range_query({}, _max, 1, l, r);
+    }
+    info_type query(size_type i) {
+        return range_query(i, i);
+    }
+    Sequence serialize() {
+        Sequence res = {};
+        for (size_type i = 0; i <= _max; ++i) {
+            res.push_back(query(i));
+        }
+        return res;
+    }
+    const vector<info_type>& get_d() {
+        return d;
+    }
+};
+struct Tag {
+    void apply(const Tag& rhs) { }
+};
+struct Info {
+    ll max = -INFLL;
+    void apply(const Tag& rhs, size_t len) { }
+};
+Info operator+(const Info &a, const Info &b) {
+    return { max(a.max, b.max) };
+}
+
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
-    readvec(int, a, n);
-    int res = n;
-    for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+    vector<int> v(n + 1);
+    adj(ch, n);
+    for (int i = 2; i <= n; ++i) {
+        read(int, v);
+        edge(ch, i, v);
     }
+    vector<int> a(n + 1);
+    for (int i = 2; i <= n; ++i) {
+        cin >> a[i];
+    }
+
+    vector<int> oc(a.begin() + 2, a.end());
+    sort(oc.begin(), oc.end());
+    int m = unique(oc.begin(), oc.end()) - oc.begin();
+    oc.resize(m);
+
+    vector<vector<pii>> layer(n + 1);
+    vector<int> leaves;
+    int d = 0;
+    {
+        auto dfs = [&] (auto dfs, int v, int pa, int depth) -> void {
+            if (depth > d) {
+                d = depth;
+                leaves = { v };
+            } else if (depth == d) {
+                leaves.emplace_back(v);
+            }
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                layer[depth].emplace_back(v, u);
+                dfs(dfs, u, v, depth + 1);
+            }
+        };
+        dfs(dfs, 1, 0, 0);
+    }
+
+    auto get = [&] (int x) { return lower_bound(oc.begin(), oc.end(), x) - oc.begin(); };
+
+    segtree<Info, Tag> ltt(m), gtt(m);
+    vector<ll> ett(n + 1, -INFLL);
+    auto add = [&] (int i, ll val) {
+        int mpd = get(a[i]);
+        {
+            auto [mx] = ltt.query(mpd);
+            chmax(mx, val - a[i]);
+            ltt.set(mpd, { mx });
+        }
+        {
+            auto [mx] = gtt.query(mpd);
+            chmax(mx, val + a[i]);
+            gtt.set(mpd, { mx });
+        }
+        ett[i] = val;
+    };
+
+    vector<int> prev;
+    for (auto&& [u, v] : layer[0]) {
+        add(v, 0);
+        prev.emplace_back(v);
+    }
+
+    for (int i = 1; i < d; ++i) {
+        vector<pil> curr;
+        int mx = -INF, mn = INF;
+        for (auto&& [u, v] : layer[i]) {
+            chmax(mx, a[u]);
+            chmin(mn, a[u]);
+        }
+        for (auto&& [u, v] : layer[i]) {
+            ll val = max(a[u] + ltt.range_query(0, get(a[u])).max, -a[u] + gtt.range_query(get(a[u]), m - 1).max);
+            chmax(val, max(mx - a[u], a[u] - mn) + ett[u]);
+            // deb(u, v, val);
+            // deb(ltt.range_query(0, get(a[u])).max);
+            // deb(gtt.range_query(get(a[u]), m - 1).max);
+            curr.emplace_back(v, val);
+        }
+        for (auto&& v : prev) {
+            int mpd = get(a[v]);
+            ltt.set(mpd, { -INFLL });
+            gtt.set(mpd, { -INFLL });
+            ett[v] = -INFLL;
+        }
+        vector<int> nprev;
+        for (auto&& [v, val] : curr) {
+            add(v, val);
+            nprev.emplace_back(v);
+        }
+        prev = std::move(nprev);
+    }
+
+    ll res = 0;
+    for (auto&& u : leaves) {
+        ll val = max(a[u] + ltt.range_query(0, get(a[u])).max, -a[u] + gtt.range_query(get(a[u]), m - 1).max);
+        chmax(res, val);
+    }
+
     cout << res << '\n';
 }
 

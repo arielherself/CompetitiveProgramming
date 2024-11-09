@@ -469,15 +469,150 @@ void dump_ignore() {}
 void prep() {
 }
 
+struct LCA {
+    vector<int> depth;
+    vector<vector<int>> pa;
+    LCA(const vector<vector<int>>& g, int root = 1) {
+        int n = g.size() - 1;
+        int m = 32 - __builtin_clz(n);
+        depth.resize(n + 1);
+        pa.resize(n + 1, vector<int>(m, -1));
+        function<void(int, int)> dfs = [&](int x, int fa) {
+            pa[x][0] = fa;
+            for (int y: g[x]) {
+                if (y != fa) {
+                    depth[y] = depth[x] + 1;
+                    dfs(y, x);
+                }
+            }
+        };
+        dfs(root, 0);
+        for (int i = 0; i < m - 1; i++)
+            for (int x = 1; x <= n; x++)
+                if (int p = pa[x][i]; p != -1)
+                    pa[x][i + 1] = pa[p][i];
+    }
+    int get_kth_ancestor(int node, int k) {
+        for (; k; k &= k - 1)
+            node = pa[node][__builtin_ctz(k)];
+        return node;
+    }
+    int query(int x, int y) {
+        if (depth[x] > depth[y])
+            swap(x, y);
+        y = get_kth_ancestor(y, depth[y] - depth[x]);
+        if (y == x)
+            return x;
+        for (int i = pa[x].size() - 1; i >= 0; i--) {
+            int px = pa[x][i], py = pa[y][i];
+            if (px != py) {
+                x = px;
+                y = py;
+            }
+        }
+        return pa[x][0];
+    }
+};
+
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
-    readvec(int, a, n);
-    int res = n;
-    for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+    adj(ch, n - 1);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
     }
-    cout << res << '\n';
+    vector<int> sz(n + 1);
+    vector<int> dfn(n + 1);
+    {
+        int tm = 0;
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            dfn[v] = ++tm;
+            sz[v] = 1;
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v);
+                sz[v] += sz[u];
+            }
+        };
+        dfs(dfs, 0, 0);
+    }
+
+    LCA lca(ch, 0);
+
+    auto in_subtree = [&] (int v, int u) {
+        return dfn[u] >= dfn[v] and dfn[u] < dfn[v] + sz[v];
+    };
+    auto on_path = [&] (int u, int v, int x) {
+        return in_subtree(u, x) and in_subtree(x, v);
+    };
+    auto get = [&] (int u, int v) {
+        return lca.get_kth_ancestor(v, lca.depth[v] - lca.depth[u] - 1);
+    };
+
+    // i == 0
+    {
+        ll res = 0;
+        for (auto&& u : ch[0]) {
+            res += ll(1) * sz[u] * (sz[u] - 1) / 2;
+        }
+        cout << res << ' ';
+    }
+    // i == 1
+    {
+        ll res = n - 1 - sz[1];
+        int choice = 0;
+        for (auto&& u : ch[0]) {
+            int curr = in_subtree(u, 1) ? sz[u] - sz[1] : sz[u];
+            res += ll(1) * curr * choice;
+            choice += curr;
+        }
+        cout << res << ' ';
+    }
+
+    int u = 0, v = 1;
+    int f = 1;
+    for (int i = 2; i < n; ++i) {
+        int l = lca.query(u, v);
+        if (f == 0) {
+            cout << 0 << ' ';
+        } else if (l == u or l == v) {
+            if (l == v) swap(u, v);
+            int w = get(u, v);
+            if (on_path(u, v, i)) {
+                cout << 0 << ' ';
+            } else if (in_subtree(v, i)) {
+                cout << ll(1) * (sz[v] - sz[i]) * (n - sz[w]) << ' ';
+                v = i;
+            } else if (not in_subtree(w, i)) {
+                if (lca.query(u, i) == i) {
+                    cout << ll(1) * sz[v] * (n - sz[w] - (lca.depth[i] + 1)) << ' ';
+                } else {
+                    cout << ll(1) * sz[v] * (n - sz[w] - sz[i]) << ' ';
+                }
+                u = i;
+            } else {
+                cout << ll(1) * sz[v] * (n - sz[w]) << ' ';
+                f = 0;
+            }
+        } else {
+            if (on_path(l, u, i) or on_path(l, v, i)) {
+                cout << 0 << ' ';
+            } else if (in_subtree(u, i)) {
+                cout << ll(1) * (sz[u] - sz[i]) * sz[v] << ' ';
+                u = i;
+            } else if (in_subtree(v, i)) {
+                cout << ll(1) * sz[u] * (sz[v] - sz[i]) << ' ';
+                v = i;
+            } else {
+                cout << ll(1) * sz[v] * sz[u] << ' ';
+                f = 0;
+            }
+        }
+    }
+
+    cout << f << '\n';
+
 }
 
 int main() {

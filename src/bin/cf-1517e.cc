@@ -469,14 +469,119 @@ void dump_ignore() {}
 void prep() {
 }
 
+using mll = MLL<PRIME>;
+
+mll work(const vector<int>& a, ll c_max, bool p2) {
+    debug("==================");
+    int n = a.size();
+
+    vector<ll> ps(n + 1);
+    vector<array<ll, 2>> pp(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        ps[i] = ps[i - 1] + a[i - 1];
+    }
+    for (int i = 1; i <= n; ++i) {
+        pp[i] = pp[i - 1];
+        pp[i][(i - 1) % 2] += a[i - 1];
+    }
+
+    MLL<PRIME> res = 0;
+
+    // 2.1
+    for (int i = 0; i < n; ++i) {
+        // CPCPPPPPP
+        if ((i + 1) % 2 == 1 and i >= 2 and pp[i + 1][0] <= c_max) {
+            res += p2 or n - 1 - i <= 1;
+        }
+        // PCPCPPPPP
+        if (i % 2 == 1 and i >= 3 and pp[i + 1][1] - pp[1][1] <= c_max) {
+            res += p2 or n - 1 - i <= 1;
+        }
+    }
+    deb(2.1, res);
+
+    // 2.2
+    for (int i = 0; i < n; ++i) {
+        // CCCCPPPP
+        deb(i, ps[i + 1], ps[i + 1] - ps[1], c_max);
+        if (ps[i + 1] <= c_max) {
+            res += p2 or n - 1 - i <= 1;
+        }
+        // PCCCPPPP
+        if (i >= 1 and ps[i + 1] - ps[1] <= c_max) {
+            res += p2 or n - 1 - i <= 1;
+        }
+    }
+    deb(2.2, res);
+
+    // 2.3
+    // CCPCPCPPPPPPPPPP
+    for (int i = 1; i < n; ++i) {
+        ll curr = ps[i];
+        // find the rightmost possible CPC
+        int l = i + 3, r = n;
+        if (l > r or curr > c_max) continue;
+        while (l < r) {
+            int mid = l + r + 1 >> 1;
+            if (curr + pp[mid][i % 2] - pp[i][i % 2] <= c_max) {
+                l = mid;
+            } else {
+                r = mid - 1;
+            }
+        }
+        if (not p2) {
+            int right = i % 2 == n % 2 ? n - 1 : n - 2;
+            if (l >= right) {
+                res += 1;
+            }
+        } else {
+            res += (l - i - 1) / 2;
+        }
+    }
+    deb(2.31, res);
+    // PCCPCPCPPPPPPPPPP
+    for (int i = 2; i < n; ++i) {
+        ll curr = ps[i] - a[0];
+        int l = i + 3, r = n;
+        if (l > r or curr > c_max) continue;
+        while (l < r) {
+            int mid = l + r + 1 >> 1;
+            if (curr + pp[mid][i % 2] - pp[i][i % 2] <= c_max) {
+                l = mid;
+            } else {
+                r = mid - 1;
+            }
+        }
+        if (not p2) {
+            int right = i % 2 == n % 2 ? n - 1 : n - 2;
+            if (l >= right) {
+                res += 1;
+            }
+        } else {
+            res += (l + i - 1) / 2;
+        }
+    }
+    deb(2.32, res);
+
+    // 3
+    return res + (0 <= c_max);
+}
+
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
     readvec(int, a, n);
-    int res = n;
-    for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+
+    ll s = accumulate(a.begin(), a.end(), ll(0));
+    ll c_max = s / 2;
+
+    mll res = work(a, c_max, true);
+    debug(res);
+
+    if (n >= 4) {
+        res += work(vector(a.begin(), a.end() - 4), c_max - a[n - 1] - a[n - 4], false);
     }
+
     cout << res << '\n';
 }
 

@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -473,10 +473,36 @@ void prep() {
 void solve() {
     read(int, n);
     readvec(int, a, n);
-    int res = n;
+
+    vector<int> last(n + 1, -1);
+    vector<int> first(n + 1, -1);
+    vector<int> cnt(n + 1);
+    vector<int> id(n);
     for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+        if (first[a[i]] == -1) {
+            first[a[i]] = i;
+        }
+        last[a[i]] = i;
+        id[i] = cnt[a[i]]++;
     }
+
+    vector<int> dp(n + 1);
+    for (int i = 0; i < n; ++i) {
+        dp[i + 1] = dp[i];
+        if (i == last[a[i]]) {
+            chmax(dp[i + 1], dp[first[a[i]]] + cnt[a[i]]);
+        }
+    }
+
+    int res = INF;
+
+    vector<int> bk(n + 1, -INF);
+    for (int i = 0; i < n; ++i) {
+        int curr = max(1 + dp[i], id[i] + bk[a[i]]);
+        chmin(res, n - curr);
+        chmax(bk[a[i]], dp[i] - (id[i] - 1));
+    }
+
     cout << res << '\n';
 }
 

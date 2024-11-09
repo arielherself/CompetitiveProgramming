@@ -466,17 +466,32 @@ void dump() {}
 
 void dump_ignore() {}
 
+using mll = MLL<MDL>;
+constexpr int N = 1e5 + 10;
+mll fact[N];
+
 void prep() {
+    fact[0] = 1;
+    for (int i = 1; i < N; ++i) {
+        fact[i] = fact[i - 1] * i;
+    }
 }
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int res = n;
-    for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+    read(int, n, k);
+
+    mll res = 0;
+
+    mll prev = 0;
+    for (int i = 2; i <= n; ++i) {
+        prev *= n - i + 1;
+        mll g = comb(n, i) - comb(n - ll(1) * (k - 1) * (i - 1), i);
+        mll curr = g * fact[i] - prev;
+        res += curr / (comb(n, i) * fact[i]) * i;
+        prev += curr;
     }
+
     cout << res << '\n';
 }
 

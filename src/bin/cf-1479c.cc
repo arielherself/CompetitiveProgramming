@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -471,13 +471,69 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int res = n;
-    for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+    read(int, l, r);
+
+    vector<tiii> edges;
+    for (int i = 0; i < 20; ++i) {
+        for (int j = 0; j < i; ++j) {
+            edges.emplace_back(30 - i, 30 - j, 1 << i);
+        }
+        edges.emplace_back(30 - i, 31, 1 << i);
     }
-    cout << res << '\n';
+
+    int x = r - l;
+    if (x == 0) {
+        cout << "YES\n2 1\n1 2 " << l << '\n';
+        return;
+    } else if (x == 1) {
+        cout << "YES\n3 3\n1 2 " << l << "\n2 3 1\n1 3 " << l << '\n';
+        return;
+    } else if (x == 2) {
+        cout << "YES\n4 5\n1 4 " << l << "\n1 2 " << l << "\n2 4 1\n1 3 " << l << "\n3 4 2\n";
+        return;
+    }
+
+    if (l <= 1) {
+        edges.emplace_back(1, 32, 1);
+    }
+    if (l <= 2) {
+        edges.emplace_back(1, 3, 1);
+        edges.emplace_back(3, 32, 1);
+    }
+
+    x = r - max(l, 3);
+
+    int m = msp(x);
+
+    edges.emplace_back(1, 2, 1);
+    int curr = 1 << m;
+    for (int i = m - 1; ~i; --i) {
+        if (x >> i & 1) {
+            edges.emplace_back(2, 30 - i, curr - (1 << i) + 1);
+            curr |= 1 << i;
+        }
+    }
+        edges.emplace_back(2, 31, curr + 1);
+
+    for (int i = m - 1; ~i; --i) {
+        edges.emplace_back(1, 30 - i, 2);
+    }
+
+    edges.emplace_back(1, 31, 2);
+    edges.emplace_back(31, 32, max(l, 3) - 2);
+
+    for (auto&& [u, v, w] : edges) {
+        if (w < 0) {
+            cout << "NO\n";
+            return;
+        }
+    }
+
+    cout << "YES\n";
+    cout << 32 << ' ' << edges.size() << '\n';
+    for (auto&& [u, v, w] : edges) {
+        cout << u << ' ' << v << ' ' << w << '\n';
+    }
 }
 
 int main() {

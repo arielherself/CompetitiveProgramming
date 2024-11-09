@@ -469,15 +469,64 @@ void dump_ignore() {}
 void prep() {
 }
 
+using mll = MLL<MDL>;
+
+template <typename T, T MDL, T MAX = INT_MAX>
+struct oint {
+    static_assert(MDL > MAX, "Number will never overflow because modulus is too small");
+    bool carry;
+    T val;
+    oint() : carry(0), val(0) {}
+    oint(const T& v) : carry(v > MAX), val(v % MDL) {}
+    oint(const bool& carry, const T& val) : carry(carry), val(val) {}
+    friend oint operator*(const oint& a, const oint& b) {
+        return {
+            a.carry or b.carry or a.val > MAX / b.val,
+            (a.val * b.val) % MDL,
+        };
+    }
+    friend oint operator+(const oint& a, const oint& b) {
+        return {
+            a.carry or b.carry or a.val > MAX - b.val,
+            (a.val + b.val) % MDL,
+        };
+    }
+    oint& operator+=(const oint& rhs) { return *this = *this + rhs; }
+    oint& operator*=(const oint& rhs) { return *this = *this * rhs; }
+};
+
 // __attribute__((target("popcnt")))
 void solve() {
+    using oint = oint<ll, MDL, int(1e9)>;
     read(int, n);
     readvec(int, a, n);
-    int res = n;
+    auto cmp = [] (auto&& a, auto&& b) {
+        return get<0>(a) > get<0>(b);
+    };
+    // multiset<tuple<int, oint, oint>, decltype(cmp)> cand(cmp);
+    priority_queue<tuple<int, oint, oint>, vector<tuple<int, oint, oint>>, decltype(cmp)> cand(cmp);
+    mll tot = 0;
     for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+        oint pw = 1;
+        int x = a[i];
+        while (x % 2 == 0) {
+            pw *= 2;
+            x /= 2;
+        }
+        oint curr = a[i];
+        while (cand.size() and (curr.carry == 1 or get<0>(cand.top()) < curr.val)) {
+            auto [odd, opw, osum] = cand.top();
+            cand.pop();
+            tot -= osum.val;
+            tot += odd;
+            pw *= opw;
+            curr *= opw;
+        }
+        tot += mll(1) * curr.val;
+        cand.emplace(x, pw, curr);
+        cout << tot << ' ';
     }
-    cout << res << '\n';
+    cout << '\n';
 }
 
 int main() {

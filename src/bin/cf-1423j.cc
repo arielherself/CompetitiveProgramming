@@ -1,4 +1,3 @@
-// #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
 #pragma GCC optimize("Ofast,no-stack-protector,unroll-loops,fast-math")
 /************* This code requires C++17. ***************/
 
@@ -469,15 +468,40 @@ void dump_ignore() {}
 void prep() {
 }
 
+ll dp[9], ndp[9];
+
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int res = n;
-    for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+    read(ull, x);
+
+    for (int i = 1; i <= 8; ++i) {
+        dp[i] = 1;
     }
-    cout << res << '\n';
+    for (int i = 62; ~i; --i) {
+        int bit = x >> i & 1;
+        if (bit) {
+            ndp[0 + 1] = (ndp[0] + dp[(7 + 0 - bit) / 2 + 1] - dp[(1 + 0 - bit) / 2]) % MDL;
+            ndp[1 + 1] = mod(ndp[1] + dp[(7 + 1 - bit) / 2 + 1] - dp[(1 + 1 - bit) / 2], MDL);
+            ndp[2 + 1] = mod(ndp[2] + dp[(7 + 2 - bit) / 2 + 1] - dp[(1 + 2 - bit) / 2], MDL);
+            ndp[3 + 1] = mod(ndp[3] + dp[(7 + 3 - bit) / 2 + 1] - dp[(1 + 3 - bit) / 2], MDL);
+            ndp[4 + 1] = mod(ndp[4] + dp[(7 + 4 - bit) / 2 + 1] - dp[(1 + 4 - bit) / 2], MDL);
+            ndp[5 + 1] = mod(ndp[5] + dp[(7 + 5 - bit) / 2 + 1] - dp[(1 + 5 - bit) / 2], MDL);
+            ndp[6 + 1] = mod(ndp[6] + dp[(7 + 6 - bit) / 2 + 1] - dp[(1 + 6 - bit) / 2], MDL);
+            ndp[7 + 1] = mod(ndp[7] + dp[(7 + 7 - bit) / 2 + 1] - dp[(1 + 7 - bit) / 2], MDL);
+        } else {
+            ndp[0 + 1] = mod(ndp[0] + dp[(7 + 0 - bit) / 2 + 1] - dp[(1 + 0 - bit) / 2], MDL);
+            ndp[1 + 1] = mod(ndp[1] + dp[(7 + 1 - bit) / 2 + 1] - dp[(1 + 1 - bit) / 2], MDL);
+            ndp[2 + 1] = mod(ndp[2] + dp[(7 + 2 - bit) / 2 + 1] - dp[(1 + 2 - bit) / 2], MDL);
+            ndp[3 + 1] = mod(ndp[3] + dp[(7 + 3 - bit) / 2 + 1] - dp[(1 + 3 - bit) / 2], MDL);
+            ndp[4 + 1] = mod(ndp[4] + dp[(7 + 4 - bit) / 2 + 1] - dp[(1 + 4 - bit) / 2], MDL);
+            ndp[5 + 1] = mod(ndp[5] + dp[(7 + 5 - bit) / 2 + 1] - dp[(1 + 5 - bit) / 2], MDL);
+            ndp[6 + 1] = mod(ndp[6] + dp[(7 + 6 - bit) / 2 + 1] - dp[(1 + 6 - bit) / 2], MDL);
+            ndp[7 + 1] = mod(ndp[7] + dp[(7 + 7 - bit) / 2 + 1] - dp[(1 + 7 - bit) / 2], MDL);
+        }
+        swap(dp, ndp);
+    }
+
+    cout << dp[1] << '\n';
 }
 
 int main() {

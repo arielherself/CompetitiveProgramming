@@ -7,7 +7,7 @@ import io
 PRIME = 998_244_353
 
 if __name__ == '__main__':
-    N = 50
-    print(N, N)
-    print(*[randint(1, N) for _ in range(N)])
-    print(*[randint(1, N) for _ in range(N)])
+    N = 3000
+    print(1, N)
+    for i in range(2, N + 1):
+        print(f'{i} {randint(1, i - 1)}')

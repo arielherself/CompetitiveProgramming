@@ -471,11 +471,18 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int res = n;
-    for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+    read(ll, x, y, z, k);
+    ll res = INFLL;
+    for (ll m = 0; ; ++m) {
+        ll s = k * (1 + m) * m / 2;
+        if (s > z) break;
+        ll p_base = clamp<ll>(sqrt(ld(1) * (z - s) * y / x) - m * k, 0, k - 1);
+        // deb(m, p_base);
+        for (ll p = max<ll>(0, p_base - 5); p <= min(k - 1, p_base + 5); ++p) {
+            if (m * k + p == 0) continue;
+            ll q = (z - s + m * k + p - 1) / (m * k + p);
+            chmin(res, (k * x + y) * m + x * p + q * y);
+        }
     }
     cout << res << '\n';
 }

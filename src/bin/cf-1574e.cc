@@ -148,8 +148,6 @@ struct array_hash {
 #define faster(um) __AS_PROCEDURE((um).reserve(1024); (um).max_load_factor(0.25);)
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
-#define pa(a) __AS_PROCEDURE(__typeof(a) pa; pa.push_back({}); for (auto&&x : a) pa.push_back(pa.back() + x);)
-#define sa(a) __AS_PROCEDURE(__typeof(a) sa(a.size() + 1); {int n = a.size(); for (int i = n - 1; i >= 0; --i) sa[i] = sa[i + 1] + a[i];};)
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
 #define edgew(ch, u, v, ...) __AS_PROCEDURE(ch[u].emplace_back(v, __VA_ARGS__), ch[v].emplace_back(u, __VA_ARGS__);)
@@ -458,7 +456,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -471,13 +469,195 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int res = n;
-    for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+    using mll = MLL<PRIME>;
+
+    read(int, n, m, k);
+
+    unordered_map<pii, int, pair_hash> tab;
+
+    vector row_alt(2, vector(m, vector<int>(2)));
+    vector<int> conflict_row(2), free_row(2, m);
+
+    auto row_del = [&] (int i, int j) {
+        if (not tab.count({i, j})) return;
+        if (j == 0) {
+            int s = i % 2 == tab[{i, j}];
+            conflict_row[s] -= 1;
+        } else {
+            for (int s = 0; s < 2; ++s) {
+                int flip = i % 2 != s;
+                if (row_alt[s][j][0] == 0 and row_alt[s][j][1] == 0) {
+                    free_row[s] -= 1;
+                } else if (row_alt[s][j][0] != 0 and row_alt[s][j][1] != 0) {
+                    conflict_row[s] -= 1;
+                }
+                row_alt[s][j][tab[{i, j}] ^ flip] -= 1;
+                if (row_alt[s][j][0] == 0 and row_alt[s][j][1] == 0) {
+                    free_row[s] += 1;
+                } else if (row_alt[s][j][0] != 0 and row_alt[s][j][1] != 0) {
+                    conflict_row[s] += 1;
+                }
+            }
+        }
+    };
+
+    auto row_add = [&] (int i, int j, int val) {
+        row_del(i, j);
+        if (j == 0) {
+            int s = i % 2 == val;
+            conflict_row[s] += 1;
+        } else {
+            for (int s = 0; s < 2; ++s) {
+                int flip = i % 2 != s;
+                if (row_alt[s][j][0] == 0 and row_alt[s][j][1] == 0) {
+                    free_row[s] -= 1;
+                } else if (row_alt[s][j][0] != 0 and row_alt[s][j][1] != 0) {
+                    conflict_row[s] -= 1;
+                }
+                row_alt[s][j][val ^ flip] += 1;
+                if (row_alt[s][j][0] == 0 and row_alt[s][j][1] == 0) {
+                    free_row[s] += 1;
+                } else if (row_alt[s][j][0] != 0 and row_alt[s][j][1] != 0) {
+                    conflict_row[s] += 1;
+                }
+            }
+        }
+    };
+
+    vector col_alt(2, vector(n, vector<int>(2)));
+    vector<int> conflict_col(2), free_col(2, n);
+
+    auto col_del = [&] (int i, int j) {
+        if (not tab.count({i, j})) return;
+        if (i == 0) {
+            int s = j % 2 == tab[{i, j}];
+            conflict_col[s] -= 1;
+        } else {
+            for (int s = 0; s < 2; ++s) {
+                int flip = j % 2 != s;
+                if (col_alt[s][i][0] == 0 and col_alt[s][i][1] == 0) {
+                    free_col[s] -= 1;
+                } else if (col_alt[s][i][0] != 0 and col_alt[s][i][1] != 0) {
+                    conflict_col[s] -= 1;
+                }
+                col_alt[s][i][tab[{i, j}] ^ flip] -= 1;
+                if (col_alt[s][i][0] == 0 and col_alt[s][i][1] == 0) {
+                    free_col[s] += 1;
+                } else if (col_alt[s][i][0] != 0 and col_alt[s][i][1] != 0) {
+                    conflict_col[s] += 1;
+                }
+            }
+        }
+    };
+
+    auto col_add = [&] (int i, int j, int val) {
+        col_del(i, j);
+        if (i == 0) {
+            int s = j % 2 == val;
+            conflict_col[s] += 1;
+        } else {
+            for (int s = 0; s < 2; ++s) {
+                int flip = j % 2 != s;
+                if (col_alt[s][i][0] == 0 and col_alt[s][i][1] == 0) {
+                    free_col[s] -= 1;
+                } else if (col_alt[s][i][0] != 0 and col_alt[s][i][1] != 0) {
+                    conflict_col[s] -= 1;
+                }
+                col_alt[s][i][val ^ flip] += 1;
+                if (col_alt[s][i][0] == 0 and col_alt[s][i][1] == 0) {
+                    free_col[s] += 1;
+                } else if (col_alt[s][i][0] != 0 and col_alt[s][i][1] != 0) {
+                    conflict_col[s] += 1;
+                }
+            }
+        }
+    };
+
+    vector<int> rc_alt(2);
+    int conflict_rc = 0, free_rc = 2;
+
+    auto rc_del = [&] (int i, int j) {
+        if (not tab.count({i, j})) return;
+        for (int s = 0; s < 2; ++s) {
+            int suc = j % 2;
+            int sur = i % 2;
+            if (rc_alt[s] == 0) {
+                free_rc -= 1;
+            } else {
+                conflict_rc -= 1;
+            }
+            if (tab[{i, j}] != (s ^ suc ^ sur)) {
+                rc_alt[s] -= 1;
+            }
+            if (rc_alt[s] == 0) {
+                free_rc += 1;
+            } else {
+                conflict_rc += 1;
+            }
+        }
+    };
+
+    auto rc_add = [&] (int i, int j, int val) {
+        rc_del(i, j);
+        for (int s = 0; s < 2; ++s) {
+            int suc = j % 2;
+            int sur = i % 2;
+            if (rc_alt[s] == 0) {
+                free_rc -= 1;
+            } else {
+                conflict_rc -= 1;
+            }
+            if (val != (s ^ suc ^ sur)) {
+                rc_alt[s] += 1;
+            }
+            if (rc_alt[s] == 0) {
+                free_rc += 1;
+            } else {
+                conflict_rc += 1;
+            }
+        }
+    };
+
+    while (k--) {
+        read(int, x, y, val);
+        --x, --y;
+        if (val == -1) {
+            row_del(x, y);
+            col_del(x, y);
+            rc_del(x, y);
+            tab.erase({x, y});
+        } else {
+            row_add(x, y, val);
+            col_add(x, y, val);
+            rc_add(x, y, val);
+            tab[{x, y}] = val;
+        }
+        mll res = 0;
+        for (int s = 0; s < 2; ++s) {
+            mll curr = 0;
+            if (conflict_row[s]) {
+                ;;
+            } else {
+                curr += qpow<mll>(2, free_row[s] - 1);
+            }
+            // deb(s, conflict_row[s], free_row[s]);
+            res += curr;
+        }
+        for (int s = 0; s < 2; ++s) {
+            mll curr = 0;
+            if (conflict_col[s]) {
+                ;;
+            } else {
+                curr += qpow<mll>(2, free_col[s] - 1);
+            }
+            // deb(s, conflict_col[s], free_col[s]);
+            res += curr;
+        }
+        // debug(free_rc);
+        // debug(rc_alt);
+        res -= free_rc;
+        cout << res << '\n';
     }
-    cout << res << '\n';
 }
 
 int main() {

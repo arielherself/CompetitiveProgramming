@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -471,13 +471,50 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int res = n;
-    for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+    read(int, n, m);
+    vector w(n, vector<ll>(n, INFLL));
+    for (int i = 0; i < m; ++i) {
+        read(int, u, v, wi);
+        chmin(w[u][v], wi);
     }
-    cout << res << '\n';
+
+    auto work = [&] (int s) -> void {
+        vector<ll> dis(n, INFLL);
+        vector<bool> vis(n);
+        dis[s] = 0;
+        for (int i = 0; i < n; ++i) {
+            int v = -1;
+            for (int j = 0; j < n; ++j) {
+                if (not vis[j] and (v == -1 or dis[j] < dis[v])) {
+                    v = j;
+                }
+            }
+            vis[v] = 1;
+            vector<ll> f(n);
+            for (int j = 0; j < n; ++j) {
+                f[(j + dis[v]) % n] = w[v][j] == INFLL ? INFLL : w[v][j] - ((j + dis[v]) % n);
+            }
+            // deb(s, i, v);
+            // debug(f);
+            vector<ll> ps(n + 1, INFLL), ss(n + 1, INFLL);
+            for (int j = 1; j <= n; ++j) {
+                ps[j] = min(ps[j - 1], f[j - 1]);
+            }
+            for (int j = n - 1; ~j; --j) {
+                ss[j] = min(ss[j + 1], f[j]);
+            }
+            for (int j = 0; j < n; ++j) {
+                chmin(dis[j], dis[v] + min(ps[j + 1] + j, ss[j + 1] + j + n));
+            }
+        }
+        for (int i = 0; i < n; ++i) {
+            cout << dis[i] << " \n"[i + 1 == n];
+        }
+    };
+
+    for (int i = 0; i < n; ++i) {
+        work(i);
+    }
 }
 
 int main() {

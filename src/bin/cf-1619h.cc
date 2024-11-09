@@ -148,8 +148,6 @@ struct array_hash {
 #define faster(um) __AS_PROCEDURE((um).reserve(1024); (um).max_load_factor(0.25);)
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
-#define pa(a) __AS_PROCEDURE(__typeof(a) pa; pa.push_back({}); for (auto&&x : a) pa.push_back(pa.back() + x);)
-#define sa(a) __AS_PROCEDURE(__typeof(a) sa(a.size() + 1); {int n = a.size(); for (int i = n - 1; i >= 0; --i) sa[i] = sa[i + 1] + a[i];};)
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
 #define edgew(ch, u, v, ...) __AS_PROCEDURE(ch[u].emplace_back(v, __VA_ARGS__), ch[v].emplace_back(u, __VA_ARGS__);)
@@ -458,7 +456,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -471,13 +469,69 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int res = n;
+    read(int, n, q);
+    int m = sqrt(n);
+
+    vector<int> nxt(n), pre(n);
+    vector<int> c(n);
+
     for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+        read(int, x);
+        --x;
+        nxt[i] = x;
+        pre[x] = i;
     }
-    cout << res << '\n';
+
+    for (int i = 0; i < n; ++i) {
+        int ptr = i;
+        for (int j = 0; j < m; ++j) {
+            ptr = nxt[ptr];
+        }
+        c[i] = ptr;
+    }
+
+    while (q--) {
+        read(int, t);
+        if (t == 2) {
+            read(int, i, k);
+            --i;
+            while (k >= m) {
+                k -= m;
+                i = c[i];
+            }
+            for (int j = 0; j < k; ++j) {
+                i = nxt[i];
+            }
+            cout << i + 1 << '\n';
+        } else {
+            read(int, i, j);
+            --i, --j;
+            swap(pre[nxt[i]], pre[nxt[j]]);
+            swap(nxt[i], nxt[j]);
+            {
+                int ptr = i;
+                for (int k = 0; k < m; ++k) {
+                    ptr = nxt[ptr];
+                }
+                for (int k = 0; k < m; ++k) {
+                    c[i] = ptr;
+                    i = pre[i];
+                    ptr = pre[ptr];
+                }
+            }
+            {
+                int ptr = j;
+                for (int k = 0; k < m; ++k) {
+                    ptr = nxt[ptr];
+                }
+                for (int k = 0; k < m; ++k) {
+                    c[j] = ptr;
+                    j = pre[j];
+                    ptr = pre[ptr];
+                }
+            }
+        }
+    }
 }
 
 int main() {

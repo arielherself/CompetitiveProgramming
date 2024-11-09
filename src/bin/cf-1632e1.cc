@@ -148,8 +148,6 @@ struct array_hash {
 #define faster(um) __AS_PROCEDURE((um).reserve(1024); (um).max_load_factor(0.25);)
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
-#define pa(a) __AS_PROCEDURE(__typeof(a) pa; pa.push_back({}); for (auto&&x : a) pa.push_back(pa.back() + x);)
-#define sa(a) __AS_PROCEDURE(__typeof(a) sa(a.size() + 1); {int n = a.size(); for (int i = n - 1; i >= 0; --i) sa[i] = sa[i + 1] + a[i];};)
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
 #define edgew(ch, u, v, ...) __AS_PROCEDURE(ch[u].emplace_back(v, __VA_ARGS__), ch[v].emplace_back(u, __VA_ARGS__);)
@@ -472,12 +470,103 @@ void prep() {
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
-    readvec(int, a, n);
-    int res = n;
-    for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+    adj(ch, n);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
     }
-    cout << res << '\n';
+
+    vector<int> depth(n + 1);
+    vector<int> dfn(n + 1);
+    vector<int> sz(n + 1);
+    vector<int> fa(n + 1);
+    int mx = 0;
+    {
+        int t = 0;
+        auto dfs = [&] (auto dfs, int v, int pa, int d) -> void {
+            fa[v] = pa;
+            depth[v] = d;
+            if (d >= depth[mx]) {
+                mx = v;
+            }
+            dfn[v] = t++;
+            sz[v] = 1;
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v, d + 1);
+                sz[v] += sz[u];
+            }
+        };
+        dfs(dfs, 1, 0, 0);
+    }
+
+    vector<int> chain;
+    vector<bool> mark(n + 1);
+    {
+        int v = mx;
+        while (v) {
+            chain.emplace_back(v);
+            mark[v] = 1;
+            v = fa[v];
+        }
+        reverse(chain.begin(), chain.end());
+    }
+    int m = chain.size();
+
+    // debug(chain);
+
+    for (int i = 1; i <= n; ++i) {
+        int res = m - 1;
+        int mx = -INF;
+
+        vector<int> os(m);
+
+        int o = 0;
+        auto update = [&] (auto update, int v, int pa) -> void {
+            chmax(o, depth[v]);
+            for (auto&& u : ch[v]) {
+                if (u == pa or mark[u]) continue;
+                update(update, u, v);
+            }
+        };
+
+        {
+            int ptr = 0;
+            for (int j = 1; j < m; ++j) {
+                while (ptr < min(m, (i + j + 1) / 2)) {
+                    update(update, chain[ptr], 0);
+                    ptr += 1;
+                }
+                os[j] = o;
+            }
+        }
+
+        auto add = [&] (auto add, int v, int pa, int p) -> void {
+            chmax(mx, depth[v] - 2 * p);
+            for (auto&& u : ch[v]) {
+                if (u == pa or mark[u]) continue;
+                add(add, u, v, p);
+            }
+        };
+
+        {
+            int ptr = m - 1;
+            for (int j = m - 1; j; --j) {
+                while (ptr >= max(0, (i + j + 1) / 2)) {
+                    add(add, chain[ptr], 0, ptr);
+                    ptr -= 1;
+                }
+                int curr = max(os[j], m - 1 + i - j);
+                if (mx != -INF) {
+                    chmax(curr, i + j + mx);
+                }
+                chmin(res, curr);
+            }
+        }
+
+        cout << res << " \n"[i == n];
+
+    }
 }
 
 int main() {

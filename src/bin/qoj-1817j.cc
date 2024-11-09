@@ -148,8 +148,6 @@ struct array_hash {
 #define faster(um) __AS_PROCEDURE((um).reserve(1024); (um).max_load_factor(0.25);)
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
-#define pa(a) __AS_PROCEDURE(__typeof(a) pa; pa.push_back({}); for (auto&&x : a) pa.push_back(pa.back() + x);)
-#define sa(a) __AS_PROCEDURE(__typeof(a) sa(a.size() + 1); {int n = a.size(); for (int i = n - 1; i >= 0; --i) sa[i] = sa[i + 1] + a[i];};)
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
 #define edgew(ch, u, v, ...) __AS_PROCEDURE(ch[u].emplace_back(v, __VA_ARGS__), ch[v].emplace_back(u, __VA_ARGS__);)
@@ -471,12 +469,68 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int res = n;
-    for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+    read(int, n, m);
+    readvec1(int, a, n);
+    vector<int> pos(m), type(m);
+    for (int i = 0; i < m; ++i) {
+        cin >> pos[i] >> type[i];
     }
+
+    vector<int> last(n + 1, -1);
+
+    set<int> cand;
+    for (int i = 0; i < m; ++i) {
+        cand.emplace(i);
+    }
+
+    vector<ll> d(m + 1);
+    for (int i = 0; i < m; ++i) {
+        int bat = a[type[i]];
+        auto ptr = cand.upper_bound(last[type[i]]);
+        while (ptr != cand.end() and *ptr <= i) {
+            int rem = pos[*ptr] - (*ptr == 0 ? 0 : pos[*ptr - 1]) - d[*ptr];
+            if (bat >= rem) {
+                d[*ptr] += rem;
+                bat -= rem;
+                ptr = next(ptr);
+                cand.erase(prev(ptr));
+            } else {
+                d[*ptr] += bat;
+                bat = 0;
+                break;
+            }
+        }
+        last[type[i]] = i;
+    }
+
+    for (int i = 1; i <= n; ++i) {
+        int bat = a[i];
+        auto ptr = cand.upper_bound(last[i]);
+        while (ptr != cand.end()) {
+            int rem = pos[*ptr] - (*ptr == 0 ? 0 : pos[*ptr - 1]) - d[*ptr];
+            if (bat >= rem) {
+                d[*ptr] += rem;
+                bat -= rem;
+                ptr = next(ptr);
+                cand.erase(prev(ptr));
+            } else {
+                d[*ptr] += bat;
+                bat = 0;
+                break;
+            }
+        }
+        d[m] += bat;
+    }
+    // debug(d);
+
+    ll res = 0;
+    for (int i = 0; i <= m; ++i) {
+        res += d[i];
+        if (i != m and d[i] < (pos[i] - (i == 0 ? 0 : pos[i - 1]))) {
+            break;
+        }
+    }
+
     cout << res << '\n';
 }
 

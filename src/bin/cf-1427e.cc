@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,15 +469,68 @@ void dump_ignore() {}
 void prep() {
 }
 
+vector<till> seq;
+
+inline ll add(ll x, ll y) {
+    seq.emplace_back(0, x, y);
+    return x + y;
+}
+
+inline ll xr(ll x, ll y) {
+    seq.emplace_back(1, x, y);
+    return x xor y;
+}
+
+inline ll shiftleft(ll x, int d) {
+    while (d--) {
+        x = add(x, x);
+    }
+    return x;
+}
+
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int res = n;
-    for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+    read(ll, x);
+
+    ll large_mask = x;
+    while (lsp(large_mask - 1) < 23) {
+        large_mask = xr(large_mask, shiftleft(x, lsp(large_mask - 1)));
     }
-    cout << res << '\n';
+
+    ll small = xr(large_mask, x);
+    ll large = add(large_mask, x);
+    assert(large - small == 2);
+
+    if (small & 2) {
+        ll ones = xr(small, large);
+        ll ones2 = shiftleft(ones, 1);
+        ll ones4 = shiftleft(ones2, 1);
+        ll ioi = xr(ones, ones2);
+        ll ones3 = add(ones, ones2);
+        ll four = xr(add(ioi, ones3), ones4);
+        while (msp(x) >= 2) {
+            x = xr(x, shiftleft(four, msp(x) - 2));
+        }
+        if (x == 3) {
+            add(3, 3);
+            xr(3, 6);
+            add(3, 5);
+            add(3, 6);
+            xr(8, 9);
+        } else {
+            assert(x == 1);
+        }
+    } else {
+        ll two = xr(small, large);
+        while (msp(x) >= 1) {
+            x = xr(x, shiftleft(two, msp(x) - 1));
+        }
+    }
+
+    cout << seq.size() << '\n';
+    for (auto&& [t, x, y] : seq) {
+        cout << x << (t ? " ^ " : " + ") << y << '\n';
+    }
 }
 
 int main() {

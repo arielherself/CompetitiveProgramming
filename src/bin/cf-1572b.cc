@@ -148,8 +148,6 @@ struct array_hash {
 #define faster(um) __AS_PROCEDURE((um).reserve(1024); (um).max_load_factor(0.25);)
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
-#define pa(a) __AS_PROCEDURE(__typeof(a) pa; pa.push_back({}); for (auto&&x : a) pa.push_back(pa.back() + x);)
-#define sa(a) __AS_PROCEDURE(__typeof(a) sa(a.size() + 1); {int n = a.size(); for (int i = n - 1; i >= 0; --i) sa[i] = sa[i + 1] + a[i];};)
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
 #define edgew(ch, u, v, ...) __AS_PROCEDURE(ch[u].emplace_back(v, __VA_ARGS__), ch[v].emplace_back(u, __VA_ARGS__);)
@@ -473,11 +471,96 @@ void prep() {
 void solve() {
     read(int, n);
     readvec(int, a, n);
-    int res = n;
-    for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+
+    if (count(a.begin(), a.end(), 1) % 2) {
+        cout << "NO\n";
+        return;
     }
-    cout << res << '\n';
+
+    vector<int> nxt(n + 1, n);
+    for (int i = n - 1; ~i; --i) {
+        if (a[i] == 1) {
+            nxt[i] = i;
+        } else {
+            nxt[i] = nxt[i + 1];
+        }
+    }
+
+    vector<int> seq;
+
+    int pos = -1;
+
+    auto work = [&] (int i) {
+        seq.emplace_back(i);
+        int val = a[i] ^ a[i + 1] ^ a[i + 2];
+        a[i] = a[i + 1] = a[i + 2] = val;
+    };
+
+    int ps = 0;
+    int f = 0;
+    for (int i = 0; i < n; ++i) {
+        ps += a[i];
+        if (a[i] == 0) {
+            if (ps % 2 == 0) {
+                pos = i;
+                break;
+            } else if (i != 0 and a[i - 1] == 1 and nxt[i] != n and (nxt[i] - i) % 2 == 1) {
+                f = 1;
+                pos = i;
+                break;
+            }
+        }
+    }
+
+    if (pos == -1) {
+        cout << "NO\n";
+        return;
+    }
+
+    if (f) {
+        int nx = nxt[pos];
+        while (nx - pos > 1) {
+            work(nx - 2);
+            nx -= 2;
+        }
+        work(pos - 1);
+    }
+
+    for (int i = pos - 1; ~i; --i) {
+        if (a[i] == 1) {
+            if (a[i - 1] == 1) {
+                work(i - 1);
+            } else {
+                work(i - 2);
+                if (a[i - 2] == 1) {
+                    work(i - 1);
+                }
+            }
+        }
+    }
+
+    for (int i = pos + 1; i < n; ++i) {
+        // debug(i);
+        // debug(a);
+        if (a[i] == 1) {
+            if (a[i + 1] == 1) {
+                work(i - 1);
+            } else {
+                work(i);
+                if (a[i + 2] == 1) {
+                    work(i - 1);
+                }
+            }
+        }
+    }
+
+    assert(count(a.begin(), a.end(), 1) == 0);
+    cout << "YES\n";
+    cout << seq.size() << '\n';;
+    for (auto&& i : seq) {
+        cout << i + 1 << ' ';
+    }
+    cout << '\n';
 }
 
 int main() {

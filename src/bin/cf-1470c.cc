@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,15 +469,48 @@ void dump_ignore() {}
 void prep() {
 }
 
+inline ll query(int i) {
+    cout << "? " << i + 1 << endl;
+    read(ll, x);
+    return x;
+}
+
+inline void claim(int i) {
+    cout << "! " << i << endl;
+}
+
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int res = n;
-    for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+    read(int, n, k);
+
+    int pos = -1;
+    {
+        auto get = [&] (int l, int r) -> optional<int> {
+            int mid = l + r >> 1;
+            vector<pil> res = { { l, query(l) }, { r, query(r) }, { mid, query(mid) } };
+            for (auto&& [i, x] : res) {
+                if (x != k) {
+                    return i;
+                }
+            }
+            return nullopt;
+        };
+
+        int l = 0, r = n - 1;
+        while (1) {
+            int mid = l + r >> 1;
+            auto res = get(l, mid);
+            if (res != nullopt) {
+                pos = res.value();
+                break;
+            } else {
+                l = mid + 1;
+            }
+        }
     }
-    cout << res << '\n';
+    assert(pos != -1);
+
+    debug(pos);
 }
 
 int main() {

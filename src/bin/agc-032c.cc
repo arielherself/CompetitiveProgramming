@@ -1,5 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#pragma GCC optimize("Ofast,no-stack-protector,unroll-loops,fast-math")
+#pragma GCC optimize("Ofast")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -471,13 +471,56 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int res = n;
-    for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+    read(int, n, m);
+    vector<int> deg(n + 1);
+    adj(ch, n);
+    for (int i = 0; i < m; ++i) {
+        read(int, u, v);
+        deg[u] += 1, deg[v] += 1;
+        edge(ch, u, v);
     }
-    cout << res << '\n';
+
+    int tot = 0;
+
+    for (int i = 1; i <= n; ++i) {
+        if (deg[i] % 2 == 1) {
+            cout << "No\n";
+            return;
+        }
+    }
+
+    for (int i = 1; i <= n; ++i) {
+        if (deg[i] != 2) {
+            tot += 1;
+        }
+        if (deg[i] >= 6) {
+            cout << "Yes\n";
+            return;
+        }
+    }
+
+    vector<int> ps(n + 1);
+    vector<bool> vis(n + 1);
+    vector<int> depth(n + 1);
+    auto dfs = [&] (auto dfs, int v, int pa) -> void {
+        vis[v] = 1;
+        depth[v] = depth[pa] + 1;
+        ps[v] = ps[pa] + (deg[v] != 2);
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            if (vis[u]) {
+                if (depth[u] > depth[v] and ps[u] - ps[pa] < tot) {
+                    cout << "Yes\n";
+                    exit(0);
+                }
+            } else {
+                dfs(dfs, u, v);
+            }
+        }
+    };
+    dfs(dfs, 1, 0);
+
+    cout << "No\n";
 }
 
 int main() {

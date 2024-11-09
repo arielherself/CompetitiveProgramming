@@ -1,5 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#pragma GCC optimize("Ofast")
+#pragma GCC optimize("Ofast,no-stack-protector,unroll-loops,fast-math")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -469,55 +469,41 @@ void dump_ignore() {}
 void prep() {
 }
 
+// __attribute__((target("popcnt")))
 void solve() {
-    read(int, n, q);
-    readvec(int, ignore, n - 1);
-    readvec1(int, p, n);
-    vector<int> valid(n + 1);
-    int cnt = 0;
-    vector<int> fa(n + 1);
-    vector<int> order(n + 1);
-    vector<pii> son(n + 1, { INF, INF });
-    int curr = 0;
-    auto dfs = [&] (auto dfs, int v, int pa) -> int {
-        order[v] = ++curr;
-        fa[order[v]] = order[pa];
-        if (v * 2 <= n) son[order[v]].first = dfs(dfs, v * 2, v);
-        if (v * 2 + 1 <= n) son[order[v]].second = dfs(dfs, v * 2 + 1, v);
-        return order[v];
-    };
-    dfs(dfs, 1, 0);
+    read(int, n, m);
+    readvec(int, a, n);
+    readvec(int, b, m);
+    vector dp(n + 1, vector<int>(m + 1, INF));
+    for (int j = 0; j <= m; ++j) {
+        dp[0][j] = 0;
+    }
+    vector<ll> ps(n + 1);
     for (int i = 1; i <= n; ++i) {
-        if (p[fa[i]] == p[i] / 2) {
-            valid[i] = 1;
-            cnt += 1;
+        ps[i] = ps[i - 1] + a[i - 1];
+    }
+    for (int i = 1; i <= n; ++i) {
+        ll sum = 0;
+        for (int j = m; j; --j) {
+            int p; {
+                int l = 0, r = i;
+                while (l < r) {
+                    int mid = l + r >> 1;
+                    if (ps[i] - ps[mid] <= b[j - 1]) {
+                        r = mid;
+                    } else {
+                        l = mid + 1;
+                    }
+                }
+                p = l;
+            }
+            dp[i][j] = dp[p][j] + m - j;
+        }
+        for (int j = 1; j <= m; ++j) {
+            chmin(dp[i][j], dp[i][j - 1]);
         }
     }
-    while (q--) {
-        read(int, i, j);
-        for (auto&& k : { i, j, son[i].first, son[i].second, son[j].first, son[j].second }) {
-            if (k > n) continue;
-            if (valid[k]) {
-                valid[k] = 0;
-                cnt -= 1;
-            }
-        }
-        swap(p[i], p[j]);
-        for (auto&& k : { i, j, son[i].first, son[i].second, son[j].first, son[j].second }) {
-            if (k > n) continue;
-            if (not valid[k] and p[fa[k]] == p[k] / 2) {
-                valid[k] = 1;
-                cnt += 1;
-            }
-        }
-        // debug(valid);
-        // debug(cnt);
-        if (cnt == n) {
-            cout << "YES\n";
-        } else {
-            cout << "NO\n";
-        }
-    }
+    cout << (dp[n][m] >= INF ? -1 : dp[n][m]) << '\n';
 }
 
 int main() {

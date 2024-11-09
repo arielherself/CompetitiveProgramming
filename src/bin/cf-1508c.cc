@@ -458,7 +458,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,15 +469,87 @@ void dump_ignore() {}
 void prep() {
 }
 
+class quick_union {
+private:
+    vector<size_t> c, sz;
+public:
+    quick_union(size_t n) : c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
+    }
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] += sz[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_size(size_t i) {
+        return sz[query(i)];
+    }
+};
+
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    int res = n;
-    for (int i = 0; i < n; ++i) {
-        chmin(res, i + count_if(a.begin() + i, a.end(), expr(x > a[i], int x)));
+    read(int, n, m);
+    vector<tiii> edges;
+    adj(ch, n);
+    int x = 0;
+    for (int i = 0; i < m; ++i) {
+        read(int, u, v, w);
+        edges.emplace_back(u, v, w);
+        x ^= w;
+        edge(ch, u, v);
     }
-    cout << res << '\n';
+
+
+    ll mn = x;
+
+    quick_union qu(n + 1);
+    vector<int> cand(n);
+    iota(cand.begin(), cand.end(), 1);
+    int cnt = 0;
+    for (int i = 1; i <= n; ++i) {
+        vector<int> nxt = { i };
+        unordered_map<int, int, safe_hash> mp;
+        for (auto&& u : ch[i]) {
+            ++mp[qu.query(u)];
+        }
+        for (auto&& u : cand) {
+            if (mp.count(qu.query(u)) and mp[qu.query(u)] == qu.query_size(u)) {
+                nxt.emplace_back(u);
+            } else if (not qu.connected(i, u)) {
+                qu.merge(i, u);
+                cnt += 1;
+            }
+        }
+        cand.swap(nxt);
+    }
+
+    if (cnt < ll(1) * n * (n - 1) / 2 - edges.size()) {
+        mn = 0;
+    }
+
+    ll fix = 0;
+
+    sort_by_key(edges.begin(), edges.end(), expr(get<2>(e), auto&& e));
+    quick_union qu2(n + 1);
+    for (auto&& [u, v, w] : edges) {
+        if (not qu.connected(u, v)) {
+            qu.merge(u, v);
+            qu2.merge(u, v);
+            fix += w;
+        } else if (not qu2.connected(u, v)) {
+            chmin(mn, w);
+        }
+    }
+
+    cout << fix + mn << '\n';
 }
 
 int main() {
