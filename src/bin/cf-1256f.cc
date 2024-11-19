@@ -467,40 +467,61 @@ void dump_ignore() {}
 void prep() {
 }
 
+template<typename T>
+struct BIT {
+    int n;
+    vector<T> c;
+    BIT(size_t n) : n(n), c(n + 1) {}
+    void add(size_t i, const T& k) {
+        while (i <= n) {
+            c[i] += k;
+            i += lowbit(i);
+        }
+    }
+    T getsum(size_t i) {
+        T res = {};
+        while (i) {
+            res += c[i];
+            i -= lowbit(i);
+        }
+        return res;
+    }
+};
+
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr ll P = 41028650506964539LL;
-    using mll = MLL<P>;
     read(int, n);
-    vector<mll> pw(n + 1);
-    pw[0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        pw[i] = pw[i - 1] * 2;
+    read(string, a, b);
+    vector<int> cnta(26), cntb(26);
+    vector<int> rk(26);
+    for (int i = 0; i < n; ++i) {
+        cnta[a[i] - 'a'] += 1;
+        cntb[b[i] - 'a'] += 1;
+        rk[b[i] - 'a'] = i;
     }
-    readvec(int, a, n);
-    ll sum = accumulate(a.begin(), a.end(), ll(0));
-    auto work = [&] (ll target) -> optional<ll> {
-        mll d1 = 0;
-        for (int i = 0; i < n; ++i) {
-            d1 -= pw[i] * (target - a[i]);
+    int mul = 0;
+    for (int i = 0; i < 26; ++i) {
+        if (cnta[i] != cntb[i]) {
+            cout << "NO\n";
+            return;
         }
-        d1 /= pw[n] - 1;
-
-    };
-    ll l = 0, r = sum / n;
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (work(mid)) {
-            l = mid;
-        } else {
-            r = mid - 1;
-        }
+        mul |= cnta[i] > 1;
     }
-    auto res = work(l);
-    if (res) {
-        cout << *res << '\n';
+    if (mul) {
+        cout << "YES\n";
+        return;
+    }
+    BIT<int> tr(26);
+    ll inversions = 0;
+    for (int i = 0; i < n; ++i) {
+        int curr = rk[a[i] - 'a'] + 1;
+        inversions += tr.getsum(n) - tr.getsum(curr);
+        tr.add(curr, 1);
+    }
+    if (inversions & 1) {
+        cout << "NO\n";
     } else {
-        cout << -1 << '\n';
+        cout << "YES\n";
     }
 }
 

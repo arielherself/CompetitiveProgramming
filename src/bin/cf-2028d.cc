@@ -469,39 +469,55 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr ll P = 41028650506964539LL;
-    using mll = MLL<P>;
     read(int, n);
-    vector<mll> pw(n + 1);
-    pw[0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        pw[i] = pw[i - 1] * 2;
-    }
-    readvec(int, a, n);
-    ll sum = accumulate(a.begin(), a.end(), ll(0));
-    auto work = [&] (ll target) -> optional<ll> {
-        mll d1 = 0;
-        for (int i = 0; i < n; ++i) {
-            d1 -= pw[i] * (target - a[i]);
+    vector<vector<int>> seq(3);
+    vector mp(3, vector<int>(n + 1));
+    for (int i = 0; i < 3; ++i) {
+        readvec(int, a, n);
+        vector<int> curr(n);
+        iota(curr.begin(), curr.end(), 1);
+        sort_by_key(curr.begin(), curr.end(), expr(-a[k - 1], int k));
+        for (int j = 0; j < n; ++j) {
+            mp[i][curr[j]] = j;
         }
-        d1 /= pw[n] - 1;
+        seq[i] = std::move(curr);
+    }
+    vector tr(3, set<int>());
+    for (int i = 0; i < 3; ++i) {
+        tr[i].emplace(mp[i][1]);
+    }
+    vector<int> pre(n + 1, -1);
+    vector<pii> cur(n + 1, { -1, -1 });
+    for (int i = 2; i <= n; ++i) {
+        for (int j = 0; j < 3; ++j) {
+            auto it = tr[j].lower_bound(mp[j][i]);
+            if (it == tr[j].begin()) continue;
+            int pos = *prev(it);
+            cur[i] = { j, mp[j][i] };
+            pre[i] = seq[j][pos];
+            for (int k = 0; k < 3; ++k) {
+                tr[k].emplace(mp[k][i]);
+            }
+            if (i == n) {
+                cout << "YES\n";
+                int val = n;
+                vector<pair<char, int>> out;
+                while (val != 1) {
+                    out.emplace_back(cur[val].first == 0 ? 'q' : cur[val].first == 1 ? 'k' : 'j', val);
+                    val = pre[val];
+                }
+                reverse(out.begin(), out.end());
+                cout << out.size() << '\n';
+                for (auto&& [c, v] : out) {
+                    cout << c << ' ' << v << '\n';
+                }
+                return;
+            }
+            break;
+        }
+    }
 
-    };
-    ll l = 0, r = sum / n;
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (work(mid)) {
-            l = mid;
-        } else {
-            r = mid - 1;
-        }
-    }
-    auto res = work(l);
-    if (res) {
-        cout << *res << '\n';
-    } else {
-        cout << -1 << '\n';
-    }
+    cout << "NO\n";
 }
 
 int main() {

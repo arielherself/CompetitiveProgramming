@@ -456,7 +456,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -467,40 +467,69 @@ void dump_ignore() {}
 void prep() {
 }
 
+template<typename T>
+struct BIT {
+    int n;
+    vector<T> c;
+    BIT(size_t n) : n(n), c(n + 1) {}
+    void add(size_t i, const T& k) {
+        while (i <= n) {
+            c[i] += k;
+            i += lowbit(i);
+        }
+    }
+    T getsum(size_t i) {
+        T res = {};
+        while (i) {
+            res += c[i];
+            i -= lowbit(i);
+        }
+        return res;
+    }
+};
+
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr ll P = 41028650506964539LL;
-    using mll = MLL<P>;
-    read(int, n);
-    vector<mll> pw(n + 1);
-    pw[0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        pw[i] = pw[i - 1] * 2;
-    }
-    readvec(int, a, n);
-    ll sum = accumulate(a.begin(), a.end(), ll(0));
-    auto work = [&] (ll target) -> optional<ll> {
-        mll d1 = 0;
-        for (int i = 0; i < n; ++i) {
-            d1 -= pw[i] * (target - a[i]);
-        }
-        d1 /= pw[n] - 1;
-
-    };
-    ll l = 0, r = sum / n;
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (work(mid)) {
-            l = mid;
+    read(int, n, m);
+    readvec1(int, a, m);
+    vector<int> mn(n + 1), mx(n + 1);
+    iota(mn.begin() + 1, mn.end(), 0);
+    iota(mx.begin() + 1, mx.end(), 0);
+    BIT<int> tr(m);
+    BIT<int> changed(n);
+    vector<int> prev(n + 1, -1);
+    for (int i = 1; i <= m; ++i) {
+        int j = a[i];
+        int curr;
+        if (prev[j] == -1) {
+            curr = j - 1 + changed.getsum(n) - changed.getsum(j);
+            changed.add(j, 1);
         } else {
-            r = mid - 1;
+            curr = tr.getsum(m) - tr.getsum(prev[j]);
+            tr.add(prev[j], -1);
         }
+        prev[j] = i;
+        tr.add(prev[j], 1);
+        chmin(mn[j], curr);
+        chmax(mx[j], curr);
     }
-    auto res = work(l);
-    if (res) {
-        cout << *res << '\n';
-    } else {
-        cout << -1 << '\n';
+    // for (int i = 1; i <= m; ++i) {
+    //     cerr << tr.getsum(i) - tr.getsum(i - 1) << ' ';
+    // }
+    // cerr << endl;
+    for (int i = 1; i <= n; ++i) {
+        int curr;
+        if (prev[i] != -1) {
+            curr = tr.getsum(m) - tr.getsum(prev[i]);
+            chmin(mn[i], 0);
+        } else {
+            curr = i - 1 + changed.getsum(n) - changed.getsum(i);
+        }
+        chmin(mn[i], curr);
+        chmax(mx[i], curr);
+    }
+    for (int i = 1; i <= n; ++i) {
+        cout << mn[i] + 1 << ' ' << mx[i] + 1 << '\n';
     }
 }
 

@@ -456,7 +456,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,38 +469,83 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr ll P = 41028650506964539LL;
-    using mll = MLL<P>;
-    read(int, n);
-    vector<mll> pw(n + 1);
+    read(int, n, m, l);
+    int N = n + m + l;
+    vector<int> pw(N + 1);
     pw[0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        pw[i] = pw[i - 1] * 2;
+    for (int i = 1; i <= N; ++i) {
+        pw[i] = pw[i - 1] * 3;
     }
-    readvec(int, a, n);
-    ll sum = accumulate(a.begin(), a.end(), ll(0));
-    auto work = [&] (ll target) -> optional<ll> {
-        mll d1 = 0;
-        for (int i = 0; i < n; ++i) {
-            d1 -= pw[i] * (target - a[i]);
+    int state = 0;
+    vector<int> val;
+    for (int i = 0; i < n; ++i) {
+        read(int, x);
+        val.emplace_back(x);
+    }
+    for (int i = n; i < n + m; ++i) {
+        read(int, x);
+        val.emplace_back(x);
+        state += 1 * pw[i];
+    }
+    for (int i = n + m; i < N; ++i) {
+        read(int, x);
+        val.emplace_back(x);
+        state += 2 * pw[i];
+    }
+    unordered_map<pii, int, pair_hash> cache;
+    auto dfs = [&] (auto dfs, int state, int hand) -> int {
+        if (cache.count({state, hand})) return cache[{state, hand}];
+        vector<int> a;
+        vector<int> b;
+        vector<int> c;
+        for (int i = 0; i < N; ++i) {
+            int curr = (state / pw[i]) % 3;
+            if (curr == 0) {
+                a.emplace_back(i);
+            } else if (curr == 1) {
+                b.emplace_back(i);
+            } else {
+                c.emplace_back(i);
+            }
         }
-        d1 /= pw[n] - 1;
-
-    };
-    ll l = 0, r = sum / n;
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (work(mid)) {
-            l = mid;
+        if (hand == 0) {
+            for (auto&& i : a) {
+                if (dfs(dfs, state + 2 * pw[i], hand xor 1) == 0) {
+                    cache[{state, hand}] = 1;
+                    goto fi;
+                }
+                for (auto&& j : c) {
+                    if (val[j] < val[i]) {
+                        if (dfs(dfs, state + 2 * pw[i] - 2 * pw[j], hand xor 1) == 0) {
+                            cache[{state, hand}] = 1;
+                            goto fi;
+                        }
+                    }
+                }
+            }
         } else {
-            r = mid - 1;
+            for (auto&& i : b) {
+                if (dfs(dfs, state + 1 * pw[i], hand xor 1) == 0) {
+                    cache[{state, hand}] = 1;
+                    goto fi;
+                }
+                for (auto&& j : c) {
+                    if (val[j] < val[i]) {
+                        if (dfs(dfs, state + 1 * pw[i] - 1 * pw[j], hand xor 1) == 0) {
+                            cache[{state, hand}] = 1;
+                            goto fi;
+                        }
+                    }
+                }
+            }
         }
-    }
-    auto res = work(l);
-    if (res) {
-        cout << *res << '\n';
+    fi:
+        return cache[{state, hand}];
+    };
+    if (dfs(dfs, state, 0)) {
+        cout << "Takahashi\n";
     } else {
-        cout << -1 << '\n';
+        cout << "Aoki\n";
     }
 }
 

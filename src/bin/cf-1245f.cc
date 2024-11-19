@@ -469,39 +469,89 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr ll P = 41028650506964539LL;
-    using mll = MLL<P>;
-    read(int, n);
-    vector<mll> pw(n + 1);
-    pw[0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        pw[i] = pw[i - 1] * 2;
-    }
-    readvec(int, a, n);
-    ll sum = accumulate(a.begin(), a.end(), ll(0));
-    auto work = [&] (ll target) -> optional<ll> {
-        mll d1 = 0;
-        for (int i = 0; i < n; ++i) {
-            d1 -= pw[i] * (target - a[i]);
-        }
-        d1 /= pw[n] - 1;
+    read(int, l, r);
+    constexpr int N = 31;
 
-    };
-    ll l = 0, r = sum / n;
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (work(mid)) {
-            l = mid;
-        } else {
-            r = mid - 1;
+    ll x = 0, y = 0, z = 0;
+
+    // leq r
+    {
+        vector dp(N + 1, vector<ll>(4));
+        dp[N][0] = 1;
+        for (int i = N - 1; ~i; --i) {
+            int bit = r >> i & 1;
+            for (int j = 0; j < 4; ++j) {
+                int left_lt = j >> 1;
+                int right_lt = j & 1;
+                for (int k = 0; k < 3; ++k) {
+                    int left = k >> 1;
+                    int right = k & 1;
+                    // deb(bit, left, right, left_lt, right_lt);
+                    if (bit < left and not left_lt or
+                        bit < right and not right_lt) {
+                        continue;
+                    }
+                    // if (dp[i + 1][j] != 0) {
+                    //     deb(i, j | (bit > left) << 1 | (bit > right));
+                    // }
+                    dp[i][j | (bit > left) << 1 | (bit > right)] += dp[i + 1][j];
+                }
+            }
+        }
+        for (int i = 0; i < 4; ++i) {
+            x += dp[0][i];
         }
     }
-    auto res = work(l);
-    if (res) {
-        cout << *res << '\n';
-    } else {
-        cout << -1 << '\n';
+
+    // lt l
+    {
+        vector dp(N + 1, vector<ll>(4));
+        dp[N][0] = 1;
+        for (int i = N - 1; ~i; --i) {
+            int bit = l >> i & 1;
+            for (int j = 0; j < 4; ++j) {
+                int left_lt = j >> 1;
+                int right_lt = j & 1;
+                for (int k = 0; k < 3; ++k) {
+                    int left = k >> 1;
+                    int right = k & 1;
+                    if (bit < left and not left_lt or
+                        bit < right and not right_lt) {
+                        continue;
+                    }
+                    dp[i][j | (bit > left) << 1 | (bit > right)] += dp[i + 1][j];
+                }
+            }
+        }
+        y = dp[0][0b11];
     }
+
+    // a < l, b <= r
+    {
+        vector dp(N + 1, vector<ll>(4));
+        dp[N][0] = 1;
+        for (int i = N - 1; ~i; --i) {
+            int lbit = l >> i & 1;
+            int rbit = r >> i & 1;
+            for (int j = 0; j < 4; ++j) {
+                int left_lt = j >> 1;
+                int right_lt = j & 1;
+                for (int k = 0; k < 3; ++k) {
+                    int left = k >> 1;
+                    int right = k & 1;
+                    if (lbit < left and not left_lt or
+                        rbit < right and not right_lt) {
+                        continue;
+                    }
+                    dp[i][j | (lbit > left) << 1 | (rbit > right)] += dp[i + 1][j];
+                }
+            }
+        }
+        z = dp[0][0b11] + dp[0][0b10];
+    }
+
+    cout << x - 2 * z + y << '\n';
+
 }
 
 int main() {

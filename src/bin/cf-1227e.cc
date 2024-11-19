@@ -456,7 +456,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,38 +469,87 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr ll P = 41028650506964539LL;
-    using mll = MLL<P>;
-    read(int, n);
-    vector<mll> pw(n + 1);
-    pw[0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        pw[i] = pw[i - 1] * 2;
-    }
-    readvec(int, a, n);
-    ll sum = accumulate(a.begin(), a.end(), ll(0));
-    auto work = [&] (ll target) -> optional<ll> {
-        mll d1 = 0;
-        for (int i = 0; i < n; ++i) {
-            d1 -= pw[i] * (target - a[i]);
+    read(int, n, m);
+    vector a(n, vector<int>(m));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            read(char, c);
+            a[i][j] = c == 'X';
         }
-        d1 /= pw[n] - 1;
-
+    }
+    vector ps(n + 1, vector<int>(m + 1));
+    for (int i = 1; i <= n; ++i) {
+        for (int j = 1; j <= m; ++j) {
+            ps[i][j] = ps[i - 1][j] + ps[i][j - 1] - ps[i - 1][j - 1] + a[i - 1][j - 1];
+        }
+    }
+    // for (int i = 0; i <= n; ++i) {
+    //     debug(ps[i]);
+    // }
+    auto check = [&] (int x) -> optional<vector<vector<int>>> {
+        int e = 2 * x - 1;
+        int area = e * e;
+        vector b(n, vector<int>(m));
+        for (int i = 0; i + e <= n; ++i) {
+            for (int j = 0; j + e <= m; ++j) {
+                if (ps[i + e][j + e] - ps[i][j + e] - ps[i + e][j] + ps[i][j] == area) {
+                    b[i][j] = 1;
+                }
+            }
+        }
+        vector bp(n + 1, vector<int>(m + 1));
+        for (int i = 1; i <= n; ++i) {
+            for (int j = 1; j <= m; ++j) {
+                bp[i][j] = bp[i - 1][j] + bp[i][j - 1] - bp[i - 1][j - 1] + b[i - 1][j - 1];
+            }
+        }
+        for (int i = 1; i <= n; ++i) {
+            for (int j = 1; j <= m; ++j) {
+                int l = max(1, i - e + 1);
+                int r = i;
+                int u = max(1, j - e + 1);
+                int d = j;
+                int curr = not not (bp[r][d] - bp[l - 1][d] - bp[r][u - 1] + bp[l - 1][u - 1]);
+                // b[i - 1][j - 1] = curr;
+                if (curr != a[i - 1][j - 1]) {
+                    return nullopt;
+                }
+            }
+        }
+        // if (x == 2) {
+        //     for (int i = 0; i < n; ++i) {
+        //         debug(b[i]);
+        //     }
+        // }
+        // for (int i = 0; i < n; ++i) {
+        //     for (int j = 0; j < m; ++j) {
+        //         if (b[i][j] != a[i][j]) {
+        //             return false;
+        //         }
+        //     }
+        // }
+        return b;
     };
-    ll l = 0, r = sum / n;
+    int l = 1, r = min(n, m) / 2 + 1;
     while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (work(mid)) {
+        int mid = l + r + 1 >> 1;
+        if (check(mid).has_value()) {
             l = mid;
         } else {
             r = mid - 1;
         }
     }
-    auto res = work(l);
-    if (res) {
-        cout << *res << '\n';
-    } else {
-        cout << -1 << '\n';
+    cout << l - 1 << '\n';
+    auto b = *check(l);
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            if (i - l + 1 >= 0 and j - l + 1 >= 0 and b[i - l + 1][j - l + 1]) {
+                cout << 'X';
+            } else {
+                cout << '.';
+            }
+        }
+        cout << '\n';
     }
 }
 

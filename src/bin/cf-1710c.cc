@@ -456,7 +456,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -467,41 +467,43 @@ void dump_ignore() {}
 void prep() {
 }
 
-// __attribute__((target("popcnt")))
+__attribute__((target("popcnt,lzcnt")))
 void solve() {
-    constexpr ll P = 41028650506964539LL;
-    using mll = MLL<P>;
-    read(int, n);
-    vector<mll> pw(n + 1);
-    pw[0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        pw[i] = pw[i - 1] * 2;
-    }
-    readvec(int, a, n);
-    ll sum = accumulate(a.begin(), a.end(), ll(0));
-    auto work = [&] (ll target) -> optional<ll> {
-        mll d1 = 0;
-        for (int i = 0; i < n; ++i) {
-            d1 -= pw[i] * (target - a[i]);
+    using mll = MLL<PRIME>;
+    read(string, a);
+    reverse(a.begin(), a.end());
+    int n = a.size();
+    vector dp(n + 1, vector(8, vector<mll>(8)));
+    dp[n][0][0] = 1;
+    for (int i = n - 1; ~i; --i) {
+        // if already has bits less than them in `a`
+        for (int j = 0; j < 8; ++j) {
+            // if has `100` or `011` patterns
+            for (int k = 0; k < 8; ++k) {
+                for (int l = 0; l < 8; ++l) {
+                    if (a[i] == '0' and (j & l) != l) continue;
+                    int mask = j;
+                    if (a[i] == '1') {
+                        mask |= 7 xor l;
+                    }
+                    if (popcount(l) == 1) {
+                        int bit = lsp(l);
+                        dp[i][mask][k | 1 << bit] += dp[i + 1][j][k];
+                    } else if (popcount(l) == 2) {
+                        int bit = lsp(7 xor l);
+                        dp[i][mask][k | 1 << bit] += dp[i + 1][j][k];
+                    } else {
+                        dp[i][mask][k] += dp[i + 1][j][k];
+                    }
+                }
+            }
         }
-        d1 /= pw[n] - 1;
-
-    };
-    ll l = 0, r = sum / n;
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (work(mid)) {
-            l = mid;
-        } else {
-            r = mid - 1;
-        }
     }
-    auto res = work(l);
-    if (res) {
-        cout << *res << '\n';
-    } else {
-        cout << -1 << '\n';
+    mll res = 0;
+    for (int i = 0; i < 8; ++i) {
+        res += dp[0][i][7];
     }
+    cout << res << '\n';
 }
 
 int main() {

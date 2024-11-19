@@ -456,7 +456,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,38 +469,54 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr ll P = 41028650506964539LL;
-    using mll = MLL<P>;
-    read(int, n);
-    vector<mll> pw(n + 1);
-    pw[0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        pw[i] = pw[i - 1] * 2;
-    }
-    readvec(int, a, n);
-    ll sum = accumulate(a.begin(), a.end(), ll(0));
-    auto work = [&] (ll target) -> optional<ll> {
-        mll d1 = 0;
-        for (int i = 0; i < n; ++i) {
-            d1 -= pw[i] * (target - a[i]);
-        }
-        d1 /= pw[n] - 1;
-
-    };
-    ll l = 0, r = sum / n;
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (work(mid)) {
-            l = mid;
+    read(int, n, k);
+    vector<int> gray = { 0 };
+    for (int i = 1; i < n; ++i) {
+        if (i % 2) {
+            gray.emplace_back(1 ^ gray.back());
         } else {
-            r = mid - 1;
+            gray.emplace_back((1 << 1 + lsp(gray.back())) ^ gray.back());
         }
     }
-    auto res = work(l);
-    if (res) {
-        cout << *res << '\n';
-    } else {
-        cout << -1 << '\n';
+    vector<pii> rev(1 << 2 * 5);
+    auto get = [&] (int i, int j) {
+        int res = 0;
+        for (int k = 0; k < 5; ++k) {
+            res |= (gray[i] >> k & 1) << k * 2 + 1;
+            res |= (gray[j] >> k & 1) << k * 2;
+        }
+        return res;
+    };
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            rev[get(i, j)] = { i, j };
+        }
+    }
+    int tot = 0;
+    for (int i = 0; i < n; ++i) {
+        for (int j = 1; j < n; ++j) {
+            int curr = get(i, j - 1) xor get(i, j);
+            tot += curr;
+            cout << curr << ' ';
+        }
+        cout << '\n';
+    }
+    for (int i = 1; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            int curr = get(i - 1, j) xor get(i, j);
+            tot += curr;
+            cout << curr << ' ';
+        }
+        cout << '\n';
+    }
+    cout << flush;
+    debug(tot);
+    int curr = 0;
+    while (k--) {
+        read(int, x);
+        curr ^= x;
+        auto&& [i, j] = rev[curr];
+        cout << i + 1 << ' ' << j + 1  << endl;
     }
 }
 

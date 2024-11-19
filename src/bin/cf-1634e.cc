@@ -456,7 +456,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,38 +469,61 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr ll P = 41028650506964539LL;
-    using mll = MLL<P>;
     read(int, n);
-    vector<mll> pw(n + 1);
-    pw[0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        pw[i] = pw[i - 1] * 2;
-    }
-    readvec(int, a, n);
-    ll sum = accumulate(a.begin(), a.end(), ll(0));
-    auto work = [&] (ll target) -> optional<ll> {
-        mll d1 = 0;
-        for (int i = 0; i < n; ++i) {
-            d1 -= pw[i] * (target - a[i]);
-        }
-        d1 /= pw[n] - 1;
+    vector<vector<int>> a(n);
 
-    };
-    ll l = 0, r = sum / n;
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (work(mid)) {
-            l = mid;
-        } else {
-            r = mid - 1;
+    unordered_map<int, int, safe_hash> cnt;
+
+    int f = 1;
+
+    for (int i = 0; i < n; ++i) {
+        read(int, m);
+        if (m % 2 == 1) {
+            f = 0;
+        }
+        while (m--) {
+            read(int, x);
+            a[i].emplace_back(x);
+            cnt[x] += 1;
         }
     }
-    auto res = work(l);
-    if (res) {
-        cout << *res << '\n';
-    } else {
-        cout << -1 << '\n';
+
+    for (auto&& [k, v] : cnt) {
+        if (v % 2 == 1) {
+            f = 0;
+            break;
+        }
+        cnt[k] /= 2;
+    }
+
+    if (f == 0) {
+        cout << "NO\n";
+        return;
+    }
+
+    cout << "YES\n";
+
+    for (auto&& v : a) {
+        vector<int> idx(v.size());
+        iota(idx.begin(), idx.end(), 0);
+        sort_by_key(idx.begin(), idx.end(), expr(cnt[v[i]], int i));
+        vector<char> res(v.size());
+        int curr = 0;
+        for (auto&& i : idx) {
+            auto&& x = v[i];
+            if (cnt[x] == 0 or curr == v.size() / 2) {
+                res[i] = 'R';
+            } else {
+                res[i] = 'L';
+                cnt[x] -= 1;
+                curr += 1;
+            }
+        }
+        assert(curr == v.size() / 2);
+        for (auto&& c : res) {
+            cout << c;
+        }
+        cout << '\n';
     }
 }
 

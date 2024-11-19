@@ -467,41 +467,93 @@ void dump_ignore() {}
 void prep() {
 }
 
-// __attribute__((target("popcnt")))
-void solve() {
-    constexpr ll P = 41028650506964539LL;
-    using mll = MLL<P>;
-    read(int, n);
-    vector<mll> pw(n + 1);
-    pw[0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        pw[i] = pw[i - 1] * 2;
+class quick_union {
+private:
+    vector<size_t> c, sz;
+public:
+    quick_union(size_t n) : c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
     }
-    readvec(int, a, n);
-    ll sum = accumulate(a.begin(), a.end(), ll(0));
-    auto work = [&] (ll target) -> optional<ll> {
-        mll d1 = 0;
-        for (int i = 0; i < n; ++i) {
-            d1 -= pw[i] * (target - a[i]);
-        }
-        d1 /= pw[n] - 1;
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] += sz[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_size(size_t i) {
+        return sz[query(i)];
+    }
+};
 
-    };
-    ll l = 0, r = sum / n;
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (work(mid)) {
-            l = mid;
-        } else {
-            r = mid - 1;
+__attribute__((target("lzcnt")))
+void solve() {
+    read(int, n);
+    readvec(int, a, n);
+    int cnt = 0;
+    vector<int> mx;
+    for (int i = 0; i < n; ++i) {
+        if (a[i] == 0) {
+            cnt += 1;
+            a[i] = 1;
+        }
+        if (mx.empty() or lsp(a[i]) > lsp(a[mx.back()])) {
+            mx = { i };
+        } else if (lsp(a[i]) == lsp(a[mx.back()])) {
+            mx.emplace_back(i);
         }
     }
-    auto res = work(l);
-    if (res) {
-        cout << *res << '\n';
-    } else {
-        cout << -1 << '\n';
+    auto check = [&] {
+        quick_union qu(n + 31);
+        for (int i = 0; i < n; ++i) {
+            int x = a[i];
+            while (x) {
+                int b = lsp(x);
+                qu.merge(31 + i, b);
+                x -= 1 << b;
+            }
+        }
+        for (int i = 1; i < n; ++i) {
+            if (not qu.connected(31, 31 + i)) {
+                return false;
+            }
+        }
+        return true;
+    };
+    if (check()) {
+        cout << cnt << '\n';
+        putvec(a);
+        return;
     }
+    for (int i = 0; i < n; ++i) {
+        cnt += 1;
+        a[i] += 1;
+        if (check()) {
+            cout << cnt << '\n';
+            putvec(a);
+            return;
+        }
+        a[i] -= 2;
+        if (check()) {
+            cout << cnt << '\n';
+            putvec(a);
+            return;
+        }
+        a[i] += 1;
+        cnt -= 1;
+    }
+    cnt += 2;
+    a[mx[0]] += 1;
+    a[mx[1]] -= 1;
+    assert(check());
+    cout << cnt << '\n';
+    putvec(a);
 }
 
 int main() {

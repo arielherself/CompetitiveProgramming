@@ -1,5 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#pragma GCC optimize("Ofast,no-stack-protector,unroll-loops,fast-math")
+// #pragma GCC optimize("Ofast,no-stack-protector,unroll-loops,fast-math")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -456,7 +456,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -467,40 +467,73 @@ void dump_ignore() {}
 void prep() {
 }
 
+template <typename T>
+inline T mygcd(T a, T b) { return b == 0 ? a : mygcd(b, a % b); }
+
+template<typename T>
+struct fractional {
+    T p, q;
+    inline void reduce(void) {
+        if (q < 0) p = -p, q = -q;
+        if (p == 0) q = 1; else { T g = mygcd(p, q); p /= g; q /= g; }
+    }
+    fractional(void) : p(0), q(1) {}
+    template <typename U>
+    fractional(const U& p) : p(p), q(1) { reduce(); }
+    fractional(const T& p, const T& q) : p(p), q(q) { reduce(); }
+    inline fractional operator+(void) const { return *this; }
+    inline fractional operator-(void) const { return { -p, q }; }
+    inline fractional operator+(const fractional& rhs) const { return { p * rhs.q + q * rhs.p, q * rhs.q }; }
+    inline fractional operator-(const fractional& rhs) const { return *this + (-rhs); }
+    inline fractional operator*(const fractional& rhs) const { return { p * rhs.p, q * rhs.q }; }
+    inline fractional operator/(const fractional& rhs) const { return *this * fractional(rhs.q, rhs.p); }
+    inline fractional& operator+=(const fractional& rhs) { return *this = *this + rhs; }
+    inline fractional& operator-=(const fractional& rhs) { return *this = *this - rhs; }
+    inline fractional& operator*=(const fractional& rhs) { return *this = *this * rhs; }
+    inline fractional& operator/=(const fractional& rhs) { return *this = *this / rhs; }
+    inline bool operator==(const fractional& rhs) const { return p == rhs.p and q == rhs.q; }
+    inline bool operator!=(const fractional& rhs) const { return not (*this == rhs); }
+    inline bool operator<(const fractional& rhs) const { return (*this - rhs).p < 0; }
+    inline bool operator>=(const fractional& rhs) const { return not (*this < rhs); }
+    inline bool operator>(const fractional& rhs) const { return *this >= rhs and *this != rhs; }
+    inline bool operator<=(const fractional& rhs) const { return *this < rhs or *this == rhs; }
+};
+
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr ll P = 41028650506964539LL;
-    using mll = MLL<P>;
-    read(int, n);
-    vector<mll> pw(n + 1);
-    pw[0] = 1;
+    read(int, n, m);
+    adj(ch, n);
+    vector<int> ind(n + 1);
     for (int i = 1; i <= n; ++i) {
-        pw[i] = pw[i - 1] * 2;
-    }
-    readvec(int, a, n);
-    ll sum = accumulate(a.begin(), a.end(), ll(0));
-    auto work = [&] (ll target) -> optional<ll> {
-        mll d1 = 0;
-        for (int i = 0; i < n; ++i) {
-            d1 -= pw[i] * (target - a[i]);
-        }
-        d1 /= pw[n] - 1;
-
-    };
-    ll l = 0, r = sum / n;
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (work(mid)) {
-            l = mid;
-        } else {
-            r = mid - 1;
+        read(int, k);
+        while (k--) {
+            read(int, v);
+            Edge(ch, i, v);
+            ind[v] += 1;
         }
     }
-    auto res = work(l);
-    if (res) {
-        cout << *res << '\n';
-    } else {
-        cout << -1 << '\n';
+    vector<fractional<int128>> val(n + 1);
+    deque<int> q;
+    for (int i = 1; i <= n; ++i) {
+        if (ind[i] == 0) {
+            q.emplace_back(i);
+            val[i] = i <= m;
+        }
+    }
+    while (q.size()) {
+        int v = q.front(); q.pop_front();
+        int k = ch[v].size();
+        for (auto&& u : ch[v]) {
+            val[u] += val[v] / k;
+            if (--ind[u] == 0) {
+                q.emplace_back(u);
+            }
+        }
+    }
+    for (int i = 1; i <= n; ++i) {
+        if (ch[i].size() == 0) {
+            cout << val[i].p << ' ' << val[i].q << '\n';
+        }
     }
 }
 

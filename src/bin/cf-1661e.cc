@@ -456,7 +456,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -467,40 +467,142 @@ void dump_ignore() {}
 void prep() {
 }
 
+class quick_union {
+private:
+    vector<size_t> c;
+public:
+    quick_union(size_t n) : c(n) {
+        iota(c.begin(), c.end(), 0);
+    }
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+};
+
+template<typename T>
+struct BIT {
+    int n;
+    vector<T> c;
+    BIT(size_t n) : n(n), c(n + 1) {}
+    void add(size_t i, const T& k) {
+        while (i <= n) {
+            c[i] += k;
+            i += lowbit(i);
+        }
+    }
+    T getsum(size_t i) {
+        T res = {};
+        while (i) {
+            res += c[i];
+            i -= lowbit(i);
+        }
+        return res;
+    }
+};
+
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr ll P = 41028650506964539LL;
-    using mll = MLL<P>;
     read(int, n);
-    vector<mll> pw(n + 1);
-    pw[0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        pw[i] = pw[i - 1] * 2;
-    }
-    readvec(int, a, n);
-    ll sum = accumulate(a.begin(), a.end(), ll(0));
-    auto work = [&] (ll target) -> optional<ll> {
-        mll d1 = 0;
-        for (int i = 0; i < n; ++i) {
-            d1 -= pw[i] * (target - a[i]);
+    vector a(3, vector<int>(n));
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < n; ++j) {
+            read(char, c);
+            a[i][j] = c == '1';
         }
-        d1 /= pw[n] - 1;
+    }
 
-    };
-    ll l = 0, r = sum / n;
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (work(mid)) {
-            l = mid;
-        } else {
-            r = mid - 1;
+    vector ps(3, vector<int>(n + 1));
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 1; j <= n; ++j) {
+            ps[i][j] = ps[i][j - 1] + a[i][j - 1];
         }
     }
-    auto res = work(l);
-    if (res) {
-        cout << *res << '\n';
-    } else {
-        cout << -1 << '\n';
+
+    vector<int> left(3 * n), right(3 * n);
+    quick_union qu(3 * n);
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < n; ++j) {
+            left[i * n + j] = j;
+            right[i * n + j] = j;
+        }
+    }
+
+    vector<int> nxt(n, n);
+    for (int i = n - 1; ~i; --i) {
+        if (a[0][i] and a[1][i] and a[2][i]) {
+            nxt[i] = i;
+        } else if (i != n - 1) {
+            nxt[i] = nxt[i + 1];
+        }
+    }
+
+    vector<int> pre(n, -1);
+    for (int i = 0; i < n; ++i) {
+        if (a[0][i] and a[1][i] and a[2][i]) {
+            pre[i] = i;
+        } else if (i) {
+            pre[i] = pre[i - 1];
+        }
+    }
+
+    for (int i = 0; i < 3; ++i) {
+        for (int j = 0; j < n; ++j) {
+            if (not a[i][j]) continue;
+            int c = i * n + j;
+            if (j != 0 and a[i][j - 1]) {
+                int l = i * n + j - 1;
+                chmin(left[qu.query(l)], left[qu.query(c)]);
+                chmax(right[qu.query(l)], right[qu.query(c)]);
+                qu.merge(c, l);
+            }
+            if (i != 0 and a[i - 1][j]) {
+                int u = (i - 1) * n + j;
+                chmin(left[qu.query(u)], left[qu.query(c)]);
+                chmax(right[qu.query(u)], right[qu.query(c)]);
+                qu.merge(c, u);
+            }
+        }
+    }
+
+    int tot = 0;
+    BIT<int> tr_left(n), tr_right(n);
+    for (int i = 0; i < 3 * n; ++i) {
+        if (a[i / n][i % n] and qu.query(i) == i) {
+            tot += 1;
+            tr_left.add(left[i] + 1, 1);
+            tr_right.add(right[i] + 1, 1);
+        }
+    }
+
+    read(int, q);
+    while (q--) {
+        read(int, l, r);
+        --l, --r;
+        int left_exclude = tr_right.getsum(l);
+        int right_exclude = tr_left.getsum(n) - tr_left.getsum(r + 1);
+        int cnt = tot - left_exclude - right_exclude;
+        int l1 = l, l2 = n + l, l3 = 2 * n + l;
+        int r1 = r, r2 = n + r, r3 = 2 * n + r;
+        int f = qu.connected(l1, l3) and not a[1][l] and (nxt[l] > r or not (ps[0][nxt[l] + 1] - ps[0][l] == nxt[l] + 1 - l and ps[2][nxt[l] + 1] - ps[2][l] == nxt[l] + 1 - l));
+        int g = qu.connected(r1, r3) and not a[1][r] and (pre[r] < l or not (ps[0][r + 1] - ps[0][pre[r]] == r + 1 - pre[r] and ps[2][r + 1] - ps[2][pre[r]] == r + 1 - pre[r]));
+        if (f) {
+            cnt += 1;
+        }
+        if (g) {
+            cnt += 1;
+        }
+        if (f and g and ps[0][r + 1] - ps[0][l] == r + 1 - l and ps[2][r + 1] - ps[2][l] == r + 1 - l) {
+            cnt -= 1;
+        }
+        cout << cnt << '\n';
     }
 }
 

@@ -1,5 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#pragma GCC optimize("Ofast,no-stack-protector,unroll-loops,fast-math")
+// #pragma GCC optimize("Ofast,no-stack-protector,unroll-loops,fast-math")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -456,7 +456,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -467,41 +467,118 @@ void dump_ignore() {}
 void prep() {
 }
 
+template <typename T> struct point {
+    T x, y;
+    point() : x(), y() {}
+    point(const pair<T, T>& a) : x(a.first), y(a.second) {}
+    point(const T& x, const T& y) : x(x), y(y) {}
+
+    inline T square() const { return x * x + y * y; }
+    inline ld norm() const { return sqrt(ld(square())); }
+
+    inline point operator+(const point& rhs) const { return point(x + rhs.x, y + rhs.y); }
+    inline point operator-(const point& rhs) const { return point(x - rhs.x, y - rhs.y); }
+    inline point operator+() const { return *this; }
+    inline point operator-() const { return point(-x, -y); }
+    inline point operator*(const T& a) const { return point(x * a, y * a); }
+    inline T operator*(const point& rhs) const { return x * rhs.y - y * rhs.x; }
+    inline point operator/(const T& a) const { return point(x / a, y / a); }
+    inline point operator+=(const point& rhs) { x += rhs.x, y += rhs.y; return *this; }
+    inline point operator-=(const point& rhs) { x -= rhs.x, y -= rhs.y; return *this; }
+    inline point operator*=(const T& a) { x *= a, y *= a; return *this; }
+    inline point operator/=(const T& a) { x /= a, y /= a; return *this; }
+
+    inline bool operator==(const point& rhs) const { return x == rhs.x and y == rhs.y; }
+    inline bool operator!=(const point& rhs) const { return not (*this == rhs); }
+    inline bool operator<(const point& rhs) const { return pair(x, y) < pair(rhs.x, rhs.y); }
+    inline bool operator<=(const point& rhs) const { return *this < rhs or *this == rhs; }
+    inline bool operator>(const point& rhs) const { return not (*this <= rhs); }
+    inline bool operator>=(const point& rhs) const { return not (*this < rhs); }
+
+    static inline ld slope(const point& a, const point& b) {
+        if (a.x == b.x) return INFLL;
+        return ld(a.y - b.y) / (a.x - b.x);
+    }
+
+    // distance from point `a` to line `l--r`
+    static inline ld dist(const point& a, const point& l, const point& r) {
+        return area(a, l, r) * 2 / (l - r).norm();
+    }
+
+    static inline ld area(const point& a, const point& b, const point& c) {
+        ld x = (a - b).norm();
+        ld y = (b - c).norm();
+        ld z = (c - a).norm();
+        ld p = (x + y + z) / 2;
+        return sqrt(p * (p - x) * (p - y) * (p - z));
+    }
+
+    friend inline istream& operator>>(istream& in, point& a) {
+        return in >> a.x >> a.y;
+    }
+
+    friend inline ostream& operator<<(ostream& out, const point& a) {
+        return out << a.x << ' ' << a.y;
+    }
+};
+
+struct convex_hull {
+    int n, m;
+    vector<bool> on_hull;
+    // WARN: counter-clockwise
+    vector<int> hull;
+
+    // WARN: sort the points before initializing
+    template <typename T>
+    convex_hull(const vector<point<T>>& a) : n(a.size()), on_hull(n) {
+        for (int i = 0; i < n; ++i) {
+            int m = hull.size();
+            // WARN: keeping the points that are on edges
+            while (m > 1 and (a[hull[m - 1]] - a[hull[m - 2]]) * (a[i] - a[hull[m - 2]]) < 0) {
+                on_hull[hull[m - 1]] = 0;
+                hull.pop_back();
+                m -= 1;
+            }
+            on_hull[i] = 1;
+            hull.emplace_back(i);
+        }
+        int low = hull.size();
+
+        for (int i = n - 2; ~i; --i) {
+            int m = hull.size();
+            while (m > low and (a[hull[m - 1]] - a[hull[m - 2]]) * (a[i] - a[hull[m - 2]]) < 0) {
+                on_hull[hull[m - 1]] = 0;
+                hull.pop_back();
+                m -= 1;
+            }
+            on_hull[i] = 1;
+            hull.emplace_back(i);
+        }
+        if (n > 1) {
+            hull.pop_back();
+        }
+        m = hull.size();
+        debug(hull);
+    }
+};
+
+
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr ll P = 41028650506964539LL;
-    using mll = MLL<P>;
     read(int, n);
-    vector<mll> pw(n + 1);
-    pw[0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        pw[i] = pw[i - 1] * 2;
-    }
-    readvec(int, a, n);
-    ll sum = accumulate(a.begin(), a.end(), ll(0));
-    auto work = [&] (ll target) -> optional<ll> {
-        mll d1 = 0;
-        for (int i = 0; i < n; ++i) {
-            d1 -= pw[i] * (target - a[i]);
-        }
-        d1 /= pw[n] - 1;
+    readvec(point<ld>, a, n);
 
-    };
-    ll l = 0, r = sum / n;
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (work(mid)) {
-            l = mid;
-        } else {
-            r = mid - 1;
-        }
+    sort(a.begin(), a.end());
+
+    convex_hull hull(a);
+    ld res = 0;
+    for (int i = 0; i < hull.m; ++i) {
+        res += (a[hull.hull[i]] - a[hull.hull[(i + 1) % hull.m]]).norm();
     }
-    auto res = work(l);
-    if (res) {
-        cout << *res << '\n';
-    } else {
-        cout << -1 << '\n';
-    }
+
+    res = round(res * 100) / 100;
+    cout << fixed << setprecision(2);
+    cout << res << '\n';
 }
 
 int main() {

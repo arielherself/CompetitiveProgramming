@@ -456,7 +456,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,39 +469,23 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr ll P = 41028650506964539LL;
-    using mll = MLL<P>;
-    read(int, n);
-    vector<mll> pw(n + 1);
-    pw[0] = 1;
+    read(int, n, m);
+    readvec(pii, info, n);
+    sort_by_key(info.begin(), info.end(), expr(p.first + p.second, auto&& p));
+    vector<int> dp(m + 1, INF);
+    dp[0] = 0;
     for (int i = 1; i <= n; ++i) {
-        pw[i] = pw[i - 1] * 2;
-    }
-    readvec(int, a, n);
-    ll sum = accumulate(a.begin(), a.end(), ll(0));
-    auto work = [&] (ll target) -> optional<ll> {
-        mll d1 = 0;
-        for (int i = 0; i < n; ++i) {
-            d1 -= pw[i] * (target - a[i]);
+        auto&& [x, s] = info[i - 1];
+        for (int j = m; ~j; --j) {
+            int left = max(1, x - s - j);
+            int right = min(m, x + s + j);
+            chmin(dp[right], dp[left - 1] + j);
         }
-        d1 /= pw[n] - 1;
-
-    };
-    ll l = 0, r = sum / n;
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (work(mid)) {
-            l = mid;
-        } else {
-            r = mid - 1;
+        for (int j = m - 1; ~j; --j) {
+            chmin(dp[j], dp[j + 1]);
         }
     }
-    auto res = work(l);
-    if (res) {
-        cout << *res << '\n';
-    } else {
-        cout << -1 << '\n';
-    }
+    cout << dp[m] << '\n';
 }
 
 int main() {

@@ -469,39 +469,46 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr ll P = 41028650506964539LL;
-    using mll = MLL<P>;
-    read(int, n);
-    vector<mll> pw(n + 1);
-    pw[0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        pw[i] = pw[i - 1] * 2;
-    }
-    readvec(int, a, n);
-    ll sum = accumulate(a.begin(), a.end(), ll(0));
-    auto work = [&] (ll target) -> optional<ll> {
-        mll d1 = 0;
-        for (int i = 0; i < n; ++i) {
-            d1 -= pw[i] * (target - a[i]);
-        }
-        d1 /= pw[n] - 1;
+    read(int, n, m);
+    read(string, a);
+    read(string, b);
 
-    };
-    ll l = 0, r = sum / n;
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (work(mid)) {
-            l = mid;
-        } else {
-            r = mid - 1;
+    vector dp(n + 1, vector<int>(m + 1, INF));
+    dp[0][0] = 0;
+    for (int i = 1; i <= n; ++i) {
+        dp[i][0] = i;
+        for (int j = 1; j <= m; ++j) {
+            chmin(dp[i][j], dp[i - 1][j] + 1);
+            if (a[i - 1] == b[j - 1]) {
+                chmin(dp[i][j], dp[i - 1][j - 1]);
+            }
         }
     }
-    auto res = work(l);
-    if (res) {
-        cout << *res << '\n';
-    } else {
-        cout << -1 << '\n';
+    reverse(a.begin(), a.end());
+    reverse(b.begin(), b.end());
+    vector rev(n + 1, vector<int>(m + 1, INF));
+    rev[0][0] = 0;
+    for (int i = 1; i <= n; ++i) {
+        rev[i][0] = i;
+        for (int j = 1; j <= m; ++j) {
+            if (rev[i - 1][j] < INF) {
+                chmin(rev[i][j], i);
+            }
+            if (a[i - 1] == b[j - 1]) {
+                chmin(rev[i][j], rev[i - 1][j - 1]);
+            }
+        }
     }
+    int res = INF;
+    for (int i = 0; i <= n; ++i) {
+        for (int j = 0; j <= m; ++j) {
+            if (rev[n - i][m - j] < INF and dp[i][j] < INF) {
+                int curr = rev[n - i][m - j] + (!!i) + i + dp[i][j];
+                chmin(res, curr);
+            }
+        }
+    }
+    cout << (res == INF ? -1 : res) << '\n';
 }
 
 int main() {

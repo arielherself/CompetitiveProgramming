@@ -467,41 +467,186 @@ void dump_ignore() {}
 void prep() {
 }
 
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+    using size_type = uint64_t;
+    using info_type = Addable_Info_t;
+    using tag_type = Tag_t;
+    size_type _max;
+    vector<info_type> d;
+    vector<tag_type> b;
+    void pull(size_type p) {
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+    void push(size_type p, size_type left_len, size_type right_len) {
+        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
+        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+        b[p] = tag_type();
+    }
+    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+        if (s == t) {
+            d[p] = c;
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        if (s != t) push(p, m - s + 1, t - m);
+        if (x <= m) set(s, m, p * 2, x, c);
+        else set(m + 1, t, p * 2 + 1, x, c);
+        pull(p);
+    }
+    
+    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+        if (l <= s && t <= r) {
+            d[p].apply(c, t - s + 1);
+            b[p].apply(c);
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        push(p, m - s + 1, t - m);
+        if (l <= m) range_apply(s, m, p * 2, l, r, c);
+        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
+        pull(p);
+    }
+    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+        if (l <= s && t <= r) {
+            return d[p];
+        }
+        size_type m = s + (t - s >> 1);
+        info_type res = {};
+        push(p, m - s + 1, t - m);
+        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+        return res;
+    }
+    void build(const Sequence& a, size_type s, size_type t, size_type p) {
+        if (s == t) {
+            d[p] = a[s];
+            return;
+        }
+        int m = s + (t - s >> 1);
+        build(a, s, m, p * 2);
+        build(a, m + 1, t, p * 2 + 1);
+        pull(p);
+    }
+public:
+    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+    segtree(const Sequence& a) : segtree(a.size()) {
+        build(a, {}, _max, 1);
+    }
+    void set(size_type i, const info_type& c) {
+        set({}, _max, 1, i, c);
+    }
+    
+    void range_apply(size_type l, size_type r, const tag_type& c) {
+        range_apply({}, _max, 1, l, r, c);
+    }
+    void apply(size_type i, const tag_type& c) {
+        range_apply(i, i, c);
+    }
+    info_type range_query(size_type l, size_type r) {
+        return range_query({}, _max, 1, l, r);
+    }
+    info_type query(size_type i) {
+        return range_query(i, i);
+    }
+    Sequence serialize() {
+        Sequence res = {};
+        for (size_type i = 0; i <= _max; ++i) {
+            res.push_back(query(i));
+        }
+        return res;
+    }
+    const vector<info_type>& get_d() {
+        return d;
+    }
+};
+struct Tag {
+    ll val = -INFLL;
+    void apply(const Tag& rhs) {
+        if (rhs.val != -INFLL)
+        val = rhs.val;
+    }
+};
+struct Info {
+    ll val = 0;
+    void apply(const Tag& rhs, size_t len) {
+        if (rhs.val != -INFLL)
+        val = rhs.val * len;
+    }
+};
+Info operator+(const Info &a, const Info &b) {
+    return {a.val + b.val};
+}
+
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr ll P = 41028650506964539LL;
-    using mll = MLL<P>;
-    read(int, n);
-    vector<mll> pw(n + 1);
-    pw[0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        pw[i] = pw[i - 1] * 2;
-    }
+    read(int, n, m);
     readvec(int, a, n);
-    ll sum = accumulate(a.begin(), a.end(), ll(0));
-    auto work = [&] (ll target) -> optional<ll> {
-        mll d1 = 0;
-        for (int i = 0; i < n; ++i) {
-            d1 -= pw[i] * (target - a[i]);
+    readvec(int, b, n);
+    readvec(pii, s, m);
+    vector<int> d;
+    for (int i = 0; i < n; ++i) {
+        d.emplace_back(a[i] - b[i]);
+    }
+    vector<ll> ps(n + 1);
+    segtree<Info, Tag> tr(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        ps[i] = ps[i - 1] + d[i - 1];
+        tr.set(i, {ps[i]});
+    }
+    set<pii> left, right;
+    for (int i = 0; i < m; ++i) {
+        s[i].first -= 1;
+        s[i].second -= 1;
+        auto&& [l, r] = s[i];
+        left.emplace(l, i);
+        right.emplace(r, i);
+    }
+    vector<int> vis(m);
+    deque<int> q;
+    for (int i = 0; i < m; ++i) {
+        auto&& [l, r] = s[i];
+        if (ps[l] == 0) {
+            vis[i] += 1;
+            left.erase({l, i});
         }
-        d1 /= pw[n] - 1;
-
-    };
-    ll l = 0, r = sum / n;
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (work(mid)) {
-            l = mid;
-        } else {
-            r = mid - 1;
+        if (ps[r + 1] == 0) {
+            vis[i] += 1;
+            right.erase({r, i});
+        }
+        if (vis[i] == 2) {
+            q.emplace_back(i);
         }
     }
-    auto res = work(l);
-    if (res) {
-        cout << *res << '\n';
-    } else {
-        cout << -1 << '\n';
+    while (q.size()) {
+        int i = q.front();
+        q.pop_front();
+        auto&& [l, r] = s[i];
+        tr.range_apply(l, r + 1, {tr.query(l).val});
+        while (left.size()) {
+            auto it = left.lower_bound({l + 1, 0});
+            if (it == left.end() or it->first > r) break;
+            if (++vis[it->second] == 2) {
+                q.emplace_back(it->second);
+            }
+            left.erase(it);
+        }
+        while (right.size()) {
+            auto it = right.lower_bound({r + 1, 0});
+            if (it == right.begin() or (--it)->first < l) break;
+            if (++vis[it->second] == 2) {
+                q.emplace_back(it->second);
+            }
+            right.erase(it);
+        }
     }
+    for (int i = 0; i <= n; ++i) {
+        if (tr.query(i).val != 0) {
+            cout << "NO\n";
+            return;
+        }
+    }
+    cout << "YES\n";
 }
 
 int main() {

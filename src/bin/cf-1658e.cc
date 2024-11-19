@@ -456,7 +456,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,38 +469,52 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr ll P = 41028650506964539LL;
-    using mll = MLL<P>;
-    read(int, n);
-    vector<mll> pw(n + 1);
-    pw[0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        pw[i] = pw[i - 1] * 2;
-    }
-    readvec(int, a, n);
-    ll sum = accumulate(a.begin(), a.end(), ll(0));
-    auto work = [&] (ll target) -> optional<ll> {
-        mll d1 = 0;
-        for (int i = 0; i < n; ++i) {
-            d1 -= pw[i] * (target - a[i]);
-        }
-        d1 /= pw[n] - 1;
+    read(int, n, k);
+    vector a(n, vector<int>(n));
 
-    };
-    ll l = 0, r = sum / n;
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (work(mid)) {
-            l = mid;
-        } else {
-            r = mid - 1;
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            cin >> a[i][j];
         }
     }
-    auto res = work(l);
-    if (res) {
-        cout << *res << '\n';
-    } else {
-        cout << -1 << '\n';
+
+    vector res(n, vector<int>(n));
+
+    int left_lb = 0;
+    int left_ub = 2 * n - 1;
+    int right_lb = 0;
+    int right_ub = 2 * n - 1;
+
+    vector<pii> cand(n * n);
+
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            cand[a[i][j] - 1] = { i, j };
+        }
+    }
+
+    reverse(cand.begin(), cand.end());
+
+    for (auto&& [x, y] : cand) {
+        int left = x + y;
+        int right = n - 1 + x - y;
+        if (left >= left_lb and left <= left_ub and right >= right_lb and right <= right_ub) {
+            res[x][y] = 1;
+            chmax(left_lb, x + y - k);
+            chmin(left_ub, x + y + k);
+            chmax(right_lb, n - 1 + x - y - k);
+            chmin(right_ub, n - 1 + x - y + k);
+        } else {
+            res[x][y] = 0;
+        }
+    }
+
+
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            cout << (res[i][j] == 0 ? 'G' : 'M');
+        }
+        cout << '\n';
     }
 }
 

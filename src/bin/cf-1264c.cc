@@ -456,7 +456,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,38 +469,53 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr ll P = 41028650506964539LL;
-    using mll = MLL<P>;
-    read(int, n);
-    vector<mll> pw(n + 1);
-    pw[0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        pw[i] = pw[i - 1] * 2;
-    }
+    using mll = MLL<PRIME>;
+    read(int, n, q);
     readvec(int, a, n);
-    ll sum = accumulate(a.begin(), a.end(), ll(0));
-    auto work = [&] (ll target) -> optional<ll> {
-        mll d1 = 0;
-        for (int i = 0; i < n; ++i) {
-            d1 -= pw[i] * (target - a[i]);
-        }
-        d1 /= pw[n] - 1;
-
-    };
-    ll l = 0, r = sum / n;
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (work(mid)) {
-            l = mid;
-        } else {
-            r = mid - 1;
-        }
+    vector<mll> b(n);
+    for (int i = 0; i < n; ++i) {
+        b[i] = a[i] / mll(100);
     }
-    auto res = work(l);
-    if (res) {
-        cout << *res << '\n';
-    } else {
-        cout << -1 << '\n';
+    set<pii> st;
+    vector<mll> p(n + 1);
+    vector<mll> ss(n + 1);
+    vector<mll> su(n + 1);
+    p[0] = 1;
+    ss[0] = 0;
+    for (int i = 0; i < n; ++i) {
+        p[i + 1] = p[i] * b[i];
+        ss[i + 1] = ss[i] + p[i] * (1 - b[i]);
+        su[i + 1] = su[i] + (i + 1) * p[i] * (1 - b[i]);
+    }
+    auto calc = [&] (int l, int r) -> mll {
+        mll k = (ss[r] - ss[l - 1]) / p[l - 1];
+        mll b = (su[r] - su[l - 1] - (l - 1) * (ss[r] - ss[l - 1])) / p[l - 1];
+        return (p[r] / p[l - 1] * (r - l + 1) + b) / (1 - k);
+    };
+    mll sum = calc(1, n);
+    st.emplace(1, n);
+    while (q--) {
+        read(int, u);
+        auto it = prev(st.lower_bound({u + 1, 0}));
+        auto [l, r] = *it;
+        if (l == u) {
+            auto prev = std::prev(it);
+            auto [l1, r1] = *prev;
+            sum -= calc(l1, r1);
+            sum -= calc(l, r);
+            sum += calc(l1, r);
+            st.erase(prev);
+            st.erase(it);
+            st.emplace(l1, r);
+        } else {
+            sum -= calc(l, r);
+            sum += calc(l, u - 1);
+            sum += calc(u, r);
+            st.erase(it);
+            st.emplace(l, u - 1);
+            st.emplace(u, r);
+        }
+        cout << sum << '\n';
     }
 }
 

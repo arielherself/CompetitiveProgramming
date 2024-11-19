@@ -456,7 +456,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -469,38 +469,109 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr ll P = 41028650506964539LL;
-    using mll = MLL<P>;
-    read(int, n);
-    vector<mll> pw(n + 1);
-    pw[0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        pw[i] = pw[i - 1] * 2;
+    read(int, n, m, k);
+    readvec(pii, a, n);
+    vector<int> xs, ys;
+    for (auto&& [x, y] : a) {
+        xs.emplace_back(x);
+        ys.emplace_back(y);
     }
-    readvec(int, a, n);
-    ll sum = accumulate(a.begin(), a.end(), ll(0));
-    auto work = [&] (ll target) -> optional<ll> {
-        mll d1 = 0;
-        for (int i = 0; i < n; ++i) {
-            d1 -= pw[i] * (target - a[i]);
-        }
-        d1 /= pw[n] - 1;
-
-    };
-    ll l = 0, r = sum / n;
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (work(mid)) {
-            l = mid;
+    sort(xs.begin(), xs.end());
+    sort(ys.begin(), ys.end());
+    int s = unique(xs.begin(), xs.end()) - xs.begin();
+    int t = unique(ys.begin(), ys.end()) - ys.begin();
+    xs.resize(s), ys.resize(t);
+    auto getx = [&] (int x) { return lower_bound(xs.begin(), xs.end(), x) - xs.begin(); };
+    auto gety = [&] (int y) { return lower_bound(ys.begin(), ys.end(), y) - ys.begin(); };
+    vector<vector<int>> row(s), col(t);
+    for (auto&& [x, y] : a) {
+        row[getx(x)].emplace_back(y);
+        col[gety(y)].emplace_back(x);
+    }
+    for (int i = 0; i < s; ++i) {
+        sort(row[i].begin(), row[i].end());
+    }
+    for (int i = 0; i < t; ++i) {
+        sort(col[i].begin(), col[i].end());
+    }
+    auto dfs = [&] (auto dfs, int x, int y, int up, int down, int left, int right, int direction) -> bool {
+        if (up > down or left > right) return true;
+        deb(x, y, up, down, left, right, direction);
+        if (direction == 0) {
+            int i = getx(x);
+            if (xs[i] != x) {
+                return dfs(dfs, x + 1, right, up + 1, down, left, right, (direction + 1) % 4);
+            } else {
+                int start = upper_bound(row[i].begin(), row[i].end(), x) - row[i].begin();
+                int end = upper_bound(row[i].begin(), row[i].end(), right) - row[i].begin();
+                for (int j = start + 1; j < end; ++j) {
+                    if (row[i][j] != row[i][j - 1] + 1) {
+                        return false;
+                    }
+                }
+                if (end != row[i].size() and row[i][end] != right + 1) {
+                    return false;
+                }
+                return dfs(dfs, x + 1, start == end ? right : row[i][start], up + 1, down, left, right, (direction + 1) % 4);
+            }
+        } else if (direction == 2) {
+            int i = getx(x);
+            if (xs[i] != x) {
+                return dfs(dfs, x - 1, left, up, down - 1, left, right, (direction + 1) % 4);
+            } else {
+                // TODO:
+                int start = lower_bound(row[i].begin(), row[i].end(), x) - row[i].begin() - 1;
+                int end = lower_bound(row[i].begin(), row[i].end(), left) - row[i].begin() - 1;
+                for (int j = start - 1; j > end; --j) {
+                    if (row[i][j] != row[i][j + 1] - 1) {
+                        return false;
+                    }
+                }
+                if (end != -1 and row[i][end] != left - 1) {
+                    return false;
+                }
+                return dfs(dfs, x - 1, start == end ? left : row[i][start], up, down - 1, left, right, (direction + 1) % 4);
+            }
+        } else if (direction == 1) {
+            int i = gety(y);
+            if (ys[i] != y) {
+                return dfs(dfs, down, y - 1, up, down, left, right - 1, (direction + 1) % 4);
+            } else {
+                int start = upper_bound(col[i].begin(), col[i].end(), y) - col[i].begin();
+                int end = upper_bound(col[i].begin(), col[i].end(), down) - col[i].begin();
+                for (int j = start + 1; j < end; ++i) {
+                    if (col[i][j] != col[i][j - 1] + 1) {
+                        return false;
+                    }
+                }
+                if (end != col[i].size() and col[i][end] != down + 1) {
+                    return false;
+                }
+                return dfs(dfs, start == end ? down : col[i][start], y - 1, up, down, left, right - 1, (direction + 1) % 4);
+            }
         } else {
-            r = mid - 1;
+            int i = gety(y);
+            if (ys[i] != y) {
+                return dfs(dfs, up, y + 1, up, down, left + 1, right, (direction + 1) % 4);
+            } else {
+                int start = lower_bound(col[i].begin(), col[i].end(), y) - col[i].begin() - 1;
+                int end = lower_bound(col[i].begin(), col[i].end(), up) - col[i].begin() - 1;
+                for (int j = start - 1; j > end; --j) {
+                    if (row[i][j] != row[i][j + 1] - 1) {
+                        return false;
+                    }
+                }
+                if (end != -1 and col[i][end] != up - 1) {
+                    return false;
+                }
+                return dfs(dfs, start == end ? up : col[i][start], y + 1, up, down, left + 1, right, (direction + 1) % 4);
+            }
         }
-    }
-    auto res = work(l);
-    if (res) {
-        cout << *res << '\n';
+    };
+    if (dfs(dfs, 1, 1, 1, n, 1, m, 0)) {
+        cout << "Yes\n";
     } else {
-        cout << -1 << '\n';
+        cout << "No\n";
     }
 }
 

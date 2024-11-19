@@ -1,5 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#pragma GCC optimize("Ofast")
+#pragma GCC optimize("Ofast,no-stack-protector,unroll-loops,fast-math")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -148,8 +148,6 @@ struct array_hash {
 #define faster(um) __AS_PROCEDURE((um).reserve(1024); (um).max_load_factor(0.25);)
 #define unordered_counter(from, to) __AS_PROCEDURE(unordered_map<__as_typeof(from), size_t, safe_hash> to; for (auto&& x : from) ++to[x];)
 #define counter(from, to, cmp) __AS_PROCEDURE(map<__as_typeof(from), size_t, cmp> to; for (auto&& x : from) ++to[x];)
-#define pa(a) __AS_PROCEDURE(__typeof(a) pa; pa.push_back({}); for (auto&&x : a) pa.push_back(pa.back() + x);)
-#define sa(a) __AS_PROCEDURE(__typeof(a) sa(a.size() + 1); {int n = a.size(); for (int i = n - 1; i >= 0; --i) sa[i] = sa[i + 1] + a[i];};)
 #define adj(ch, n) __AS_PROCEDURE(vector<vector<int>> ch((n) + 1);)
 #define edge(ch, u, v) __AS_PROCEDURE(ch[u].push_back(v), ch[v].push_back(u);)
 #define edgew(ch, u, v, ...) __AS_PROCEDURE(ch[u].emplace_back(v, __VA_ARGS__), ch[v].emplace_back(u, __VA_ARGS__);)
@@ -469,89 +467,76 @@ void dump_ignore() {}
 void prep() {
 }
 
-array<int, 3> get(int x, int y, int z) {
-    array<int, 3> ret = { x, y, z };
-    sort(ret.begin(), ret.end());
-    return ret;
-}
-
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
-    unordered_map<pii, int, pair_hash> bk;
-    unordered_map<array<int, 3>, int, array_hash> rev;
+    vector<tiii> a;
+    unordered_map<pii, vector<int>, pair_hash> cnt;
     for (int i = 0; i < n - 2; ++i) {
-        read(int, a, b, c);
-        for (auto&& [x, y] : vector<pii> {{a, b}, {b, c}, {c, a}}) {
-            bk[minmax(x, y)] += 1;
+        read(int, x, y, z);
+        a.emplace_back(x, y, z);
+        cnt[minmax(x, y)].emplace_back(i);
+        cnt[minmax(y, z)].emplace_back(i);
+        cnt[minmax(x, z)].emplace_back(i);
+    }
+    adj(ch, n - 3);
+    for (auto&& [p, v] : cnt) {
+        if (v.size() == 2) {
+            edge(ch, v[0], v[1]);
         }
-        rev[get(a, b, c)] = i + 1;
     }
-    set<tiii> q;
-    for (auto&& [k, v] : bk) {
-        q.emplace(v, k.first, k.second);
-    }
-    pii prev = {};
-    deque<int> dq;
     vector<int> seq;
-    while (q.size() >= 3) {
-        auto [t1, x1, y1] = *q.begin();
-        q.erase(q.begin());
-        if (t1 - 1 > 0) {
-            q.emplace(t1 - 1, x1, y1);
+    auto dfs = [&] (auto dfs, int v, int pa) -> void {
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            dfs(dfs, u, v);
         }
-        auto [t2, x2, y2] = *q.begin();
-        q.erase(q.begin());
-        if (t2 - 1 > 0) {
-            q.emplace(t2 - 2, x2, y2);
+        seq.emplace_back(v);
+    };
+    dfs(dfs, 0, 0);
+    vector<int> l(n + 1), r(n + 1);
+    iota(l.begin(), l.end(), 0);
+    iota(r.begin(), r.end(), 0);
+    vector<bool> vis(n + 1);
+    auto&& [x, y, z] = a[0];
+    vis[x] = vis[y] = vis[z] = 1;
+    r[x] = y, r[y] = z, r[z] = x;
+    l[x] = z, l[z] = y, l[y] = x;
+    reverse(seq.begin(), seq.end());
+    int f = 1;
+    for (auto&& i : seq) {
+        if (f) {
+            f = 0;
+            continue;
         }
-        auto [t3, x3, y3] = *q.begin();
-        q.erase(q.begin());
-        if (t3 - 1 > 0) {
-            q.emplace(t3 - 3, x3, y3);
-        }
-        int x, y, z;
-        if (x1 == y1) {
-            x = x1;
-            y = y1;
-            z = y2;
-        } else if (x1 == y2) {
-            x = x1;
-            y = y1;
-            z = x2;
-        } else if (y1 == y2) {
-            x = y1;
-            y = x1;
-            z = x2;
+        auto&& [x, y, z] = a[i];
+        if (vis[x] and vis[z]) swap(y, z);
+        else if (vis[y] and vis[z]) swap(x, z);
+        vis[z] = 1;
+        if (l[x] == y) {
+            l[x] = z;
+            l[z] = y;
+            r[y] = z;
+            r[z] = x;
         } else {
-            x = y1;
-            y = x1;
-            z = y2;
+            r[x] = z;
+            r[z] = y;
+            l[y] = z;
+            l[z] = x;
         }
-        if (prev == pii {}) {
-            dq.emplace_back(x);
-            dq.emplace_front(y);
-            dq.emplace_back(z);
-            prev = { y, z };
-        } else {
-            if (y == prev.first) {
-                dq.emplace_back(z);
-                prev.second = z;
-            } else if (y == prev.second) {
-                dq.emplace_front(z);
-                prev.first = z;
-            } else if (z == prev.first) {
-                dq.emplace_back(y);
-                prev.second = y;
-            } else {
-                dq.emplace_front(y);
-                prev.first = y;
-            }
-        }
-        seq.emplace_back(rev[get(x, y, z)]);
     }
-    putvec(dq);
-    putvec(seq);
+    int ptr = 1;
+    while (1) {
+        cout << ptr << ' ';
+        ptr = l[ptr];
+        if (ptr == 1) break;
+    }
+    cout << '\n';
+    reverse(seq.begin(), seq.end());
+    for (auto&& i : seq) {
+        cout << i + 1 << ' ';
+    }
+    cout << '\n';
 }
 
 int main() {

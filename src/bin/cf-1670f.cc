@@ -456,7 +456,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -464,44 +464,78 @@ void dump() {}
 
 void dump_ignore() {}
 
+constexpr int N = 1010;
+ll fact[N], factrev[N + 1], s[N + 1];
+
 void prep() {
+    fact[0] = factrev[0] = 1;
+    for (int i = 1; i < N; ++i) {
+        fact[i] = (fact[i - 1] * i) % MDL;
+    }
+    s[0] = 1;
+    for (int i = 1; i <= N; ++i) {
+        s[i] = s[i - 1] * fact[i - 1] % MDL;
+    }
+    factrev[N] = inverse(s[N], MDL);
+    for (int i = N; i; --i) {
+        factrev[i - 1] = factrev[i] * fact[i - 1] % MDL;
+    }
+    for (int i = 0; i < N; ++i) {
+        factrev[i] = factrev[i + 1] * s[i] % MDL;
+    }
+}
+
+inline ll mycomb(int n, int k) {
+    if (n < 0 or k < 0 or n < k) return 0;
+    return (((fact[n] * factrev[k]) % MDL) * factrev[n - k]) % MDL;
 }
 
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr ll P = 41028650506964539LL;
-    using mll = MLL<P>;
     read(int, n);
-    vector<mll> pw(n + 1);
-    pw[0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        pw[i] = pw[i - 1] * 2;
-    }
-    readvec(int, a, n);
-    ll sum = accumulate(a.begin(), a.end(), ll(0));
-    auto work = [&] (ll target) -> optional<ll> {
-        mll d1 = 0;
-        for (int i = 0; i < n; ++i) {
-            d1 -= pw[i] * (target - a[i]);
-        }
-        d1 /= pw[n] - 1;
+    read(ll, l, r, z);
 
-    };
-    ll l = 0, r = sum / n;
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (work(mid)) {
-            l = mid;
-        } else {
-            r = mid - 1;
+    vector dp(64, vector<ll>(n + 1));
+    dp[0][0] = 1;
+    for (int i = 1; i < 64; ++i) {
+        for (int j = 0; j <= n; ++j) {
+            for (int k = 0; k <= n; ++k) {
+                if ((z >> (i - 1) & 1) != k % 2) continue;
+                dp[i][(j + k) / 2] = (dp[i][(j + k) / 2] + mod(dp[i - 1][j] * mycomb(n, k), MDL)) % MDL;
+            }
         }
     }
-    auto res = work(l);
-    if (res) {
-        cout << *res << '\n';
-    } else {
-        cout << -1 << '\n';
-    }
+
+    auto work = [&] (ll mx) -> ll {
+        vector<ll> up(n + 1);
+        up[0] = 1;
+        ll res = 0;
+        for (int i = 63; ~i; --i) {
+            if (mx >> i & 1) {
+                for (int j = 0; j <= n; ++j) {
+                    for (int k = 0; k <= n; ++k) {
+                        if (2 * j - k < 0 or 2 * j - k > n or (z >> i & 1) != k % 2) continue;
+                        res += ((up[j] * dp[i][2 * j - k]) % MDL) * mycomb(n, k) % MDL;
+                        res %= MDL;
+                    }
+                }
+            }
+            vector<ll> nup(n + 1);
+            for (int j = 0; j <= n; ++j) {
+                for (int k = 0; k <= n; ++k) {
+                    int rem = j * 2 + (mx >> i & 1) - k;
+                    if (rem < 0 or rem > n or (z >> i & 1) != k % 2) continue;
+                    nup[rem] += (up[j] * mycomb(n, k)) % MDL;
+                    nup[rem] %= MDL;
+                }
+            }
+            up = std::move(nup);
+        }
+        res += up[0];
+        return res % MDL;
+    };
+
+    cout << mod(work(r) - work(l - 1), MDL) << '\n';
 }
 
 int main() {

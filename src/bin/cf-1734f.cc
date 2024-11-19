@@ -469,39 +469,123 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr ll P = 41028650506964539LL;
-    using mll = MLL<P>;
-    read(int, n);
-    vector<mll> pw(n + 1);
-    pw[0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        pw[i] = pw[i - 1] * 2;
-    }
-    readvec(int, a, n);
-    ll sum = accumulate(a.begin(), a.end(), ll(0));
-    auto work = [&] (ll target) -> optional<ll> {
-        mll d1 = 0;
-        for (int i = 0; i < n; ++i) {
-            d1 -= pw[i] * (target - a[i]);
-        }
-        d1 /= pw[n] - 1;
+    read(ll, n, m);
+    --m;
 
-    };
-    ll l = 0, r = sum / n;
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (work(mid)) {
-            l = mid;
-        } else {
-            r = mid - 1;
+    int e = lg2(max(m, n)) + 2;
+
+    // eq -> eq/lt
+    vector g(e, vector(e, vector(2, vector<ll>(4))));
+    for (int i = e - 1; i; --i) {
+        if (n >> i & 1) continue;
+        vector curr(2, vector<ll>(4));
+        curr[m >> i & 1][0b01] = 1;
+        for (int j = i - 1; ~j; --j) {
+            int nbit = n >> j & 1;
+            int mbit = m >> j & 1;
+            if (nbit == 1) {
+                for (int k = 0; k < 2; ++k) {
+                    for (int l = 0; l < 4; ++l) {
+                        if (k == 0 and mbit == 0) continue;
+                        g[i][j][k][l xor 0b10] += curr[k][l];
+                    }
+                }
+            }
+            vector nxt(2, vector<ll>(4));
+            for (int k = 0; k < 2; ++k) {
+                for (int l = 0; l < 4; ++l) {
+                    for (int x = 0; x < 2; ++x) {
+                        if (k == 0 and x > mbit) continue;
+                        int up = x;
+                        if (up == 0 and nbit == 0) continue;
+                        int down = 1 xor nbit xor up;
+                        int mask = up << 1 | down;
+                        nxt[k or x < mbit][mask xor l] += curr[k][l];
+                    }
+                }
+            }
+            curr = std::move(nxt);
         }
     }
-    auto res = work(l);
-    if (res) {
-        cout << *res << '\n';
-    } else {
-        cout << -1 << '\n';
+ 
+    // lt -> lt
+    vector h(e, vector(e, vector<ll>(4)));
+    for (int i = e - 1; i; --i) {
+        if (n >> i & 1) continue;
+        vector<ll> curr(4);
+        curr[0b01] = 1;
+        for (int j = i - 1; ~j; --j) {
+            int nbit = n >> j & 1;
+            int mbit = m >> j & 1;
+            if (nbit == 1) {
+                for (int k = 0; k < 4; ++k) {
+                    h[i][j][k xor 0b10] += curr[k];
+                }
+            }
+            vector<ll> nxt(4);
+            for (int k = 0; k < 4; ++k) {
+                for (int l = 0; l < 2; ++l) {
+                    int up = l;
+                    int down = 1 xor nbit xor up;
+                    if (up == 0 and nbit == 0) continue;
+                    int mask = up << 1 | down;
+                    nxt[mask xor k] += curr[k];
+                }
+            }
+            curr = std::move(nxt);
+        }
     }
+
+
+    vector dp(e + 1, vector(4, vector<ll>(2)));
+    dp[e][0b00][0] = 1;
+
+    for (int i = e - 1; ~i; --i) {
+        int nbit = n >> i & 1;
+        int mbit = m >> i & 1;
+        // 0 and 1 on this bit
+        for (int j = 0; j < 4; ++j) {
+            for (int k = 0; k < 2; ++k) {
+                int up = 1 xor nbit;
+                int down = up xor nbit;
+                int mask = up << 1 | down;
+                if (k == 0 and up > mbit) continue;
+                dp[i][j xor mask][k or up < mbit] += dp[i + 1][j][k];
+            }
+        }
+        // 0 and 0 on this bit
+        if (nbit == 0) {
+            for (int j = 0; j < 4; ++j) {
+                for (int k = 0; k < 2; ++k) {
+                    dp[i][j][k or 0 < mbit] += dp[i + 1][j][k];
+                }
+            }
+        }
+        for (int j = i + 1; j < e; ++j) {
+            for (int k = 0; k < 4; ++k) {
+                // eq -> eq
+                for (int l = 0; l < 4; ++l) {
+                    dp[i][k xor l][0] += dp[j + 1][k][0] * g[j][i][0][l];
+                }
+                // eq -> lt
+                for (int l = 0; l < 4; ++l) {
+                    dp[i][k xor l][1] += dp[j + 1][k][0] * g[j][i][1][l];
+                }
+                // lt -> lt
+                for (int l = 0; l < 4; ++l) {
+                    dp[i][k xor l][1] += dp[j + 1][k][1] * h[j][i][l];
+                }
+            }
+        }
+    }
+
+    ll res = 0;
+    for (int i = 1; i < 3; ++i) {
+        for (int j = 0; j < 2; ++j) {
+            res += dp[0][i][j];
+        }
+    }
+    cout << res << '\n';
 }
 
 int main() {

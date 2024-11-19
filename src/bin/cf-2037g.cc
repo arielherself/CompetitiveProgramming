@@ -456,7 +456,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -464,43 +464,69 @@ void dump() {}
 
 void dump_ignore() {}
 
-void prep() {
+
+constexpr int N = 1e6;
+
+int minp[N + 1];
+
+void soe(int n) {
+    vector<bool> not_prime(n + 1);
+    vector<int> res;
+    minp[1] = 1;
+    for (int i = 2; i <= n; ++i) {
+        if (not not_prime[i]) {
+            res.emplace_back(i);
+            minp[i] = i;
+        }
+        for (auto&& x : res) {
+            if (ll(1) * i * x > n) break;
+            not_prime[i * x] = 1;
+            minp[i * x] = x;
+            if (i % x == 0) break;
+        }
+    }
 }
 
-// __attribute__((target("popcnt")))
-void solve() {
-    constexpr ll P = 41028650506964539LL;
-    using mll = MLL<P>;
-    read(int, n);
-    vector<mll> pw(n + 1);
-    pw[0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        pw[i] = pw[i - 1] * 2;
-    }
-    readvec(int, a, n);
-    ll sum = accumulate(a.begin(), a.end(), ll(0));
-    auto work = [&] (ll target) -> optional<ll> {
-        mll d1 = 0;
-        for (int i = 0; i < n; ++i) {
-            d1 -= pw[i] * (target - a[i]);
-        }
-        d1 /= pw[n] - 1;
+void prep() {
+    soe(N);
+}
 
-    };
-    ll l = 0, r = sum / n;
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (work(mid)) {
-            l = mid;
-        } else {
-            r = mid - 1;
+__attribute__((target("popcnt,lzcnt")))
+void solve() {
+    using mll = MLL<PRIME>;
+    read(int, n);
+    readvec(int, a, n);
+    vector<mll> cnt(N + 1);
+    for (int i = 0; i < n; ++i) {
+        vector<int> facts;
+        int x = a[i];
+        while (x != 1) {
+            int p = minp[x];
+            facts.emplace_back(p);
+            while (x % p == 0) x /= p;
         }
-    }
-    auto res = work(l);
-    if (res) {
-        cout << *res << '\n';
-    } else {
-        cout << -1 << '\n';
+        int m = facts.size();
+        vector<mll> bk(m + 1);
+        vector<int> prod(1 << m);
+        prod[0] = 1;
+        for (int j = 1; j < (1 << m); ++j) {
+            int lz = lsp(j);
+            prod[j] = prod[j xor (1 << lz)] * facts[lz];
+            bk[popcount(j)] += cnt[prod[j]];
+        }
+        mll curr = 0;
+        for (int j = 1; j <= m; ++j) {
+            curr += (j % 2 ? 1 : -1) * bk[j];
+        }
+        if (i == 0) {
+            curr = 1;
+        }
+        for (int j = 1; j < (1 << m); ++j) {
+            cnt[prod[j]] += curr;
+        }
+        if (i == n - 1) {
+            cout << curr << '\n';
+        }
     }
 }
 

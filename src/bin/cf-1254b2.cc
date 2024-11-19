@@ -280,10 +280,10 @@ vector<tuple<int, int, ll>> decompose(ll x) {
     return res;
 }
 
-vector<pii> decompose_prime(int N) {
+vector<pli> decompose_prime(ll N) {
     // return (factor, count)
-    vector<pii> result;
-    for (int i = 2; i * i <= N; i++) {
+    vector<pli> result;
+    for (ll i = 2; i * i <= N; i++) {
         if (N % i == 0) {
             int cnt = 0;
             while (N % i == 0) N /= i, ++cnt;
@@ -456,7 +456,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -464,44 +464,25 @@ void dump() {}
 
 void dump_ignore() {}
 
-void prep() {
-}
+void prep() { }
 
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr ll P = 41028650506964539LL;
-    using mll = MLL<P>;
     read(int, n);
-    vector<mll> pw(n + 1);
-    pw[0] = 1;
-    for (int i = 1; i <= n; ++i) {
-        pw[i] = pw[i - 1] * 2;
-    }
     readvec(int, a, n);
     ll sum = accumulate(a.begin(), a.end(), ll(0));
-    auto work = [&] (ll target) -> optional<ll> {
-        mll d1 = 0;
+    auto facts = decompose_prime(sum);
+    ll res = INFLL;
+    for (auto&& [v, _] : facts) {
+        ll ps = 0;
+        ll curr = 0;
         for (int i = 0; i < n; ++i) {
-            d1 -= pw[i] * (target - a[i]);
+            ps += a[i];
+            curr += min(ps % v, v - (ps % v));
         }
-        d1 /= pw[n] - 1;
-
-    };
-    ll l = 0, r = sum / n;
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (work(mid)) {
-            l = mid;
-        } else {
-            r = mid - 1;
-        }
+        chmin(res, curr);
     }
-    auto res = work(l);
-    if (res) {
-        cout << *res << '\n';
-    } else {
-        cout << -1 << '\n';
-    }
+    cout << (res == INFLL ? -1 : res) << '\n';
 }
 
 int main() {
