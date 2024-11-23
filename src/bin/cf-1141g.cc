@@ -467,29 +467,40 @@ void dump_ignore() {}
 void prep() {
 }
 
-__attribute__((target("lzcnt")))
+// __attribute__((target("popcnt")))
 void solve() {
-    read(int, n, s);
-    readvec(int, a, n);
-    int left = n / 2;
-    vector<ll> dp(1 << left);
-    unordered_map<ll, ll, safe_hash> cnt;
-    faster(cnt);
-    cnt[0] = 1;
-    for (int i = 1; i < (1 << left); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[lz];
-        cnt[dp[i]] += 1;
+    read(int, n, k);
+    vector<int> deg(n + 1);
+    vector<vector<pii>> e(n + 1);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edgew(e, u, v, i);
+        deg[u] += 1;
+        deg[v] += 1;
     }
-    int right = n - left;
-    dp.assign(1 << right, 0);
-    ll res = cnt.count(s) ? cnt[s] : 0;
-    for (int i = 1; i < (1 << right); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[left + lz];
-        res += cnt.count(s - dp[i]) ? cnt[s - dp[i]] : 0;
-    }
-    cout << res << '\n';
+    vector<int> idx(n);
+    iota(idx.begin(), idx.end(), 1);
+    sort_by_key(idx.begin(), idx.end(), expr(deg[v], auto&& v), greater());
+    int d = deg[idx[k]];
+    // debug(d);
+    vector<int> col(n - 1);
+    auto dfs = [&] (auto dfs, int v, int pa, int up) -> void {
+        int no = 1;
+        for (auto&& [u, i] : e[v]) {
+            if (u == pa) continue;
+            if (deg[v] > d) {
+                col[i] = no;
+            } else {
+                if (no == up) no += 1;
+                // deb(u, v, no);
+                col[i] = no++;
+            }
+            dfs(dfs, u, v, col[i]);
+        }
+    };
+    dfs(dfs, 1, 0, 0);
+    cout << d << '\n';
+    putvec(col);
 }
 
 int main() {

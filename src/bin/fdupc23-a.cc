@@ -467,29 +467,30 @@ void dump_ignore() {}
 void prep() {
 }
 
-__attribute__((target("lzcnt")))
+// __attribute__((target("popcnt")))
 void solve() {
-    read(int, n, s);
-    readvec(int, a, n);
-    int left = n / 2;
-    vector<ll> dp(1 << left);
-    unordered_map<ll, ll, safe_hash> cnt;
-    faster(cnt);
-    cnt[0] = 1;
-    for (int i = 1; i < (1 << left); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[lz];
-        cnt[dp[i]] += 1;
+    read(int, n, k);
+    ll x = k;
+    for (int i = 0; i < n; ++i) {
+        ll curr = LLONG_MIN;
+        for (int j = 0; j < 2; ++j) {
+            read(char, op);
+            read(int, y);
+            if (op == '+') {
+                chmax(curr, x + y);
+            } else if (op == '-') {
+                chmax(curr, x - y);
+            } else if (op == '*') {
+                chmax(curr, x * y);
+            } else if (op == '/') {
+                chmax(curr, x / y);
+            } else {
+                assert(false);
+            }
+        }
+        x = curr;
     }
-    int right = n - left;
-    dp.assign(1 << right, 0);
-    ll res = cnt.count(s) ? cnt[s] : 0;
-    for (int i = 1; i < (1 << right); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[left + lz];
-        res += cnt.count(s - dp[i]) ? cnt[s - dp[i]] : 0;
-    }
-    cout << res << '\n';
+    cout << (x > 0 ? "Yes" : "No") << endl;
 }
 
 int main() {

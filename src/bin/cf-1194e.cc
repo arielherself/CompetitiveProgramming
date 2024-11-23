@@ -467,29 +467,61 @@ void dump_ignore() {}
 void prep() {
 }
 
-__attribute__((target("lzcnt")))
+// __attribute__((target("popcnt")))
 void solve() {
-    read(int, n, s);
-    readvec(int, a, n);
-    int left = n / 2;
-    vector<ll> dp(1 << left);
-    unordered_map<ll, ll, safe_hash> cnt;
-    faster(cnt);
-    cnt[0] = 1;
-    for (int i = 1; i < (1 << left); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[lz];
-        cnt[dp[i]] += 1;
+    constexpr int N = 1e4 + 5;
+    read(int, n);
+    vector<vector<tiii>> h(N), v(N);
+    vector<tuple<int, int, int, int>> pts;
+    for (int i = 0; i < n; ++i) {
+        read(int, x1, y1, x2, y2);
+        if (x1 > y1) swap(x1, y1);
+        if (x2 > y2) swap(x2, y2);
+        x1 += 5e3;
+        y1 += 5e3;
+        x2 += 5e3;
+        y2 += 5e3;
+        if (x1 == x2) {
+            v[x1].emplace_back(y1, y2, i);
+        } else {
+            h[y1].emplace_back(x1, x2, i);
+        }
+        pts.emplace_back(x1, y1, x2, y2);
     }
-    int right = n - left;
-    dp.assign(1 << right, 0);
-    ll res = cnt.count(s) ? cnt[s] : 0;
-    for (int i = 1; i < (1 << right); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[left + lz];
-        res += cnt.count(s - dp[i]) ? cnt[s - dp[i]] : 0;
+    for (int i = 0; i < N; ++i) {
+        sort(v[i].begin(), v[i].end());
+        sort(h[i].begin(), h[i].end());
     }
-    cout << res << '\n';
+    vector<vector<int>> bt(n);
+    for (int i = 0; i < N; ++i) {
+        int ptr = 0;
+        for (auto&& [u, d, idx] : v[i]) {
+            for (int j = u; j <= d; ++j) {
+                for (auto&& [l, r, jdx] : h[j]) {
+                    if (l <= i and i <= r) {
+                        bt[idx].emplace_back(jdx);
+                    }
+                }
+            }
+        }
+    }
+    for (int i = 0; i < N; ++i) {
+        for (auto&& [l, r, idx] : h[i]) {
+            min_heap<pii> q;
+            for (int j = l; j <= r; ++j) {
+                for (auto&& [u, d, jdx] : v[j]) {
+                    if (u <= i and i <= d) {
+                        for (auto&& kdx : bt[jdx]) {
+                            auto&& [x1, y1, x2, y2] = pts[kdx];
+                            if (y1 < i) {
+                                q.emplace(x2, kdx);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 int main() {

@@ -467,29 +467,36 @@ void dump_ignore() {}
 void prep() {
 }
 
-__attribute__((target("lzcnt")))
+// __attribute__((target("popcnt")))
 void solve() {
-    read(int, n, s);
+    constexpr int N = 1e7;
+    read(int, n);
     readvec(int, a, n);
-    int left = n / 2;
-    vector<ll> dp(1 << left);
-    unordered_map<ll, ll, safe_hash> cnt;
-    faster(cnt);
-    cnt[0] = 1;
-    for (int i = 1; i < (1 << left); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[lz];
-        cnt[dp[i]] += 1;
+    vector<vector<int>> bk(N + 1);
+    for (int i = 0; i < n; ++i) {
+        bk[a[i]].emplace_back(i);
     }
-    int right = n - left;
-    dp.assign(1 << right, 0);
-    ll res = cnt.count(s) ? cnt[s] : 0;
-    for (int i = 1; i < (1 << right); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[left + lz];
-        res += cnt.count(s - dp[i]) ? cnt[s - dp[i]] : 0;
+    ll res = INFLL;
+    pii idx;
+    for (int i = 1; i <= N; ++i) {
+        int cand[2] = { INF, INF };
+        for (int j = i; j <= N; j += i) {
+            for (auto&& x : bk[j]) {
+                if (cand[0] == INF or j < a[cand[0]]) {
+                    cand[1] = cand[0];
+                    cand[0] = x;
+                } else if (cand[1] == INF or j < a[cand[1]]) {
+                    cand[1] = x;
+                }
+            }
+        }
+        if (cand[0] != INF and cand[1] != INF) {
+            if (chmin(res, lcm<ll>(a[cand[0]], a[cand[1]]))) {
+                idx = minmax(cand[0], cand[1]);
+            }
+        }
     }
-    cout << res << '\n';
+    cout << idx.first + 1 << ' ' << idx.second + 1 << '\n';
 }
 
 int main() {

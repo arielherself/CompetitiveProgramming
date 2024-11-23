@@ -467,29 +467,45 @@ void dump_ignore() {}
 void prep() {
 }
 
-__attribute__((target("lzcnt")))
+// __attribute__((target("popcnt")))
 void solve() {
-    read(int, n, s);
-    readvec(int, a, n);
-    int left = n / 2;
-    vector<ll> dp(1 << left);
-    unordered_map<ll, ll, safe_hash> cnt;
-    faster(cnt);
-    cnt[0] = 1;
-    for (int i = 1; i < (1 << left); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[lz];
-        cnt[dp[i]] += 1;
+    using mll = MLL<PRIME>;
+
+    read(int, n);
+    adj(ch, n);
+    for (int i = 2; i <= n; ++i) {
+        read(int, j);
+        edge(ch, i, j);
     }
-    int right = n - left;
-    dp.assign(1 << right, 0);
-    ll res = cnt.count(s) ? cnt[s] : 0;
-    for (int i = 1; i < (1 << right); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[left + lz];
-        res += cnt.count(s - dp[i]) ? cnt[s - dp[i]] : 0;
-    }
-    cout << res << '\n';
+
+    vector<array<mll, 2>> dp(n + 1);
+    auto dfs = [&] (auto dfs, int v, int pa) -> void {
+        mll all0 = 1;
+        mll all1 = 1;
+        mll all01 = 1;
+        mll bak = 0;
+        mll cak = 0;
+        int f = 0;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            f = 1;
+            dfs(dfs, u, v);
+            all0 *= dp[u][0];
+            all1 *= dp[u][1];
+            all01 *= (dp[u][0] + dp[u][1]);
+            bak += dp[u][1] / dp[u][0];
+            cak += dp[u][1] / dp[u][0];
+        }
+        if (f) {
+            dp[v][0] = all01 - all0 * bak;
+            dp[v][1] = all01 - all0;
+        } else {
+            dp[v][0] = 1;
+            dp[v][1] = 1;
+        }
+    };
+    dfs(dfs, 1, 0);
+    cout << dp[1][0] << '\n';
 }
 
 int main() {

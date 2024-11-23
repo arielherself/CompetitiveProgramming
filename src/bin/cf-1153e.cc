@@ -464,32 +464,88 @@ void dump() {}
 
 void dump_ignore() {}
 
-void prep() {
+inline int ask(int x1, int x2, int y1, int y2) {
+    cout << "? " << x1 << ' ' << y1 << ' ' << x2 << ' ' << y2 << endl;
+    read(int, res);
+    assert(res != -1);
+    return res;
 }
 
-__attribute__((target("lzcnt")))
+void prep() {
+    read(int, n);
+    vector<pii> res;
+    for (int i = 1; i < n; ++i) {
+        if (ask(1, i, 1, n) % 2 == 1) {
+            int l = 1, r = n;
+            while (l < r) {
+                int mid = l + r >> 1;
+                if (ask(i, i, 1, mid) % 2 == 1) {
+                    r = mid;
+                } else {
+                    l = mid + 1;
+                }
+            }
+            res.emplace_back(i, l);
+            break;
+        }
+    }
+    if (res.size()) {
+        for (int i = n; i > 1; --i) {
+            if (ask(i, n, 1, n) % 2 == 1) {
+                int l = 1, r = n;
+                while (l < r) {
+                    int mid = l + r >> 1;
+                    if (ask(i, i, 1, mid) % 2 == 1) {
+                        r = mid;
+                    } else {
+                        l = mid + 1;
+                    }
+                }
+                res.emplace_back(i, l);
+                break;
+            }
+        }
+    }
+    if (res.size() == 2) {
+        cout << "! " << res[0].first << ' ' << res[0].second << ' ' << res[1].first << ' ' << res[1].second << endl;
+        return;
+    }
+    for (int i = 1; i < n; ++i) {
+        if (ask(1, n, 1, i) % 2 == 1) {
+            int l = 1, r = n;
+            while (l < r) {
+                int mid = l + r >> 1;
+                if (ask(1, mid, i, i) % 2 == 1) {
+                    r = mid;
+                } else {
+                    l = mid + 1;
+                }
+            }
+            res.emplace_back(l, i);
+            break;
+        }
+    }
+    if (res.empty()) exit(825);
+    for (int i = n; i > 1; --i) {
+        if (ask(1, n, i, n) % 2 == 1) {
+            int l = 1, r = n;
+            while (l < r) {
+                int mid = l + r >> 1;
+                if (ask(1, mid, i, i) % 2 == 1) {
+                    r = mid;
+                } else {
+                    l = mid + 1;
+                }
+            }
+            res.emplace_back(l, i);
+            break;
+        }
+    }
+    cout << "! " << res[0].first << ' ' << res[0].second << ' ' << res[1].first << ' ' << res[1].second << endl;
+}
+
+// __attribute__((target("popcnt")))
 void solve() {
-    read(int, n, s);
-    readvec(int, a, n);
-    int left = n / 2;
-    vector<ll> dp(1 << left);
-    unordered_map<ll, ll, safe_hash> cnt;
-    faster(cnt);
-    cnt[0] = 1;
-    for (int i = 1; i < (1 << left); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[lz];
-        cnt[dp[i]] += 1;
-    }
-    int right = n - left;
-    dp.assign(1 << right, 0);
-    ll res = cnt.count(s) ? cnt[s] : 0;
-    for (int i = 1; i < (1 << right); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[left + lz];
-        res += cnt.count(s - dp[i]) ? cnt[s - dp[i]] : 0;
-    }
-    cout << res << '\n';
 }
 
 int main() {

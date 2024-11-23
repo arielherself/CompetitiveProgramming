@@ -456,7 +456,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -467,29 +467,134 @@ void dump_ignore() {}
 void prep() {
 }
 
-__attribute__((target("lzcnt")))
+int digcnt(ll x) {
+    int res = 0;
+    while (x != 0) {
+        res += 1;
+        x /= 10;
+    }
+    return res;
+}
+
+inline int128 get(int128 x, int128 y) {
+    return (x + y) * (y - x + 1) / 2;
+}
+
+// __attribute__((target("popcnt")))
 void solve() {
-    read(int, n, s);
-    readvec(int, a, n);
-    int left = n / 2;
-    vector<ll> dp(1 << left);
-    unordered_map<ll, ll, safe_hash> cnt;
-    faster(cnt);
-    cnt[0] = 1;
-    for (int i = 1; i < (1 << left); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[lz];
-        cnt[dp[i]] += 1;
+    read(ll, target);
+
+    vector<int128> pw(19);
+    pw[0] = 1;
+    for (int i = 1; i < 19; ++i) {
+        pw[i] = pw[i - 1] * 10;
     }
-    int right = n - left;
-    dp.assign(1 << right, 0);
-    ll res = cnt.count(s) ? cnt[s] : 0;
-    for (int i = 1; i < (1 << right); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[left + lz];
-        res += cnt.count(s - dp[i]) ? cnt[s - dp[i]] : 0;
+
+    auto f = [&] (ll x) -> int128 {
+        if (x == 0) return 0;
+        vector<int> digits;
+        while (x != 0) {
+            digits.emplace_back(x % 10);
+            x /= 10;
+        }
+        int ms = digits.size() - 1;
+        int128 res = ms + 1;
+        for (int i = ms; ~i; --i) {
+            res += (i == ms ? digits[i] - 1 : digits[i]) * (ms + 1) * pw[i];
+        }
+        for (int i = ms - 1; ~i; --i) {
+            res += 9 * (i + 1) * pw[i];
+        }
+        return res;
+    };
+
+    auto g = [&] (ll x) -> int128 {
+        if (x == 0) return 0;
+        vector<int> digits;
+        ll b = x;
+        while (x != 0) {
+            digits.emplace_back(x % 10);
+            x /= 10;
+        }
+        int ms = digits.size() - 1;
+        int128 res = b * (ms + 1);
+        int128 sum = 0;
+        for (int i = ms; ~i; --i) {
+            for (int j = 0; j < digits[i]; ++j) {
+                if (sum == 0 and j == 0) continue;
+                int128 curr = sum * 10 + j;
+                res += get(curr * pw[i], (curr + 1) * pw[i] - 1) * (ms + 1);
+            }
+            sum = sum * 10 + digits[i];
+        }
+        for (int i = ms - 1; ~i; --i) {
+            for (int j = 1; j < 10; ++j) {
+                res += get(j * pw[i], (j + 1) * pw[i] - 1) * (i + 1);
+            }
+        }
+        return res;
+    };
+
+    auto calc = [&] (ll x) -> int128 {
+        return (x + 1) * f(x) - g(x);
+    };
+    // debug(calc(11));
+
+    int block;
+    {
+        int l = 1, r = 1e9;
+        while (l < r) {
+            int mid = l + r >> 1;
+            if (calc(mid) < target) {
+                l = mid + 1;
+            } else {
+                r = mid;
+            }
+        }
+        block = l;
     }
-    cout << res << '\n';
+
+
+    ll prev = calc(block - 1);
+    // deb(block, ll(calc(block - 1)), ll(f(block)), ll(calc(block)));
+    assert(calc(block - 1) + f(block) == calc(block));
+    // debug(prev);
+    int offset;
+    {
+        int l = 1, r = block;
+        while (l < r) {
+            int mid = l + r >> 1;
+            if (prev + f(mid) < target) {
+                l = mid + 1;
+            } else {
+                r = mid;
+            }
+        }
+        offset = l;
+    }
+
+    prev += f(offset - 1);
+    // debug(prev);
+    // debug(offset);
+
+    vector<int> digits;
+    while (offset) {
+        digits.emplace_back(offset % 10);
+        offset /= 10;
+    }
+    reverse(digits.begin(), digits.end());
+
+    cout << digits[target - prev - 1] << '\n';
+
+
+    // int128 res = 0;
+    // ll last = 0;
+    // ll i = 0;
+    // for (; res < target; ++i) {
+    //     last += digcnt(i);
+    //     res += last;
+    // }
+    // debug(i);
 }
 
 int main() {

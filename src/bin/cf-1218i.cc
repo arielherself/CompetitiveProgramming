@@ -467,29 +467,132 @@ void dump_ignore() {}
 void prep() {
 }
 
-__attribute__((target("lzcnt")))
+class quick_union {
+private:
+    vector<size_t> c, sz;
+public:
+    quick_union(size_t n) : c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+    }
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] |= sz[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_size(size_t i) {
+        return sz[query(i)];
+    }
+    void set_size(size_t i, int val) {
+        sz[query(i)] |= val;
+    }
+};
+
+// __attribute__((target("popcnt")))
 void solve() {
-    read(int, n, s);
-    readvec(int, a, n);
-    int left = n / 2;
-    vector<ll> dp(1 << left);
-    unordered_map<ll, ll, safe_hash> cnt;
-    faster(cnt);
-    cnt[0] = 1;
-    for (int i = 1; i < (1 << left); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[lz];
-        cnt[dp[i]] += 1;
+    read(int, n);
+    vector a(n, vector<int>(n));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            read(char, c);
+            a[i][j] = c == '1';
+        }
     }
-    int right = n - left;
-    dp.assign(1 << right, 0);
-    ll res = cnt.count(s) ? cnt[s] : 0;
-    for (int i = 1; i < (1 << right); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[left + lz];
-        res += cnt.count(s - dp[i]) ? cnt[s - dp[i]] : 0;
+    vector b(n, vector<int>(n));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            read(char, c);
+            b[i][j] = c == '1';
+        }
     }
-    cout << res << '\n';
+    vector<int> c(n);
+    for (int i = 0; i < n; ++i) {
+        read(char, x);
+        c[i] = x == '1';
+    }
+    quick_union qu(4 * n + 2);
+    int rev = 2 * n;
+    int on = 4 * n, off = 4 * n + 1;
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            int need = a[i][j] != b[i][j];
+            int row = c[j];
+            int col = c[i];
+            if (need) {
+                if (row and col) {
+                    // choose anyone
+                    qu.merge(i, rev + n + j);
+                    qu.merge(rev + i, n + j);
+                } else if (row) {
+                    qu.set_size(i, 2);
+                    qu.set_size(rev + i, 1);
+                    qu.set_size(n + j, 2);
+                    qu.set_size(rev + n + j, 1);
+                } else if (col) {
+                    qu.set_size(i, 1);
+                    qu.set_size(rev + i, 2);
+                    qu.set_size(n + j, 2);
+                    qu.set_size(rev + n + j, 1);
+                } else {
+                    qu.merge(on, off);
+                }
+            } else {
+                if (row and col) {
+                    qu.merge(i, n + j);
+                    qu.merge(rev + i, rev + n + j);
+                } else if (row) {
+                    qu.merge(i, off);
+                    qu.merge(rev + i, on);
+                } else if (col) {
+                    qu.merge(n + j, off);
+                    qu.merge(rev + n + j, on);
+                }
+            }
+        }
+    }
+    for (int i = 0; i < 2 * n; ++i) {
+        if (qu.connected(i, on)) {
+            qu.merge(rev + i, off);
+        } else if (qu.connected(i, off)) {
+            qu.merge(rev + i, on);
+        } else if (qu.connected(rev + i, on)) {
+            qu.merge(i, off);
+        } else if (qu.connected(rev + i, off)) {
+            qu.merge(i, on);
+        }
+    }
+    if (qu.connected(on, off)) {
+        cout << "-1\n";
+        return;
+    }
+    vector<pii> seq;
+    for (int i = 0; i < 2 * n; ++i) {
+        if (qu.connected(i, rev + i)) {
+            cout << "-1\n";
+            return;
+        }
+        if (qu.connected(i, on) or qu.connected(rev + i, off)) {
+            qu.merge(i, on);
+            qu.merge(rev + i, off);
+            seq.emplace_back(i / n, i % n);
+        } else if (qu.connected(i, off) or qu.connected(rev + i, on)) {
+            ;;
+        } else {
+            seq.emplace_back(i / n, i % n);
+            qu.merge(i, on);
+            qu.merge(rev + i, off);
+        }
+    }
+    cout << seq.size() << '\n';
+    for (auto&& [p, v] : seq) {
+        cout << (p ? "col" : "row") << ' ' << v << '\n';
+    }
 }
 
 int main() {

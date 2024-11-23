@@ -467,27 +467,98 @@ void dump_ignore() {}
 void prep() {
 }
 
-__attribute__((target("lzcnt")))
-void solve() {
-    read(int, n, s);
-    readvec(int, a, n);
-    int left = n / 2;
-    vector<ll> dp(1 << left);
-    unordered_map<ll, ll, safe_hash> cnt;
-    faster(cnt);
-    cnt[0] = 1;
-    for (int i = 1; i < (1 << left); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[lz];
-        cnt[dp[i]] += 1;
+template <typename T> struct point {
+    T x, y;
+    point() : x(), y() {}
+    point(const pair<T, T>& a) : x(a.first), y(a.second) {}
+    point(const T& x, const T& y) : x(x), y(y) {}
+
+    inline T square() const { return x * x + y * y; }
+    inline ld norm() const { return sqrt(ld(square())); }
+
+    inline point operator+(const point& rhs) const { return point(x + rhs.x, y + rhs.y); }
+    inline point operator-(const point& rhs) const { return point(x - rhs.x, y - rhs.y); }
+    inline point operator+() const { return *this; }
+    inline point operator-() const { return point(-x, -y); }
+    inline point operator*(const T& a) const { return point(x * a, y * a); }
+    inline T operator*(const point& rhs) const { return x * rhs.y - y * rhs.x; }
+    inline point operator/(const T& a) const { return point(x / a, y / a); }
+    inline point operator+=(const point& rhs) { x += rhs.x, y += rhs.y; return *this; }
+    inline point operator-=(const point& rhs) { x -= rhs.x, y -= rhs.y; return *this; }
+    inline point operator*=(const T& a) { x *= a, y *= a; return *this; }
+    inline point operator/=(const T& a) { x /= a, y /= a; return *this; }
+
+    inline bool operator==(const point& rhs) const { return x == rhs.x and y == rhs.y; }
+    inline bool operator!=(const point& rhs) const { return not (*this == rhs); }
+    inline bool operator<(const point& rhs) const { return pair(x, y) < pair(rhs.x, rhs.y); }
+    inline bool operator<=(const point& rhs) const { return *this < rhs or *this == rhs; }
+    inline bool operator>(const point& rhs) const { return not (*this <= rhs); }
+    inline bool operator>=(const point& rhs) const { return not (*this < rhs); }
+
+    static inline ld slope(const point& a, const point& b) {
+        if (a.x == b.x) return INFLL;
+        return ld(a.y - b.y) / (a.x - b.x);
     }
-    int right = n - left;
-    dp.assign(1 << right, 0);
-    ll res = cnt.count(s) ? cnt[s] : 0;
-    for (int i = 1; i < (1 << right); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[left + lz];
-        res += cnt.count(s - dp[i]) ? cnt[s - dp[i]] : 0;
+
+    // distance from point `a` to line `l--r`
+    static inline ld dist(const point& a, const point& l, const point& r) {
+        return area(a, l, r) * 2 / (l - r).norm();
+    }
+
+    static inline ld area(const point& a, const point& b, const point& c) {
+        return (b - a) * (c - a) / ld(2);
+    }
+
+    friend inline istream& operator>>(istream& in, point& a) {
+        return in >> a.x >> a.y;
+    }
+
+    friend inline ostream& operator<<(ostream& out, const point& a) {
+        return out << a.x << ' ' << a.y;
+    }
+};
+
+// __attribute__((target("popcnt")))
+void solve() {
+    read(int, n);
+    vector<point<ll>> a;
+    for (int i = 0; i < n; ++i) {
+        read(int, x, y);
+        a.emplace_back(x, y - ll(1) * x * x);
+    }
+    sort_by_key(a.begin(), a.end(), expr(pll(p.x, p.y), auto&& p));
+    // debug(a);
+    vector<int> left(n, -1), right(n, -1);
+    vector<int> stack;
+    for (int i = 0; i < n; ++i) {
+        int m = stack.size();
+        while (m >= 2 and  (a[stack[m - 1]] - a[stack[m - 2]]) * (a[i] - a[stack[m - 1]]) > 0) {
+            stack.pop_back();
+            m -= 1;
+        }
+        if (m) {
+            left[i] = stack[m - 1];
+        }
+        stack.emplace_back(i);
+    }
+    stack.clear();
+    for (int i = n - 1; ~i; --i) {
+        int m = stack.size();
+        while (m >= 2 and (a[stack[m - 1]] - a[i]) * (a[stack[m - 2]] - a[stack[m - 1]]) > 0) {
+            stack.pop_back();
+            m -= 1;
+        }
+        if(m) {
+            right[i] = stack[m - 1];
+        }
+        stack.emplace_back(i);
+    }
+    int res = 0;
+    for (int i = 0; i < n; ++i) {
+        // deb(i, left[i], right[i]);
+        if (left[i] != -1 and (a[i] - a[left[i]]).x != 0 and (right[i] == -1 or (a[i] - a[left[i]]) * (a[right[i]] - a[i]) < 0)) {
+            res += 1;
+        }
     }
     cout << res << '\n';
 }

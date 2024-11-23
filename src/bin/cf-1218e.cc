@@ -467,29 +467,215 @@ void dump_ignore() {}
 void prep() {
 }
 
-__attribute__((target("lzcnt")))
+template <ll M>
+ll qpow_m(ll b, ll p) {
+    if (b == 0 and p != 0) return 0;
+    if (p == 0) return 1;
+    ll half = qpow_m<M>(b, p / 2);
+    if (p % 2 == 1) return (half * half % M)* b % M;
+    else return half * half % M;
+}
+
+
+template <ll M>
+void ntt(vector<ll>& y, bool idft) {
+    int n = y.size();
+    vector<int> rev(n);
+    for (int i = 0; i < n; ++i) {
+        rev[i] = rev[i >> 1] >> 1;
+        if (i & 1) {
+            rev[i] |= n >> 1;
+        }
+    }
+    for (int i = 0; i < n; ++i) {
+        if (i < rev[i]) {
+            swap(y[i], y[rev[i]]);
+        }
+    }
+    vector<ll> roots = { 0, 1 };
+    if (roots.size() < n) {
+        int k = lsp(roots.size());
+        roots.resize(n);
+        for (; (1 << k) < n; ++k) {
+            ll e = qpow_m<M>(31, 1 << lsp(M - 1) - k - 1);
+            for (int i = 1 << k - 1; i < (1 << k); ++i) {
+                roots[2 * i] = roots[i];
+                roots[2 * i + 1] = roots[i] * e % M;
+            }
+        }
+    }
+    for (int h = 2; h <= n; h <<= 1) {
+        for (int j = 0; j < n; j += h) {
+            for (int k = j; k < j + h / 2; ++k) {
+                ll u = y[k], t = roots[k - j + h / 2] * y[k + h / 2] % M;
+                y[k] = (u + t) % M;
+                y[k + h / 2] = mod(u - t, M);
+            }
+        }
+    }
+    if (idft) {
+        reverse(y.begin() + 1, y.end());
+        ll inv = inverse(n, M);
+        for (int i = 0; i < n; ++i) {
+            y[i] = y[i] * inv % M;
+        }
+    }
+}
+template <ll M>
+vector<ll> multiply(const vector<ll>& a, const vector<ll>& b) {
+    vector<ll> A(a.begin(), a.end()), B(b.begin(), b.end());
+    int n = 1;
+    while (n < a.size() + b.size()) n <<= 1;
+    A.resize(n), B.resize(n);
+    ntt<M>(A, false), ntt<M>(B, false);
+    for (int i = 0; i < n; ++i) {
+        A[i] = A[i] * B[i] % M;
+    }
+    ntt<M>(A, true);
+    return A;
+}
+/**   多项式乘法
+ *    2024-03-10: https://qoj.ac/submission/350298
+**/
+constexpr int P = 998244353;
+
+int power(int a, int b) {
+    int res = 1;
+    for (; b; b /= 2, a = 1LL * a * a % P) {
+        if (b % 2) {
+            res = 1LL * res * a % P;
+        }
+    }
+    return res;
+}
+
+std::vector<int> rev, roots {0, 1};
+
+void dft(std::vector<int> &a) {
+    int n = a.size();
+    if (int(rev.size()) != n) {
+        int k = __builtin_ctz(n) - 1;
+        rev.resize(n);
+        for (int i = 0; i < n; i++) {
+            rev[i] = rev[i >> 1] >> 1 | (i & 1) << k;
+        }
+    }
+    for (int i = 0; i < n; i++) {
+        if (rev[i] < i) {
+            std::swap(a[i], a[rev[i]]);
+        }
+    }
+    if (roots.size() < n) {
+        int k = __builtin_ctz(roots.size());
+        roots.resize(n);
+        while ((1 << k) < n) {
+            int e = power(31, 1 << (__builtin_ctz(P - 1) - k - 1));
+            for (int i = 1 << (k - 1); i < (1 << k); i++) {
+                roots[2 * i] = roots[i];
+                roots[2 * i + 1] = 1LL * roots[i] * e % P;
+            }
+            k++;
+        }
+    }
+
+    for (int k = 1; k < n; k *= 2) {
+        for (int i = 0; i < n; i += 2 * k) {
+            for (int j = 0; j < k; j++) {
+                int u = a[i + j];
+                int v = 1LL * a[i + j + k] * roots[k + j] % P;
+                a[i + j] = (u + v) % P;
+                a[i + j + k] = (u - v) % P;
+            }
+        }
+    }
+}
+
+void idft(std::vector<int> &a) {
+    int n = a.size();
+    std::reverse(a.begin() + 1, a.end());
+    dft(a);
+    int inv = (1 - P) / n;
+    for (int i = 0; i < n; i++) {
+        a[i] = 1LL * a[i] * inv % P;
+    }
+}
+
+std::vector<int> mul(std::vector<int> a, std::vector<int> b) {
+    int n = 1, tot = a.size() + b.size() - 1;
+    while (n < tot) {
+        n *= 2;
+    }
+    if (tot < 128) {
+        std::vector<int> c(a.size() + b.size() - 1);
+        for (int i = 0; i < a.size(); i++) {
+            for (int j = 0; j < b.size(); j++) {
+                c[i + j] = (c[i + j] + 1LL * a[i] * b[j]) % P;
+            }
+        }
+        return c;
+    }
+    a.resize(n);
+    b.resize(n);
+    dft(a);
+    dft(b);
+    for (int i = 0; i < n; i++) {
+        a[i] = 1LL * a[i] * b[i] % P;
+    }
+    idft(a);
+    a.resize(tot);
+    return a;
+}
+// __attribute__((target("popcnt")))
 void solve() {
-    read(int, n, s);
+    read(int, n, k);
     readvec(int, a, n);
-    int left = n / 2;
-    vector<ll> dp(1 << left);
-    unordered_map<ll, ll, safe_hash> cnt;
-    faster(cnt);
-    cnt[0] = 1;
-    for (int i = 1; i < (1 << left); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[lz];
-        cnt[dp[i]] += 1;
+
+    vector<ll> b(n);
+
+    auto dfs = [&] (auto dfs, int l, int r) -> vector<ll> {
+        // deb(l, r);
+        vector<ll> ret;
+        if (l == r) {
+            ret.resize(2);
+            ret[0] = 1;
+            ret[1] = b[l];
+            return ret;
+        }
+        int mid = l + r >> 1;
+        ret = multiply<PRIME>(dfs(dfs, l, mid), dfs(dfs, mid + 1, r));
+        // ret = mul(dfs(dfs, l, mid), dfs(dfs, mid + 1, r));
+        if (ret.size() > k) ret.resize(k + 1);
+        return ret;
+    };
+
+
+    read(int, q);
+    while (q--) {
+        read(int, op);
+        if (op == 1) {
+            read(int, q, i, x);
+            --i;
+            for (int j = 0; j < n; ++j) {
+                if (j == i) {
+                    b[j] = mod(q - x, PRIME);
+                } else {
+                    b[j] = mod(q - a[j], PRIME);
+                }
+            }
+            cout << dfs(dfs, 0, n - 1)[k] << '\n';
+        } else {
+            read(int, q, l, r, x);
+            --l, --r;
+            for (int j = 0; j < n; ++j) {
+                if (j >= l and j <= r) {
+                    b[j] = mod(q - (a[j] + x), PRIME);
+                } else {
+                    b[j] = mod(q - a[j], PRIME);
+                }
+            }
+            cout << dfs(dfs, 0, n - 1)[k] << '\n';
+        }
     }
-    int right = n - left;
-    dp.assign(1 << right, 0);
-    ll res = cnt.count(s) ? cnt[s] : 0;
-    for (int i = 1; i < (1 << right); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[left + lz];
-        res += cnt.count(s - dp[i]) ? cnt[s - dp[i]] : 0;
-    }
-    cout << res << '\n';
 }
 
 int main() {

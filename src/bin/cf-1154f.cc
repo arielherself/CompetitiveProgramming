@@ -467,29 +467,31 @@ void dump_ignore() {}
 void prep() {
 }
 
-__attribute__((target("lzcnt")))
+// __attribute__((target("popcnt")))
 void solve() {
-    read(int, n, s);
+    read(int, n, m, k);
     readvec(int, a, n);
-    int left = n / 2;
-    vector<ll> dp(1 << left);
-    unordered_map<ll, ll, safe_hash> cnt;
-    faster(cnt);
-    cnt[0] = 1;
-    for (int i = 1; i < (1 << left); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[lz];
-        cnt[dp[i]] += 1;
+    sort(a.begin(), a.end());
+    vector<ll> ps(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        ps[i] = ps[i - 1] + a[i - 1];
     }
-    int right = n - left;
-    dp.assign(1 << right, 0);
-    ll res = cnt.count(s) ? cnt[s] : 0;
-    for (int i = 1; i < (1 << right); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[left + lz];
-        res += cnt.count(s - dp[i]) ? cnt[s - dp[i]] : 0;
+    vector<int> free(n + 1, -1);
+    free[1] = 0;
+    for (int i = 0; i < m; ++i) {
+        read(int, x, y);
+        chmax(free[x], y);
     }
-    cout << res << '\n';
+    vector<ll> dp(k + 1, INFLL);
+    dp[0] = 0;
+    for (int i = 0; i < k; ++i) {
+        for (int j = 1; i + j <= k; ++j) {
+            if (free[j] != -1) {
+                chmin(dp[i + j], dp[i] + ps[i + j] - ps[i + free[j]]);
+            }
+        }
+    }
+    cout << dp[k] << '\n';
 }
 
 int main() {

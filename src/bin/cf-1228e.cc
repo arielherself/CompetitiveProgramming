@@ -464,32 +464,50 @@ void dump() {}
 
 void dump_ignore() {}
 
+using mll = MLL<MDL>;
+constexpr int N = 255;
+mll fact[N], factrev[N + 1], s[N + 1];
+
 void prep() {
+    fact[0] = factrev[0] = 1;
+    for (int i = 1; i < N; ++i) {
+        fact[i] = fact[i - 1] * i;
+    }
+    s[0] = 1;
+    for (int i = 1; i <= N; ++i) {
+        s[i] = s[i - 1] * fact[i - 1];
+    }
+    factrev[N] = 1 / s[N];
+    for (int i = N; i; --i) {
+        factrev[i - 1] = factrev[i] * fact[i - 1];
+    }
+    for (int i = 0; i < N; ++i) {
+        factrev[i] = factrev[i + 1] * s[i];
+    }
 }
 
-__attribute__((target("lzcnt")))
+// __attribute__((target("popcnt")))
 void solve() {
-    read(int, n, s);
-    readvec(int, a, n);
-    int left = n / 2;
-    vector<ll> dp(1 << left);
-    unordered_map<ll, ll, safe_hash> cnt;
-    faster(cnt);
-    cnt[0] = 1;
-    for (int i = 1; i < (1 << left); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[lz];
-        cnt[dp[i]] += 1;
+    read(int, n, k);
+    vector<mll> dp(n + 1);
+    vector<mll> f(n + 1), g(n + 1);
+    f[0] = g[0] = 1;
+    for (int i = 1; i <= n; ++i) {
+        f[i] = (k - 1) * f[i - 1];
+        g[i] = k * g[i - 1];
     }
-    int right = n - left;
-    dp.assign(1 << right, 0);
-    ll res = cnt.count(s) ? cnt[s] : 0;
-    for (int i = 1; i < (1 << right); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[left + lz];
-        res += cnt.count(s - dp[i]) ? cnt[s - dp[i]] : 0;
+    dp[0] = 1;
+    for (int i = 0; i < n; ++i) {
+        vector<mll> ndp(n + 1);
+        for (int j = 0; j <= n; ++j) {
+            for (int l = 1; l <= n - j; ++l) {
+                ndp[j + l] += dp[j] * fastcomb(n - j, l) * f[n - j - l] * g[j];
+            }
+            ndp[j] += dp[j] * (g[j] - f[j]) * f[n - j];
+        }
+        dp = std::move(ndp);
     }
-    cout << res << '\n';
+    cout << dp[n] << '\n';
 }
 
 int main() {

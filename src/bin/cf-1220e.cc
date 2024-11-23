@@ -467,29 +467,115 @@ void dump_ignore() {}
 void prep() {
 }
 
-__attribute__((target("lzcnt")))
+// WARN: Input should be a simple graph
+//
+// Returns: (BCC count, indices of BCC of each vertex)
+//
+// BCC index starts from 1
+pair<int, vector<int>> ebcc(const vector<vector<int>>& ch) {
+    int n = ch.size() - 1;
+    vector<int> c(n + 1);
+
+    vector<int> low(n + 1), dfn(n + 1);
+    vector<bool> vis(n + 1);
+    vector<int> stack;
+
+    int time = 0;
+    int cnt = 0;
+
+    auto dfs = [&] (auto dfs, int v, int pa) -> void {
+        low[v] = dfn[v] = ++time;
+        stack.emplace_back(v);
+        vis[v] = 1;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            if (not dfn[u]) {
+                dfs(dfs, u, v);
+                chmin(low[v], low[u]);
+            } else if (vis[u]) {
+                chmin(low[v], dfn[u]);
+            }
+        }
+        if (dfn[v] == low[v]) {
+            cnt += 1;
+            c[v] = cnt;
+            while (stack.back() != v) {
+                c[stack.back()] = cnt;
+                vis[stack.back()] = 0;
+                stack.pop_back();
+            }
+            stack.pop_back();
+        }
+    };
+
+    for (int i = 1; i <= n; ++i) {
+        if (not dfn[i]) {
+            dfs(dfs, i, 0);
+        }
+    }
+    return { cnt, c };
+}
+
+// __attribute__((target("popcnt")))
 void solve() {
-    read(int, n, s);
-    readvec(int, a, n);
-    int left = n / 2;
-    vector<ll> dp(1 << left);
-    unordered_map<ll, ll, safe_hash> cnt;
-    faster(cnt);
-    cnt[0] = 1;
-    for (int i = 1; i < (1 << left); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[lz];
-        cnt[dp[i]] += 1;
+    read(int, n, m);
+    readvec1(int, w, n);
+    vector<pii> edges;
+    adj(ch, n);
+    for (int i = 0; i < m; ++i) {
+        read(int, u, v);
+        edges.emplace_back(u, v);
+        edge(ch, u, v);
     }
-    int right = n - left;
-    dp.assign(1 << right, 0);
-    ll res = cnt.count(s) ? cnt[s] : 0;
-    for (int i = 1; i < (1 << right); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[left + lz];
-        res += cnt.count(s - dp[i]) ? cnt[s - dp[i]] : 0;
+    auto [cnt, c] = ebcc(ch);
+    adj(nch, cnt);
+    vector<ll> nw(cnt + 1);
+    vector<int> sz(cnt + 1);
+    for (int i = 1; i <= n; ++i) {
+        nw[c[i]] += w[i];
+        sz[c[i]] += 1;
     }
-    cout << res << '\n';
+    for (auto&& [u, v] : edges) {
+        if (c[u] == c[v]) {
+            continue;
+        }
+        edge(nch, c[u], c[v]);
+    }
+    read(int, s);
+    ll sf = 0;
+    ll pf = 0;
+    vector<bool> added(cnt + 1);
+    {
+        auto dfs = [&] (auto dfs, int v, int pa) -> int {
+            int good = sz[v] > 1;
+            for (auto&& u : nch[v]) {
+                if (u == pa) continue;
+                good |= dfs(dfs, u, v);
+            }
+            if (good) {
+                added[v] = 1;
+                pf += nw[v];
+            }
+            return good;
+        };
+        dfs(dfs, c[s], 0);
+    }
+    {
+        auto dfs = [&] (auto dfs, int v, int pa, ll up) -> void {
+            if (not added[v]) {
+                up += nw[v];
+            } else {
+                up = 0;
+            }
+            chmax(sf, up);
+            for (auto&& u : nch[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v, up);
+            }
+        };
+        dfs(dfs, c[s], 0, 0);
+    }
+    cout << pf + sf << '\n';
 }
 
 int main() {

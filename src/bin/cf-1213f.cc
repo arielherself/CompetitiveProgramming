@@ -467,29 +467,40 @@ void dump_ignore() {}
 void prep() {
 }
 
-__attribute__((target("lzcnt")))
+// __attribute__((target("popcnt")))
 void solve() {
-    read(int, n, s);
+    read(int, n, k);
+    vector<ll> mp(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        mp[i] = rd();
+    }
     readvec(int, a, n);
-    int left = n / 2;
-    vector<ll> dp(1 << left);
-    unordered_map<ll, ll, safe_hash> cnt;
-    faster(cnt);
-    cnt[0] = 1;
-    for (int i = 1; i < (1 << left); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[lz];
-        cnt[dp[i]] += 1;
+    readvec(int, b, n);
+    vector<ll> ps(n + 1);
+    vector<int> splits = { 0 };
+    for (int i = 1; i <= n; ++i) {
+        ps[i] = ps[i - 1] xor mp[a[i - 1]] xor mp[b[i - 1]];
+        if (ps[i] == 0) {
+            splits.emplace_back(i);
+        }
     }
-    int right = n - left;
-    dp.assign(1 << right, 0);
-    ll res = cnt.count(s) ? cnt[s] : 0;
-    for (int i = 1; i < (1 << right); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[left + lz];
-        res += cnt.count(s - dp[i]) ? cnt[s - dp[i]] : 0;
+    if (splits.size() <= k) {
+        cout << "NO\n";
+    } else {
+        cout << "YES\n";
+        vector<int> res(n);
+        int m = splits.size() - 1;
+        for (int i = 1; i <= m; ++i) {
+            int curr = min(k, i) - 1;
+            for (int j = splits[i - 1]; j < splits[i]; ++j) {
+                res[a[j] - 1] = curr;
+            }
+        }
+        for (int i = 0; i < n; ++i) {
+            cout << char('a' + res[i]);
+        }
+        cout << endl;
     }
-    cout << res << '\n';
 }
 
 int main() {
