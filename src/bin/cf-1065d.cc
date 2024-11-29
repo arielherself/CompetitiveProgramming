@@ -12,8 +12,6 @@ using namespace std;
 constexpr void __() {}
 #define __AS_PROCEDURE(...) __(); __VA_ARGS__; __()
 #define __as_typeof(container) remove_reference<decltype(container)>::type
-template <typename T> struct argument_type;
-template <typename T, typename U> struct argument_type<T(U)> { using type = U; };
 
 /* type aliases */
 #if LONG_LONG_MAX != INT64_MAX
@@ -179,14 +177,6 @@ template<typename T, typename U> ostream& operator<<(ostream& out, const pair<T,
     out << "{" << p.first << ", " << p.second << "}";
     return out;
 }
-template<typename T, size_t N> istream& operator>>(istream& in, array<T, N>& a) {
-    for (size_t i = 0; i < N; ++i) in >> a[i];
-    return in;
-}
-template <typename T, size_t N> ostream& operator<<(ostream& out, const array<T, N>& a) {
-    for (auto&& i : a) out << i << ' ';
-    return out;
-}
 template<typename Char, typename Traits, typename Tuple, std::size_t... Index>
 void print_tuple_impl(std::basic_ostream<Char, Traits>& os, const Tuple& t, std::index_sequence<Index...>) {
     using swallow = int[]; // guaranties left to right order
@@ -227,9 +217,9 @@ std::ostream& operator<<(std::ostream& dest, const int128& value) {
 }
 template<typename T> void __read(T& x) { cin >> x; }
 template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __read(args...); }
-#define read(t, ...) __AS_PROCEDURE(argument_type<void(t)>::type __VA_ARGS__; __read(__VA_ARGS__);)
-#define readvec(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a(n); for (auto& x : a) cin >> x;)
-#define readvec1(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a((n) + 1); copy_n(ii<argument_type<void(t)>::type>(cin), (n), a.begin() + 1);)
+#define read(type, ...) __AS_PROCEDURE(type __VA_ARGS__; __read(__VA_ARGS__);)
+#define readvec(type, a, n) __AS_PROCEDURE(vector<type> a(n); for (auto& x : a) cin >> x;)
+#define readvec1(type, a, n) __AS_PROCEDURE(vector<type> a((n) + 1); copy_n(ii<type>(cin), (n), a.begin() + 1);)
 #define putvec(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
 #define putvec1(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
 #define putvec_eol(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
@@ -267,21 +257,6 @@ return_t qpow(ll b, ll p) {
     if (p % 2 == 1) return half * half * b;
     else return half * half;
 }
-
-// Accurately find `i` 'th root of `n` (taking the floor)
-inline ll root(ll n, ll i) {
-    ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (qpow<int128>(mid, i) <= n) {
-            l = mid;
-        } else {
-            r = mid - 1;
-        }
-    }
-    return l;
-}
-
 
 #define comb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] / fact[k] / fact[(n) - (k)])
 #define fastcomb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] * factrev[k] * factrev[(n) - (k)])
@@ -401,11 +376,11 @@ template <ll mdl> struct MLL {
     friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
     friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
     friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
-    MLL& operator+=(const MLL& rhs) { return *this = *this + rhs; }
-    MLL& operator-=(const MLL& rhs) { return *this = *this - rhs; }
-    MLL& operator*=(const MLL& rhs) { return *this = *this * rhs; }
-    MLL& operator/=(const MLL& rhs) { return *this = *this / rhs; }
-    MLL& operator%=(const MLL& rhs) { return *this = *this % rhs; }
+    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
+    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
+    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
+    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
+    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
 };
 
 template <ll mdl>
@@ -499,7 +474,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -512,6 +487,82 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
+    read(int, n);
+    vector a(n, vector<int>(n));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            cin >> a[i][j];
+        }
+    }
+    int s = n * n;
+    vector dis(3 * s, vector<pll>(3 * s, { INFLL, 0 }));
+    for (int i = 0; i < 3 * s; ++i) {
+        dis[i][i] = { 0, 0 };
+        deque<int> q = { i };
+        while (q.size()) {
+            auto v = popfront(q);
+            // change chip type
+            for (int j = 0; j < 3; ++j) {
+                int u = (v % s) + j * s;
+                if (u == v) continue;
+                if (chmin(dis[i][u], pll(dis[i][v].first + 1, dis[i][v].second + 1))) {
+                    q.emplace_back(u);
+                }
+            }
+            int type = (v - (v % s)) / s;
+            int xv = (v % s) / n, yv = (v % s) % n;
+            if (type == 0) {
+                for (int j = 0; j < s; ++j) {
+                    int u = type * s + j;
+                    int xu = j / n, yu = j % n;
+                    if (abs(xv - xu) == 2 and abs(yv - yu) == 1 or abs(xv - xu) == 1 and abs(yv - yu) == 2) {
+                        if (chmin(dis[i][u], pll(dis[i][v].first + 1, dis[i][v].second))) {
+                            q.emplace_back(u);
+                        }
+                    }
+                }
+            } else if (type == 1) {
+                for (int j = 0; j < s; ++j) {
+                    int u = type * s + j;
+                    int xu = j / n, yu = j % n;
+                    if (abs(xv - xu) == abs(yv - yu)) {
+                        if (chmin(dis[i][u], pll(dis[i][v].first + 1, dis[i][v].second))) {
+                            q.emplace_back(u);
+                        }
+                    }
+                }
+            } else {
+                for (int j = 0; j < s; ++j) {
+                    int u = type * s + j;
+                    int xu = j / n, yu = j % n;
+                    if (xv - xu == 0 or yv - yu == 0) {
+                        if (chmin(dis[i][u], pll(dis[i][v].first + 1, dis[i][v].second))) {
+                            q.emplace_back(u);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    vector<int> rev(s);
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            rev[a[i][j] - 1] = i * n + j;
+        }
+    }
+    auto add = [] (const pll& a, const pll& b) {
+        return pll(a.first + b.first, a.second + b.second);
+    };
+    array<pll, 3> res = {};
+    for (int i = 1; i < s; ++i) {
+        res = {
+            min({ add(res[0], dis[rev[i - 1]][rev[i]]), add(res[1], dis[s + rev[i - 1]][rev[i]]), add(res[2], dis[2 * s + rev[i - 1]][rev[i]]) }),
+            min({ add(res[0], dis[rev[i - 1]][s + rev[i]]), add(res[1], dis[s + rev[i - 1]][s + rev[i]]), add(res[2], dis[2 * s + rev[i - 1]][s + rev[i]]) }),
+            min({ add(res[0], dis[rev[i - 1]][2 * s + rev[i]]), add(res[1], dis[s + rev[i - 1]][2 * s + rev[i]]), add(res[2], dis[2 * s + rev[i - 1]][2 * s + rev[i]]) }),
+        };
+    }
+    auto&& [x, y] = *min_element(res.begin(), res.end());
+    cout << x << ' ' << y << '\n';
 }
 
 int main() {

@@ -12,8 +12,6 @@ using namespace std;
 constexpr void __() {}
 #define __AS_PROCEDURE(...) __(); __VA_ARGS__; __()
 #define __as_typeof(container) remove_reference<decltype(container)>::type
-template <typename T> struct argument_type;
-template <typename T, typename U> struct argument_type<T(U)> { using type = U; };
 
 /* type aliases */
 #if LONG_LONG_MAX != INT64_MAX
@@ -183,10 +181,6 @@ template<typename T, size_t N> istream& operator>>(istream& in, array<T, N>& a) 
     for (size_t i = 0; i < N; ++i) in >> a[i];
     return in;
 }
-template <typename T, size_t N> ostream& operator<<(ostream& out, const array<T, N>& a) {
-    for (auto&& i : a) out << i << ' ';
-    return out;
-}
 template<typename Char, typename Traits, typename Tuple, std::size_t... Index>
 void print_tuple_impl(std::basic_ostream<Char, Traits>& os, const Tuple& t, std::index_sequence<Index...>) {
     using swallow = int[]; // guaranties left to right order
@@ -227,9 +221,9 @@ std::ostream& operator<<(std::ostream& dest, const int128& value) {
 }
 template<typename T> void __read(T& x) { cin >> x; }
 template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __read(args...); }
-#define read(t, ...) __AS_PROCEDURE(argument_type<void(t)>::type __VA_ARGS__; __read(__VA_ARGS__);)
-#define readvec(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a(n); for (auto& x : a) cin >> x;)
-#define readvec1(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a((n) + 1); copy_n(ii<argument_type<void(t)>::type>(cin), (n), a.begin() + 1);)
+#define read(type, ...) __AS_PROCEDURE(type __VA_ARGS__; __read(__VA_ARGS__);)
+#define readvec(type, a, n) __AS_PROCEDURE(vector<type> a(n); for (auto& x : a) cin >> x;)
+#define readvec1(type, a, n) __AS_PROCEDURE(vector<type> a((n) + 1); copy_n(ii<type>(cin), (n), a.begin() + 1);)
 #define putvec(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
 #define putvec1(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
 #define putvec_eol(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
@@ -267,21 +261,6 @@ return_t qpow(ll b, ll p) {
     if (p % 2 == 1) return half * half * b;
     else return half * half;
 }
-
-// Accurately find `i` 'th root of `n` (taking the floor)
-inline ll root(ll n, ll i) {
-    ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (qpow<int128>(mid, i) <= n) {
-            l = mid;
-        } else {
-            r = mid - 1;
-        }
-    }
-    return l;
-}
-
 
 #define comb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] / fact[k] / fact[(n) - (k)])
 #define fastcomb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] * factrev[k] * factrev[(n) - (k)])
@@ -401,11 +380,11 @@ template <ll mdl> struct MLL {
     friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
     friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
     friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
-    MLL& operator+=(const MLL& rhs) { return *this = *this + rhs; }
-    MLL& operator-=(const MLL& rhs) { return *this = *this - rhs; }
-    MLL& operator*=(const MLL& rhs) { return *this = *this * rhs; }
-    MLL& operator/=(const MLL& rhs) { return *this = *this / rhs; }
-    MLL& operator%=(const MLL& rhs) { return *this = *this % rhs; }
+    void operator+=(const MLL& rhs) { return *this = *this + rhs; }
+    void operator-=(const MLL& rhs) { return *this = *this - rhs; }
+    void operator*=(const MLL& rhs) { return *this = *this * rhs; }
+    void operator/=(const MLL& rhs) { return *this = *this / rhs; }
+    void operator%=(const MLL& rhs) { return *this = *this % rhs; }
 };
 
 template <ll mdl>
@@ -499,7 +478,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -510,8 +489,184 @@ void dump_ignore() {}
 void prep() {
 }
 
+struct LCA {
+    vector<int> depth;
+    vector<vector<int>> pa;
+    LCA(const vector<vector<int>>& g, int root = 1) {
+        int n = g.size() - 1;
+        int m = 32 - __builtin_clz(n);
+        depth.resize(n + 1);
+        pa.resize(n + 1, vector<int>(m, -1));
+        function<void(int, int)> dfs = [&](int x, int fa) {
+            pa[x][0] = fa;
+            for (int y: g[x]) {
+                if (y != fa) {
+                    depth[y] = depth[x] + 1;
+                    dfs(y, x);
+                }
+            }
+        };
+        dfs(root, 0);
+        for (int i = 0; i < m - 1; i++)
+            for (int x = 1; x <= n; x++)
+                if (int p = pa[x][i]; p != -1)
+                    pa[x][i + 1] = pa[p][i];
+    }
+    int get_kth_ancestor(int node, int k) {
+        for (; k; k &= k - 1)
+            node = pa[node][__builtin_ctz(k)];
+        return node;
+    }
+    int query(int x, int y) {
+        if (depth[x] > depth[y])
+            swap(x, y);
+        y = get_kth_ancestor(y, depth[y] - depth[x]);
+        if (y == x)
+            return x;
+        for (int i = pa[x].size() - 1; i >= 0; i--) {
+            int px = pa[x][i], py = pa[y][i];
+            if (px != py) {
+                x = px;
+                y = py;
+            }
+        }
+        return pa[x][0];
+    }
+};
+
+// WARN: Input could contain multiple edges, but not self loops
+//
+// Returns: (BCC count, indices of BCCs of each vertex)
+//
+// BCC index starts from 1
+pair<int, vector<vector<int>>> vbcc(const vector<vector<int>>& ch) {
+    int n = ch.size() - 1;
+    vector<vector<int>> c(n + 1);  // a vertex could be contained in multiple vBCCs
+
+    int tm = 0;
+    int cnt = 0;
+
+    vector<int> low(n + 1), dfn(n + 1);
+    vector<int> stack;
+    auto dfs = [&] (auto dfs, int v, int pa) -> void {
+        int son = 0;
+        low[v] = dfn[v] = ++tm;
+        stack.emplace_back(v);
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            son += 1;
+            if (not dfn[u]) {
+                dfs(dfs, u, v);
+                chmin(low[v], low[u]);
+                if (low[u] >= dfn[v]) {
+                    cnt += 1;
+                    int z;
+                    do {
+                        z = popback(stack);
+                        c[z].emplace_back(cnt);
+                    } while (z != u);
+                    c[v].emplace_back(cnt);
+                }
+            }
+            chmin(low[v], dfn[u]);
+        }
+        if (pa == 0 and son == 0) {
+            cnt += 1;
+            c[v].emplace_back(cnt);
+        }
+    };
+    for (int i = 1; i <= n; ++i) {
+        if (not dfn[i]) {
+            dfs(dfs, i, 0);
+        }
+    }
+    return { cnt, c };
+}
+
+class quick_union {
+private:
+    vector<size_t> c, sz;
+public:
+    quick_union(size_t n) : c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
+    }
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] += sz[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_size(size_t i) {
+        return sz[query(i)];
+    }
+};
+
 // __attribute__((target("popcnt")))
 void solve() {
+    read(int, n, m, q);
+    vector<pii> edges;
+    vector<vector<int>> bk;
+    {
+        adj(ch, n);
+        for (int i = 0; i < m; ++i) {
+            read(int, u, v);
+            edges.emplace_back(u, v);
+            edge(ch, u, v);
+        }
+        auto [cnt, c] = vbcc(ch);
+        m = cnt;
+        bk.resize(m + 1);
+        for (int i = 1; i <= n; ++i) {
+            for (int j : c[i]) {
+                bk[j].emplace_back(i);
+            }
+        }
+    }
+    adj(ch, n + m);
+    quick_union qu(n + 1);
+    for (auto&& v : bk) {
+        int m = v.size();
+        for (int i = 1; i < m; ++i) {
+            qu.merge(v[i], v[i - 1]);
+        }
+    }
+    vector<int> w(n + m + 1);
+    for (auto&& [u, v] : edges) {
+        if (qu.connected(u, v)) continue;
+        edge(ch, u, v);
+    }
+    for (int i = 1; i <= n; ++i) {
+        w[i] = 1;
+    }
+    for (int i = 1; i <= m; ++i) {
+        for (auto&& v : bk[i]) {
+            edge(ch, n + i, v);
+        }
+    }
+    vector<int> pf(n + m + 1);
+    auto dfs = [&] (auto dfs, int v, int pa) -> void {
+        pf[v] += w[v];
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            pf[u] = pf[v];
+            dfs(dfs, u, v);
+        }
+    };
+    dfs(dfs, 1, 0);
+    LCA lca(ch);
+
+    while (q--) {
+        read(int, u, v);
+        int l = lca.query(u, v);
+        cout << pf[u] + pf[v] - 2 * pf[l] + w[l] - 1 << '\n';
+    }
 }
 
 int main() {

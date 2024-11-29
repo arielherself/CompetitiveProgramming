@@ -1,5 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#pragma GCC optimize("Ofast")
+#pragma GCC optimize("Ofast,no-stack-protector,unroll-loops,fast-math")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -12,8 +12,6 @@ using namespace std;
 constexpr void __() {}
 #define __AS_PROCEDURE(...) __(); __VA_ARGS__; __()
 #define __as_typeof(container) remove_reference<decltype(container)>::type
-template <typename T> struct argument_type;
-template <typename T, typename U> struct argument_type<T(U)> { using type = U; };
 
 /* type aliases */
 #if LONG_LONG_MAX != INT64_MAX
@@ -179,14 +177,6 @@ template<typename T, typename U> ostream& operator<<(ostream& out, const pair<T,
     out << "{" << p.first << ", " << p.second << "}";
     return out;
 }
-template<typename T, size_t N> istream& operator>>(istream& in, array<T, N>& a) {
-    for (size_t i = 0; i < N; ++i) in >> a[i];
-    return in;
-}
-template <typename T, size_t N> ostream& operator<<(ostream& out, const array<T, N>& a) {
-    for (auto&& i : a) out << i << ' ';
-    return out;
-}
 template<typename Char, typename Traits, typename Tuple, std::size_t... Index>
 void print_tuple_impl(std::basic_ostream<Char, Traits>& os, const Tuple& t, std::index_sequence<Index...>) {
     using swallow = int[]; // guaranties left to right order
@@ -227,9 +217,9 @@ std::ostream& operator<<(std::ostream& dest, const int128& value) {
 }
 template<typename T> void __read(T& x) { cin >> x; }
 template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __read(args...); }
-#define read(t, ...) __AS_PROCEDURE(argument_type<void(t)>::type __VA_ARGS__; __read(__VA_ARGS__);)
-#define readvec(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a(n); for (auto& x : a) cin >> x;)
-#define readvec1(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a((n) + 1); copy_n(ii<argument_type<void(t)>::type>(cin), (n), a.begin() + 1);)
+#define read(type, ...) __AS_PROCEDURE(type __VA_ARGS__; __read(__VA_ARGS__);)
+#define readvec(type, a, n) __AS_PROCEDURE(vector<type> a(n); for (auto& x : a) cin >> x;)
+#define readvec1(type, a, n) __AS_PROCEDURE(vector<type> a((n) + 1); copy_n(ii<type>(cin), (n), a.begin() + 1);)
 #define putvec(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
 #define putvec1(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
 #define putvec_eol(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
@@ -239,24 +229,9 @@ template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __
 #define deb(...) debug(make_tuple(__VA_ARGS__))
 
 /* pops */
-template <typename Container>
-inline auto poptop(Container& q) {
-    auto ret = q.top();
-    q.pop();
-    return ret;
-}
-template <typename Container>
-inline auto popback(Container& q) {
-    auto ret = q.back();
-    q.pop_back();
-    return ret;
-}
-template <typename Container>
-inline auto popfront(Container& q) {
-    auto ret = q.front();
-    q.pop_front();
-    return ret;
-}
+#define poptop(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.top(); q.pop();)
+#define popback(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.back(); q.pop_back();)
+#define popfront(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.front();q.pop_front();)
 
 /* math */
 template <typename return_t>
@@ -268,28 +243,10 @@ return_t qpow(ll b, ll p) {
     else return half * half;
 }
 
-// Accurately find `i` 'th root of `n` (taking the floor)
-inline ll root(ll n, ll i) {
-    ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (qpow<int128>(mid, i) <= n) {
-            l = mid;
-        } else {
-            r = mid - 1;
-        }
-    }
-    return l;
-}
-
-
 #define comb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] / fact[k] / fact[(n) - (k)])
 #define fastcomb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] * factrev[k] * factrev[(n) - (k)])
 
 constexpr inline int lg2(ll x) { return x == 0 ? -1 : sizeof(ll) * 8 - 1 - __builtin_clzll(x); }
-
-template <typename T>
-T mygcd(T a, T b) { return b == 0 ? a : mygcd(b, a % b); }
 
 void __exgcd(ll a, ll b, ll& x, ll& y) {
   if (b == 0) {
@@ -341,15 +298,15 @@ vector<pii> decompose_prime(int N) {
 
 /* string algorithms */
 vector<int> calc_next(string t) {  // pi function of t
-    int n = (int)t.length();
-    vector<int> pi(n);
-    for (int i = 1; i < n; i++) {
-        int j = pi[i - 1];
-        while (j > 0 && t[i] != t[j]) j = pi[j - 1];
-        if (t[i] == t[j]) j++;
-        pi[i] = j;
-    }
-    return pi;
+  int n = (int)t.length();
+  vector<int> pi(n);
+  for (int i = 1; i < n; i++) {
+    int j = pi[i - 1];
+    while (j > 0 && t[i] != t[j]) j = pi[j - 1];
+    if (t[i] == t[j]) j++;
+    pi[i] = j;
+  }
+  return pi;
 }
 vector<int> calc_z(string t) {  // z function of t
     int m = t.length();
@@ -369,14 +326,14 @@ vector<int> calc_z(string t) {  // z function of t
     return z;
 }
 vector<int> kmp(string s, string t) {  // find all t in s
-    string cur = t + '#' + s;
-    int sz1 = s.size(), sz2 = t.size();
-    vector<int> v;
-    vector<int> lps = calc_next(cur);
-    for (int i = sz2 + 1; i <= sz1 + sz2; i++) {
-        if (lps[i] == sz2) v.push_back(i - 2 * sz2);
-    }
-    return v;
+  string cur = t + '#' + s;
+  int sz1 = s.size(), sz2 = t.size();
+  vector<int> v;
+  vector<int> lps = calc_next(cur);
+  for (int i = sz2 + 1; i <= sz1 + sz2; i++) {
+    if (lps[i] == sz2) v.push_back(i - 2 * sz2);
+  }
+  return v;
 }
 int period(string s) {  // find the length of shortest recurring period
     int n = s.length();
@@ -401,11 +358,11 @@ template <ll mdl> struct MLL {
     friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
     friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
     friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
-    MLL& operator+=(const MLL& rhs) { return *this = *this + rhs; }
-    MLL& operator-=(const MLL& rhs) { return *this = *this - rhs; }
-    MLL& operator*=(const MLL& rhs) { return *this = *this * rhs; }
-    MLL& operator/=(const MLL& rhs) { return *this = *this / rhs; }
-    MLL& operator%=(const MLL& rhs) { return *this = *this % rhs; }
+    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
+    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
+    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
+    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
+    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
 };
 
 template <ll mdl>
@@ -499,7 +456,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -510,8 +467,174 @@ void dump_ignore() {}
 void prep() {
 }
 
-// __attribute__((target("popcnt")))
+static vector<MLL<MDL1>> power1;
+static vector<MLL<MDL2>> power2;
+static const ll b = rd();
+template <typename _Tp>
+struct hash_vec {
+    using hash_type = pll;
+    MLL<MDL1> hash1;
+    MLL<MDL2> hash2;
+    vector<_Tp> seq;
+    size_t size() {
+        return seq.size();
+    }
+    void push_back(const _Tp& x) {
+        hash1 = hash1 * b + x;
+        hash2 = hash2 * b + x;
+        seq.push_back(x);
+    }
+    void push_front(const _Tp& x) {
+        size_t length = size();
+        hash1 += x * power1[length];
+        hash2 += x * power2[length];
+        seq.push_front(x);
+    }
+    void pop_back() {
+        _Tp e = seq.back(); seq.pop_back();
+        hash1 = (hash1 - e) / b;
+        hash2 = (hash2 - e) / b;
+    }
+    void pop_front() {
+        _Tp e = seq.front(); seq.pop_front();
+        int length = seq.size();
+        hash1 -= e * power1[length];
+        hash2 -= e * power2[length];
+    }
+    void set(size_t pos, const _Tp& value) {
+        int length = seq.size();
+        int old_value = seq[pos];
+        hash1 += (value - old_value) * power1[length - 1 - pos];
+        hash2 += (value - old_value) * power2[length - 1 - pos];
+        seq[pos] = value;
+    }
+    const _Tp& operator[](size_t pos) {
+        return seq[pos];
+    }
+    hash_type hash() {
+        return {hash1.val, hash2.val};
+    }
+    void clear() {
+        hash1 = 0;
+        hash2 = 0;
+        seq.clear();
+    }
+    hash_vec(size_t maxn) {
+        clear();
+        MLL<MDL1> c1 = power1.size() ? power1.back() * b : 1;
+        MLL<MDL2> c2 = power2.size() ? power2.back() * b : 1;
+        for (int i = power1.size(); i < maxn; ++i) {
+            power1.push_back(c1);
+            power2.push_back(c2);
+            c1 *= b;
+            c2 *= b;
+        }
+    }
+    hash_vec(size_t maxn, const _Tp& init_value) : hash_vec(maxn) {
+        for (size_t i = 0; i != maxn; ++i) {
+            push_back(init_value);
+        }
+    }
+};
+struct range_hash {
+    vector<pair<MLL<MDL1>, MLL<MDL2>>> hp;
+    template <typename T>
+    range_hash(const T& vec) {
+        hp.emplace_back();
+        hash_vec<ll> hs(vec.size() + 1);
+        for (auto&& x : vec) {
+            hs.push_back(x);
+            hp.emplace_back(hs.hash());
+        }
+    }
+    /// query hash of subarray [l, r]. Index starts from 0.
+    pair<MLL<MDL1>, MLL<MDL2>> range_query(size_t l, size_t r) {
+        return {
+            (hp[r + 1].first - hp[l].first * power1[r + 1 - l]),
+            (hp[r + 1].second - hp[l].second * power2[r + 1 - l]),
+        };
+    }
+};
+
+template <typename T>
+vector<int> manacher(const vector<T>& s, const T& never) {
+    vector<T> t = { never };
+    for (auto&& c : s) {
+        t.emplace_back(c);
+        t.emplace_back(never);
+    }
+    int n = t.size();
+    vector<int> r(n);
+    for (int i = 0, j = 0; i < n; ++i) {
+        if (2 * j - i >= 0 && j + r[j] > i) {
+            r[i] = min(r[2 * j - i], j + r[j] - i);
+        }
+        while (i - r[i] >= 0 && i + r[i] < n && t[i - r[i]] == t[i + r[i]]) {
+            r[i] += 1;
+        }
+        if (i + r[i] > j + r[j]) {
+            j = i;
+        }
+    }
+    for (int i = 0; i < n; i += 2) {
+        r[i] = (r[i] - 1) / 2;
+    }
+    for (int i = 1; i < n; i += 2) {
+        r[i] /= 2;
+    }
+    return r;
+}
+
+__attribute__((target("popcnt")))
 void solve() {
+    read(int, n, m);
+    vector a(n, vector<int>(m));
+    vector ps(n, vector(m + 1, array<int, 26>()));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            read(char, c);
+            a[i][j] = c - 'a';
+            ps[i][j + 1] = ps[i][j];
+            ps[i][j + 1][a[i][j]] += 1;
+        }
+    }
+    ll res = 0;
+    for (int i = 0; i < m; ++i) {
+        vector cnt(n, hash_vec<int>(26));
+        vector<int> cnt_odd(n);
+        for (int j = 0; j < n; ++j) {
+            for (int k = 0; k < 26; ++k) {
+                cnt[j].push_back(0);
+            }
+        }
+        for (int j = i; j < m; ++j) {
+            vector<ll> seq(n);
+            vector<int> pos(n);
+            for (int k = 0; k < n; ++k) {
+                int nxt = cnt[k][a[k][j]] + 1;
+                cnt_odd[k] &= ((1 << 26) - 1) ^ (1 << a[k][j]);
+                cnt_odd[k] |= (nxt & 1) << a[k][j];
+                cnt[k].set(a[k][j], nxt);
+                seq[k] = cnt[k].hash1.val xor cnt[k].hash2.val;
+                pos[k] = popcount(cnt_odd[k]) == ((j - i + 1) & 1);
+            }
+
+            ll never = 0;
+            for (int k = 0; k < n; ++k) {
+                if (pos[k] == 0) {
+                    seq[k] = --never;
+                }
+            }
+            vector<int> cnt = manacher(seq, -INFLL);
+            for (int k = 0; k < 2 * n + 1; ++k) {
+                if (k % 2 == 0 or pos[k / 2]) {
+                    res += cnt[k];
+                }
+            }
+        }
+    }
+
+    cout << res << '\n';
 }
 
 int main() {

@@ -12,8 +12,6 @@ using namespace std;
 constexpr void __() {}
 #define __AS_PROCEDURE(...) __(); __VA_ARGS__; __()
 #define __as_typeof(container) remove_reference<decltype(container)>::type
-template <typename T> struct argument_type;
-template <typename T, typename U> struct argument_type<T(U)> { using type = U; };
 
 /* type aliases */
 #if LONG_LONG_MAX != INT64_MAX
@@ -179,14 +177,6 @@ template<typename T, typename U> ostream& operator<<(ostream& out, const pair<T,
     out << "{" << p.first << ", " << p.second << "}";
     return out;
 }
-template<typename T, size_t N> istream& operator>>(istream& in, array<T, N>& a) {
-    for (size_t i = 0; i < N; ++i) in >> a[i];
-    return in;
-}
-template <typename T, size_t N> ostream& operator<<(ostream& out, const array<T, N>& a) {
-    for (auto&& i : a) out << i << ' ';
-    return out;
-}
 template<typename Char, typename Traits, typename Tuple, std::size_t... Index>
 void print_tuple_impl(std::basic_ostream<Char, Traits>& os, const Tuple& t, std::index_sequence<Index...>) {
     using swallow = int[]; // guaranties left to right order
@@ -227,9 +217,9 @@ std::ostream& operator<<(std::ostream& dest, const int128& value) {
 }
 template<typename T> void __read(T& x) { cin >> x; }
 template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __read(args...); }
-#define read(t, ...) __AS_PROCEDURE(argument_type<void(t)>::type __VA_ARGS__; __read(__VA_ARGS__);)
-#define readvec(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a(n); for (auto& x : a) cin >> x;)
-#define readvec1(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a((n) + 1); copy_n(ii<argument_type<void(t)>::type>(cin), (n), a.begin() + 1);)
+#define read(type, ...) __AS_PROCEDURE(type __VA_ARGS__; __read(__VA_ARGS__);)
+#define readvec(type, a, n) __AS_PROCEDURE(vector<type> a(n); for (auto& x : a) cin >> x;)
+#define readvec1(type, a, n) __AS_PROCEDURE(vector<type> a((n) + 1); copy_n(ii<type>(cin), (n), a.begin() + 1);)
 #define putvec(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
 #define putvec1(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
 #define putvec_eol(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
@@ -267,21 +257,6 @@ return_t qpow(ll b, ll p) {
     if (p % 2 == 1) return half * half * b;
     else return half * half;
 }
-
-// Accurately find `i` 'th root of `n` (taking the floor)
-inline ll root(ll n, ll i) {
-    ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (qpow<int128>(mid, i) <= n) {
-            l = mid;
-        } else {
-            r = mid - 1;
-        }
-    }
-    return l;
-}
-
 
 #define comb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] / fact[k] / fact[(n) - (k)])
 #define fastcomb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] * factrev[k] * factrev[(n) - (k)])
@@ -401,11 +376,11 @@ template <ll mdl> struct MLL {
     friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
     friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
     friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
-    MLL& operator+=(const MLL& rhs) { return *this = *this + rhs; }
-    MLL& operator-=(const MLL& rhs) { return *this = *this - rhs; }
-    MLL& operator*=(const MLL& rhs) { return *this = *this * rhs; }
-    MLL& operator/=(const MLL& rhs) { return *this = *this / rhs; }
-    MLL& operator%=(const MLL& rhs) { return *this = *this % rhs; }
+    void operator+=(const MLL& rhs) { return *this = *this + rhs; }
+    void operator-=(const MLL& rhs) { return *this = *this - rhs; }
+    void operator*=(const MLL& rhs) { return *this = *this * rhs; }
+    void operator/=(const MLL& rhs) { return *this = *this / rhs; }
+    void operator%=(const MLL& rhs) { return *this = *this % rhs; }
 };
 
 template <ll mdl>
@@ -499,7 +474,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -510,8 +485,139 @@ void dump_ignore() {}
 void prep() {
 }
 
+class quick_union {
+private:
+    vector<size_t> c, sz;
+public:
+    quick_union(size_t n) : c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
+    }
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] += sz[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_size(size_t i) {
+        return sz[query(i)];
+    }
+};
+
+struct LCA {
+    vector<int> depth;
+    vector<vector<int>> pa;
+    LCA(const vector<vector<int>>& g, int root = 1) {
+        int n = g.size() - 1;
+        int m = 32 - __builtin_clz(n);
+        depth.resize(n + 1);
+        pa.resize(n + 1, vector<int>(m, -1));
+        function<void(int, int)> dfs = [&](int x, int fa) {
+            pa[x][0] = fa;
+            for (int y: g[x]) {
+                if (y != fa) {
+                    depth[y] = depth[x] + 1;
+                    dfs(y, x);
+                }
+            }
+        };
+        dfs(root, 0);
+        for (int i = 0; i < m - 1; i++)
+            for (int x = 1; x <= n; x++)
+                if (int p = pa[x][i]; p != -1)
+                    pa[x][i + 1] = pa[p][i];
+    }
+    int get_kth_ancestor(int node, int k) {
+        for (; k; k &= k - 1)
+            node = pa[node][__builtin_ctz(k)];
+        return node;
+    }
+    int query(int x, int y) {
+        if (depth[x] > depth[y])
+            swap(x, y);
+        y = get_kth_ancestor(y, depth[y] - depth[x]);
+        if (y == x)
+            return x;
+        for (int i = pa[x].size() - 1; i >= 0; i--) {
+            int px = pa[x][i], py = pa[y][i];
+            if (px != py) {
+                x = px;
+                y = py;
+            }
+        }
+        return pa[x][0];
+    }
+};
+
 // __attribute__((target("popcnt")))
 void solve() {
+    read(int, n, m);
+    vector<tiii> edges;
+    vector<vector<pii>> e1(n + 1);
+    for (int i = 0; i < m; ++i) {
+        read(int, u, v, w);
+        edgew(e1, u, v, w);
+        edges.emplace_back(u, v, w);
+    }
+    sort_by_key(edges.begin(), edges.end(), expr(get<2>(t), auto&& t));
+    quick_union qu(n + 1);
+    unordered_set<int, safe_hash> red;
+    vector<vector<pii>> e(n + 1);
+    adj(ch, n);
+    for (auto&& [u, v, w] : edges) {
+        if (qu.connected(u, v)) {
+            red.emplace(u);
+            red.emplace(v);
+        } else {
+            qu.merge(u, v);
+            edgew(e, u, v, w);
+            edge(ch, u, v);
+        }
+    }
+    LCA lca(ch);
+    vector<ll> pf(n + 1);
+    {
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            for (auto&& [u, w] : e[v]) {
+                if (u == pa) continue;
+                pf[u] = pf[v] + w;
+                dfs(dfs, u, v);
+            }
+        };
+        dfs(dfs, 1, 0);
+    }
+    m = red.size();
+    vector dis(m, vector<ll>(n + 1, INFLL));
+    int i = 0;
+    for (auto&& b : red) {
+        dis[i][b] = 0;
+        min_heap<pli> q;
+        q.emplace(0, b);
+        while (q.size()) {
+            auto [d, v] = poptop(q);
+            for (auto&& [u, w] : e1[v]) {
+                if (chmin(dis[i][u], dis[i][v] + w)) {
+                    q.emplace(dis[i][u], u);
+                }
+            }
+        }
+        i += 1;
+    }
+    read(int, q);
+    while (q--) {
+        read(int, u, v);
+        ll res = pf[u] + pf[v] - 2 * pf[lca.query(u, v)];
+        for (int i = 0; i < m; ++i) {
+            chmin(res, dis[i][u] + dis[i][v]);
+        }
+        cout << res << '\n';
+    }
 }
 
 int main() {

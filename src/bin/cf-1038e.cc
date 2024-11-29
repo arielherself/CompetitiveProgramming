@@ -499,7 +499,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -512,6 +512,68 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
+    read(int, n);
+    vector bk(4, vector<vector<int>>(4));
+    for (int i = 0; i < n; ++i) {
+        read(int, u, w, v);
+        --u, --v;
+        if (u > v) swap(u, v);
+        bk[u][v].emplace_back(w);
+    }
+    vector<vector<pii>> e(4);
+    vector<int> w;
+    for (int i = 0; i < 4; ++i) {
+        w.emplace_back(accumulate(bk[i][i].begin(), bk[i][i].end(), 0));
+        Edgew(e, i, i, w.size() - 1);
+        for (int j = i + 1; j < 4; ++j) {
+            if (bk[i][j].empty()) continue;
+            int mx = *min_element(bk[i][j].begin(), bk[i][j].end());
+            int sum = accumulate(bk[i][j].begin(), bk[i][j].end(), 0);
+            int m = bk[i][j].size();
+            if (m % 2 == 0) {
+                w.emplace_back(sum - mx);
+                edgew(e, i, j, w.size() - 1);
+                w.emplace_back(mx);
+                edgew(e, i, j, w.size() - 1);
+            } else if (m == 1) {
+                w.emplace_back(sum);
+                edgew(e, i, j, w.size() - 1);
+            } else {
+                w.emplace_back(sum);
+                edgew(e, i, j, w.size() - 1);
+                w.emplace_back(-mx);
+                edgew(e, i, j, w.size() - 1);
+            }
+        }
+    }
+    int m = w.size();
+    vector<bool> vis(1 << m + 2);
+    auto dfs = [&] (auto dfs, int mask) -> void {
+        if (vis[mask]) return;
+        vis[mask] = true;
+        int v = mask & 3;
+        int visited = mask >> 2;
+        for (auto&& [u, i] : e[v]) {
+            if (visited >> i & 1) continue;
+            dfs(dfs, (visited | 1 << i) << 2 | u);
+        }
+    };
+    for (int i = 0; i < 4; ++i) {
+        dfs(dfs, i);
+    }
+    int res = 0;
+    for (int i = 0; i < (1 << m + 2); ++i) {
+        if (not vis[i]) continue;
+        int mask = i >> 2;
+        int curr = 0;
+        for (int j = 0; j < m; ++j) {
+            if (mask >> j & 1) {
+                curr += w[j];
+            }
+        }
+        chmax(res, curr);
+    }
+    cout << res << '\n';
 }
 
 int main() {

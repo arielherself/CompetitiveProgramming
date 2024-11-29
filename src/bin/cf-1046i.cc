@@ -12,8 +12,6 @@ using namespace std;
 constexpr void __() {}
 #define __AS_PROCEDURE(...) __(); __VA_ARGS__; __()
 #define __as_typeof(container) remove_reference<decltype(container)>::type
-template <typename T> struct argument_type;
-template <typename T, typename U> struct argument_type<T(U)> { using type = U; };
 
 /* type aliases */
 #if LONG_LONG_MAX != INT64_MAX
@@ -179,14 +177,6 @@ template<typename T, typename U> ostream& operator<<(ostream& out, const pair<T,
     out << "{" << p.first << ", " << p.second << "}";
     return out;
 }
-template<typename T, size_t N> istream& operator>>(istream& in, array<T, N>& a) {
-    for (size_t i = 0; i < N; ++i) in >> a[i];
-    return in;
-}
-template <typename T, size_t N> ostream& operator<<(ostream& out, const array<T, N>& a) {
-    for (auto&& i : a) out << i << ' ';
-    return out;
-}
 template<typename Char, typename Traits, typename Tuple, std::size_t... Index>
 void print_tuple_impl(std::basic_ostream<Char, Traits>& os, const Tuple& t, std::index_sequence<Index...>) {
     using swallow = int[]; // guaranties left to right order
@@ -227,9 +217,9 @@ std::ostream& operator<<(std::ostream& dest, const int128& value) {
 }
 template<typename T> void __read(T& x) { cin >> x; }
 template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __read(args...); }
-#define read(t, ...) __AS_PROCEDURE(argument_type<void(t)>::type __VA_ARGS__; __read(__VA_ARGS__);)
-#define readvec(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a(n); for (auto& x : a) cin >> x;)
-#define readvec1(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a((n) + 1); copy_n(ii<argument_type<void(t)>::type>(cin), (n), a.begin() + 1);)
+#define read(type, ...) __AS_PROCEDURE(type __VA_ARGS__; __read(__VA_ARGS__);)
+#define readvec(type, a, n) __AS_PROCEDURE(vector<type> a(n); for (auto& x : a) cin >> x;)
+#define readvec1(type, a, n) __AS_PROCEDURE(vector<type> a((n) + 1); copy_n(ii<type>(cin), (n), a.begin() + 1);)
 #define putvec(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
 #define putvec1(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
 #define putvec_eol(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
@@ -267,21 +257,6 @@ return_t qpow(ll b, ll p) {
     if (p % 2 == 1) return half * half * b;
     else return half * half;
 }
-
-// Accurately find `i` 'th root of `n` (taking the floor)
-inline ll root(ll n, ll i) {
-    ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (qpow<int128>(mid, i) <= n) {
-            l = mid;
-        } else {
-            r = mid - 1;
-        }
-    }
-    return l;
-}
-
 
 #define comb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] / fact[k] / fact[(n) - (k)])
 #define fastcomb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] * factrev[k] * factrev[(n) - (k)])
@@ -401,11 +376,11 @@ template <ll mdl> struct MLL {
     friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
     friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
     friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
-    MLL& operator+=(const MLL& rhs) { return *this = *this + rhs; }
-    MLL& operator-=(const MLL& rhs) { return *this = *this - rhs; }
-    MLL& operator*=(const MLL& rhs) { return *this = *this * rhs; }
-    MLL& operator/=(const MLL& rhs) { return *this = *this / rhs; }
-    MLL& operator%=(const MLL& rhs) { return *this = *this % rhs; }
+    void operator+=(const MLL& rhs) { return *this = *this + rhs; }
+    void operator-=(const MLL& rhs) { return *this = *this - rhs; }
+    void operator*=(const MLL& rhs) { return *this = *this * rhs; }
+    void operator/=(const MLL& rhs) { return *this = *this / rhs; }
+    void operator%=(const MLL& rhs) { return *this = *this % rhs; }
 };
 
 template <ll mdl>
@@ -499,7 +474,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -510,8 +485,137 @@ void dump_ignore() {}
 void prep() {
 }
 
+template <typename T> struct point {
+    T x, y;
+    point() : x(), y() {}
+    point(const pair<T, T>& a) : x(a.first), y(a.second) {}
+    point(const T& x, const T& y) : x(x), y(y) {}
+
+    inline T square() const { return x * x + y * y; }
+    inline ld norm() const { return sqrt(ld(square())); }
+
+    inline point operator+(const point& rhs) const { return point(x + rhs.x, y + rhs.y); }
+    inline point operator-(const point& rhs) const { return point(x - rhs.x, y - rhs.y); }
+    inline point operator+() const { return *this; }
+    inline point operator-() const { return point(-x, -y); }
+    inline point operator*(const T& a) const { return point(x * a, y * a); }
+    inline T operator*(const point& rhs) const { return x * rhs.y - y * rhs.x; }
+    inline point operator/(const T& a) const { return point(x / a, y / a); }
+    inline point& operator+=(const point& rhs) { x += rhs.x, y += rhs.y; return *this; }
+    inline point& operator-=(const point& rhs) { x -= rhs.x, y -= rhs.y; return *this; }
+    inline point& operator*=(const T& a) { x *= a, y *= a; return *this; }
+    inline point& operator/=(const T& a) { x /= a, y /= a; return *this; }
+
+    inline bool operator==(const point& rhs) const { return x == rhs.x and y == rhs.y; }
+    inline bool operator!=(const point& rhs) const { return not (*this == rhs); }
+    inline bool operator<(const point& rhs) const { return pair(x, y) < pair(rhs.x, rhs.y); }
+    inline bool operator<=(const point& rhs) const { return *this < rhs or *this == rhs; }
+    inline bool operator>(const point& rhs) const { return not (*this <= rhs); }
+    inline bool operator>=(const point& rhs) const { return not (*this < rhs); }
+
+    static inline ld slope(const point& a, const point& b) {
+        if (a.x == b.x) return INFLL;
+        return ld(a.y - b.y) / (a.x - b.x);
+    }
+
+    // distance from point `a` to line `l--r`
+    static inline ld dist(const point& a, const point& l, const point& r) {
+        return area(a, l, r) * 2 / (l - r).norm();
+    }
+
+    static inline ld area(const point& a, const point& b, const point& c) {
+        return (b - a) * (c - a) / ld(2);
+    }
+
+    friend inline istream& operator>>(istream& in, point& a) {
+        return in >> a.x >> a.y;
+    }
+
+    friend inline ostream& operator<<(ostream& out, const point& a) {
+        return out << a.x << ' ' << a.y;
+    }
+};
+
+template<typename T>
+struct fractional {
+    T p, q;
+    inline void reduce(void) {
+        if (q < 0) p = -p, q = -q;
+        if (p == 0) q = 1; else { T g = mygcd(abs(p), abs(q)); p /= g; q /= g; }
+    }
+    fractional(void) : p(0), q(1) {}
+    template <typename U>
+    fractional(const U& p) : p(p), q(1) { reduce(); }
+    fractional(const T& p, const T& q) : p(p), q(q) { reduce(); }
+    friend inline fractional operator+(const fractional& lhs) { return *lhs; }
+    friend inline fractional operator-(const fractional& lhs) { return { -lhs.p, lhs.q }; }
+    friend inline fractional operator+(const fractional& lhs, const fractional& rhs) { return { lhs.p * rhs.q + lhs.q * rhs.p, lhs.q * rhs.q }; }
+    friend inline fractional operator-(const fractional& lhs, const fractional& rhs) { return lhs + (-rhs); }
+    friend inline fractional operator*(const fractional& lhs, const fractional& rhs) { return { lhs.p * rhs.p, lhs.q * rhs.q }; }
+    friend inline fractional operator/(const fractional& lhs, const fractional& rhs) { return lhs * fractional(rhs.q, rhs.p); }
+    inline fractional& operator+=(const fractional& rhs) { return *this = *this + rhs; }
+    inline fractional& operator-=(const fractional& rhs) { return *this = *this - rhs; }
+    inline fractional& operator*=(const fractional& rhs) { return *this = *this * rhs; }
+    inline fractional& operator/=(const fractional& rhs) { return *this = *this / rhs; }
+    friend inline bool operator==(const fractional& lhs, const fractional& rhs) { return lhs.p == rhs.p and lhs.q == rhs.q; }
+    friend inline bool operator!=(const fractional& lhs, const fractional& rhs) { return not (lhs == rhs); }
+    friend inline bool operator<(const fractional& lhs, const fractional& rhs) { return (lhs - rhs).p < 0; }
+    friend inline bool operator>=(const fractional& lhs, const fractional& rhs) { return not (lhs < rhs); }
+    friend inline bool operator>(const fractional& lhs, const fractional& rhs) { return lhs >= rhs and lhs != rhs; }
+    friend inline bool operator<=(const fractional& lhs, const fractional& rhs) { return lhs < rhs or lhs == rhs; }
+    friend inline ostream& operator<<(ostream& out, const fractional& x) { return out << x.p << '/' << x.q; }
+};
+
 // __attribute__((target("popcnt")))
 void solve() {
+    using fractional = fractional<ll>;
+    using point = point<fractional>;
+
+    read(int, n);
+    read(int, l, r);
+    vector<pair<point, point>> a;
+    for (int i = 0; i < n; ++i) {
+        read(int, x1, y1, x2, y2);
+        a.emplace_back(point(x1, y1), point(x2, y2));
+    }
+    int flag = 1;
+    int res = 0;
+    pair<point, point> prev = a[0];
+    for (auto&& [p1, p2] : a) {
+        auto&& [p_1, p_2] = prev;
+        auto [A, C] = p_1 - p_2;
+        auto [B, D] = (p1 - p_1) - (p2 - p_2);
+        auto dis = [&] (fractional k) {
+            return (B * B + D * D) * k * k + 2 * (A * B + C * D) * k + A * A + C * C;
+        };
+        if (B * B + D * D == 0) {
+            fractional d = dis(0);
+            if (flag == 1 and d <= l * l) {
+                res += 1;
+                flag = 0;
+            }
+            if (d > r * r) {
+                flag = 1;
+            }
+        } else {
+            fractional k = clamp<fractional>(-(A * B + C * D) / (B * B + D * D), 0, 1);
+            fractional mind = dis(k);
+            fractional maxd = dis(0);
+            if (maxd > r * r) {
+                flag = 1;
+            }
+            if (flag == 1 and mind <= l * l) {
+                res += 1;
+                flag = 0;
+            }
+            maxd = dis(1);
+            if (maxd > r * r) {
+                flag = 1;
+            }
+        }
+        prev = { p1, p2 };
+    }
+    cout << res << '\n';
 }
 
 int main() {

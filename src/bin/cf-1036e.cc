@@ -268,21 +268,6 @@ return_t qpow(ll b, ll p) {
     else return half * half;
 }
 
-// Accurately find `i` 'th root of `n` (taking the floor)
-inline ll root(ll n, ll i) {
-    ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (qpow<int128>(mid, i) <= n) {
-            l = mid;
-        } else {
-            r = mid - 1;
-        }
-    }
-    return l;
-}
-
-
 #define comb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] / fact[k] / fact[(n) - (k)])
 #define fastcomb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] * factrev[k] * factrev[(n) - (k)])
 
@@ -401,11 +386,11 @@ template <ll mdl> struct MLL {
     friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
     friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
     friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
-    MLL& operator+=(const MLL& rhs) { return *this = *this + rhs; }
-    MLL& operator-=(const MLL& rhs) { return *this = *this - rhs; }
-    MLL& operator*=(const MLL& rhs) { return *this = *this * rhs; }
-    MLL& operator/=(const MLL& rhs) { return *this = *this / rhs; }
-    MLL& operator%=(const MLL& rhs) { return *this = *this % rhs; }
+    void operator+=(const MLL& rhs) { return *this = *this + rhs; }
+    void operator-=(const MLL& rhs) { return *this = *this - rhs; }
+    void operator*=(const MLL& rhs) { return *this = *this * rhs; }
+    void operator/=(const MLL& rhs) { return *this = *this / rhs; }
+    void operator%=(const MLL& rhs) { return *this = *this % rhs; }
 };
 
 template <ll mdl>
@@ -499,7 +484,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -512,6 +497,25 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
+    read(int, n);
+    readvec((array<ll, 4>), a, n);
+    ll res = 0;
+    for (int i = 0; i < n; ++i) {
+        auto&& [x1, y1, x2, y2] = a[i];
+        res += gcd(abs(x2 - x1), abs(y2 - y1)) + 1;
+        unordered_set<pll, pair_hash> oc;
+        for (int j = 0; j < i; ++j) {
+            auto&& [x3, y3, x4, y4] = a[j];
+            ll px = (x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4);
+            ll py = (x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4);
+            ll q = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+            if (q != 0 and px % q == 0 and py % q == 0 and px / q >= max(min(x1, x2), min(x3, x4)) and px / q <= min(max(x1, x2), max(x3, x4)) and py / q >= max(min(y1, y2), min(y3, y4)) and py / q <= min(max(y1, y2), max(y3, y4))) {
+                oc.emplace(px / q, py / q);
+            }
+        }
+        res -= oc.size();
+    }
+    cout << res << '\n';
 }
 
 int main() {

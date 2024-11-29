@@ -1,5 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#pragma GCC optimize("Ofast")
+#pragma GCC optimize("Ofast,no-stack-protector,unroll-loops,fast-math")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -12,8 +12,6 @@ using namespace std;
 constexpr void __() {}
 #define __AS_PROCEDURE(...) __(); __VA_ARGS__; __()
 #define __as_typeof(container) remove_reference<decltype(container)>::type
-template <typename T> struct argument_type;
-template <typename T, typename U> struct argument_type<T(U)> { using type = U; };
 
 /* type aliases */
 #if LONG_LONG_MAX != INT64_MAX
@@ -179,14 +177,6 @@ template<typename T, typename U> ostream& operator<<(ostream& out, const pair<T,
     out << "{" << p.first << ", " << p.second << "}";
     return out;
 }
-template<typename T, size_t N> istream& operator>>(istream& in, array<T, N>& a) {
-    for (size_t i = 0; i < N; ++i) in >> a[i];
-    return in;
-}
-template <typename T, size_t N> ostream& operator<<(ostream& out, const array<T, N>& a) {
-    for (auto&& i : a) out << i << ' ';
-    return out;
-}
 template<typename Char, typename Traits, typename Tuple, std::size_t... Index>
 void print_tuple_impl(std::basic_ostream<Char, Traits>& os, const Tuple& t, std::index_sequence<Index...>) {
     using swallow = int[]; // guaranties left to right order
@@ -227,9 +217,9 @@ std::ostream& operator<<(std::ostream& dest, const int128& value) {
 }
 template<typename T> void __read(T& x) { cin >> x; }
 template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __read(args...); }
-#define read(t, ...) __AS_PROCEDURE(argument_type<void(t)>::type __VA_ARGS__; __read(__VA_ARGS__);)
-#define readvec(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a(n); for (auto& x : a) cin >> x;)
-#define readvec1(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a((n) + 1); copy_n(ii<argument_type<void(t)>::type>(cin), (n), a.begin() + 1);)
+#define read(type, ...) __AS_PROCEDURE(type __VA_ARGS__; __read(__VA_ARGS__);)
+#define readvec(type, a, n) __AS_PROCEDURE(vector<type> a(n); for (auto& x : a) cin >> x;)
+#define readvec1(type, a, n) __AS_PROCEDURE(vector<type> a((n) + 1); copy_n(ii<type>(cin), (n), a.begin() + 1);)
 #define putvec(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
 #define putvec1(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
 #define putvec_eol(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
@@ -239,24 +229,9 @@ template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __
 #define deb(...) debug(make_tuple(__VA_ARGS__))
 
 /* pops */
-template <typename Container>
-inline auto poptop(Container& q) {
-    auto ret = q.top();
-    q.pop();
-    return ret;
-}
-template <typename Container>
-inline auto popback(Container& q) {
-    auto ret = q.back();
-    q.pop_back();
-    return ret;
-}
-template <typename Container>
-inline auto popfront(Container& q) {
-    auto ret = q.front();
-    q.pop_front();
-    return ret;
-}
+#define poptop(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.top(); q.pop();)
+#define popback(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.back(); q.pop_back();)
+#define popfront(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.front();q.pop_front();)
 
 /* math */
 template <typename return_t>
@@ -268,28 +243,10 @@ return_t qpow(ll b, ll p) {
     else return half * half;
 }
 
-// Accurately find `i` 'th root of `n` (taking the floor)
-inline ll root(ll n, ll i) {
-    ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (qpow<int128>(mid, i) <= n) {
-            l = mid;
-        } else {
-            r = mid - 1;
-        }
-    }
-    return l;
-}
-
-
 #define comb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] / fact[k] / fact[(n) - (k)])
 #define fastcomb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] * factrev[k] * factrev[(n) - (k)])
 
 constexpr inline int lg2(ll x) { return x == 0 ? -1 : sizeof(ll) * 8 - 1 - __builtin_clzll(x); }
-
-template <typename T>
-T mygcd(T a, T b) { return b == 0 ? a : mygcd(b, a % b); }
 
 void __exgcd(ll a, ll b, ll& x, ll& y) {
   if (b == 0) {
@@ -341,15 +298,15 @@ vector<pii> decompose_prime(int N) {
 
 /* string algorithms */
 vector<int> calc_next(string t) {  // pi function of t
-    int n = (int)t.length();
-    vector<int> pi(n);
-    for (int i = 1; i < n; i++) {
-        int j = pi[i - 1];
-        while (j > 0 && t[i] != t[j]) j = pi[j - 1];
-        if (t[i] == t[j]) j++;
-        pi[i] = j;
-    }
-    return pi;
+  int n = (int)t.length();
+  vector<int> pi(n);
+  for (int i = 1; i < n; i++) {
+    int j = pi[i - 1];
+    while (j > 0 && t[i] != t[j]) j = pi[j - 1];
+    if (t[i] == t[j]) j++;
+    pi[i] = j;
+  }
+  return pi;
 }
 vector<int> calc_z(string t) {  // z function of t
     int m = t.length();
@@ -369,14 +326,14 @@ vector<int> calc_z(string t) {  // z function of t
     return z;
 }
 vector<int> kmp(string s, string t) {  // find all t in s
-    string cur = t + '#' + s;
-    int sz1 = s.size(), sz2 = t.size();
-    vector<int> v;
-    vector<int> lps = calc_next(cur);
-    for (int i = sz2 + 1; i <= sz1 + sz2; i++) {
-        if (lps[i] == sz2) v.push_back(i - 2 * sz2);
-    }
-    return v;
+  string cur = t + '#' + s;
+  int sz1 = s.size(), sz2 = t.size();
+  vector<int> v;
+  vector<int> lps = calc_next(cur);
+  for (int i = sz2 + 1; i <= sz1 + sz2; i++) {
+    if (lps[i] == sz2) v.push_back(i - 2 * sz2);
+  }
+  return v;
 }
 int period(string s) {  // find the length of shortest recurring period
     int n = s.length();
@@ -401,11 +358,11 @@ template <ll mdl> struct MLL {
     friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
     friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
     friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
-    MLL& operator+=(const MLL& rhs) { return *this = *this + rhs; }
-    MLL& operator-=(const MLL& rhs) { return *this = *this - rhs; }
-    MLL& operator*=(const MLL& rhs) { return *this = *this * rhs; }
-    MLL& operator/=(const MLL& rhs) { return *this = *this / rhs; }
-    MLL& operator%=(const MLL& rhs) { return *this = *this % rhs; }
+    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
+    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
+    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
+    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
+    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
 };
 
 template <ll mdl>
@@ -499,7 +456,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -510,8 +467,92 @@ void dump_ignore() {}
 void prep() {
 }
 
+struct dinic {
+    struct edge {
+        int to;
+        ll cap;
+        ll flow;
+        int rev;
+        int mark;
+    };
+    vector<vector<edge>> edges;
+    vector<int> layer;
+    vector<bool> vis;
+    dinic(int n) : edges(n + 1), layer(n + 1), vis(n + 1) {}
+    void add_edge(int from, int to, ll cap, int mark = 0, int mark_rev = 0) {
+        edges[from].push_back({ to, cap, 0, int(edges[to].size()), mark });
+        edges[to].push_back({ from, 0, 0, int(edges[from].size() - 1), mark_rev });
+    }
+    bool bfs(int s, int t) {
+        layer.assign(edges.size(), 0);
+        deque<pii> dq;
+        layer[s] = 1;
+        dq.emplace_back(s, 1);
+        while (dq.size()) {
+            popfront(dq, v, l);
+            for (auto&& e : edges[v]) {
+                if (layer[e.to] == 0 and e.cap > e.flow) {
+                    layer[e.to] = l + 1;
+                    dq.emplace_back(e.to, l + 1);
+                }
+            }
+        }
+        return layer[t] != 0;
+    }
+    ll dfs(int s, int t, ll cap) {
+        if (vis[s]) {
+            return 0;
+        }
+        vis[s] = 1;
+        if (s == t) {
+            return cap;
+        }
+        ll res = 0;
+        int n = edges[s].size();
+        for (int i = 0; i < n; ++i) {
+            auto e = edges[s][i];
+            if (e.cap > e.flow and layer[e.to] == layer[s] + 1) {
+                ll nw = dfs(e.to, t, min(cap - res, e.cap - e.flow));
+                edges[s][i].flow += nw;
+                edges[e.to][e.rev].flow -= nw;
+                res += nw;
+                if (res == cap) {
+                    return res;
+                }
+            }
+        }
+        return res;
+    }
+    ll run(int s, int t) {
+        ll res = 0;
+        while (bfs(s, t)) {
+            vis.assign(edges.size(), 0);
+            res += dfs(s, t, LLONG_MAX);
+        }
+        return res;
+    }
+};
+
 // __attribute__((target("popcnt")))
 void solve() {
+    read(int, n, m);
+    dinic net(n + m + 3);
+    int s = n + m + 1, t = n + m + 2;
+    readvec1(int, a, n);
+    int ep = n;
+    ll tot = 0;
+    for (int i = 1; i <= m; ++i) {
+        read(int, u, v, w);
+        net.add_edge(ep + i, u, INFLL);
+        net.add_edge(ep + i, v, INFLL);
+        net.add_edge(s, ep + i, w);
+        tot += w;
+    }
+    for (int i = 1; i <= n; ++i) {
+        net.add_edge(i, t, a[i]);
+    }
+    auto flow = net.run(s, t);
+    cout << tot - flow << '\n';
 }
 
 int main() {

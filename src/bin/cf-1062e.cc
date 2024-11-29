@@ -1,5 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#pragma GCC optimize("Ofast")
+#pragma GCC optimize("Ofast,no-stack-protector,unroll-loops,fast-math")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -12,8 +12,6 @@ using namespace std;
 constexpr void __() {}
 #define __AS_PROCEDURE(...) __(); __VA_ARGS__; __()
 #define __as_typeof(container) remove_reference<decltype(container)>::type
-template <typename T> struct argument_type;
-template <typename T, typename U> struct argument_type<T(U)> { using type = U; };
 
 /* type aliases */
 #if LONG_LONG_MAX != INT64_MAX
@@ -179,14 +177,6 @@ template<typename T, typename U> ostream& operator<<(ostream& out, const pair<T,
     out << "{" << p.first << ", " << p.second << "}";
     return out;
 }
-template<typename T, size_t N> istream& operator>>(istream& in, array<T, N>& a) {
-    for (size_t i = 0; i < N; ++i) in >> a[i];
-    return in;
-}
-template <typename T, size_t N> ostream& operator<<(ostream& out, const array<T, N>& a) {
-    for (auto&& i : a) out << i << ' ';
-    return out;
-}
 template<typename Char, typename Traits, typename Tuple, std::size_t... Index>
 void print_tuple_impl(std::basic_ostream<Char, Traits>& os, const Tuple& t, std::index_sequence<Index...>) {
     using swallow = int[]; // guaranties left to right order
@@ -227,9 +217,9 @@ std::ostream& operator<<(std::ostream& dest, const int128& value) {
 }
 template<typename T> void __read(T& x) { cin >> x; }
 template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __read(args...); }
-#define read(t, ...) __AS_PROCEDURE(argument_type<void(t)>::type __VA_ARGS__; __read(__VA_ARGS__);)
-#define readvec(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a(n); for (auto& x : a) cin >> x;)
-#define readvec1(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a((n) + 1); copy_n(ii<argument_type<void(t)>::type>(cin), (n), a.begin() + 1);)
+#define read(type, ...) __AS_PROCEDURE(type __VA_ARGS__; __read(__VA_ARGS__);)
+#define readvec(type, a, n) __AS_PROCEDURE(vector<type> a(n); for (auto& x : a) cin >> x;)
+#define readvec1(type, a, n) __AS_PROCEDURE(vector<type> a((n) + 1); copy_n(ii<type>(cin), (n), a.begin() + 1);)
 #define putvec(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
 #define putvec1(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
 #define putvec_eol(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
@@ -239,24 +229,9 @@ template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __
 #define deb(...) debug(make_tuple(__VA_ARGS__))
 
 /* pops */
-template <typename Container>
-inline auto poptop(Container& q) {
-    auto ret = q.top();
-    q.pop();
-    return ret;
-}
-template <typename Container>
-inline auto popback(Container& q) {
-    auto ret = q.back();
-    q.pop_back();
-    return ret;
-}
-template <typename Container>
-inline auto popfront(Container& q) {
-    auto ret = q.front();
-    q.pop_front();
-    return ret;
-}
+#define poptop(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.top(); q.pop();)
+#define popback(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.back(); q.pop_back();)
+#define popfront(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.front();q.pop_front();)
 
 /* math */
 template <typename return_t>
@@ -268,28 +243,10 @@ return_t qpow(ll b, ll p) {
     else return half * half;
 }
 
-// Accurately find `i` 'th root of `n` (taking the floor)
-inline ll root(ll n, ll i) {
-    ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
-    while (l < r) {
-        ll mid = l + r + 1 >> 1;
-        if (qpow<int128>(mid, i) <= n) {
-            l = mid;
-        } else {
-            r = mid - 1;
-        }
-    }
-    return l;
-}
-
-
 #define comb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] / fact[k] / fact[(n) - (k)])
 #define fastcomb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] * factrev[k] * factrev[(n) - (k)])
 
 constexpr inline int lg2(ll x) { return x == 0 ? -1 : sizeof(ll) * 8 - 1 - __builtin_clzll(x); }
-
-template <typename T>
-T mygcd(T a, T b) { return b == 0 ? a : mygcd(b, a % b); }
 
 void __exgcd(ll a, ll b, ll& x, ll& y) {
   if (b == 0) {
@@ -341,15 +298,15 @@ vector<pii> decompose_prime(int N) {
 
 /* string algorithms */
 vector<int> calc_next(string t) {  // pi function of t
-    int n = (int)t.length();
-    vector<int> pi(n);
-    for (int i = 1; i < n; i++) {
-        int j = pi[i - 1];
-        while (j > 0 && t[i] != t[j]) j = pi[j - 1];
-        if (t[i] == t[j]) j++;
-        pi[i] = j;
-    }
-    return pi;
+  int n = (int)t.length();
+  vector<int> pi(n);
+  for (int i = 1; i < n; i++) {
+    int j = pi[i - 1];
+    while (j > 0 && t[i] != t[j]) j = pi[j - 1];
+    if (t[i] == t[j]) j++;
+    pi[i] = j;
+  }
+  return pi;
 }
 vector<int> calc_z(string t) {  // z function of t
     int m = t.length();
@@ -369,14 +326,14 @@ vector<int> calc_z(string t) {  // z function of t
     return z;
 }
 vector<int> kmp(string s, string t) {  // find all t in s
-    string cur = t + '#' + s;
-    int sz1 = s.size(), sz2 = t.size();
-    vector<int> v;
-    vector<int> lps = calc_next(cur);
-    for (int i = sz2 + 1; i <= sz1 + sz2; i++) {
-        if (lps[i] == sz2) v.push_back(i - 2 * sz2);
-    }
-    return v;
+  string cur = t + '#' + s;
+  int sz1 = s.size(), sz2 = t.size();
+  vector<int> v;
+  vector<int> lps = calc_next(cur);
+  for (int i = sz2 + 1; i <= sz1 + sz2; i++) {
+    if (lps[i] == sz2) v.push_back(i - 2 * sz2);
+  }
+  return v;
 }
 int period(string s) {  // find the length of shortest recurring period
     int n = s.length();
@@ -401,11 +358,11 @@ template <ll mdl> struct MLL {
     friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
     friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
     friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
-    MLL& operator+=(const MLL& rhs) { return *this = *this + rhs; }
-    MLL& operator-=(const MLL& rhs) { return *this = *this - rhs; }
-    MLL& operator*=(const MLL& rhs) { return *this = *this * rhs; }
-    MLL& operator/=(const MLL& rhs) { return *this = *this / rhs; }
-    MLL& operator%=(const MLL& rhs) { return *this = *this % rhs; }
+    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
+    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
+    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
+    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
+    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
 };
 
 template <ll mdl>
@@ -499,7 +456,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -510,8 +467,137 @@ void dump_ignore() {}
 void prep() {
 }
 
+struct LCA {
+    vector<int> depth;
+    vector<vector<int>> pa;
+    LCA(const vector<vector<int>>& g, int root = 1) {
+        int n = g.size() - 1;
+        int m = 32 - __builtin_clz(n);
+        depth.resize(n + 1);
+        pa.resize(n + 1, vector<int>(m, -1));
+        function<void(int, int)> dfs = [&](int x, int fa) {
+            pa[x][0] = fa;
+            for (int y: g[x]) {
+                if (y != fa) {
+                    depth[y] = depth[x] + 1;
+                    dfs(y, x);
+                }
+            }
+        };
+        dfs(root, 0);
+        for (int i = 0; i < m - 1; i++)
+            for (int x = 1; x <= n; x++)
+                if (int p = pa[x][i]; p != -1)
+                    pa[x][i + 1] = pa[p][i];
+    }
+    int get_kth_ancestor(int node, int k) {
+        for (; k; k &= k - 1)
+            node = pa[node][__builtin_ctz(k)];
+        return node;
+    }
+    int query(int x, int y) {
+        if (depth[x] > depth[y])
+            swap(x, y);
+        y = get_kth_ancestor(y, depth[y] - depth[x]);
+        if (y == x)
+            return x;
+        for (int i = pa[x].size() - 1; i >= 0; i--) {
+            int px = pa[x][i], py = pa[y][i];
+            if (px != py) {
+                x = px;
+                y = py;
+            }
+        }
+        return pa[x][0];
+    }
+};
+
+template<typename _Tp, typename _Op = function<_Tp(const _Tp&, const _Tp&)>> struct sparse_table {
+    _Op op;
+    vector<vector<_Tp>> st;
+    sparse_table() {}
+    template <typename ReverseIterator>
+    sparse_table(ReverseIterator __first, ReverseIterator __last, _Op&& __operation) {
+        op = __operation;
+        int n = distance(__first, __last);
+        st = vector<vector<_Tp>>(n, vector<_Tp>(int(log2(n) + 1)));
+        int i = n - 1;
+        for (auto it = __first; it != __last; ++it) {
+            st[i][0] = *it;
+            for (int j = 1; i + (1 << j) <= n; ++j) {
+                st[i][j] = op(st[i][j - 1], st[i + (1 << (j - 1))][j - 1]);
+            }
+            i -= 1;
+        }
+    }
+    _Tp query(size_t __start, size_t __end) {
+        int s = lg2(__end - __start + 1);
+        return op(st[__start][s], st[__end - (1 << s) + 1][s]);
+    }
+};
+
 // __attribute__((target("popcnt")))
 void solve() {
+    read(int, n, q);
+    adj(ch, n);
+    for (int i = 2; i <= n; ++i) {
+        read(int, j);
+        edge(ch, i, j);
+    }
+
+    vector<int> depth(n + 1, -1);
+    auto dfs = [&] (auto dfs, int v, int pa) -> void {
+        depth[v] = depth[pa] + 1;
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            dfs(dfs, u, v);
+        }
+    };
+    dfs(dfs, 1, 0);
+
+    LCA lca(ch);
+    vector<int> idx(n);
+    iota(idx.begin(), idx.end(), 1);
+    sparse_table<int> range_lca(idx.rbegin(), idx.rend(), expr(lca.query(u, v), auto&& u, auto&& v));
+
+    while (q--) {
+        read(int, l, r);
+        int x = range_lca.query(l - 1, r - 1);
+        int choice;
+        if (l + 1 == r) {
+            choice = lca.depth[l] > lca.depth[r] ? r : l;
+        } else {
+            int left = l, right = r;
+            while (right - left >= 2) {
+                int mid = left + right >> 1;
+                if (range_lca.query(left - 1, mid - 1) == x) {
+                    right = mid;
+                } else {
+                    left = mid + 1;
+                }
+            }
+            if (left != right) {
+                int other = right == r ? l : r;
+                if (lca.query(left, right) == x and lca.query(left, other) == x) {
+                    choice = left;
+                } else {
+                    choice = right;
+                }
+            } else {
+                choice = left;
+            }
+        }
+        int left = l <= choice - 1 ? range_lca.query(l - 1, choice - 1 - 1) : -1;
+        int right = choice + 1 <= r ? range_lca.query(choice + 1 - 1, r - 1) : -1;
+        if (left != -1 and right != -1) {
+            x = lca.query(left, right);
+        } else if (left != -1) {
+            x = left;
+        } else {
+            x = right;
+        }
+        cout << choice << ' ' << depth[x] << '\n';
+    }
 }
 
 int main() {

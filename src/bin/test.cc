@@ -1,5 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#pragma GCC optimize("Ofast,no-stack-protector,unroll-loops,fast-math")
+// #pragma GCC optimize("Ofast")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -177,6 +177,10 @@ template<typename T, typename U> ostream& operator<<(ostream& out, const pair<T,
     out << "{" << p.first << ", " << p.second << "}";
     return out;
 }
+template<typename T, size_t N> istream& operator>>(istream& in, array<T, N>& a) {
+    for (int i = 0; i < N; ++i) in >> a[i];
+    return in;
+}
 template<typename Char, typename Traits, typename Tuple, std::size_t... Index>
 void print_tuple_impl(std::basic_ostream<Char, Traits>& os, const Tuple& t, std::index_sequence<Index...>) {
     using swallow = int[]; // guaranties left to right order
@@ -229,9 +233,24 @@ template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __
 #define deb(...) debug(make_tuple(__VA_ARGS__))
 
 /* pops */
-#define poptop(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.top(); q.pop();)
-#define popback(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.back(); q.pop_back();)
-#define popfront(q, ...) __AS_PROCEDURE(auto [__VA_ARGS__] = q.front();q.pop_front();)
+template <typename Container>
+inline auto poptop(Container& q) {
+    auto ret = q.top();
+    q.pop();
+    return ret;
+}
+template <typename Container>
+inline auto popback(Container& q) {
+    auto ret = q.back();
+    q.pop_back();
+    return ret;
+}
+template <typename Container>
+inline auto popfront(Container& q) {
+    auto ret = q.front();
+    q.pop_front();
+    return ret;
+}
 
 /* math */
 template <typename return_t>
@@ -247,6 +266,9 @@ return_t qpow(ll b, ll p) {
 #define fastcomb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] * factrev[k] * factrev[(n) - (k)])
 
 constexpr inline int lg2(ll x) { return x == 0 ? -1 : sizeof(ll) * 8 - 1 - __builtin_clzll(x); }
+
+template <typename T>
+T mygcd(T a, T b) { return b == 0 ? a : mygcd(b, a % b); }
 
 void __exgcd(ll a, ll b, ll& x, ll& y) {
   if (b == 0) {
@@ -298,15 +320,15 @@ vector<pii> decompose_prime(int N) {
 
 /* string algorithms */
 vector<int> calc_next(string t) {  // pi function of t
-  int n = (int)t.length();
-  vector<int> pi(n);
-  for (int i = 1; i < n; i++) {
-    int j = pi[i - 1];
-    while (j > 0 && t[i] != t[j]) j = pi[j - 1];
-    if (t[i] == t[j]) j++;
-    pi[i] = j;
-  }
-  return pi;
+    int n = (int)t.length();
+    vector<int> pi(n);
+    for (int i = 1; i < n; i++) {
+        int j = pi[i - 1];
+        while (j > 0 && t[i] != t[j]) j = pi[j - 1];
+        if (t[i] == t[j]) j++;
+        pi[i] = j;
+    }
+    return pi;
 }
 vector<int> calc_z(string t) {  // z function of t
     int m = t.length();
@@ -326,14 +348,14 @@ vector<int> calc_z(string t) {  // z function of t
     return z;
 }
 vector<int> kmp(string s, string t) {  // find all t in s
-  string cur = t + '#' + s;
-  int sz1 = s.size(), sz2 = t.size();
-  vector<int> v;
-  vector<int> lps = calc_next(cur);
-  for (int i = sz2 + 1; i <= sz1 + sz2; i++) {
-    if (lps[i] == sz2) v.push_back(i - 2 * sz2);
-  }
-  return v;
+    string cur = t + '#' + s;
+    int sz1 = s.size(), sz2 = t.size();
+    vector<int> v;
+    vector<int> lps = calc_next(cur);
+    for (int i = sz2 + 1; i <= sz1 + sz2; i++) {
+        if (lps[i] == sz2) v.push_back(i - 2 * sz2);
+    }
+    return v;
 }
 int period(string s) {  // find the length of shortest recurring period
     int n = s.length();
@@ -358,11 +380,11 @@ template <ll mdl> struct MLL {
     friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
     friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
     friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
-    void operator+=(const MLL& rhs) { val = (*this + rhs).val; }
-    void operator-=(const MLL& rhs) { val = (*this - rhs).val; }
-    void operator*=(const MLL& rhs) { val = (*this * rhs).val; }
-    void operator/=(const MLL& rhs) { val = (*this / rhs).val; }
-    void operator%=(const MLL& rhs) { val = (*this % rhs).val; }
+    void operator+=(const MLL& rhs) { return *this = *this + rhs; }
+    void operator-=(const MLL& rhs) { return *this = *this - rhs; }
+    void operator*=(const MLL& rhs) { return *this = *this * rhs; }
+    void operator/=(const MLL& rhs) { return *this = *this / rhs; }
+    void operator%=(const MLL& rhs) { return *this = *this % rhs; }
 };
 
 template <ll mdl>
@@ -467,29 +489,81 @@ void dump_ignore() {}
 void prep() {
 }
 
-__attribute__((target("lzcnt")))
+// WARN: Input could contain multiple edges, but not self loops
+//
+// Returns: (BCC count, indices of BCCs of each vertex)
+//
+// BCC index starts from 1
+pair<int, vector<vector<int>>> vbcc(const vector<vector<int>>& ch) {
+    int n = ch.size() - 1;
+    vector<vector<int>> c(n + 1);  // a vertex could be contained in multiple vBCCs
+
+    int tm = 0;
+    int cnt = 0;
+
+    vector<int> low(n + 1), dfn(n + 1);
+    vector<int> stack;
+    auto dfs = [&] (auto dfs, int v, int pa) -> void {
+        int son = 0;
+        low[v] = dfn[v] = ++tm;
+        stack.emplace_back(v);
+        for (auto&& u : ch[v]) {
+            if (u == pa) continue;
+            son += 1;
+            if (not dfn[u]) {
+                dfs(dfs, u, v);
+                chmin(low[v], low[u]);
+                if (low[u] >= dfn[v]) {
+                    cnt += 1;
+                    int z;
+                    do {
+                        z = popback(stack);
+                        c[z].emplace_back(cnt);
+                    } while (z != u);
+                    c[v].emplace_back(cnt);
+                }
+            }
+            chmin(low[v], dfn[u]);
+        }
+        if (pa == 0 and son == 0) {
+            cnt += 1;
+            c[v].emplace_back(cnt);
+        }
+    };
+    for (int i = 1; i <= n; ++i) {
+        if (not dfn[i]) {
+            dfs(dfs, i, 0);
+        }
+    }
+    return { cnt, c };
+}
+
+// __attribute__((target("popcnt")))
 void solve() {
-    read(int, n, s);
-    readvec(int, a, n);
-    int left = n / 2;
-    vector<ll> dp(1 << left);
-    unordered_map<ll, ll, safe_hash> cnt;
-    faster(cnt);
-    cnt[0] = 1;
-    for (int i = 1; i < (1 << left); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[lz];
-        cnt[dp[i]] += 1;
+    read(int, n, m);
+    adj(ch, n);
+    while (m--) {
+        read(int, u, v);
+        if (u == v) continue;
+        edge(ch, u, v);
     }
-    int right = n - left;
-    dp.assign(1 << right, 0);
-    ll res = cnt.count(s) ? cnt[s] : 0;
-    for (int i = 1; i < (1 << right); ++i) {
-        int lz = lsp(i);
-        dp[i] = dp[i ^ (1 << lz)] + a[left + lz];
-        res += cnt.count(s - dp[i]) ? cnt[s - dp[i]] : 0;
+    auto [cnt, c] = vbcc(ch);
+    cout << cnt << '\n';
+    vector<vector<int>> bk(cnt);
+    // debug(cnt);
+    for (int i = 1; i <= n; ++i) {
+        // deb(i, c[i]);
+        for (auto&& j : c[i]) {
+            bk[j - 1].emplace_back(i);
+        }
     }
-    cout << res << '\n';
+    for (auto&& v : bk) {
+        cout << v.size() << ' ';
+        for (auto&& u : v) {
+            cout << u << ' ';
+        }
+        cout << '\n';
+    }
 }
 
 int main() {
