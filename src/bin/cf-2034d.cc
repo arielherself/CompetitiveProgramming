@@ -511,169 +511,64 @@ void dump_ignore() {}
 void prep() {
 }
 
-template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
-private:
-    using size_type = uint64_t;
-    using info_type = Addable_Info_t;
-    using tag_type = Tag_t;
-    size_type _max;
-    vector<info_type> d;
-    vector<tag_type> b;
-    void pull(size_type p) {
-        d[p] = d[p * 2] + d[p * 2 + 1];
-    }
-    void push(size_type p, size_type left_len, size_type right_len) {
-        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
-        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
-        b[p] = tag_type();
-    }
-    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
-        if (s == t) {
-            d[p] = c;
-            return;
-        }
-        size_type m = s + (t - s >> 1);
-        if (s != t) push(p, m - s + 1, t - m);
-        if (x <= m) set(s, m, p * 2, x, c);
-        else set(m + 1, t, p * 2 + 1, x, c);
-        pull(p);
-    }
-    
-    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
-        if (l <= s && t <= r) {
-            d[p].apply(c, t - s + 1);
-            b[p].apply(c);
-            return;
-        }
-        size_type m = s + (t - s >> 1);
-        push(p, m - s + 1, t - m);
-        if (l <= m) range_apply(s, m, p * 2, l, r, c);
-        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
-        pull(p);
-    }
-    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
-        if (l <= s && t <= r) {
-            return d[p];
-        }
-        size_type m = s + (t - s >> 1);
-        info_type res = {};
-        push(p, m - s + 1, t - m);
-        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
-        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
-        return res;
-    }
-    void build(const Sequence& a, size_type s, size_type t, size_type p) {
-        if (s == t) {
-            d[p] = a[s];
-            return;
-        }
-        int m = s + (t - s >> 1);
-        build(a, s, m, p * 2);
-        build(a, m + 1, t, p * 2 + 1);
-        pull(p);
-    }
-public:
-    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
-    segtree(const Sequence& a) : segtree(a.size()) {
-        build(a, {}, _max, 1);
-    }
-    void set(size_type i, const info_type& c) {
-        set({}, _max, 1, i, c);
-    }
-    
-    void range_apply(size_type l, size_type r, const tag_type& c) {
-        range_apply({}, _max, 1, l, r, c);
-    }
-    void apply(size_type i, const tag_type& c) {
-        range_apply(i, i, c);
-    }
-    info_type range_query(size_type l, size_type r) {
-        return range_query({}, _max, 1, l, r);
-    }
-    info_type query(size_type i) {
-        return range_query(i, i);
-    }
-    Sequence serialize() {
-        Sequence res = {};
-        for (size_type i = 0; i <= _max; ++i) {
-            res.push_back(query(i));
-        }
-        return res;
-    }
-    const vector<info_type>& get_d() {
-        return d;
-    }
-};
-struct Tag {
-    void apply(const Tag& rhs) { }
-};
-struct Info {
-    int val = -INF;
-    void apply(const Tag& rhs, size_t len) { }
-};
-Info operator+(const Info &a, const Info &b) {
-    return {max(a.val, b.val)};
-}
-struct MinInfo {
-    int val = INF;
-    void apply(const Tag& rhs, size_t len) { }
-};
-MinInfo operator+(const MinInfo &a, const MinInfo &b) {
-    return {min(a.val, b.val)};
-}
-
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
-    vector<tiii> a;
-    vector<int> oc;
-    for (int i = 0; i < n; ++i) {
-        read(int, l, r);
-        a.emplace_back(l, r, i);
-        oc.emplace_back(l);
-        oc.emplace_back(r);
+    readvec(int, a, n);
+    int one = find(a.begin(), a.end(), 1) - a.begin();
+    int l = 0, r = n - 1;
+    vector<pii> seq;
+    while (l < r) {
+        while (l < n and a[l] == 1) l += 1;
+        while (r > 0 and a[r] == 1) r -= 1;
+        if (l < r and a[l] == 2 and a[r] == 0) {
+            if (one > r) {
+                seq.emplace_back(one, l);
+                swap(a[one], a[l]);
+                one = l;
+            } else if (one < l) {
+                seq.emplace_back(one, r);
+                swap(a[one], a[r]);
+                one = r;
+            } else {
+                seq.emplace_back(one, r);
+                swap(a[one], a[r]);
+                one = r;
+                seq.emplace_back(one, l);
+                swap(a[one], a[l]);
+                one = l;
+            }
+        }
+        if (a[l] != 2) l += 1;
+        if (a[r] != 0) r -= 1;
     }
-    sort(oc.begin(), oc.end());
-    int m = unique(oc.begin(), oc.end()) - oc.begin();
-    oc.resize(m);
-    auto rev = [&] (int x) {
-        return lower_bound(oc.begin(), oc.end(), x) - oc.begin();
-    };
-    sort_by_key(a.begin(), a.end(), expr(pair(get<0>(p), -get<1>(p)), auto&& p));
-    segtree<Info, Tag> left(m);
-    vector<int> ll(n);
+    int cnt[3] = {};
     for (int i = 0; i < n; ++i) {
-        auto [l, r, idx] = a[i];
-        // deb(l, r, idx);
-        // deb(rev(l), rev(r));
-        l = rev(l), r = rev(r);
-        ll[idx] = left.range_query(r, m - 1).val;
-        left.set(r, {max(l, left.query(r).val)});
-        if (i and get<0>(a[i]) == get<0>(a[i - 1]) and get<1>(a[i]) == get<1>(a[i - 1])) {
-            ll[get<2>(a[i - 1])] = l;
+        cnt[a[i]] += 1;
+    }
+    int ptr = cnt[0];
+    for (int i = 0; i < cnt[0]; ++i) {
+        if (a[i] != 0) {
+            assert(a[i] == 1);
+            while (a[ptr] != 0) ptr += 1;
+            seq.emplace_back(i, ptr);
+            swap(a[i], a[ptr]);
+            ptr += 1;
         }
     }
-    sort_by_key(a.begin(), a.end(), expr(pair(-get<1>(p), get<0>(p)), auto&& p));
-    segtree<MinInfo, Tag> right(m);
-    vector<int> rr(n);
-    for (int i = 0; i < n; ++i) {
-        auto [l, r, idx] = a[i];
-        l = rev(l), r = rev(r);
-        rr[idx] = right.range_query(0, l).val;
-        right.set(l, {min(r, right.query(l).val)});
-        if (i and get<0>(a[i]) == get<0>(a[i - 1]) and get<1>(a[i]) == get<1>(a[i - 1])) {
-            rr[get<2>(a[i - 1])] = r;
+    ptr = n - cnt[2] - 1;
+    for (int i = n - 1; i >= n - cnt[2]; --i) {
+        if (a[i] != 2) {
+            assert(a[i] == 1);
+            while (a[ptr] != 2) ptr -= 1;
+            seq.emplace_back(i, ptr);
+            swap(a[i], a[ptr]);
+            ptr -= 1;
         }
     }
-    sort_by_key(a.begin(), a.end(), expr(get<2>(p), auto&& p));
-    for (int i = 0; i < n; ++i) {
-        if (ll[i] == -INF) {
-            cout << 0 << '\n';
-        } else {
-            // deb(ll[i], rr[i]);
-            // debug(a[i]);
-            cout << oc[rr[i]] - oc[ll[i]] - (get<1>(a[i]) - get<0>(a[i])) << '\n';
-        }
+    cout << seq.size() << '\n';
+    for (auto&& [x, y] : seq) {
+        cout << x + 1 << ' ' << y + 1 << '\n';
     }
 }
 

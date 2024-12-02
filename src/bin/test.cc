@@ -1,5 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-// #pragma GCC optimize("Ofast")
+#pragma GCC optimize("Ofast")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -12,6 +12,8 @@ using namespace std;
 constexpr void __() {}
 #define __AS_PROCEDURE(...) __(); __VA_ARGS__; __()
 #define __as_typeof(container) remove_reference<decltype(container)>::type
+template <typename T> struct argument_type;
+template <typename T, typename U> struct argument_type<T(U)> { using type = U; };
 
 /* type aliases */
 #if LONG_LONG_MAX != INT64_MAX
@@ -178,8 +180,12 @@ template<typename T, typename U> ostream& operator<<(ostream& out, const pair<T,
     return out;
 }
 template<typename T, size_t N> istream& operator>>(istream& in, array<T, N>& a) {
-    for (int i = 0; i < N; ++i) in >> a[i];
+    for (size_t i = 0; i < N; ++i) in >> a[i];
     return in;
+}
+template <typename T, size_t N> ostream& operator<<(ostream& out, const array<T, N>& a) {
+    for (auto&& i : a) out << i << ' ';
+    return out;
 }
 template<typename Char, typename Traits, typename Tuple, std::size_t... Index>
 void print_tuple_impl(std::basic_ostream<Char, Traits>& os, const Tuple& t, std::index_sequence<Index...>) {
@@ -221,9 +227,9 @@ std::ostream& operator<<(std::ostream& dest, const int128& value) {
 }
 template<typename T> void __read(T& x) { cin >> x; }
 template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __read(args...); }
-#define read(type, ...) __AS_PROCEDURE(type __VA_ARGS__; __read(__VA_ARGS__);)
-#define readvec(type, a, n) __AS_PROCEDURE(vector<type> a(n); for (auto& x : a) cin >> x;)
-#define readvec1(type, a, n) __AS_PROCEDURE(vector<type> a((n) + 1); copy_n(ii<type>(cin), (n), a.begin() + 1);)
+#define read(t, ...) __AS_PROCEDURE(argument_type<void(t)>::type __VA_ARGS__; __read(__VA_ARGS__);)
+#define readvec(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a(n); for (auto& x : a) cin >> x;)
+#define readvec1(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a((n) + 1); copy_n(ii<argument_type<void(t)>::type>(cin), (n), a.begin() + 1);)
 #define putvec(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
 #define putvec1(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
 #define putvec_eol(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
@@ -261,6 +267,21 @@ return_t qpow(ll b, ll p) {
     if (p % 2 == 1) return half * half * b;
     else return half * half;
 }
+
+// Accurately find `i` 'th root of `n` (taking the floor)
+inline ll root(ll n, ll i) {
+    ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
+    while (l < r) {
+        ll mid = l + r + 1 >> 1;
+        if (qpow<int128>(mid, i) <= n) {
+            l = mid;
+        } else {
+            r = mid - 1;
+        }
+    }
+    return l;
+}
+
 
 #define comb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] / fact[k] / fact[(n) - (k)])
 #define fastcomb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] * factrev[k] * factrev[(n) - (k)])
@@ -380,11 +401,11 @@ template <ll mdl> struct MLL {
     friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
     friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
     friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
-    void operator+=(const MLL& rhs) { return *this = *this + rhs; }
-    void operator-=(const MLL& rhs) { return *this = *this - rhs; }
-    void operator*=(const MLL& rhs) { return *this = *this * rhs; }
-    void operator/=(const MLL& rhs) { return *this = *this / rhs; }
-    void operator%=(const MLL& rhs) { return *this = *this % rhs; }
+    MLL& operator+=(const MLL& rhs) { return *this = *this + rhs; }
+    MLL& operator-=(const MLL& rhs) { return *this = *this - rhs; }
+    MLL& operator*=(const MLL& rhs) { return *this = *this * rhs; }
+    MLL& operator/=(const MLL& rhs) { return *this = *this / rhs; }
+    MLL& operator%=(const MLL& rhs) { return *this = *this % rhs; }
 };
 
 template <ll mdl>
@@ -489,81 +510,25 @@ void dump_ignore() {}
 void prep() {
 }
 
-// WARN: Input could contain multiple edges, but not self loops
-//
-// Returns: (BCC count, indices of BCCs of each vertex)
-//
-// BCC index starts from 1
-pair<int, vector<vector<int>>> vbcc(const vector<vector<int>>& ch) {
-    int n = ch.size() - 1;
-    vector<vector<int>> c(n + 1);  // a vertex could be contained in multiple vBCCs
-
-    int tm = 0;
-    int cnt = 0;
-
-    vector<int> low(n + 1), dfn(n + 1);
-    vector<int> stack;
-    auto dfs = [&] (auto dfs, int v, int pa) -> void {
-        int son = 0;
-        low[v] = dfn[v] = ++tm;
-        stack.emplace_back(v);
-        for (auto&& u : ch[v]) {
-            if (u == pa) continue;
-            son += 1;
-            if (not dfn[u]) {
-                dfs(dfs, u, v);
-                chmin(low[v], low[u]);
-                if (low[u] >= dfn[v]) {
-                    cnt += 1;
-                    int z;
-                    do {
-                        z = popback(stack);
-                        c[z].emplace_back(cnt);
-                    } while (z != u);
-                    c[v].emplace_back(cnt);
-                }
-            }
-            chmin(low[v], dfn[u]);
-        }
-        if (pa == 0 and son == 0) {
-            cnt += 1;
-            c[v].emplace_back(cnt);
-        }
-    };
-    for (int i = 1; i <= n; ++i) {
-        if (not dfn[i]) {
-            dfs(dfs, i, 0);
-        }
-    }
-    return { cnt, c };
-}
-
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n, m);
-    adj(ch, n);
-    while (m--) {
-        read(int, u, v);
-        if (u == v) continue;
-        edge(ch, u, v);
+    read(int, n);
+    readvec(int, a, n);
+    vector<int> rev(n + 1);
+    for (int i = 0; i < n; ++i) {
+        rev[a[i]] = i;
     }
-    auto [cnt, c] = vbcc(ch);
-    cout << cnt << '\n';
-    vector<vector<int>> bk(cnt);
-    // debug(cnt);
+    int res = 0;
     for (int i = 1; i <= n; ++i) {
-        // deb(i, c[i]);
-        for (auto&& j : c[i]) {
-            bk[j - 1].emplace_back(i);
+        for (int j = i + 1; ll(i) * j <= n; ++j) {
+            for (int k = j + 1; ll(k) * i * j <= n; ++k) {
+                if (rev[i * j * k] > rev[k] and rev[k] > rev[j] and rev[j] > rev[i]) {
+                    res += 1;
+                }
+            }
         }
     }
-    for (auto&& v : bk) {
-        cout << v.size() << ' ';
-        for (auto&& u : v) {
-            cout << u << ' ';
-        }
-        cout << '\n';
-    }
+    cout << res << '\n';
 }
 
 int main() {

@@ -499,7 +499,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -512,6 +512,57 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
+    using mll = MLL<MDL>;
+
+    read(int, n, k);
+    readvec(int, a, n);
+
+    multiset<int> oc;
+    vector<int> range_max(n - k + 2);
+    for (int i = n - 1; ~i; --i) {
+        oc.emplace(a[i]);
+        if (n - i >= k - 1) {
+            range_max[i] = *oc.rbegin();
+            oc.erase(oc.find(a[i + k - 2]));
+        }
+    }
+
+    mll res = 0;
+
+    vector<vector<tiil>> stack(k - 1);  // { position, value, suffix }
+    for (int i = n - 1; ~i; --i) {
+        if (i < n - k + 1) {
+            int type = (i + 1) % (k - 1);
+            {
+                int l = -1, r = stack[type].size() - 1;
+                while (l < r) {
+                    int mid = l + r + 1 >> 1;
+                    if (mid == -1 or get<1>(stack[type][mid]) > a[i]) {
+                        l = mid;
+                    } else {
+                        r = mid - 1;
+                    }
+                }
+                if (l != -1) {
+                    res += ll(1) * a[i] * ((get<0>(stack[type][l]) - i - 1) / (k - 1));
+                    res += get<2>(stack[type][l]);
+                } else {
+                    res += ll(1) * a[i] * ((n - i - 1) / (k - 1));
+                }
+            }
+        }
+        if (n - i >= k - 1) {
+            int val = range_max[i];
+            int type = i % (k - 1);
+            while (stack[type].size() and get<1>(stack[type].back()) <= range_max[i]) {
+                stack[type].pop_back();
+            }
+            int end = stack[type].size() ? get<0>(stack[type].back()) : n - ((n - k + 1 - i) % (k - 1));
+            stack[type].emplace_back(i, val, ll(1) * val * ((end - i) / (k - 1)) + (stack[type].empty() ? 0 : get<2>(stack[type].back())));
+        }
+    }
+
+    cout << res << '\n';
 }
 
 int main() {
