@@ -279,16 +279,6 @@ return_t qpow(ll b, ll p) {
     else return half * half;
 }
 
-// dynamic modulus
-ll qpow(ll b, ll p, ll mod) {
-    if (b == 0 and p != 0) return 0;
-    if (p == 0) return 1;
-    ll half = qpow(b, p / 2, mod);
-    if (p % 2 == 1) return (int128(half) * half % mod) * b % mod;
-    else return half * half % mod;
-}
-
-
 // Accurately find `i` 'th root of `n` (taking the floor)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wparentheses"
@@ -524,7 +514,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -535,45 +525,90 @@ void dump_ignore() {}
 void prep() {
 }
 
+class quick_union {
+private:
+    vector<size_t> c, sz;
+public:
+    quick_union(size_t n) : c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
+    }
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] += sz[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_size(size_t i) {
+        return sz[query(i)];
+    }
+};
+
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(int, m, n);
+    readvec(int, a, n);
+    if (m == 0) {
+        assert(n == 1);
+        cout << 1 << '\n';
+        return;
     }
-    vector<int> f(n + 1);
+    quick_union qu(1 << m);
+    vector<bool> vis(m * (1 << m));
     {
-        auto dfs = [&] (auto dfs, int v, int pa) -> void {
-            for (auto&& u : ch[v]) {
-                if (u == pa) continue;
-                dfs(dfs, u, v);
-                f[v] += 1;
+        auto dfs = [&] (auto dfs, int mask, int layer) -> void {
+            if (vis[layer << m bitor mask]) return;
+            vis[layer << m bitor mask] = 1;
+            if (layer == 0) {
+                return;
             }
-            f[v] -= 1;
+            dfs(dfs, mask, layer - 1);
+            if (mask >> layer bitand 1) {
+                dfs(dfs, mask xor 1 << layer, layer - 1);
+            }
         };
-        dfs(dfs, 1, 0);
+        for (auto&& x : a) {
+            dfs(dfs, ((1 << m) - 1) xor x, m - 1);
+        }
+    }
+    vector<int> f(1 << m, -1);
+    for (auto&& x : a) {
+        f[x] = x;
+    }
+    for (int i = 0; i < m; ++i) {
+        for (int j = 0; j < (1 << m); ++j) {
+            if (not vis[i << m | j]) continue;
+            if (j >> i & 1) {
+                if (f[j] not_eq -1 and f[j xor 1 << i] not_eq -1) {
+                    // deb(f[j], f[j xor 1 << i]);
+                    qu.merge(f[j], f[j xor 1 << i]);
+                }
+                if (f[j] == -1 and f[j xor 1 << i] not_eq -1) {
+                    f[j] = f[j xor 1 << i];
+                }
+            }
+        }
+    }
+    for (auto&& x : a) {
+        if (f[((1 << m) - 1) xor x] not_eq -1) {
+            // deb(x, f[((1 << m) - 1) xor x]);
+            qu.merge(x, f[((1 << m) - 1) xor x]);
+        }
     }
     int res = 0;
     {
-        auto dfs = [&] (auto dfs, int v, int pa, int up) -> int {
-            int curr = up + f[v];
-            int mx = curr;
-            multiset<int> sub;
-            for (auto&& u : ch[v]) {
-                if (u == pa) continue;
-                sub.emplace(dfs(dfs, u, v, curr));
-            }
-            if (sub.size()) chmax(mx, *sub.rbegin());
-            chmax(res, mx - up + 1 + (v != 1));
-            if (sub.size() >= 2) {
-                int l = *sub.rbegin(), r = *next(sub.rbegin());
-                chmax(res, (l - curr + 1) + (r - curr + 1) + (f[v] - 1) + (v != 1));
-            }
-            return mx;
-        };
-        dfs(dfs, 1, 0, 0);
+        vector<bool> vis(1 << m);
+        for (auto&& x : a) {
+            continue_or(vis[qu.query(x)], 1);
+            res += 1;
+            // debug(x);
+        }
     }
     cout << res << '\n';
 }

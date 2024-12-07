@@ -524,7 +524,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -535,47 +535,100 @@ void dump_ignore() {}
 void prep() {
 }
 
+inline array<int, 4> parse(int mask) {
+    array<int, 4> ret = {};
+    for (int i = 0; i < 4; ++i) {
+        ret[i] = mask % 10;
+        mask /= 10;
+    }
+    return ret;
+}
+
+inline int unparse(const array<int, 4>& p) {
+    int res = 0;
+    for (int i = 0; i < 4; ++i) {
+        res = res * 10 + p[i];
+    }
+    return res;
+}
+
 // __attribute__((target("popcnt")))
 void solve() {
+    constexpr int N = 10000;
     read(int, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    readvec((array<int, 2>), a, n);
+
+    vector<bool> valid(N, 1);
+    for (int i = 0; i < N; ++i) {
+        auto p = parse(i);
+        for (int j = 0; j < 3; ++j) {
+            if (p[j] < p[j + 1]) {
+                valid[i] = 0;
+                break;
+            }
+        }
     }
-    vector<int> f(n + 1);
-    {
-        auto dfs = [&] (auto dfs, int v, int pa) -> void {
-            for (auto&& u : ch[v]) {
-                if (u == pa) continue;
-                dfs(dfs, u, v);
-                f[v] += 1;
-            }
-            f[v] -= 1;
-        };
-        dfs(dfs, 1, 0);
+
+    vector insert(N, vector<int>(10, INF));
+    for (int i = 0; i < N; ++i) {
+        if (valid[i] == 0) continue;
+        auto p = parse(i);
+        sort(p.begin(), p.end());
+        if (p[0] != 0) continue;
+        for (int j = 1; j < 10; ++j) {
+            array<int, 4> q = p;
+            q[0] = j;
+            sort(q.begin(), q.end());
+            insert[i][j] = unparse(q);
+        }
     }
-    int res = 0;
-    {
-        auto dfs = [&] (auto dfs, int v, int pa, int up) -> int {
-            int curr = up + f[v];
-            int mx = curr;
-            multiset<int> sub;
-            for (auto&& u : ch[v]) {
-                if (u == pa) continue;
-                sub.emplace(dfs(dfs, u, v, curr));
+
+    vector remove(N, vector<int>(10, INF));
+    for (int i = 0; i < N; ++i) {
+        if (valid[i] == 0) continue;
+        auto p = parse(i);
+        sort(p.begin(), p.end());
+        for (int j = 0; j < 4; ++j) {
+            int x = p[j];
+            array<int, 4> q = p;
+            q[j] = 0;
+            sort(q.begin(), q.end());
+            remove[i][x] = unparse(q);
+        }
+    }
+    // debug(parse(1899));
+    // debug(valid[1899]);
+    // debug(valid[1988]);
+    // debug(remove[9][9]);
+    // debug(insert[189][2]);
+
+    ll res = INFLL;
+    vector dp(N, vector<ll>(10, INFLL));
+    dp[0][1] = 0;
+    for (int i = 0; i <= n; ++i) {
+        vector ndp(N, vector<ll>(10, INFLL));
+        for (int j = N - 1; ~j; --j) {
+            if (valid[j] == 0) continue;
+            for (int k = 1; k < 10; ++k) {
+                if (dp[j][k] == INFLL) continue;
+                // remove
+                for (int l = 1; l < 10; ++l) {
+                    if (remove[j][l] == INF) continue;
+                    chmin(dp[remove[j][l]][l], dp[j][k] + abs(k - l) + 1);
+                }
+                // add
+                if (i != n and insert[j][a[i][0]] != INF) {
+                    chmin(ndp[insert[j][a[i][1]]][a[i][0]], dp[j][k] + abs(k - a[i][0]) + 1);
+                }
             }
-            if (sub.size()) chmax(mx, *sub.rbegin());
-            chmax(res, mx - up + 1 + (v != 1));
-            if (sub.size() >= 2) {
-                int l = *sub.rbegin(), r = *next(sub.rbegin());
-                chmax(res, (l - curr + 1) + (r - curr + 1) + (f[v] - 1) + (v != 1));
-            }
-            return mx;
-        };
-        dfs(dfs, 1, 0, 0);
+        }
+        if (i != n) dp = std::move(ndp);
+    }
+    for (int i = 1; i < 10; ++i) {
+        chmin(res, dp[0][i]);
     }
     cout << res << '\n';
+
 }
 
 int main() {

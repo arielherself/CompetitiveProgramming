@@ -279,9 +279,19 @@ return_t qpow(ll b, ll p) {
     else return half * half;
 }
 
-// Accurately find `i` 'th root of `n` (taking the floor)
+// dynamic modulus
+ll qpow(ll b, ll p, ll mod) {
+    if (b == 0 and p != 0) return 0;
+    if (p == 0) return 1;
+    ll half = qpow(b, p / 2, mod);
+    if (p % 2 == 1) return (int128(half) * half % mod) * b % mod;
+    else return half * half % mod;
+}
+
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wparentheses"
+// Accurately find `i` 'th root of `n` (taking the floor)
 inline ll root(ll n, ll i) {
     ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
     while (l < r) {

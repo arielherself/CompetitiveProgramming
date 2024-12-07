@@ -524,7 +524,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -535,47 +535,204 @@ void dump_ignore() {}
 void prep() {
 }
 
+template <typename T, typename IndexType = ll>
+struct ODT {
+    struct Info {
+        IndexType l, r;
+        mutable T val;
+        Info(const IndexType& l, const IndexType& r, const T& val) : l(l), r(r), val(val) {}
+        friend inline bool operator<(const Info& lhs, const Info& rhs) { return lhs.l < rhs.l; }
+    };
+    set<Info> info;
+    ODT() = delete;
+    ODT(const IndexType& left, const IndexType& right, const T& val) : info {{ left, right, val }} {}
+    typename set<Info>::iterator split(const IndexType& x) {
+        auto it = info.lower_bound({ x, {}, {} });
+        if (it != info.end() and it->l == x) {
+            return it;
+        }
+        --it;
+        auto [l, r, val] = *it;
+        info.erase(it);
+        info.emplace(l, x - 1, val);
+        return info.emplace(x, r, val).first;
+    }
+    void assign(const IndexType& l, const IndexType& r, const T& val) {
+        auto ri = split(r + 1), li = split(l);
+        info.erase(li, ri);
+        info.emplace(l, r, val);
+    }
+    void transform(const IndexType& l, const IndexType& r, const function<T(const Info&)>& operation) {
+        auto ri = split(r + 1), li = split(l);
+        for (; li != ri; ++li) {
+            li->val = operation(*li);
+        }
+    }
+    void iterate(const IndexType& l, const IndexType& r, const function<void(const Info&)>& operation) {
+        auto ri = split(r + 1), li = split(l);
+        for (; li != ri; ++li) {
+            operation(*li);
+        }
+    }
+    template <typename U>
+    U accumulate(const IndexType& l, const IndexType& r, U&& init, const function<U(const U&, const Info&)>& operation = std::plus()) {
+        auto ri = split(r + 1), li = split(l);
+        U res = init;
+        for (; li != ri; ++li) {
+            res = operation(res, *li);
+        }
+        return res;
+    }
+};
+
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+    using size_type = uint64_t;
+    using info_type = Addable_Info_t;
+    using tag_type = Tag_t;
+    size_type _max;
+    vector<info_type> d;
+    vector<tag_type> b;
+    void pull(size_type p) {
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+    void push(size_type p, size_type left_len, size_type right_len) {
+        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
+        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+        b[p] = tag_type();
+    }
+    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+        if (s == t) {
+            d[p] = c;
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        if (s != t) push(p, m - s + 1, t - m);
+        if (x <= m) set(s, m, p * 2, x, c);
+        else set(m + 1, t, p * 2 + 1, x, c);
+        pull(p);
+    }
+
+    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+        if (l <= s && t <= r) {
+            d[p].apply(c, t - s + 1);
+            b[p].apply(c);
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        push(p, m - s + 1, t - m);
+        if (l <= m) range_apply(s, m, p * 2, l, r, c);
+        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
+        pull(p);
+    }
+    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+        if (l <= s && t <= r) {
+            return d[p];
+        }
+        size_type m = s + (t - s >> 1);
+        info_type res = {};
+        push(p, m - s + 1, t - m);
+        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+        return res;
+    }
+    void build(const Sequence& a, size_type s, size_type t, size_type p) {
+        if (s == t) {
+            d[p] = a[s];
+            return;
+        }
+        int m = s + (t - s >> 1);
+        build(a, s, m, p * 2);
+        build(a, m + 1, t, p * 2 + 1);
+        pull(p);
+    }
+public:
+    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+    segtree(const Sequence& a) : segtree(a.size()) {
+        build(a, {}, _max, 1);
+    }
+    void set(size_type i, const info_type& c) {
+        set({}, _max, 1, i, c);
+    }
+
+    void range_apply(size_type l, size_type r, const tag_type& c) {
+        range_apply({}, _max, 1, l, r, c);
+    }
+    void apply(size_type i, const tag_type& c) {
+        range_apply(i, i, c);
+    }
+    info_type range_query(size_type l, size_type r) {
+        return range_query({}, _max, 1, l, r);
+    }
+    info_type query(size_type i) {
+        return range_query(i, i);
+    }
+    Sequence serialize() {
+        Sequence res = {};
+        for (size_type i = 0; i <= _max; ++i) {
+            res.push_back(query(i));
+        }
+        return res;
+    }
+    const vector<info_type>& get_d() {
+        return d;
+    }
+};
+
+using mll = MLL<PRIME>;
+
+struct Tag {
+    mll mul = 1;
+    mll add = 0;
+    void apply(const Tag& rhs) {
+        add *= rhs.mul;
+        mul *= rhs.mul;
+        add += rhs.add;
+    }
+};
+struct Info {
+    mll val = 0;
+    void apply(const Tag& rhs, size_t len) {
+        val = val * rhs.mul + len * rhs.add;
+    }
+};
+Info operator+(const Info &a, const Info &b) {
+    return {a.val + b.val};
+}
+
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    using ODT = ODT<int>;
+    read(int, n, q);
+    vector segs(n, ODT(0, n, 0));
+    segtree<Info, Tag> tr(n);
+
+    while (q--) {
+        read(int, t);
+        if (t == 1) {
+            read(int, l, r, x);
+            --l, --r, --x;
+            segs[x].iterate(l, r, [&] (auto&& info) {
+                if (info.val == 1) {
+                    tr.range_apply(info.l, info.r, {
+                        .mul = 2,
+                        .add = 0,
+                    });
+                } else {
+                    tr.range_apply(info.l, info.r, {
+                        .mul = 1,
+                        .add = 1,
+                    });
+                }
+                // return info.val;
+            });
+            segs[x].assign(l, r, 1);
+        } else {
+            read(int, l, r);
+            --l, --r;
+            cout << tr.range_query(l, r).val << '\n';
+        }
     }
-    vector<int> f(n + 1);
-    {
-        auto dfs = [&] (auto dfs, int v, int pa) -> void {
-            for (auto&& u : ch[v]) {
-                if (u == pa) continue;
-                dfs(dfs, u, v);
-                f[v] += 1;
-            }
-            f[v] -= 1;
-        };
-        dfs(dfs, 1, 0);
-    }
-    int res = 0;
-    {
-        auto dfs = [&] (auto dfs, int v, int pa, int up) -> int {
-            int curr = up + f[v];
-            int mx = curr;
-            multiset<int> sub;
-            for (auto&& u : ch[v]) {
-                if (u == pa) continue;
-                sub.emplace(dfs(dfs, u, v, curr));
-            }
-            if (sub.size()) chmax(mx, *sub.rbegin());
-            chmax(res, mx - up + 1 + (v != 1));
-            if (sub.size() >= 2) {
-                int l = *sub.rbegin(), r = *next(sub.rbegin());
-                chmax(res, (l - curr + 1) + (r - curr + 1) + (f[v] - 1) + (v != 1));
-            }
-            return mx;
-        };
-        dfs(dfs, 1, 0, 0);
-    }
-    cout << res << '\n';
 }
 
 int main() {

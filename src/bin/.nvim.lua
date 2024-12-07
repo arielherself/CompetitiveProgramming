@@ -1,7 +1,7 @@
 vim.api.nvim_create_autocmd("FileType", {
     pattern = "cpp",
     callback = function()
-        vim.api.nvim_buf_set_keymap(0, 'n', "<leader>b", '<Cmd>wa<CR><Cmd>10sp<CR><Cmd>te diff % .lastsrc >/dev/null 2>&1 && (echo -e "\\e[0;32mUsing cached binary for file % ...\\e[0m\\n" && time ./a.out < std.in) || (g++ -std=c++17 -DONLINE_JUDGE -Wl,-z,stack-size=268435456 -Wall -Ofast -g -fsanitize=address,undefined -xc++ % && time ./a.out < std.in && cp % .lastsrc)<CR>i', {
+        vim.api.nvim_buf_set_keymap(0, 'n', "<leader>b", '<Cmd>wa<CR><Cmd>10sp<CR><Cmd>te ulimit -s unlimited && diff % .lastsrc >/dev/null 2>&1 && (echo -e "\\e[0;32mUsing cached binary for file % ...\\e[0m\\n" && time ./a.out < std.in) || (g++ -std=c++17 -DONLINE_JUDGE -Wl,-z,stack-size=268435456 -Wall -Ofast -g -fsanitize=address,undefined -xc++ % && time ./a.out < std.in && cp % .lastsrc)<CR>i', {
             silent = true,
             noremap = true
         })
@@ -18,7 +18,7 @@ vim.api.nvim_create_autocmd("FileType", {
     end,
 })
 
-vim.keymap.set('n', '<leader>y', '<Cmd>!ctext -i $(gcc -xc++ /dev/null -E -Wp,-v 2>&1 | sed -n "s,^ ,,p" | tr "\\n" ",") < % > ctext_out.cc<CR><Cmd>split ctext_out.cc<CR>:%%y+<CR><Cmd>q<CR>')
+-- vim.keymap.set('n', '<leader>y', '<Cmd>!ctext -i $(gcc -xc++ /dev/null -E -Wp,-v 2>&1 | sed -n "s,^ ,,p" | tr "\\n" ",") < % > ctext_out.cc<CR><Cmd>split ctext_out.cc<CR>:%%y+<CR><Cmd>q<CR>')
 vim.keymap.set('n', '<leader>1', '<Cmd>CphReceive<CR>');
 vim.keymap.set('n', '<leader>2', '<Cmd>CphTest<CR>');
 vim.keymap.set('n', '<leader>3', '<Cmd>r ~/RustIsBestLang/src/bin/template.cc<CR>G');

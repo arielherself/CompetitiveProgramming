@@ -289,9 +289,9 @@ ll qpow(ll b, ll p, ll mod) {
 }
 
 
-// Accurately find `i` 'th root of `n` (taking the floor)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wparentheses"
+// Accurately find `i` 'th root of `n` (taking the floor)
 inline ll root(ll n, ll i) {
     ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
     while (l < r) {
@@ -524,7 +524,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -535,47 +535,59 @@ void dump_ignore() {}
 void prep() {
 }
 
+class quick_union {
+private:
+    vector<size_t> c;
+public:
+    quick_union(size_t n) : c(n) {
+        iota(c.begin(), c.end(), 0);
+    }
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+};
+
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
-    }
-    vector<int> f(n + 1);
-    {
-        auto dfs = [&] (auto dfs, int v, int pa) -> void {
-            for (auto&& u : ch[v]) {
-                if (u == pa) continue;
-                dfs(dfs, u, v);
-                f[v] += 1;
+    readvec(ll, a, n);
+    vector<int> prev(n, -1);
+    for (int i = 0; i < n; ++i) {
+        if (a[i] == 0) continue;
+        for (int j = i - 1; ~j; --j) {
+            if (a[j] == 0 or a[i] * a[j] < 0) continue;
+            ll r = sqrt(ld(1) * a[i] * a[j]);
+            if (r * r == a[i] * a[j]) {
+                prev[i] = j;
+                break;
             }
-            f[v] -= 1;
-        };
-        dfs(dfs, 1, 0);
+        }
     }
-    int res = 0;
-    {
-        auto dfs = [&] (auto dfs, int v, int pa, int up) -> int {
-            int curr = up + f[v];
-            int mx = curr;
-            multiset<int> sub;
-            for (auto&& u : ch[v]) {
-                if (u == pa) continue;
-                sub.emplace(dfs(dfs, u, v, curr));
+    vector<int> res(n + 1);
+    for (int i = 0; i < n; ++i) {
+        quick_union qu(n);
+        int m = 0;
+        int cnt = 0;
+        for (int j = i; j < n; ++j) {
+            if (a[j] != 0) cnt += 1;
+            if (prev[j] >= i) {
+                if (not qu.connected(j, prev[j])) {
+                    qu.merge(j, prev[j]);
+                    m += 1;
+                }
             }
-            if (sub.size()) chmax(mx, *sub.rbegin());
-            chmax(res, mx - up + 1 + (v != 1));
-            if (sub.size() >= 2) {
-                int l = *sub.rbegin(), r = *next(sub.rbegin());
-                chmax(res, (l - curr + 1) + (r - curr + 1) + (f[v] - 1) + (v != 1));
-            }
-            return mx;
-        };
-        dfs(dfs, 1, 0, 0);
+            res[max(1, cnt - m)] += 1;
+        }
     }
-    cout << res << '\n';
+    putvec1(res);
 }
 
 int main() {

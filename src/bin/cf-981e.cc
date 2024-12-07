@@ -279,16 +279,6 @@ return_t qpow(ll b, ll p) {
     else return half * half;
 }
 
-// dynamic modulus
-ll qpow(ll b, ll p, ll mod) {
-    if (b == 0 and p != 0) return 0;
-    if (p == 0) return 1;
-    ll half = qpow(b, p / 2, mod);
-    if (p % 2 == 1) return (int128(half) * half % mod) * b % mod;
-    else return half * half % mod;
-}
-
-
 // Accurately find `i` 'th root of `n` (taking the floor)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wparentheses"
@@ -524,7 +514,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -537,45 +527,45 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    constexpr int N = 1e4 + 1;
+    read(int, n, q);
+    vector<vector<int>> tag(4 * n);
+    auto apply = [&] (auto apply, int s, int t, int p, int l, int r, int val) -> void {
+        if (l <= s and t <= r) {
+            tag[p].emplace_back(val);
+            return;
+        }
+        int m = s + t >> 1;
+        if (l <= m) apply(apply, s, m, p * 2, l, r, val);
+        if (r > m) apply(apply, m + 1, t, p * 2 + 1, l, r, val);
+    };
+    while (q--) {
+        read(int, l, r, x);
+        --l, --r;
+        apply(apply, 0, n - 1, 1, l, r, x);
     }
-    vector<int> f(n + 1);
-    {
-        auto dfs = [&] (auto dfs, int v, int pa) -> void {
-            for (auto&& u : ch[v]) {
-                if (u == pa) continue;
-                dfs(dfs, u, v);
-                f[v] += 1;
-            }
-            f[v] -= 1;
-        };
-        dfs(dfs, 1, 0);
+    auto merge = [&] (auto merge, int s, int t, int p) -> bitset<N> {
+        bitset<N> ret;
+        if (s == t) {
+            ret[0] = 1;
+        } else {
+            int m = s + t >> 1;
+            ret = merge(merge, s, m, p * 2) bitor merge(merge, m + 1, t, p * 2 + 1);
+        }
+        for (auto&& x : tag[p]) {
+            ret |= ret << x;
+        }
+        return ret;
+    };
+    bitset<N> res = merge(merge, 0, n - 1, 1);
+    vector<int> has;
+    for (int i = 1; i <= n; ++i) {
+        if (res[i]) {
+            has.emplace_back(i);
+        }
     }
-    int res = 0;
-    {
-        auto dfs = [&] (auto dfs, int v, int pa, int up) -> int {
-            int curr = up + f[v];
-            int mx = curr;
-            multiset<int> sub;
-            for (auto&& u : ch[v]) {
-                if (u == pa) continue;
-                sub.emplace(dfs(dfs, u, v, curr));
-            }
-            if (sub.size()) chmax(mx, *sub.rbegin());
-            chmax(res, mx - up + 1 + (v != 1));
-            if (sub.size() >= 2) {
-                int l = *sub.rbegin(), r = *next(sub.rbegin());
-                chmax(res, (l - curr + 1) + (r - curr + 1) + (f[v] - 1) + (v != 1));
-            }
-            return mx;
-        };
-        dfs(dfs, 1, 0, 0);
-    }
-    cout << res << '\n';
+    cout << has.size() << '\n';
+    putvec(has);
 }
 
 int main() {

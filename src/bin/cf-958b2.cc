@@ -289,9 +289,9 @@ ll qpow(ll b, ll p, ll mod) {
 }
 
 
-// Accurately find `i` 'th root of `n` (taking the floor)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wparentheses"
+// Accurately find `i` 'th root of `n` (taking the floor)
 inline ll root(ll n, ll i) {
     ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
     while (l < r) {
@@ -524,7 +524,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -535,6 +535,119 @@ void dump_ignore() {}
 void prep() {
 }
 
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+    using size_type = uint64_t;
+    using info_type = Addable_Info_t;
+    using tag_type = Tag_t;
+    size_type _max;
+    vector<info_type> d;
+    vector<tag_type> b;
+    void pull(size_type p) {
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+    void push(size_type p, size_type left_len, size_type right_len) {
+        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
+        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+        b[p] = tag_type();
+    }
+    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+        if (s == t) {
+            d[p] = c;
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        if (s != t) push(p, m - s + 1, t - m);
+        if (x <= m) set(s, m, p * 2, x, c);
+        else set(m + 1, t, p * 2 + 1, x, c);
+        pull(p);
+    }
+
+    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+        if (l <= s && t <= r) {
+            d[p].apply(c, t - s + 1);
+            b[p].apply(c);
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        push(p, m - s + 1, t - m);
+        if (l <= m) range_apply(s, m, p * 2, l, r, c);
+        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
+        pull(p);
+    }
+    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+        if (l <= s && t <= r) {
+            return d[p];
+        }
+        size_type m = s + (t - s >> 1);
+        info_type res = {};
+        push(p, m - s + 1, t - m);
+        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+        return res;
+    }
+    void build(const Sequence& a, size_type s, size_type t, size_type p) {
+        if (s == t) {
+            d[p] = a[s];
+            return;
+        }
+        int m = s + (t - s >> 1);
+        build(a, s, m, p * 2);
+        build(a, m + 1, t, p * 2 + 1);
+        pull(p);
+    }
+public:
+    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+    segtree(const Sequence& a) : segtree(a.size()) {
+        build(a, {}, _max, 1);
+    }
+    void set(size_type i, const info_type& c) {
+        set({}, _max, 1, i, c);
+    }
+
+    void range_apply(size_type l, size_type r, const tag_type& c) {
+        range_apply({}, _max, 1, l, r, c);
+    }
+    void apply(size_type i, const tag_type& c) {
+        range_apply(i, i, c);
+    }
+    info_type range_query(size_type l, size_type r) {
+        return range_query({}, _max, 1, l, r);
+    }
+    info_type query(size_type i) {
+        return range_query(i, i);
+    }
+    Sequence serialize() {
+        Sequence res = {};
+        for (size_type i = 0; i <= _max; ++i) {
+            res.push_back(query(i));
+        }
+        return res;
+    }
+    const vector<info_type>& get_d() {
+        return d;
+    }
+};
+struct Tag {
+    int val = 0;
+    void apply(const Tag& rhs) {
+        val += rhs.val;
+    }
+};
+struct Info {
+    int val = -INF;
+    int idx = 0;
+    void apply(const Tag& rhs, size_t len) {
+        val += rhs.val;
+    }
+};
+Info operator+(const Info &a, const Info &b) {
+    return {
+        .val = max(a.val, b.val),
+        .idx = a.val > b.val ? a.idx : b.idx,
+    };
+}
+
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
@@ -543,39 +656,54 @@ void solve() {
         read(int, u, v);
         edge(ch, u, v);
     }
-    vector<int> f(n + 1);
+
+    int root = 0;
     {
+        vector<int> depth(n + 1);
         auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            depth[v] = depth[pa] + 1;
+            if (depth[v] > depth[root]) root = v;
             for (auto&& u : ch[v]) {
                 if (u == pa) continue;
                 dfs(dfs, u, v);
-                f[v] += 1;
             }
-            f[v] -= 1;
         };
         dfs(dfs, 1, 0);
     }
-    int res = 0;
+    vector<int> sz(n + 1);
+    vector<int> dfn(n + 1);
+    vector<int> depth(n + 1);
+    vector<int> fa(n + 1);
+    depth[0] = -1;
+    segtree<Info, Tag> tr(n);
     {
-        auto dfs = [&] (auto dfs, int v, int pa, int up) -> int {
-            int curr = up + f[v];
-            int mx = curr;
-            multiset<int> sub;
+        int t = 0;
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            fa[v] = pa;
+            sz[v] = 1;
+            depth[v] = depth[pa] + 1;
+            dfn[v] = t++;
+            tr.set(dfn[v], { depth[v], v });
             for (auto&& u : ch[v]) {
                 if (u == pa) continue;
-                sub.emplace(dfs(dfs, u, v, curr));
+                dfs(dfs, u, v);
+                sz[v] += sz[u];
             }
-            if (sub.size()) chmax(mx, *sub.rbegin());
-            chmax(res, mx - up + 1 + (v != 1));
-            if (sub.size() >= 2) {
-                int l = *sub.rbegin(), r = *next(sub.rbegin());
-                chmax(res, (l - curr + 1) + (r - curr + 1) + (f[v] - 1) + (v != 1));
-            }
-            return mx;
         };
-        dfs(dfs, 1, 0, 0);
+        dfs(dfs, root, 0);
     }
-    cout << res << '\n';
+    cout << "1 ";
+    int curr = 1;
+    for (int i = 0; i < n - 1; ++i) {
+        auto [d, v] = tr.range_query(0, n - 1);
+        curr += d;
+        for (int j = 0; j < d; ++j) {
+            tr.range_apply(dfn[v], dfn[v] + sz[v] - 1, { -1 });
+            v = fa[v];
+        }
+        cout << curr << ' ';
+    }
+    cout << endl;
 }
 
 int main() {

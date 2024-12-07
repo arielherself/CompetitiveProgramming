@@ -524,7 +524,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -535,47 +535,113 @@ void dump_ignore() {}
 void prep() {
 }
 
+template <typename T, typename IndexType = ll>
+struct ODT {
+    struct Info {
+        IndexType l, r;
+        mutable T val;
+        Info(const IndexType& l, const IndexType& r, const T& val) : l(l), r(r), val(val) {}
+        friend inline bool operator<(const Info& lhs, const Info& rhs) { return lhs.l < rhs.l; }
+    };
+
+    set<Info> info;
+
+    ODT() = delete;
+    ODT(const IndexType& left, const IndexType& right, const T& val) : info {{ left, right, val }} {}
+
+    typename set<Info>::iterator split(const IndexType& x) {
+        auto it = info.lower_bound({ x, {}, {} });
+        if (it != info.end() and it->l == x) {
+            return it;
+        }
+        --it;
+        auto [l, r, val] = *it;
+        info.erase(it);
+        info.emplace(l, x - 1, val);
+        return info.emplace(x, r, val).first;
+    }
+
+    void assign(const IndexType& l, const IndexType& r, const T& val) {
+        auto ri = split(r + 1), li = split(l);
+        info.erase(li, ri);
+        info.emplace(l, r, val);
+    }
+
+    void transform(const IndexType& l, const IndexType& r, const function<T(const Info&)>& operation) {
+        auto ri = split(r + 1), li = split(l);
+        for (; li != ri; ++li) {
+            li->val = operation(*li);
+        }
+    }
+
+    template <typename U>
+    U accumulate(const IndexType& l, const IndexType& r, U&& init, const function<U(const U&, const Info&)>& operation = std::plus()) {
+        auto ri = split(r + 1), li = split(l);
+        U res = init;
+        for (; li != ri; ++li) {
+            res = operation(res, *li);
+        }
+        return res;
+    }
+};
+
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(int, n, m);
+    read(ll, seed, vmax);
+    auto rnd = [&] {
+        ll ret = seed;
+        seed = (seed * 7 + 13) % MDL;
+        return ret;
+    };
+
+    ODT<ll> seg(0, n - 1, 0);
+    for (int i = 0; i < n; ++i) {
+        seg.assign(i, i, rnd() % vmax + 1);
     }
-    vector<int> f(n + 1);
-    {
-        auto dfs = [&] (auto dfs, int v, int pa) -> void {
-            for (auto&& u : ch[v]) {
-                if (u == pa) continue;
-                dfs(dfs, u, v);
-                f[v] += 1;
+    // debug(a);
+
+    while (m--) {
+        int op, l, r, x, y;
+        {
+            op = rnd() % 4 + 1;
+            l = rnd() % n + 1;
+            r = rnd() % n + 1;
+            if (l > r) swap(l, r);
+            if (op == 3) {
+                x = rnd() % (r - l + 1) + 1;
+            } else {
+                x = rnd() % vmax + 1;
             }
-            f[v] -= 1;
-        };
-        dfs(dfs, 1, 0);
+            if (op == 4) {
+                y = rnd() % vmax + 1;
+            }
+        }
+
+        --l, --r;
+        if (op == 1) {
+            seg.transform(l, r, expr(info.val + x, auto&& info));
+        } else if (op == 2) {
+            seg.assign(l, r, x);
+        } else if (op == 3) {
+            auto cmp = expr(x.val < y.val, auto&& x, auto&& y);
+            priority_queue<ODT<ll>::Info, vector<ODT<ll>::Info>, decltype(cmp)> q(cmp);
+            int tot = 0;
+            seg.transform(l, r, [&] (auto&& info) {
+                q.emplace(info);
+                tot += info.r - info.l + 1;
+                return info.val;
+            });
+            while (q.size() and tot - (q.top().r - q.top().l + 1) >= x) {
+                tot -= q.top().r - q.top().l + 1;
+                q.pop();
+            }
+            cout << q.top().val << '\n';
+        } else {
+            ll res = seg.accumulate<ll>(l, r, 0, expr((s + qpow(info.val, x, y) * (info.r - info.l + 1) % y) % y, auto&& s, auto&& info));
+            cout << res << '\n';
+        }
     }
-    int res = 0;
-    {
-        auto dfs = [&] (auto dfs, int v, int pa, int up) -> int {
-            int curr = up + f[v];
-            int mx = curr;
-            multiset<int> sub;
-            for (auto&& u : ch[v]) {
-                if (u == pa) continue;
-                sub.emplace(dfs(dfs, u, v, curr));
-            }
-            if (sub.size()) chmax(mx, *sub.rbegin());
-            chmax(res, mx - up + 1 + (v != 1));
-            if (sub.size() >= 2) {
-                int l = *sub.rbegin(), r = *next(sub.rbegin());
-                chmax(res, (l - curr + 1) + (r - curr + 1) + (f[v] - 1) + (v != 1));
-            }
-            return mx;
-        };
-        dfs(dfs, 1, 0, 0);
-    }
-    cout << res << '\n';
 }
 
 int main() {

@@ -289,9 +289,9 @@ ll qpow(ll b, ll p, ll mod) {
 }
 
 
-// Accurately find `i` 'th root of `n` (taking the floor)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wparentheses"
+// Accurately find `i` 'th root of `n` (taking the floor)
 inline ll root(ll n, ll i) {
     ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
     while (l < r) {
@@ -524,7 +524,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -537,43 +537,39 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(int, n, k, p);
+    readvec(int, a, n);
+    vector<int> ps(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        ps[i] = (ps[i - 1] + a[i - 1]) % p;
     }
-    vector<int> f(n + 1);
-    {
-        auto dfs = [&] (auto dfs, int v, int pa) -> void {
-            for (auto&& u : ch[v]) {
-                if (u == pa) continue;
-                dfs(dfs, u, v);
-                f[v] += 1;
-            }
-            f[v] -= 1;
-        };
-        dfs(dfs, 1, 0);
+    vector nxt(n + 2, vector<int>(p, INF));
+    for (int i = n; ~i; --i) {
+        nxt[i] = nxt[i + 1];
+        nxt[i][ps[i]] = i;
     }
-    int res = 0;
-    {
-        auto dfs = [&] (auto dfs, int v, int pa, int up) -> int {
-            int curr = up + f[v];
-            int mx = curr;
-            multiset<int> sub;
-            for (auto&& u : ch[v]) {
-                if (u == pa) continue;
-                sub.emplace(dfs(dfs, u, v, curr));
+
+    vector dp(p, vector<int>(k + 1, INF));
+    dp[0][0] = 0;
+    for (int i = 0; i < k; ++i) {
+        vector ndp(p, vector<int>(k + 1, INF));
+        for (int j = 0; j < p; ++j) {
+            for (int l = 0; l <= k; ++l) {
+                if (dp[j][l] == INF) continue;
+                for (int o = 0; o < p; ++o) {
+                    int pos = nxt[dp[j][l] + 1][o];
+                    if (pos == INF) continue;
+                    chmin(ndp[o][l + (o < j)], pos);
+                }
             }
-            if (sub.size()) chmax(mx, *sub.rbegin());
-            chmax(res, mx - up + 1 + (v != 1));
-            if (sub.size() >= 2) {
-                int l = *sub.rbegin(), r = *next(sub.rbegin());
-                chmax(res, (l - curr + 1) + (r - curr + 1) + (f[v] - 1) + (v != 1));
-            }
-            return mx;
-        };
-        dfs(dfs, 1, 0, 0);
+        }
+        dp = std::move(ndp);
+    }
+    int res = INF;
+    for (int i = 0; i <= k; ++i) {
+        if (dp[ps[n]][i] != INF) {
+            chmin(res, ps[n] + i * p);
+        }
     }
     cout << res << '\n';
 }

@@ -524,7 +524,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -535,47 +535,73 @@ void dump_ignore() {}
 void prep() {
 }
 
+struct trie {
+    vector<pair<array<int, 2>, int>> tr;
+    trie(void) : tr(1) {}
+    void insert(int x) {
+        int curr = 0;
+        for (int i = 30; ~i; --i) {
+            int bit = x >> i & 1;
+            if (not tr[curr].first[bit]) {
+                tr[curr].first[bit] = tr.size();
+                tr.push_back({{}, INF});
+            }
+            curr = tr[curr].first[bit];
+            chmin(tr[curr].second, x);
+        }
+    }
+    int query(int x, int maxw) {
+        int curr = 0;
+        int ret = 0;
+        for (int i = 30; ~i; --i) {
+            int bit = x >> i & 1;
+            if (tr[curr].first[1 xor bit] and tr[tr[curr].first[1 xor bit]].second <= maxw) {
+                ret |= (1 xor bit) << i;
+                curr = tr[curr].first[1 xor bit];
+            } else if (tr[curr].first[bit] and tr[tr[curr].first[bit]].second <= maxw) {
+                ret |= bit << i;
+                curr = tr[curr].first[bit];
+            } else {
+                return INF;
+            }
+        }
+        return ret;
+    }
+};
+
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
-    }
-    vector<int> f(n + 1);
-    {
-        auto dfs = [&] (auto dfs, int v, int pa) -> void {
-            for (auto&& u : ch[v]) {
-                if (u == pa) continue;
-                dfs(dfs, u, v);
-                f[v] += 1;
+    constexpr int N = 1e5;
+
+    read(int, q);
+
+    vector<trie> tr(N + 1);
+    vector<bool> oc(N + 1);
+    while (q--) {
+        read(int, type);
+        if (type == 1) {
+            read(int, x);
+            continue_or(oc[x], 1);
+            for (int i = 1; i * i <= x; ++i) {
+                if (x % i == 0) {
+                    tr[i].insert(x);
+                    tr[x / i].insert(x);
+                }
             }
-            f[v] -= 1;
-        };
-        dfs(dfs, 1, 0);
-    }
-    int res = 0;
-    {
-        auto dfs = [&] (auto dfs, int v, int pa, int up) -> int {
-            int curr = up + f[v];
-            int mx = curr;
-            multiset<int> sub;
-            for (auto&& u : ch[v]) {
-                if (u == pa) continue;
-                sub.emplace(dfs(dfs, u, v, curr));
+        } else {
+            read(int, xi, ki, si);
+            if (xi % ki != 0) {
+                cout << -1 << '\n';
+            } else {
+                int res = tr[ki].query(xi, si - xi);
+                if (res == INF) {
+                    cout << -1 << '\n';
+                } else {
+                    cout << res << '\n';
+                }
             }
-            if (sub.size()) chmax(mx, *sub.rbegin());
-            chmax(res, mx - up + 1 + (v != 1));
-            if (sub.size() >= 2) {
-                int l = *sub.rbegin(), r = *next(sub.rbegin());
-                chmax(res, (l - curr + 1) + (r - curr + 1) + (f[v] - 1) + (v != 1));
-            }
-            return mx;
-        };
-        dfs(dfs, 1, 0, 0);
+        }
     }
-    cout << res << '\n';
 }
 
 int main() {

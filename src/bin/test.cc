@@ -512,23 +512,10 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    readvec(int, a, n);
-    vector<int> rev(n + 1);
-    for (int i = 0; i < n; ++i) {
-        rev[a[i]] = i;
-    }
-    int res = 0;
-    for (int i = 1; i <= n; ++i) {
-        for (int j = i + 1; ll(i) * j <= n; ++j) {
-            for (int k = j + 1; ll(k) * i * j <= n; ++k) {
-                if (rev[i * j * k] > rev[k] and rev[k] > rev[j] and rev[j] > rev[i]) {
-                    res += 1;
-                }
-            }
-        }
-    }
-    cout << res << '\n';
+    constexpr int N = 10;
+    [] {
+        bitset<N + 1> test;
+    } ();
 }
 
 int main() {

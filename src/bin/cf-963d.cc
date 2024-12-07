@@ -117,6 +117,7 @@ struct safe_hash {
     }
 };
 
+// #define combine(x, y) ((x) < (y) ? (y) * (y) + (x) : (x) * (x) + (x) + (y))
 struct pair_hash {
     template <typename T, typename U>
     size_t operator()(const pair<T, U>& a) const {
@@ -289,9 +290,9 @@ ll qpow(ll b, ll p, ll mod) {
 }
 
 
-// Accurately find `i` 'th root of `n` (taking the floor)
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wparentheses"
+// Accurately find `i` 'th root of `n` (taking the floor)
 inline ll root(ll n, ll i) {
     ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
     while (l < r) {
@@ -417,20 +418,20 @@ int period(string s) {  // find the length of shortest recurring period
 /* modular arithmetic */
 template <ll mdl> struct MLL {
     ll val;
-    MLL(ll v = 0) : val(mod(v, mdl)) {}
-    MLL(const MLL<mdl>& other) : val(other.val) {}
-    friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
-    friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
-    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
-    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
-    friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
-    friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
-    friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
-    MLL& operator+=(const MLL& rhs) { return *this = *this + rhs; }
-    MLL& operator-=(const MLL& rhs) { return *this = *this - rhs; }
-    MLL& operator*=(const MLL& rhs) { return *this = *this * rhs; }
-    MLL& operator/=(const MLL& rhs) { return *this = *this / rhs; }
-    MLL& operator%=(const MLL& rhs) { return *this = *this % rhs; }
+    inline MLL(ll v = 0) : val(mod(v, mdl)) {}
+    inline MLL(const MLL<mdl>& other) : val(other.val) {}
+    friend inline MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
+    friend inline MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
+    friend inline MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
+    friend inline MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
+    friend inline MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
+    friend inline bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
+    friend inline bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
+    inline MLL& operator+=(const MLL& rhs) { return *this = *this + rhs; }
+    inline MLL& operator-=(const MLL& rhs) { return *this = *this - rhs; }
+    inline MLL& operator*=(const MLL& rhs) { return *this = *this * rhs; }
+    inline MLL& operator/=(const MLL& rhs) { return *this = *this / rhs; }
+    inline MLL& operator%=(const MLL& rhs) { return *this = *this % rhs; }
 };
 
 template <ll mdl>
@@ -524,7 +525,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -535,47 +536,160 @@ void dump_ignore() {}
 void prep() {
 }
 
+static vector<ll> power1;
+static vector<ll> power2;
+static const ll b = rd() % INF;
+static const ll b1 = inverse(b, MDL1);
+static const ll b2 = inverse(b, MDL2);
+template <typename _Tp>
+struct hash_vec {
+    using hash_type = pll;
+    ll hash1;
+    ll hash2;
+    vector<_Tp> seq;
+    size_t size() {
+        return seq.size();
+    }
+    void push_back(const _Tp& x) {
+        hash1 = (hash1 * b % MDL1 + x) % MDL1;
+        hash2 = (hash2 * b % MDL2 + x) % MDL2;
+        seq.push_back(x);
+    }
+    void push_front(const _Tp& x) {
+        size_t length = size();
+        hash1 = (hash1 + x * power1[length] % MDL1) % MDL1;
+        hash2 = (hash2 + x * power2[length] % MDL2) % MDL2;
+        seq.push_front(x);
+    }
+    void pop_back() {
+        _Tp e = seq.back(); seq.pop_back();
+        hash1 = mod(hash1 - e, MDL1) * b1 % MDL1;
+        hash2 = mod(hash2 - e, MDL2) * b2 % MDL2;
+    }
+    void pop_front() {
+        _Tp e = seq.front(); seq.pop_front();
+        int length = seq.size();
+        hash1 = mod(hash1 - e * power1[length] % MDL1, MDL1);
+        hash2 = mod(hash2 - e * power2[length] % MDL2, MDL2);
+    }
+    void set(size_t pos, const _Tp& value) {
+        int length = seq.size();
+        int old_value = seq[pos];
+        hash1 = (hash1 + (value - old_value) * power1[length - 1 - pos] % MDL1) % MDL1;
+        hash2 = (hash2 + (value - old_value) * power2[length - 2 - pos] % MDL2) % MDL2;
+        seq[pos] = value;
+    }
+    const _Tp& operator[](size_t pos) {
+        return seq[pos];
+    }
+    hash_type hash() {
+        return { hash1, hash2 };
+    }
+    void clear() {
+        hash1 = 0;
+        hash2 = 0;
+        seq.clear();
+    }
+    hash_vec(size_t maxn) {
+        clear();
+        ll c1 = power1.size() ? power1.back() * b % MDL1 : 1;
+        ll c2 = power2.size() ? power2.back() * b % MDL2 : 1;
+        for (int i = power1.size(); i < maxn; ++i) {
+            power1.push_back(c1);
+            power2.push_back(c2);
+            c1 = c1 * b % MDL1;
+            c2 = c2 * b % MDL2;
+        }
+    }
+    hash_vec(size_t maxn, const _Tp& init_value) : hash_vec(maxn) {
+        for (size_t i = 0; i != maxn; ++i) {
+            push_back(init_value);
+        }
+    }
+};
+struct range_hash {
+    vector<pll> hp;
+    template <typename T>
+    range_hash(const T& vec) {
+        hp.emplace_back();
+        hash_vec<ll> hs(vec.size() + 1);
+        for (auto&& x : vec) {
+            hs.push_back(x);
+            hp.emplace_back(hs.hash());
+        }
+    }
+    /// query hash of subarray [l, r]. Index starts from 0.
+    inline pll range_query(size_t l, size_t r) {
+        return {
+            mod(hp[r + 1].first - hp[l].first * power1[r + 1 - l] % MDL1, MDL1),
+            mod(hp[r + 1].second - hp[l].second * power2[r + 1 - l] % MDL2, MDL2),
+        };
+    }
+};
+
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    read(string, s);
+    int n = s.size();
+    constexpr int m = 316;
+    read(int, q);
+    vector<tuple<int, int, pll, int>> queries;  // (k, length, hash, idx)
+    unordered_map<ll, tiii> sh;
+    faster(sh);
+    // hash_pair<ll, ll> combine;
+    int t = 0;
+    for (int i = 0; i < q; ++i) {
+        read(int, k);
+        read(string, x);
+        hash_vec<char> hs(m);
+        for (auto&& c : x) {
+            hs.push_back(c);
+        }
+        if (x.size() >= m) {
+            queries.emplace_back(k, x.size(), hs.hash(), i);
+        } else {
+            // deb(hs.hash().first << 12 xor hs.hash().second);
+            // auto [x, y] = hs.hash();
+            sh[hs.hash().first << 32 xor hs.hash().second] = { k, i, t++ };
+        }
     }
-    vector<int> f(n + 1);
-    {
-        auto dfs = [&] (auto dfs, int v, int pa) -> void {
-            for (auto&& u : ch[v]) {
-                if (u == pa) continue;
-                dfs(dfs, u, v);
-                f[v] += 1;
+    range_hash hs(s);
+    vector<vector<int>> bk(t);
+    // unordered_map<ll, vector<int>> bk;
+    vector<int> res(q, INF);
+    for (int i = 0; i < n; ++i) {
+        for (int j = 1; j < m and i + j - 1 < n; ++j) {
+            auto curr = hs.range_query(i, i + j - 1);
+            ll hs = curr.first << 32 xor curr.second;
+            if (sh.count(hs)) {
+                auto&& [k, idx, tt] = sh[hs];
+                bk[tt].emplace_back(i);
+                int m = bk[tt].size();
+                if (m >= k) {
+                    chmin(res[idx], bk[tt][m - 1] - bk[tt][m - k] + j);
+                }
             }
-            f[v] -= 1;
-        };
-        dfs(dfs, 1, 0);
+        }
     }
-    int res = 0;
-    {
-        auto dfs = [&] (auto dfs, int v, int pa, int up) -> int {
-            int curr = up + f[v];
-            int mx = curr;
-            multiset<int> sub;
-            for (auto&& u : ch[v]) {
-                if (u == pa) continue;
-                sub.emplace(dfs(dfs, u, v, curr));
+    for (auto&& [k, l, x, idx] : queries) {
+        vector<int> bk;
+        for (int i = 0; i + l - 1 < n; ++i) {
+            if (hs.range_query(i, i + l - 1) == x) {
+                bk.emplace_back(i);
             }
-            if (sub.size()) chmax(mx, *sub.rbegin());
-            chmax(res, mx - up + 1 + (v != 1));
-            if (sub.size() >= 2) {
-                int l = *sub.rbegin(), r = *next(sub.rbegin());
-                chmax(res, (l - curr + 1) + (r - curr + 1) + (f[v] - 1) + (v != 1));
+            int m = bk.size();
+            if (m >= k) {
+                chmin(res[idx], bk[m - 1] - bk[m - k] + l);
             }
-            return mx;
-        };
-        dfs(dfs, 1, 0, 0);
+        }
     }
-    cout << res << '\n';
+    for (auto&& x : res) {
+        if (x == INF) {
+            cout << -1 << '\n';
+        } else {
+            cout << x << '\n';
+        }
+    }
 }
 
 int main() {
