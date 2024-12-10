@@ -1,5 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#pragma GCC optimize("Ofast")
+#pragma GCC optimize("Ofast,unroll-loops")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -279,9 +279,19 @@ return_t qpow(ll b, ll p) {
     else return half * half;
 }
 
-// Accurately find `i` 'th root of `n` (taking the floor)
+// dynamic modulus
+ll qpow(ll b, ll p, ll mod) {
+    if (b == 0 and p != 0) return 0;
+    if (p == 0) return 1;
+    ll half = qpow(b, p / 2, mod);
+    if (p % 2 == 1) return (int128(half) * half % mod) * b % mod;
+    else return half * half % mod;
+}
+
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wparentheses"
+// Accurately find `i` 'th root of `n` (taking the floor)
 inline ll root(ll n, ll i) {
     ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
     while (l < r) {
@@ -525,188 +535,37 @@ void dump_ignore() {}
 void prep() {
 }
 
-template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
-private:
-    using size_type = uint64_t;
-    using info_type = Addable_Info_t;
-    using tag_type = Tag_t;
-    size_type _max;
-    vector<info_type> d;
-    vector<tag_type> b;
-    void pull(size_type p) {
-        d[p] = d[p * 2] + d[p * 2 + 1];
-    }
-    void push(size_type p, size_type left_len, size_type right_len) {
-        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
-        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
-        b[p] = tag_type();
-    }
-    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
-        if (s == t) {
-            d[p] = c;
-            return;
-        }
-        size_type m = s + (t - s >> 1);
-        if (s != t) push(p, m - s + 1, t - m);
-        if (x <= m) set(s, m, p * 2, x, c);
-        else set(m + 1, t, p * 2 + 1, x, c);
-        pull(p);
-    }
-
-    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
-        if (l <= s && t <= r) {
-            d[p].apply(c, t - s + 1);
-            b[p].apply(c);
-            return;
-        }
-        size_type m = s + (t - s >> 1);
-        push(p, m - s + 1, t - m);
-        if (l <= m) range_apply(s, m, p * 2, l, r, c);
-        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
-        pull(p);
-    }
-    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
-        if (l <= s && t <= r) {
-            return d[p];
-        }
-        size_type m = s + (t - s >> 1);
-        info_type res = {};
-        push(p, m - s + 1, t - m);
-        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
-        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
-        return res;
-    }
-    int binary_search(size_type s, size_type t, size_type p, int val) {
-        if (s == t) {
-            return d[p].val >= val ? s : INF;
-        }
-        size_type m = s + (t - s >> 1);
-        int right = d[p * 2 + 1].val;
-        if (right >= val) return binary_search(m + 1, t, p * 2 + 1, val);
-        else return binary_search(s, m, p * 2, val - right);
-    }
-    void build(const Sequence& a, size_type s, size_type t, size_type p) {
-        if (s == t) {
-            d[p] = a[s];
-            return;
-        }
-        int m = s + (t - s >> 1);
-        build(a, s, m, p * 2);
-        build(a, m + 1, t, p * 2 + 1);
-        pull(p);
-    }
-public:
-    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
-    segtree(const Sequence& a) : segtree(a.size()) {
-        build(a, {}, _max, 1);
-    }
-    void set(size_type i, const info_type& c) {
-        set({}, _max, 1, i, c);
-    }
-
-    void range_apply(size_type l, size_type r, const tag_type& c) {
-        range_apply({}, _max, 1, l, r, c);
-    }
-    void apply(size_type i, const tag_type& c) {
-        range_apply(i, i, c);
-    }
-    info_type range_query(size_type l, size_type r) {
-        return range_query({}, _max, 1, l, r);
-    }
-    int binary_search(int val) {
-        return binary_search({}, _max, 1, val);
-    }
-    info_type query(size_type i) {
-        return range_query(i, i);
-    }
-    Sequence serialize() {
-        Sequence res = {};
-        for (size_type i = 0; i <= _max; ++i) {
-            res.push_back(query(i));
-        }
-        return res;
-    }
-    const vector<info_type>& get_d() {
-        return d;
-    }
-};
-struct Tag {
-    int val = 0;
-    void apply(const Tag& rhs) {
-        val += rhs.val;
-    }
-};
-struct Info {
-    int val = 0;
-    void apply(const Tag& rhs, size_t len) {
-        val += rhs.val * len;
-    }
-};
-Info operator+(const Info &a, const Info &b) {
-    return {a.val + b.val};
-}
-
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
-    vector<array<int, 2>> a(n);
-    vector<int> r, c;
-    for (int i = 0; i < n; ++i) {
-        read(int, x, y);
-        a[i] = { x, y };
-        r.emplace_back(x);
-        c.emplace_back(y);
-    }
-    sort(r.begin(), r.end());
-    int mr = unique(r.begin(), r.end()) - r.begin();
-    r.resize(mr);
-    auto gr = [&] (int x) { return lower_bound(r.begin(), r.end(), x) - r.begin(); };
-    sort(c.begin(), c.end());
-    int mc = unique(c.begin(), c.end()) - c.begin();
-    c.resize(mc);
-    auto gc = [&] (int x) { return lower_bound(c.begin(), c.end(), x) - c.begin(); };
-    vector<vector<int>> open(mr);
-    for (int i = 0; i < n; ++i) {
-        open[gr(a[i][0])].emplace_back(i);
-    }
-    auto check = [&] (int cnt) -> optional<pii> {
-        if (cnt == 0) return { { 0, 0 } };
-        segtree<Info, Tag> up(mc), down(mc);
-        int tu = 0, td = 0;
-        for (int i = 0; i < n; ++i) {
-            up.apply(gc(a[i][1]), { 1 });
-            tu += 1;
-        }
-        for (int i = mr - 1; ~i; --i) {
-            for (auto&& idx : open[i]) {
-                up.apply(gc(a[idx][1]), { -1 });
-                down.apply(gc(a[idx][1]), { 1 });
-                tu -= 1;
-                td += 1;
-            }
-            int p = up.binary_search(cnt);
-            int q = down.binary_search(cnt);
-            if (p < INF and q < INF) {
-                p = min(p, q);
-                if (min(tu - up.range_query(p, mc - 1).val, td - down.range_query(p, mc - 1).val) >= cnt) {
-                    return { { r[i], c[p] } };
-                }
-            }
-        }
-        return nullopt;
-    };
-    int left = 0, right = n / 4;
-    while (left < right) {
-        int mid = left + right + 1 >> 1;
-        if (check(mid)) {
-            left = mid;
+    read(ll, k);
+    k -= 1;
+    vector<int> res(n);
+    int l = 0, r = n - 1;
+    for (int i = n - 2; ~i; --i) {
+        int bit;
+        if (i > 63) {
+            bit = 0;
         } else {
-            right = mid - 1;
+            bit = k >> i & 1;
+            k ^= ll(bit) << i;
+        }
+        if (bit == 0) {
+            res[l++] = n - 1 - i;
+        } else {
+            res[r--] = n - 1 - i;
         }
     }
-    auto [x, y] = *check(left);
-    cout << left << '\n';
-    cout << x << ' ' << y << '\n';
+    if (k) {
+        cout << -1 << '\n';
+    } else {
+        assert(l == r);
+        res[l] = n;
+        for (auto&& x : res) {
+            cout << x << ' ';
+        }
+        cout << '\n';
+    }
 }
 
 int main() {

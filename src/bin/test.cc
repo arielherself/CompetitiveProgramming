@@ -1,5 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#pragma GCC optimize("Ofast")
+#pragma GCC optimize("Ofast,unroll-loops")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -172,6 +172,17 @@ template <typename T, typename Iterator> pair<size_t, unordered_map<T, size_t, s
 
 /* io */
 #define untie __AS_PROCEDURE(ios_base::sync_with_stdio(0), cin.tie(NULL))
+
+// add declarations to avoid cyclic dependency
+template<typename T, typename U> istream& operator>>(istream&, pair<T, U>&);
+template<typename T, typename U> ostream& operator<<(ostream&, const pair<T, U>&);
+template<typename T, size_t N> istream& operator>>(istream&, array<T, N>&);
+template <typename T, size_t N> ostream& operator<<(ostream&, const array<T, N>&);
+template<typename Char, typename Traits, typename... Args>
+decltype(auto) operator<<(std::basic_ostream<Char, Traits>&, const std::tuple<Args...>&);
+template<typename T> ostream& operator<<(ostream&, const vector<T>&);
+std::ostream& operator<<(std::ostream&, const int128&);
+
 template<typename T, typename U> istream& operator>>(istream& in, pair<T, U>& p) {
     return in >> p.first >> p.second;
 }
@@ -268,6 +279,18 @@ return_t qpow(ll b, ll p) {
     else return half * half;
 }
 
+// dynamic modulus
+ll qpow(ll b, ll p, ll mod) {
+    if (b == 0 and p != 0) return 0;
+    if (p == 0) return 1;
+    ll half = qpow(b, p / 2, mod);
+    if (p % 2 == 1) return (int128(half) * half % mod) * b % mod;
+    else return half * half % mod;
+}
+
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wparentheses"
 // Accurately find `i` 'th root of `n` (taking the floor)
 inline ll root(ll n, ll i) {
     ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
@@ -281,11 +304,13 @@ inline ll root(ll n, ll i) {
     }
     return l;
 }
+#pragma GCC diagnostic pop
 
 
 #define comb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] / fact[k] / fact[(n) - (k)])
 #define fastcomb(n, k) ((n) < 0 or (k) < 0 or (n) < (k) ? 0 : fact[n] * factrev[k] * factrev[(n) - (k)])
 
+__attribute__((target("lzcnt")))
 constexpr inline int lg2(ll x) { return x == 0 ? -1 : sizeof(ll) * 8 - 1 - __builtin_clzll(x); }
 
 template <typename T>
@@ -510,12 +535,22 @@ void dump_ignore() {}
 void prep() {
 }
 
+template <typename T>
+struct my_any {
+    bool has;
+    T val;
+    my_any(const T& val) : has(true), val(val) {}
+    bool has_value() const { return has; }
+    T& value() { return val; }
+    type_index type() { return typeid(val); }
+};
+
 // __attribute__((target("popcnt")))
 void solve() {
-    constexpr int N = 10;
-    [] {
-        bitset<N + 1> test;
-    } ();
+    my_any a = 10;
+    my_any b = string("hello");
+    assert(a.type() == typeid(int));
+    assert(b.type() == typeid(string));
 }
 
 int main() {

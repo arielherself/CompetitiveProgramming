@@ -1,5 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#pragma GCC optimize("Ofast")
+#pragma GCC optimize("Ofast,unroll-loops")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -279,9 +279,19 @@ return_t qpow(ll b, ll p) {
     else return half * half;
 }
 
-// Accurately find `i` 'th root of `n` (taking the floor)
+// dynamic modulus
+ll qpow(ll b, ll p, ll mod) {
+    if (b == 0 and p != 0) return 0;
+    if (p == 0) return 1;
+    ll half = qpow(b, p / 2, mod);
+    if (p % 2 == 1) return (int128(half) * half % mod) * b % mod;
+    else return half * half % mod;
+}
+
+
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wparentheses"
+// Accurately find `i` 'th root of `n` (taking the floor)
 inline ll root(ll n, ll i) {
     ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
     while (l < r) {
@@ -528,39 +538,13 @@ void prep() {
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
-    readvec(int, a, n);
-    vector<int> stack;
-    vector<bool> mark(n);
-    for (int i = 0; i < n; ++i) {
-        while (stack.size() and a[stack.back()] > a[i]) {
-            mark[stack.back()] = 0;
-            stack.pop_back();
-        }
-        mark[i] = 1;
-        stack.emplace_back(i);
+    int res = 1;
+    int curr = 1;
+    while (curr < n) {
+        res += 1;
+        curr += curr + 2;
     }
-    int mn = INF;
-    for (int i = 0; i < n; ++i) {
-        if (not mark[i]) {
-            chmin(mn, a[i] + 1);
-        }
-    }
-    while (stack.size() and a[stack.back()] > mn) {
-        mark[stack.back()] = 0;
-        stack.pop_back();
-    }
-    multiset<int> rem;
-    for (int i = 0; i < n; ++i) {
-        if (mark[i]) {
-            cout << a[i] << ' ';
-        } else {
-            rem.emplace(a[i] + 1);
-        }
-    }
-    for (auto&& x : rem) {
-        cout << x << ' ';
-    }
-    cout << '\n';
+    cout << res << '\n';
 }
 
 int main() {

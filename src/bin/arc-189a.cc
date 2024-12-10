@@ -524,7 +524,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -532,68 +532,56 @@ void dump() {}
 
 void dump_ignore() {}
 
-constexpr int N = 4e5 + 10;
-bool not_prime[N + 1];
-
-void soe(int n) {
-    vector<int> res;
-    for (int i = 2; i <= n; ++i) {
-        if (not not_prime[i]) {
-            res.emplace_back(i);
-        }
-        for (auto&& x : res) {
-            if (i * x > n) break;
-            not_prime[i * x] = 1;
-            if (i % x == 0) break;
-        }
-    }
-}
+using mll = MLL<PRIME>;
+constexpr int N = 2e5 + 10;
+mll fact[N];
 
 void prep() {
-    soe(N);
+    fact[0] = 1;
+    for (int i = 1; i < N; ++i) {
+        fact[i] = fact[i - 1] * i;
+    }
 }
 
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
-    }
-    array<vector<int>, 2> bk;
-    vector<int> fa(n + 1);
-    {
-        auto dfs = [&] (auto dfs, int v, int pa, int par) -> void {
-            fa[v] = pa;
-            bk[par].emplace_back(v);
-            for (auto&& u : ch[v]) {
-                if (u == pa) continue;
-                dfs(dfs, u, v, 1 - par);
-            }
-        };
-        dfs(dfs, 1, 0, 0);
-    }
-    vector<int> res(n + 1);
-    int curr = 2;
-    for (auto&& v : bk[0]) {
-        res[v] = curr;
-        curr += 2;
-    }
-    curr = 2 * n;
-    for (auto&& v : bk[1]) {
-        res[v] = curr;
-        curr -= 2;
-    }
+    vector<mll> df(n + 1);
+    df[0] = df[1] = 1;
     for (int i = 2; i <= n; ++i) {
-        if (abs(res[fa[i]] - res[i]) == 2) {
-            res[i] = res[fa[i]] > res[i] ? res[i] + 1 : res[i] - 1;
-            break;
+        df[i] = df[i - 2] * i;
+    }
+    readvec(int, a, n);
+    int s = 0;
+    vector<int> segs;
+    int rem = 0;
+    for (int i = 1; i < n; ++i) {
+        if (a[i] != a[s]) {
+            if ((i - s) % 2 == 0 or s == 0 and a[s] == 0) {
+                cout << "0\n";
+                return;
+            }
+            if (i - s != 1) {
+                segs.emplace_back(i - s);
+                rem += (i - s) / 2;
+            }
+            s = i;
         }
     }
-    for (int i = 1; i <= n; ++i) {
-        cout << res[i] << " \n"[i == n];
+    if ((n - s) % 2 == 0 or s == 0 and a[s] == 0) {
+        cout << "0\n";
+        return;
     }
+    if (n - s != 1) {
+        segs.emplace_back(n - s);
+        rem += (n - s) / 2;
+    }
+    mll res = 1;
+    for (auto&& x : segs) {
+        res *= df[x - 2] * comb(rem, x / 2);
+        rem -= x / 2;
+    }
+    cout << res << '\n';
 }
 
 int main() {

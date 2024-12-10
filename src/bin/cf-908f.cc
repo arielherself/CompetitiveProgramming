@@ -524,7 +524,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -532,68 +532,97 @@ void dump() {}
 
 void dump_ignore() {}
 
-constexpr int N = 4e5 + 10;
-bool not_prime[N + 1];
-
-void soe(int n) {
-    vector<int> res;
-    for (int i = 2; i <= n; ++i) {
-        if (not not_prime[i]) {
-            res.emplace_back(i);
-        }
-        for (auto&& x : res) {
-            if (i * x > n) break;
-            not_prime[i * x] = 1;
-            if (i % x == 0) break;
-        }
-    }
-}
-
 void prep() {
-    soe(N);
 }
 
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
-    }
-    array<vector<int>, 2> bk;
-    vector<int> fa(n + 1);
-    {
-        auto dfs = [&] (auto dfs, int v, int pa, int par) -> void {
-            fa[v] = pa;
-            bk[par].emplace_back(v);
-            for (auto&& u : ch[v]) {
-                if (u == pa) continue;
-                dfs(dfs, u, v, 1 - par);
-            }
-        };
-        dfs(dfs, 1, 0, 0);
-    }
-    vector<int> res(n + 1);
-    int curr = 2;
-    for (auto&& v : bk[0]) {
-        res[v] = curr;
-        curr += 2;
-    }
-    curr = 2 * n;
-    for (auto&& v : bk[1]) {
-        res[v] = curr;
-        curr -= 2;
-    }
-    for (int i = 2; i <= n; ++i) {
-        if (abs(res[fa[i]] - res[i]) == 2) {
-            res[i] = res[fa[i]] > res[i] ? res[i] + 1 : res[i] - 1;
-            break;
+    readvec((pair<int, char>), a, n);
+    vector<int> pre(n);
+    pre[0] = a[0].second == 'G' ? 0 : -1;
+    for (int i = 1; i < n; ++i) {
+        if (a[i].second == 'G') {
+            pre[i] = i;
+        } else {
+            pre[i] = pre[i - 1];
         }
     }
-    for (int i = 1; i <= n; ++i) {
-        cout << res[i] << " \n"[i == n];
+    vector<int> nxt(n);
+    nxt[n - 1] = a[n - 1].second == 'G' ? n - 1 : n;
+    for (int i = n - 2; ~i; --i) {
+        if (a[i].second == 'G') {
+            nxt[i] = i;
+        } else {
+            nxt[i] = nxt[i + 1];
+        }
     }
+    int g = -1;
+    ll res = 0;
+    for (int i = 0; i < n; ++i) {
+        if (a[i].second == 'G') {
+            if (g != -1) {
+                res += a[i].first - g;
+            }
+            g = a[i].first;
+        }
+    }
+        int prevr = -1, prevb = -1;
+        int has_g = 0;
+        int hasr = 0, hasb = 0;
+        vector<int> segsr, segsb;
+    for (int i = 0; i < n; ++i) {
+        if (a[i].second == 'R') {
+            if (prevr != -1) {
+                segsr.emplace_back(a[i].first - a[prevr].first);
+            }
+            prevr = i;
+            hasr = 1;
+        } if (a[i].second == 'B') {
+            if (prevb != -1) {
+                segsb.emplace_back(a[i].first - a[prevb].first);
+            }
+            prevb = i;
+            hasb = 1;
+        } else if (a[i].second == 'G') {
+            if (prevr != -1) {
+                segsr.emplace_back(a[i].first - a[prevr].first);
+            }
+            prevr = i;
+            if (prevb != -1) {
+                segsb.emplace_back(a[i].first - a[prevb].first);
+            }
+            prevb = i;
+            if (has_g) {
+                if (hasr and hasb) {
+                    int len = accumulate(segsb.begin(), segsb.end(), 0);
+                    res += min(len, 2 * len - *max_element(segsr.begin(), segsr.end()) - *max_element(segsb.begin(), segsb.end()));
+                } else if (hasr) {
+                    res += accumulate(segsr.begin(), segsr.end(), 0) - *max_element(segsr.begin(), segsr.end());
+                } else if (hasb) {
+                    res += accumulate(segsb.begin(), segsb.end(), 0) - *max_element(segsb.begin(), segsb.end());
+                }
+            } else {
+                if (hasr) {
+                    res += accumulate(segsr.begin(), segsr.end(), 0);
+                }
+                if (hasb) {
+                    res += accumulate(segsb.begin(), segsb.end(), 0);
+                }
+            }
+            segsr.clear();
+            segsb.clear();
+            has_g = 1;
+            hasr = hasb = 0;
+        }
+    }
+    if (hasr) {
+        res += accumulate(segsr.begin(), segsr.end(), 0);
+    }
+    if (hasb) {
+        res += accumulate(segsb.begin(), segsb.end(), 0);
+    }
+    cout << res << '\n';
 }
 
 int main() {

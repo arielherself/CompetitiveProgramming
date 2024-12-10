@@ -532,67 +532,52 @@ void dump() {}
 
 void dump_ignore() {}
 
-constexpr int N = 4e5 + 10;
-bool not_prime[N + 1];
-
-void soe(int n) {
-    vector<int> res;
-    for (int i = 2; i <= n; ++i) {
-        if (not not_prime[i]) {
-            res.emplace_back(i);
-        }
-        for (auto&& x : res) {
-            if (i * x > n) break;
-            not_prime[i * x] = 1;
-            if (i % x == 0) break;
-        }
-    }
-}
-
 void prep() {
-    soe(N);
 }
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
+    read(int, n, q);
     adj(ch, n);
     for (int i = 0; i < n - 1; ++i) {
         read(int, u, v);
         edge(ch, u, v);
     }
-    array<vector<int>, 2> bk;
     vector<int> fa(n + 1);
+    vector dp(n + 1, vector<ll>(n + 1, INFLL));
+    dp[1].assign(n + 1, 0);
     {
-        auto dfs = [&] (auto dfs, int v, int pa, int par) -> void {
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
             fa[v] = pa;
-            bk[par].emplace_back(v);
+            if (v != 1) {
+                for (int j = 0; j <= n; ++j) {
+                    if (fa[v] != 1) {
+                        // use a coin
+                        if (j > 0) {
+                            chmin(dp[v][j], dp[fa[fa[v]]][j - 1] + 2);
+                        }
+                        // don't use a coin
+                        chmin(dp[v][j], (dp[fa[fa[v]]][j] + 2) + 2 * (ch[v].size() - 1));
+                    } else {
+                        // use a coin
+                        if (j > 0) {
+                            chmin(dp[v][j], 1);
+                        }
+                        // don't use a coin
+                        chmin(dp[v][j], (dp[fa[v]][j] + 1) + 2 * (ch[v].size() - 1));
+                    }
+                }
+            }
             for (auto&& u : ch[v]) {
                 if (u == pa) continue;
-                dfs(dfs, u, v, 1 - par);
+                dfs(dfs, u, v);
             }
         };
-        dfs(dfs, 1, 0, 0);
+        dfs(dfs, 1, 0);
     }
-    vector<int> res(n + 1);
-    int curr = 2;
-    for (auto&& v : bk[0]) {
-        res[v] = curr;
-        curr += 2;
-    }
-    curr = 2 * n;
-    for (auto&& v : bk[1]) {
-        res[v] = curr;
-        curr -= 2;
-    }
-    for (int i = 2; i <= n; ++i) {
-        if (abs(res[fa[i]] - res[i]) == 2) {
-            res[i] = res[fa[i]] > res[i] ? res[i] + 1 : res[i] - 1;
-            break;
-        }
-    }
-    for (int i = 1; i <= n; ++i) {
-        cout << res[i] << " \n"[i == n];
+    while (q--) {
+        read(int, v, p);
+        cout << dp[fa[v]][p] + 1 << '\n';
     }
 }
 

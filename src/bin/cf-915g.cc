@@ -524,7 +524,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -532,68 +532,57 @@ void dump() {}
 
 void dump_ignore() {}
 
-constexpr int N = 4e5 + 10;
-bool not_prime[N + 1];
+constexpr int N = 2e6 + 10;
+int mu[N];
 
-void soe(int n) {
+void get_mu(int n) {
+    vector<bool> not_prime(n + 1);
     vector<int> res;
+    mu[1] = 1;
     for (int i = 2; i <= n; ++i) {
         if (not not_prime[i]) {
             res.emplace_back(i);
+            mu[i] = -1;
         }
         for (auto&& x : res) {
             if (i * x > n) break;
             not_prime[i * x] = 1;
-            if (i % x == 0) break;
+            if (i % x == 0) {
+                mu[i * x] = 0;
+                break;
+            } else {
+                mu[i * x] = -mu[i];
+            }
         }
     }
 }
 
 void prep() {
-    soe(N);
+    get_mu(N - 1);
 }
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    adj(ch, n);
-    for (int i = 0; i < n - 1; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
+    using mll = MLL<MDL>;
+    read(int, n, k);
+    vector<mll> pw(k + 1);
+    for (int i = 1; i <= k; ++i) {
+        pw[i] = qpow(i, n, MDL);
     }
-    array<vector<int>, 2> bk;
-    vector<int> fa(n + 1);
-    {
-        auto dfs = [&] (auto dfs, int v, int pa, int par) -> void {
-            fa[v] = pa;
-            bk[par].emplace_back(v);
-            for (auto&& u : ch[v]) {
-                if (u == pa) continue;
-                dfs(dfs, u, v, 1 - par);
-            }
-        };
-        dfs(dfs, 1, 0, 0);
-    }
-    vector<int> res(n + 1);
-    int curr = 2;
-    for (auto&& v : bk[0]) {
-        res[v] = curr;
-        curr += 2;
-    }
-    curr = 2 * n;
-    for (auto&& v : bk[1]) {
-        res[v] = curr;
-        curr -= 2;
-    }
-    for (int i = 2; i <= n; ++i) {
-        if (abs(res[fa[i]] - res[i]) == 2) {
-            res[i] = res[fa[i]] > res[i] ? res[i] + 1 : res[i] - 1;
-            break;
+    vector<mll> diff(k + 2);
+    for (int i = 1; i <= k; ++i) {
+        for (int j = i; j <= k; j += i) {
+            diff[j] += mu[i] * pw[j / i];
+            diff[min(k + 1, j + i)] -= mu[i] * pw[j / i];
         }
     }
-    for (int i = 1; i <= n; ++i) {
-        cout << res[i] << " \n"[i == n];
+    mll curr = 0;
+    mll res = 0;
+    for (int i = 1; i <= k; ++i) {
+        curr += diff[i];
+        res += curr.val xor i;
     }
+    cout << res << '\n';
 }
 
 int main() {

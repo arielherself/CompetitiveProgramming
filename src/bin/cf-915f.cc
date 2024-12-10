@@ -524,7 +524,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -532,68 +532,73 @@ void dump() {}
 
 void dump_ignore() {}
 
-constexpr int N = 4e5 + 10;
-bool not_prime[N + 1];
-
-void soe(int n) {
-    vector<int> res;
-    for (int i = 2; i <= n; ++i) {
-        if (not not_prime[i]) {
-            res.emplace_back(i);
-        }
-        for (auto&& x : res) {
-            if (i * x > n) break;
-            not_prime[i * x] = 1;
-            if (i % x == 0) break;
-        }
-    }
-}
-
 void prep() {
-    soe(N);
 }
+
+class quick_union {
+private:
+    vector<size_t> c, sz;
+public:
+    quick_union(size_t n) : c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
+    }
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] += sz[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_size(size_t i) {
+        return sz[query(i)];
+    }
+};
 
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
+    readvec1(int, a, n);
     adj(ch, n);
     for (int i = 0; i < n - 1; ++i) {
         read(int, u, v);
         edge(ch, u, v);
     }
-    array<vector<int>, 2> bk;
-    vector<int> fa(n + 1);
-    {
-        auto dfs = [&] (auto dfs, int v, int pa, int par) -> void {
-            fa[v] = pa;
-            bk[par].emplace_back(v);
-            for (auto&& u : ch[v]) {
-                if (u == pa) continue;
-                dfs(dfs, u, v, 1 - par);
-            }
-        };
-        dfs(dfs, 1, 0, 0);
-    }
-    vector<int> res(n + 1);
-    int curr = 2;
-    for (auto&& v : bk[0]) {
-        res[v] = curr;
-        curr += 2;
-    }
-    curr = 2 * n;
-    for (auto&& v : bk[1]) {
-        res[v] = curr;
-        curr -= 2;
-    }
-    for (int i = 2; i <= n; ++i) {
-        if (abs(res[fa[i]] - res[i]) == 2) {
-            res[i] = res[fa[i]] > res[i] ? res[i] + 1 : res[i] - 1;
-            break;
+    vector<int> seq(n);
+    iota(seq.begin(), seq.end(), 1);
+    auto work = [&] {
+        ll ret = 0;
+        vector<int> rev(n + 1);
+        for (int i = 0; i < n; ++i) {
+            rev[seq[i]] = i;
         }
-    }
-    for (int i = 1; i <= n; ++i) {
-        cout << res[i] << " \n"[i == n];
-    }
+        quick_union qu(n + 1);
+        for (auto&& v : seq) {
+            ll tot = 0;
+            ll sf = 0;
+            for (auto&& u : ch[v]) {
+                if (rev[u] > rev[v]) continue;
+                tot += qu.query_size(u);
+                sf += qu.query_size(u) * qu.query_size(u);
+                ret += a[v] * qu.query_size(u);
+                qu.merge(u, v);
+            }
+            ret += a[v];
+            ret += a[v] * (tot * tot - sf) / 2;
+        }
+        return ret;
+    };
+    ll res = 0;
+    sort_by_key(seq.begin(), seq.end(), expr(a[v], int v));
+    res += work();
+    sort_by_key(seq.begin(), seq.end(), expr(-a[v], int v));
+    res -= work();
+    cout << res << '\n';
 }
 
 int main() {
