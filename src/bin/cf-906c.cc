@@ -524,7 +524,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -535,14 +535,56 @@ void dump_ignore() {}
 void prep() {
 }
 
-// __attribute__((target("popcnt")))
+__attribute__((target("lzcnt")))
 void solve() {
-    int a = 1 + 2 >> 2;
+    read(int, n, m);
+    vector<int> nb(n);
+    for (int i = 0; i < m; ++i) {
+        read(int, u, v);
+        --u, --v;
+        nb[u] or_eq 1 << v;
+        nb[v] or_eq 1 << u;
+    }
+    vector<tiii> dp(1 << n, { INF, 0, 0 });
+    // check for initial cliques
+    for (int i = 0; i < (1 << n); ++i) {
+        int f = 1;
+        int mask = i;
+        while (mask) {
+            int curr = msp(mask);
+            mask xor_eq 1 << curr;
+            if ((nb[curr] bitand (i xor 1 << curr)) != (i xor 1 << curr)) {
+                f = 0;
+                break;
+            }
+        }
+        if (f) {
+            dp[i] = { 0, 0, 0 };
+        }
+    }
+    for (int i = 0; i < (1 << n); ++i) {
+        int mask = i;
+        while (mask) {
+            int curr = msp(mask);
+            mask xor_eq 1 << curr;
+            chmin(dp[i bitor nb[curr]], tuple(get<0>(dp[i]) + 1, i, curr));
+        }
+    }
+    int ptr = (1 << n) - 1;
+    vector<int> seq;
+    while (get<0>(dp[ptr])) {
+        deb(ptr, dp[ptr]);
+        seq.emplace_back(get<2>(dp[ptr]) + 1);
+        ptr = get<1>(dp[ptr]);
+    }
+    reverse(seq.begin(), seq.end());
+    cout << seq.size() << '\n';
+    putvec(seq);
 }
 
 int main() {
 #if __cplusplus < 201402L or defined(_MSC_VER) and not defined(__clang__)
-    static_assert(false, "incompatible compiler variant detected.");
+    assert(false && "incompatible compiler variant detected.");
 #endif
     untie;
     prep();

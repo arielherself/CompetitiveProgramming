@@ -524,7 +524,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -535,14 +535,50 @@ void dump_ignore() {}
 void prep() {
 }
 
-// __attribute__((target("popcnt")))
+__attribute__((target("lzcnt")))
 void solve() {
-    int a = 1 + 2 >> 2;
+    read(int, n);
+    readvec(int, a, n);
+    read(ll, k);
+    auto check = [&] (ll target) -> bool {
+        debug(target);
+        ll all = 1;
+        for (int i = 1; i < (1 << n); ++i) {
+            int mask = i;
+            int popcnt = 0;
+            ll base = 1;
+            while (mask) {
+                popcnt += 1;
+                int curr = msp(mask);
+                mask ^= 1 << curr;
+                if (base > target / a[curr]) {
+                    goto fi;
+                }
+                base *= a[curr];
+            }
+            deb(i, base, target / base);
+            all += (popcnt % 2 == 0 ? -1 : 1) * (target / base);
+        fi:
+            ;;
+        }
+        debug(all);
+        return all >= k;
+    };
+    ll l = 1, r = 1e18;
+    while (l < r) {
+        ll mid = l + r >> 1;
+        if (check(mid)) {
+            r = mid;
+        } else {
+            l = mid + 1;
+        }
+    }
+    cout << l << '\n';
 }
 
 int main() {
 #if __cplusplus < 201402L or defined(_MSC_VER) and not defined(__clang__)
-    static_assert(false, "incompatible compiler variant detected.");
+    assert(false && "incompatible compiler variant detected.");
 #endif
     untie;
     prep();

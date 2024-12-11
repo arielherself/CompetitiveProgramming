@@ -8,17 +8,7 @@ import io
 PRIME = 998_244_353
 
 if __name__ == '__main__':
-    N = 10 ** 5
-    print(''.join((choice(ascii_lowercase) for _ in range(N))))
-    # print(''.join(('a' for _ in range(N))))
+    N = 1000
     print(N)
-    rem = N
-    for i in range(N):
-        # m = randint(1, rem - (N - 1 - i))
-        # m = 316
-        m = 1
-        rem -= m
-        if rem < 0:
-            break
-        print(f'{randint(1, N)} {"".join((choice(ascii_lowercase) for _ in range(m)))}')
-        # print(f'{randint(1, N)} {"".join(("a" for _ in range(m)))}')
+    print(*([1000] * 4))
+    print(*(''.join((choice(('*', '.')) for _ in range(N))) for _ in range(4)))

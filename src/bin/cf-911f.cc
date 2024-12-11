@@ -524,7 +524,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -537,12 +537,91 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    int a = 1 + 2 >> 2;
+    read(int, n);
+    adj(ch, n);
+    for (int i = 0; i < n - 1; ++i) {
+        read(int, u, v);
+        edge(ch, u, v);
+    }
+    int x = 1, y = 1;
+    {
+        int maxd = -1;
+        auto dfs = [&] (auto dfs, int v, int pa, int d) -> void {
+            if (chmax(maxd, d)) {
+                x = v;
+            }
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v, d + 1);
+            }
+        };
+        dfs(dfs, 1, 0, 0);
+        y = x;
+        maxd = -1;
+        dfs(dfs, x, 0, 0);
+    }
+    vector<bool> mark(n + 1);
+    vector<int> line;
+    {
+        auto dfs = [&] (auto dfs, int v, int pa) -> bool {
+            int ret = 0;
+            if (v == y) {
+                ret = 1;
+            }
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                ret |= dfs(dfs, u, v);
+            }
+            if (ret) {
+                mark[v] = 1;
+                line.emplace_back(v);
+            }
+            return ret;
+        };
+        dfs(dfs, x, 0);
+    }
+    ll res = 0;
+    vector<pii> dis(n + 1);
+    {
+        auto dfs = [&] (auto dfs, int v, int pa, int d, int r) -> void {
+            chmax(dis[v], pii(d, r));
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v, d + 1, r);
+            }
+        };
+        dfs(dfs, x, 0, 0, x);
+        dfs(dfs, y, 0, 0, y);
+    }
+    // deb(x, y);
+    res += ll(1 + dis[x].first) * dis[x].first / 2;
+    vector<tiii> seq;
+    {
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v);
+            }
+            if (not mark[v]) {
+                res += dis[v].first;
+                seq.emplace_back(v, dis[v].second, v);
+            }
+        };
+        dfs(dfs, x, 0);
+    }
+    int m = line.size();
+    for (int i = m - 1; i > 0; --i) {
+        seq.emplace_back(line[0], line[i], line[i]);
+    }
+    cout << res << '\n';
+    for (auto&& [x, y, z] : seq) {
+        cout << x << ' ' << y << ' ' << z << '\n';
+    }
 }
 
 int main() {
 #if __cplusplus < 201402L or defined(_MSC_VER) and not defined(__clang__)
-    static_assert(false, "incompatible compiler variant detected.");
+    assert(false && "incompatible compiler variant detected.");
 #endif
     untie;
     prep();

@@ -1,7 +1,7 @@
 vim.api.nvim_create_autocmd("FileType", {
     pattern = "cpp",
     callback = function()
-        vim.api.nvim_buf_set_keymap(0, 'n', "<leader>b", '<Cmd>wa<CR><Cmd>10sp<CR><Cmd>te ulimit -s unlimited && diff % .lastsrc >/dev/null 2>&1 && (echo -e "\\e[0;32mUsing cached binary for file % ...\\e[0m\\n" && time ./a.out < std.in) || (g++ -std=c++17 -DONLINE_JUDGE -Wl,-z,stack-size=268435456 -Wall -Ofast -g -fsanitize=address,undefined -xc++ % && time ./a.out < std.in && cp % .lastsrc)<CR>i', {
+        vim.api.nvim_buf_set_keymap(0, 'n', "<leader>b", '<Cmd>wa<CR><Cmd>10sp<CR><Cmd>te ulimit -s unlimited && diff % .lastsrc >/dev/null 2>&1 && (echo -e "\\e[0;32mUsing cached binary for file % ...\\e[0m\\n" && time ./a.out < std.in) || (g++ -std=c++17 -DONLINE_JUDGE -Wl,-z,stack-size=268435456 -Wall -Wno-parentheses -Ofast -g -fsanitize=address,undefined -xc++ % && time ./a.out < std.in && cp % .lastsrc)<CR>i', {
             silent = true,
             noremap = true
         })
