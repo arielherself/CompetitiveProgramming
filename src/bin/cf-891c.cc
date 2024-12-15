@@ -524,7 +524,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -535,8 +535,116 @@ void dump_ignore() {}
 void prep() {
 }
 
+class quick_union {
+public:
+    size_t n;
+    vector<size_t> c, sz;
+    vector<pair<size_t, size_t>> history;
+public:
+    quick_union(size_t n) : n(n), c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
+    }
+    size_t query(size_t i) {
+        if (c[i] != i) return query(c[i]);
+        return c[i];
+    }
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) {
+            history.emplace_back(n, n);
+        } else {
+            i = query(i), j = query(j);
+            if (sz[i] > sz[j]) swap(i, j);
+            history.emplace_back(i, j);
+            sz[j] += sz[i];
+            c[i] = j;
+        }
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_size(size_t i) {
+        return sz[query(i)];
+    }
+    void rollback() {
+        auto [i, j] = popback(history);
+        if (i == n and j == n) return;
+        c[i] = i;
+        sz[j] -= sz[i];
+    }
+};
+
 // __attribute__((target("popcnt")))
 void solve() {
+    read(int, n, m);
+    readvec((array<int, 3>), edges, m);
+    vector<int> oc;
+    for (auto&& [u, v, w] : edges) {
+        oc.emplace_back(w);
+    }
+    sort(oc.begin(), oc.end());
+    int t = unique(oc.begin(), oc.end()) - oc.begin();
+    oc.resize(t);
+    auto get = [&] (int x) { return lower_bound(oc.begin(), oc.end(), x) - oc.begin(); };
+    read(int, q);
+    vector<vector<int>> queries(q);
+    vector<vector<pair<int, vector<int>>>> bk(t);
+    vector<bool> res(q, 1);
+    for (int i = 0; i < q; ++i) {
+        read(int, m);
+        readvec(int, v, m);
+        transform(v.begin(), v.end(), v.begin(), expr(idx - 1, auto&& idx));
+        sort_by_key(v.begin(), v.end(), expr(edges[idx][2], auto&& idx));
+        vector<pair<int, vector<int>>> grp;
+        for (int j = 0; j < m; ++j) {
+            if (grp.empty() or edges[v[j]][2] != grp.back().first) {
+                grp.emplace_back(edges[v[j]][2], vector { v[j] });
+            } else {
+                grp.back().second.emplace_back(v[j]);
+            }
+        }
+        for (auto&& [j, vec] : grp) {
+            bk[get(j)].emplace_back(i, vec);
+        }
+        queries[i] = std::move(v);
+    }
+    vector<int> idx(m);
+    iota(idx.begin(), idx.end(), 0);
+    sort_by_key(idx.begin(), idx.end(), expr(edges[i][2], auto&& i));
+    int ptr = 0;
+    quick_union qu(n + 1);
+    for (int i = 0; i < t; ++i) {
+        for (auto&& [idx, vec] : bk[i]) {
+            int cnt = 0;
+            for (auto&& ei : vec) {
+                auto&& [u, v, w] = edges[ei];
+                assert(w == oc[i]);
+                if (qu.connected(u, v)) {
+                    res[idx] = 0;
+                    break;
+                }
+                qu.merge(u, v);
+                cnt += 1;
+            }
+            while (cnt--) {
+                qu.rollback();
+            }
+        }
+        int nw = ptr;
+        while (nw < m and edges[idx[nw]][2] == oc[i]) {
+            qu.merge(edges[idx[nw]][0], edges[idx[nw]][1]);
+            nw += 1;
+        }
+        // for (auto&& [idx, vec] : bk[i]) {
+        //     if (vec.size() != nw - ptr) {
+        //         res[idx] = 0;
+        //     }
+        // }
+        ptr = nw;
+    }
+    for (auto&& x : res) {
+        cout << (x ? "YES" : "NO") << '\n';
+    }
 }
 
 int main() {

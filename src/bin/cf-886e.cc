@@ -524,7 +524,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -532,11 +532,38 @@ void dump() {}
 
 void dump_ignore() {}
 
+using mll = MLL<MDL>;
+constexpr int N = 1e6 + 10;
+mll fact[N];
+
 void prep() {
+    fact[0] = 1;
+    for (int i = 1; i < N; ++i) {
+        fact[i] = fact[i - 1] * i;
+    }
 }
 
 // __attribute__((target("popcnt")))
 void solve() {
+    read(int, n, k);
+    vector<mll> dp(n + 1);
+    dp[1] = 1;
+    deque<mll> q = { 1 };
+    mll sum = 1;
+    for (int i = 2; i <= n; ++i) {
+        if (q.size() > k) {
+            sum -= popfront(q);
+        }
+        dp[i] = fact[i - 2] * sum;
+        mll curr = dp[i] / fact[i - 1];
+        q.emplace_back(curr);
+        sum += curr;
+    }
+    mll tot = 0;
+    for (int i = 1; i <= n; ++i) {
+        tot += comb(n - 1, i - 1) * dp[i] * fact[n - i];
+    }
+    cout << fact[n] - tot << '\n';
 }
 
 int main() {

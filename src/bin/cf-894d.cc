@@ -524,7 +524,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -535,8 +535,207 @@ void dump_ignore() {}
 void prep() {
 }
 
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+    using size_type = uint64_t;
+    using info_type = Addable_Info_t;
+    using tag_type = Tag_t;
+    size_type _max;
+    vector<info_type> d;
+    vector<tag_type> b;
+    void pull(size_type p) {
+        d[p] = d[p * 2] + d[p * 2 + 1];
+    }
+    void push(size_type p, size_type left_len, size_type right_len) {
+        d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
+        b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+        b[p] = tag_type();
+    }
+    void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+        if (s == t) {
+            d[p] = c;
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        if (s != t) push(p, m - s + 1, t - m);
+        if (x <= m) set(s, m, p * 2, x, c);
+        else set(m + 1, t, p * 2 + 1, x, c);
+        pull(p);
+    }
+
+    void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+        if (l <= s && t <= r) {
+            d[p].apply(c, t - s + 1);
+            b[p].apply(c);
+            return;
+        }
+        size_type m = s + (t - s >> 1);
+        push(p, m - s + 1, t - m);
+        if (l <= m) range_apply(s, m, p * 2, l, r, c);
+        if (r > m)  range_apply(m + 1, t, p * 2 + 1, l, r, c);
+        pull(p);
+    }
+    info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+        if (l <= s && t <= r) {
+            return d[p];
+        }
+        size_type m = s + (t - s >> 1);
+        info_type res = {};
+        push(p, m - s + 1, t - m);
+        if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+        if (r > m)  res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+        return res;
+    }
+    void build(const Sequence& a, size_type s, size_type t, size_type p) {
+        if (s == t) {
+            d[p] = a[s];
+            return;
+        }
+        int m = s + (t - s >> 1);
+        build(a, s, m, p * 2);
+        build(a, m + 1, t, p * 2 + 1);
+        pull(p);
+    }
+public:
+    segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+    segtree(const Sequence& a) : segtree(a.size()) {
+        build(a, {}, _max, 1);
+    }
+    void set(size_type i, const info_type& c) {
+        set({}, _max, 1, i, c);
+    }
+
+    void range_apply(size_type l, size_type r, const tag_type& c) {
+        range_apply({}, _max, 1, l, r, c);
+    }
+    void apply(size_type i, const tag_type& c) {
+        range_apply(i, i, c);
+    }
+    info_type range_query(size_type l, size_type r) {
+        return range_query({}, _max, 1, l, r);
+    }
+    info_type query(size_type i) {
+        return range_query(i, i);
+    }
+    Sequence serialize() {
+        Sequence res = {};
+        for (size_type i = 0; i <= _max; ++i) {
+            res.push_back(query(i));
+        }
+        return res;
+    }
+    const vector<info_type>& get_d() {
+        return d;
+    }
+};
+struct Tag {
+    void apply(const Tag& rhs) { }
+};
+struct Info {
+    ll val = 0;
+    int cnt = 0;
+    void apply(const Tag& rhs, size_t len) { }
+};
+Info operator+(const Info &a, const Info &b) {
+    return {
+        .val = a.val + b.val,
+        .cnt = a.cnt + b.cnt,
+    };
+}
+
 // __attribute__((target("popcnt")))
 void solve() {
+    read(int, n, m);
+    vector<vector<pii>> e(n + 1);
+    vector<int> w(n + 1);
+    for (int i = 2; i <= n; ++i) {
+        read(int, x);
+        w[i] = x;
+        edgew(e, i, i / 2, x);
+    }
+    vector<ll> p(n + 1);
+    vector<int> dfn(n + 1);
+    vector<int> sz(n + 1);
+    {
+        int t = 0;
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            dfn[v] = t++;
+            sz[v] = 1;
+            for (auto&& [u, w] : e[v]) {
+                if (u == pa) continue;
+                p[u] = p[v] + w;
+                dfs(dfs, u, v);
+                sz[v] += sz[u];
+            }
+        };
+        dfs(dfs, 1, 0);
+    }
+    readvec(pii, q, m);
+    vector<tuple<ll, int, int>> queries;
+    vector<Info> ans;
+    int c = 0;
+    for (auto&& [v, d] : q) {
+        ans.emplace_back();
+        queries.emplace_back(d + 2 * p[v] - p[v], v, c++);
+        int l = 1;
+        int u = v xor 1;
+        while (u > 1) {
+            ans.emplace_back();
+            queries.emplace_back(d + 2 * p[u / 2] - p[v], u, c++);
+            u = u >> 1 xor 1;
+            l += 1;
+        }
+    }
+    sort(queries.begin(), queries.end());
+    vector<int> idx(n);
+    iota(idx.begin(), idx.end(), 1);
+    sort_by_key(idx.begin(), idx.end(), expr(p[v], int v));
+    segtree<Info, Tag> tr(n);
+    int ptr = 0;
+    for (auto&& v : idx) {
+        while (ptr < queries.size() and get<0>(queries[ptr]) <= p[v]) {
+            auto [_, u, idx] = queries[ptr];
+            ptr += 1;
+            if (u > n) continue;
+            Info r = tr.range_query(dfn[u], dfn[u] + sz[u] - 1);
+            ans[idx] = r;
+        }
+        tr.set(dfn[v], {
+            .val = p[v],
+            .cnt = 1,
+        });
+    }
+    while (ptr < queries.size()) {
+        auto [_, u, idx] = queries[ptr];
+        ptr += 1;
+        if (u > n) continue;
+        auto r = tr.range_query(dfn[u], dfn[u] + sz[u] - 1);
+        ans[idx] = r;
+    }
+    c = 0;
+    for (auto&& [v, d] : q) {
+        ll res = 0;
+        {
+            auto [val, cnt] = ans[c++];
+            res += ll(1) * cnt * (d + p[v]) - val;
+        }
+        int l = 1;
+        int u = v xor 1;
+        while (u > 1) {
+            auto [val, cnt] = ans[c++];
+            res += cnt * (d - p[v] + 2 * p[u / 2]) - val;
+            u = u >> 1 xor 1;
+            l += 1;
+        }
+        u = v / 2;
+        while (u != 0) {
+            if (p[v] - p[u] < d) {
+                res += d - p[v] + p[u];
+            }
+            u >>= 1;
+        }
+        cout << res << '\n';
+    }
 }
 
 int main() {
