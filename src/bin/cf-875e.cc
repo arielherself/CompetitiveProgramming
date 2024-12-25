@@ -1,5 +1,4 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#include <ratio>
 #pragma GCC optimize("Ofast,unroll-loops")
 /************* This code requires C++17. ***************/
 
@@ -26,7 +25,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;
+using ld = long double;
 using pii = pair<int, int>;           using pil = pair<int, ll>;           using pid = pair<int, ld>;
 using pli = pair<ll, int>;            using pll = pair<ll, ll>;            using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;            using pdl = pair<ld, ll>;            using pdd = pair<ld, ld>;
@@ -133,15 +132,13 @@ struct pair_hash {
 uniform_int_distribution<mt19937::result_type> dist(PRIME);
 const size_t __array_hash_b = 31, __array_hash_mdl1 = dist(rd), __array_hash_mdl2 = dist(rd);
 struct array_hash {
-    safe_hash hasher;
     template <typename Sequence>
     size_t operator()(const Sequence& arr) const {
         size_t pw1 = 1, pw2 = 1;
         size_t res1 = 0, res2 = 0;
         for (auto&& x : arr) {
-            auto h = hasher(x);
-            res1 = (res1 + h * pw1) % __array_hash_mdl1;
-            res2 = (res2 + h * pw2) % __array_hash_mdl2;
+            res1 = (res1 + x * pw1) % __array_hash_mdl1;
+            res2 = (res2 + x * pw2) % __array_hash_mdl2;
             pw1 = (pw1 * __array_hash_b) % __array_hash_mdl1;
             pw2 = (pw2 * __array_hash_b) % __array_hash_mdl2;
         }
@@ -296,7 +293,7 @@ ll qpow(ll b, ll p, ll mod) {
 #pragma GCC diagnostic ignored "-Wparentheses"
 // Accurately find `i` 'th root of `n` (taking the floor)
 inline ll root(ll n, ll i) {
-    ll l = 0, r = pow(LLONG_MAX, (long double)(1) / i);
+    ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
     while (l < r) {
         ll mid = l + r + 1 >> 1;
         if (qpow<int128>(mid, i) <= n) {
@@ -540,12 +537,40 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    for (int i = 9; ; i += 9) {
-        if (parity(i)) {
-            debug(i);
-            return;
+    read(int, n, s1, s2);
+    readvec1(int, pos, n);
+    pos[0] = s2;
+    auto check = [&] (int dis) -> bool {
+        set<int> cand;
+        if (abs(s1 - s2) <= dis) {
+            cand.emplace(s1);
+        }
+        for (int i = 1; i <= n; ++i) {
+            // use the alternating pointer
+            if (cand.size() and abs(pos[i - 1] - pos[i]) <= dis) {
+                cand.emplace(pos[i - 1]);
+            }
+            // use the last pointer
+            // don't need to do anything
+            while (cand.size() and abs(*cand.begin() - pos[i]) > dis) {
+                cand.erase(cand.begin());
+            }
+            while (cand.size() and abs(*cand.rbegin() - pos[i]) > dis) {
+                cand.erase(prev(cand.end()));
+            }
+        }
+        return cand.size();
+    };
+    int l = 0, r = INF;
+    while (l < r) {
+        int mid = l + r >> 1;
+        if (check(mid)) {
+            r = mid;
+        } else {
+            l = mid + 1;
         }
     }
+    cout << l << '\n';
 }
 
 int main() {

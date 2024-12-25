@@ -1,5 +1,4 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#include <ratio>
 #pragma GCC optimize("Ofast,unroll-loops")
 /************* This code requires C++17. ***************/
 
@@ -26,7 +25,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;
+using ld = long double;
 using pii = pair<int, int>;           using pil = pair<int, ll>;           using pid = pair<int, ld>;
 using pli = pair<ll, int>;            using pll = pair<ll, ll>;            using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;            using pdl = pair<ld, ll>;            using pdd = pair<ld, ld>;
@@ -133,15 +132,13 @@ struct pair_hash {
 uniform_int_distribution<mt19937::result_type> dist(PRIME);
 const size_t __array_hash_b = 31, __array_hash_mdl1 = dist(rd), __array_hash_mdl2 = dist(rd);
 struct array_hash {
-    safe_hash hasher;
     template <typename Sequence>
     size_t operator()(const Sequence& arr) const {
         size_t pw1 = 1, pw2 = 1;
         size_t res1 = 0, res2 = 0;
         for (auto&& x : arr) {
-            auto h = hasher(x);
-            res1 = (res1 + h * pw1) % __array_hash_mdl1;
-            res2 = (res2 + h * pw2) % __array_hash_mdl2;
+            res1 = (res1 + x * pw1) % __array_hash_mdl1;
+            res2 = (res2 + x * pw2) % __array_hash_mdl2;
             pw1 = (pw1 * __array_hash_b) % __array_hash_mdl1;
             pw2 = (pw2 * __array_hash_b) % __array_hash_mdl2;
         }
@@ -296,7 +293,7 @@ ll qpow(ll b, ll p, ll mod) {
 #pragma GCC diagnostic ignored "-Wparentheses"
 // Accurately find `i` 'th root of `n` (taking the floor)
 inline ll root(ll n, ll i) {
-    ll l = 0, r = pow(LLONG_MAX, (long double)(1) / i);
+    ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
     while (l < r) {
         ll mid = l + r + 1 >> 1;
         if (qpow<int128>(mid, i) <= n) {
@@ -538,14 +535,86 @@ void dump_ignore() {}
 void prep() {
 }
 
-// __attribute__((target("popcnt")))
-void solve() {
-    for (int i = 9; ; i += 9) {
-        if (parity(i)) {
-            debug(i);
-            return;
+template<typename _Tp, typename _Op = function<_Tp(const _Tp&, const _Tp&)>> struct sparse_table {
+    _Op op;
+    vector<vector<_Tp>> st;
+    sparse_table() {}
+    template <typename ReverseIterator>
+    sparse_table(ReverseIterator __first, ReverseIterator __last, _Op&& __operation) {
+        op = __operation;
+        int n = distance(__first, __last);
+        st = vector<vector<_Tp>>(n, vector<_Tp>(int(log2(n) + 1)));
+        int i = n - 1;
+        for (auto it = __first; it != __last; ++it) {
+            st[i][0] = *it;
+            for (int j = 1; i + (1 << j) <= n; ++j) {
+                st[i][j] = op(st[i][j - 1], st[i + (1 << (j - 1))][j - 1]);
+            }
+            i -= 1;
         }
     }
+    _Tp query(size_t __start, size_t __end) {
+        int s = lg2(__end - __start + 1);
+        return op(st[__start][s], st[__end - (1 << s) + 1][s]);
+    }
+};
+
+// __attribute__((target("popcnt")))
+void solve() {
+    read(int, n);
+    readvec(int, a, n);
+    vector<int> idx(n);
+    iota(idx.begin(), idx.end(), 0);
+    sort_by_key(idx.begin(), idx.end(), expr(a[i], auto&& i), greater());
+    vector<pii> diff(n);
+    for (int i = 0; i < n - 1; ++i) {
+        diff[i] = { a[idx[i]] - a[idx[i + 1]], i };
+    }
+    diff[n - 1] = { a[idx[n - 1]], n - 1 };
+    sparse_table<pii> rmq(diff.rbegin(), diff.rend(), functor(max));
+    tiii varmax = { -1, -1, -1 };
+    tiii mx = { -INF, -INF, -INF };
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < i; ++j) {
+            // 0..j | j+1..i | i+1..n-1
+            int l = j + 1, r = i - j;
+            if (l > r) swap(l, r);
+            if (r > 2 * l) continue;
+            int minlen = (r + 1) / 2, maxlen = 2 * l;
+            if (minlen > maxlen) continue;
+            int left = max(i + minlen, i + 1);
+            int right = min(i + maxlen, n - 1);
+            if (left > right) continue;
+            int x = a[idx[j]] - a[idx[j + 1]];
+            int y = a[idx[i]] - a[idx[i + 1]];
+            auto [z, zpos] = rmq.query(left, right);
+            // deb(i, j);
+            // deb(minlen, maxlen);
+            // deb(left, right);
+            // deb(x, y, z);
+            // deb(j, i, zpos);
+            tiii pos = { j, i, zpos };
+            tiii curr = { x, y, z };
+            if (chmax(mx, curr)) {
+                varmax = pos;
+            }
+        }
+    }
+    vector<int> res(n);
+    auto&& [xpos, ypos, zpos] = varmax;
+    for (int i = 0; i <= xpos; ++i) {
+        res[idx[i]] = 1;
+    }
+    for (int i = xpos + 1; i <= ypos; ++i) {
+        res[idx[i]] = 2;
+    }
+    for (int i = ypos + 1; i <= zpos; ++i) {
+        res[idx[i]] = 3;
+    }
+    for (int i = zpos + 1; i < n; ++i) {
+        res[idx[i]] = -1;
+    }
+    putvec(res);
 }
 
 int main() {

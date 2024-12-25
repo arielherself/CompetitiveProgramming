@@ -1,5 +1,4 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#include <ratio>
 #pragma GCC optimize("Ofast,unroll-loops")
 /************* This code requires C++17. ***************/
 
@@ -538,13 +537,129 @@ void dump_ignore() {}
 void prep() {
 }
 
+struct mcmf {
+    struct edge {
+        int to;
+        ll cap;
+        ll flow;
+        ll cost;
+        int rev;
+        int mark;
+    };
+    vector<vector<edge>> edges;
+    vector<ll> dis;
+    vector<bool> vis;
+    ll ret;
+    mcmf(int n) : edges(n + 1), dis(n + 1), vis(n + 1) {}
+    void add_edge(int from, int to, ll cap, ll cost, int mark = 0, int mark_rev = 0) {
+        edges[from].push_back({ to, cap, 0, cost, int(edges[to].size()), mark });
+        edges[to].push_back({ from, 0, 0, -cost, int(edges[from].size() - 1), mark_rev });
+    }
+    bool sp(int s, int t) {
+        dis.assign(edges.size(), INFLL);
+        dis[s] = 0;
+        int n = edges.size();
+        int f = 1;
+        while (f) {
+            f = 0;
+            for (int i = 0; i < n; ++i) {
+                for (auto&& [to, cap, flow, cost, rev, mark] : edges[i]) {
+                    if (cap > flow and dis[to] > dis[i] + cost) {
+                        dis[to] = dis[i] + cost;
+                        f = 1;
+                    }
+                }
+            }
+        }
+        return dis[t] != INFLL;
+    }
+    ll dfs(int s, int t, ll cap) {
+        if (vis[s]) {
+            return 0;
+        }
+        vis[s] = 1;
+        if (s == t) {
+            return cap;
+        }
+        ll res = 0;
+        int n = edges[s].size();
+        for (int i = 0; i < n; ++i) {
+            auto e = edges[s][i];
+            if (e.cap > e.flow and dis[e.to] == dis[s] + e.cost) {
+                ll nw = dfs(e.to, t, min(cap - res, e.cap - e.flow));
+                edges[s][i].flow += nw;
+                edges[e.to][e.rev].flow -= nw;
+                res += nw;
+                ret += nw * e.cost;
+                if (res == cap) {
+                    return res;
+                }
+            }
+        }
+        return res;
+    }
+    // returns: (flow, cost)
+    pll run(int s, int t) {
+        ll res = 0; ret = 0;
+        while (sp(s, t)) {
+            vis.assign(edges.size(), 0);
+            ll curr = dfs(s, t, LLONG_MAX);
+            res += curr;
+            // BUG: this is a temporary fix of the infinite-looping issue observed
+            // when dealing with networks with negative weights.
+            if (curr == 0) break;
+        }
+        return { res, ret };
+    }
+};
+
 // __attribute__((target("popcnt")))
 void solve() {
-    for (int i = 9; ; i += 9) {
-        if (parity(i)) {
-            debug(i);
-            return;
+    read(int, n, q);
+    vector<int> mx(n, n - 1), mn(n, 0);
+    while (q--) {
+        read(int, t, l, r, x);
+        --l, --r, --x;
+        if (t == 1) {
+            for (int j = l; j <= r; ++j) {
+                chmax(mn[j], x);
+            }
+        } else {
+            for (int j = l; j <= r; ++j) {
+                chmin(mx[j], x);
+            }
         }
+    }
+    vector<vector<int>> choice(n);
+    for (int i = 0; i < n; ++i) {
+        for (int j = mn[i]; j <= mx[i]; ++j) {
+            choice[j].emplace_back(i);
+        }
+    }
+    mcmf net(3 * n + 10);
+    int oc = 1, val = n + 1, pos = 2 * n + 1;
+    int s = 3 * n + 8, t = 3 * n + 9;
+    for (int i = 0; i < n; ++i) {
+        net.add_edge(s, oc + i, INF, 0);
+    }
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            net.add_edge(oc + i, val + j, 1, 2 * i + 1);
+        }
+    }
+    for (int i = 0; i < n; ++i) {
+        for (auto&& j : choice[i]) {
+            net.add_edge(val + i, pos + j, 1, 0);
+        }
+    }
+    for (int i = 0; i < n; ++i) {
+        net.add_edge(pos + i, t, 1, 0);
+    }
+    auto [flow, cost] = net.run(s, t);
+    if (flow != n) {
+        cout << -1 << '\n';
+    } else {
+        cout << cost << '\n';
     }
 }
 

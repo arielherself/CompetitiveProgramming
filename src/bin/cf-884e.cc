@@ -1,5 +1,4 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#include <ratio>
 #pragma GCC optimize("Ofast,unroll-loops")
 /************* This code requires C++17. ***************/
 
@@ -26,7 +25,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;
+using ld = long double;
 using pii = pair<int, int>;           using pil = pair<int, ll>;           using pid = pair<int, ld>;
 using pli = pair<ll, int>;            using pll = pair<ll, ll>;            using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;            using pdl = pair<ld, ll>;            using pdd = pair<ld, ld>;
@@ -133,15 +132,13 @@ struct pair_hash {
 uniform_int_distribution<mt19937::result_type> dist(PRIME);
 const size_t __array_hash_b = 31, __array_hash_mdl1 = dist(rd), __array_hash_mdl2 = dist(rd);
 struct array_hash {
-    safe_hash hasher;
     template <typename Sequence>
     size_t operator()(const Sequence& arr) const {
         size_t pw1 = 1, pw2 = 1;
         size_t res1 = 0, res2 = 0;
         for (auto&& x : arr) {
-            auto h = hasher(x);
-            res1 = (res1 + h * pw1) % __array_hash_mdl1;
-            res2 = (res2 + h * pw2) % __array_hash_mdl2;
+            res1 = (res1 + x * pw1) % __array_hash_mdl1;
+            res2 = (res2 + x * pw2) % __array_hash_mdl2;
             pw1 = (pw1 * __array_hash_b) % __array_hash_mdl1;
             pw2 = (pw2 * __array_hash_b) % __array_hash_mdl2;
         }
@@ -176,7 +173,7 @@ template <typename T, typename Iterator> pair<size_t, unordered_map<T, size_t, s
 /* io */
 #define untie __AS_PROCEDURE(ios_base::sync_with_stdio(0), cin.tie(NULL))
 
-// add declarations to avoid circular dependency
+// add declarations to avoid cyclic dependency
 template<typename T, typename U> istream& operator>>(istream&, pair<T, U>&);
 template<typename T, typename U> ostream& operator<<(ostream&, const pair<T, U>&);
 template<typename T, size_t N> istream& operator>>(istream&, array<T, N>&);
@@ -296,7 +293,7 @@ ll qpow(ll b, ll p, ll mod) {
 #pragma GCC diagnostic ignored "-Wparentheses"
 // Accurately find `i` 'th root of `n` (taking the floor)
 inline ll root(ll n, ll i) {
-    ll l = 0, r = pow(LLONG_MAX, (long double)(1) / i);
+    ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
     while (l < r) {
         ll mid = l + r + 1 >> 1;
         if (qpow<int128>(mid, i) <= n) {
@@ -540,12 +537,53 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    for (int i = 9; ; i += 9) {
-        if (parity(i)) {
-            debug(i);
-            return;
+    read(int, n, m);
+    auto get = [&] (char c) {
+        if (c >= '0' and c <= '9') {
+            return c - '0';
+        } else {
+            return 10 + c - 'A';
+        }
+    };
+    constexpr int N = 1 << 26;
+    bitset<N> a;
+    for (int i = 0; i < n; ++i) {
+        read(string, s);
+        for (int j = 0; j < m / 4; ++j) {
+            int mask = get(s[j]);
+            for (int k = 0; k < 4; ++k) {
+                int bit = mask >> (3 - k) bitand 1;
+                a[i * m + j * 4 + k] = bit;
+            }
         }
     }
+    auto check = [&] (int i, int j) { return i >= 0 and i < n and j >= 0 and j < m; };
+    auto dfs = [&] (auto dfs, int x, int y) -> void {
+        a[x * m + y] = 0;
+        for (auto&& [x1, y1] : initializer_list<pii> {{x - 1, y}, {x, y - 1}, {x + 1, y}, {x, y + 1}}) {
+            if (check(x1, y1) and a[x1 * m + y1]) {
+                dfs(dfs, x1, y1);
+            }
+        }
+    };
+    int res = 0;
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            if (a[i * m + j]) {
+                deque<pii> q = {{ i, j }};
+                while (q.size()) {
+                    auto [x, y] = popfront(q);
+                    for (auto&& [x1, y1] : initializer_list<pii> {{x - 1, y}, {x, y - 1}, {x + 1, y}, {x, y + 1}}) {
+                        if (check(x1, y1) and a[x1 * m + y1]) {
+                            q.emplace_back(x1, y1);
+                        }
+                    }
+                }
+                res += 1;
+            }
+        }
+    }
+    cout << res << '\n';
 }
 
 int main() {

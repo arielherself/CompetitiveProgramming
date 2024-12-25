@@ -1,5 +1,4 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#include <ratio>
 #pragma GCC optimize("Ofast,unroll-loops")
 /************* This code requires C++17. ***************/
 
@@ -26,7 +25,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;
+using ld = long double;
 using pii = pair<int, int>;           using pil = pair<int, ll>;           using pid = pair<int, ld>;
 using pli = pair<ll, int>;            using pll = pair<ll, ll>;            using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;            using pdl = pair<ld, ll>;            using pdd = pair<ld, ld>;
@@ -296,7 +295,7 @@ ll qpow(ll b, ll p, ll mod) {
 #pragma GCC diagnostic ignored "-Wparentheses"
 // Accurately find `i` 'th root of `n` (taking the floor)
 inline ll root(ll n, ll i) {
-    ll l = 0, r = pow(LLONG_MAX, (long double)(1) / i);
+    ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
     while (l < r) {
         ll mid = l + r + 1 >> 1;
         if (qpow<int128>(mid, i) <= n) {
@@ -538,12 +537,55 @@ void dump_ignore() {}
 void prep() {
 }
 
+template<typename T>
+struct BIT2d {
+    int n, m;
+    vector<vector<T>> c;
+    BIT2d(size_t n, size_t m) : n(n), m(m), c(n + 1, vector<T>(m + 1)) {}
+    void add(size_t i, size_t j, const T& k) {
+        while (i <= n) {
+            size_t j1 = j;
+            while (j1 <= m) {
+                c[i][j1] xor_eq k;
+                j1 += lowbit(j1);
+            }
+            i += lowbit(i);
+        }
+    }
+    T getsum(size_t i, size_t j) {
+        T res = {};
+        while (i) {
+            size_t j1 = j;
+            while (j1) {
+                res xor_eq c[i][j1];
+                j1 -= lowbit(j1);
+            }
+            i -= lowbit(i);
+        }
+        return res;
+    }
+};
+
+
 // __attribute__((target("popcnt")))
 void solve() {
-    for (int i = 9; ; i += 9) {
-        if (parity(i)) {
-            debug(i);
-            return;
+    read(int, n, m, q);
+    BIT2d<size_t> tr(n + 1, m + 1);
+    array_hash hasher;
+    while (q--) {
+        read(int, op, x1, y1, x2, y2);
+        if (op != 3) {
+            auto h = hasher(initializer_list<int>{x1, y1, x2, y2});
+            tr.add(x1, y1, h);
+            tr.add(x1, y2 + 1, h);
+            tr.add(x2 + 1, y1, h);
+            tr.add(x2 + 1, y2 + 1, h);
+        } else {
+            if (tr.getsum(x1, y1) == tr.getsum(x2, y2)) {
+                cout << "Yes\n";
+            } else {
+                cout << "No\n";
+            }
         }
     }
 }

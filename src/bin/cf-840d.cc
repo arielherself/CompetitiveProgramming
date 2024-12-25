@@ -1,6 +1,6 @@
+// re-run
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#include <ratio>
-#pragma GCC optimize("Ofast,unroll-loops")
+// #pragma GCC optimize("O2,unroll-loops")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -26,7 +26,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;
+using ld = long double;
 using pii = pair<int, int>;           using pil = pair<int, ll>;           using pid = pair<int, ld>;
 using pli = pair<ll, int>;            using pll = pair<ll, ll>;            using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;            using pdl = pair<ld, ll>;            using pdd = pair<ld, ld>;
@@ -296,7 +296,7 @@ ll qpow(ll b, ll p, ll mod) {
 #pragma GCC diagnostic ignored "-Wparentheses"
 // Accurately find `i` 'th root of `n` (taking the floor)
 inline ll root(ll n, ll i) {
-    ll l = 0, r = pow(LLONG_MAX, (long double)(1) / i);
+    ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
     while (l < r) {
         ll mid = l + r + 1 >> 1;
         if (qpow<int128>(mid, i) <= n) {
@@ -540,12 +540,60 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    for (int i = 9; ; i += 9) {
-        if (parity(i)) {
-            debug(i);
-            return;
+    constexpr int M = 60;
+    read(int, n, q);
+    readvec(int, a, n);
+    vector<tiii> queries;
+    vector<vector<int>> open(n + 1);
+    vector<vector<int>> close(n + 1);
+    vector<vector<int>> seq(q);
+    unordered_map<pii, int, pair_hash> oc;
+    for (int i = 0; i < q; ++i) {
+        read(int, l, r, x);
+        --l, --r;
+        queries.emplace_back(l, r, x);
+        // if (oc.count({l, r})) {
+        //     seq[i] = seq[oc[{l, r}]];
+        // } else {
+            int nd = (r - l + 1) / x + 1;
+            for (int j = l; j <= r; j += nd) {
+                seq[i].emplace_back(a[j]);
+            }
+            // for (int j = 0; j < M; ++j) {
+            //     int idx = rd() % (r - l + 1) + l;
+            //     seq[i].emplace_back(a[idx]);
+            // }
+            // oc[{l, r}] = i;
+        // }
+        open[l].emplace_back(i);
+        close[r + 1].emplace_back(i);
+    }
+    vector<int> cnt(n + 1);
+    vector<int> res(q, INF);
+    // vector c(q, vector<int>(M));
+    vector<vector<int>> c(q);
+    for (int i = 0; i <= n; ++i) {
+        for (auto&& qi : open[i]) {
+            for (int j = 0; j < seq[qi].size(); ++j) {
+                // c[qi][j] = cnt[seq[qi][j]];
+                c[qi].emplace_back(cnt[seq[qi][j]]);
+            }
+        }
+        for (auto&& qi : close[i]) {
+            auto&& [l, r, k] = queries[qi];
+            for (int j = 0; j < seq[qi].size(); ++j) {
+                int val = seq[qi][j];
+                if (cnt[val] - c[qi][j] > (r - l + 1) / k) {
+                    chmin(res[qi], val);
+                }
+            }
+        }
+        if (i < n) {
+            cnt[a[i]] += 1;
         }
     }
+    replace(res.begin(), res.end(), INF, -1);
+    putvec_eol(res);
 }
 
 int main() {

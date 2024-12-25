@@ -1,6 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#include <ratio>
-#pragma GCC optimize("Ofast,unroll-loops")
+// #pragma GCC optimize("Ofast,unroll-loops")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -26,7 +25,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;
+using ld = long double;
 using pii = pair<int, int>;           using pil = pair<int, ll>;           using pid = pair<int, ld>;
 using pli = pair<ll, int>;            using pll = pair<ll, ll>;            using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;            using pdl = pair<ld, ll>;            using pdd = pair<ld, ld>;
@@ -133,15 +132,13 @@ struct pair_hash {
 uniform_int_distribution<mt19937::result_type> dist(PRIME);
 const size_t __array_hash_b = 31, __array_hash_mdl1 = dist(rd), __array_hash_mdl2 = dist(rd);
 struct array_hash {
-    safe_hash hasher;
     template <typename Sequence>
     size_t operator()(const Sequence& arr) const {
         size_t pw1 = 1, pw2 = 1;
         size_t res1 = 0, res2 = 0;
         for (auto&& x : arr) {
-            auto h = hasher(x);
-            res1 = (res1 + h * pw1) % __array_hash_mdl1;
-            res2 = (res2 + h * pw2) % __array_hash_mdl2;
+            res1 = (res1 + x * pw1) % __array_hash_mdl1;
+            res2 = (res2 + x * pw2) % __array_hash_mdl2;
             pw1 = (pw1 * __array_hash_b) % __array_hash_mdl1;
             pw2 = (pw2 * __array_hash_b) % __array_hash_mdl2;
         }
@@ -176,7 +173,7 @@ template <typename T, typename Iterator> pair<size_t, unordered_map<T, size_t, s
 /* io */
 #define untie __AS_PROCEDURE(ios_base::sync_with_stdio(0), cin.tie(NULL))
 
-// add declarations to avoid circular dependency
+// add declarations to avoid cyclic dependency
 template<typename T, typename U> istream& operator>>(istream&, pair<T, U>&);
 template<typename T, typename U> ostream& operator<<(ostream&, const pair<T, U>&);
 template<typename T, size_t N> istream& operator>>(istream&, array<T, N>&);
@@ -296,7 +293,7 @@ ll qpow(ll b, ll p, ll mod) {
 #pragma GCC diagnostic ignored "-Wparentheses"
 // Accurately find `i` 'th root of `n` (taking the floor)
 inline ll root(ll n, ll i) {
-    ll l = 0, r = pow(LLONG_MAX, (long double)(1) / i);
+    ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
     while (l < r) {
         ll mid = l + r + 1 >> 1;
         if (qpow<int128>(mid, i) <= n) {
@@ -540,12 +537,49 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    for (int i = 9; ; i += 9) {
-        if (parity(i)) {
-            debug(i);
-            return;
+    read(int, n);
+    vector a(n, vector<int>(n));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < n; ++j) {
+            cin >> a[i][j];
         }
     }
+    vector cache(n, vector(n, vector<ll>(2, -1)));
+    auto dfs = [&] (auto dfs, int l, int r, int left) -> ll {
+        if (l == r) return (left and a[l][l - 1]) + a[r][(r + 1) % n];
+        else if (l > r) return 1;
+        if (cache[l][r][left] != -1) {
+            return cache[l][r][left];
+        }
+        ll res = 0;
+        if (left) {
+            int u = (l - 1) % n;
+            for (int i = l; i <= r; ++i) {
+                if (a[u][i]) {
+                    res = (res + dfs(dfs, l, i - 1, true) * dfs(dfs, i + 1, r, true) % MDL) % MDL;
+                    // deb(l, r, u, i, res);
+                }
+            }
+        }
+        // connect to the right bound
+        {
+            int u = (r + 1) % n;
+            for (int i = l; i <= r; ++i) {
+                if (a[u][i]) {
+                    res = (res + dfs(dfs, l, i - 1, false) * dfs(dfs, i + 1, r, true) % MDL) % MDL;
+                    // deb(l, r, i, u, res);
+                }
+            }
+        }
+        return cache[l][r][left] = res;
+    };
+    ll res = 0;
+    for (int i = 1; i < n; ++i) {
+        if (a[0][i]) {
+            res = (res + dfs(dfs, 1, i - 1, false) * dfs(dfs, i + 1, n - 1, true) % MDL) % MDL;
+        }
+    }
+    cout << res << '\n';
 }
 
 int main() {

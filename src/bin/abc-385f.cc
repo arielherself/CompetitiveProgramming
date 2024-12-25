@@ -1,6 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#include <ratio>
-#pragma GCC optimize("Ofast,unroll-loops")
+// #pragma GCC optimize("Ofast,unroll-loops")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -26,7 +25,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;
+using ld = long double;
 using pii = pair<int, int>;           using pil = pair<int, ll>;           using pid = pair<int, ld>;
 using pli = pair<ll, int>;            using pll = pair<ll, ll>;            using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;            using pdl = pair<ld, ll>;            using pdd = pair<ld, ld>;
@@ -296,7 +295,7 @@ ll qpow(ll b, ll p, ll mod) {
 #pragma GCC diagnostic ignored "-Wparentheses"
 // Accurately find `i` 'th root of `n` (taking the floor)
 inline ll root(ll n, ll i) {
-    ll l = 0, r = pow(LLONG_MAX, (long double)(1) / i);
+    ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
     while (l < r) {
         ll mid = l + r + 1 >> 1;
         if (qpow<int128>(mid, i) <= n) {
@@ -540,12 +539,36 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    for (int i = 9; ; i += 9) {
-        if (parity(i)) {
-            debug(i);
-            return;
+    using ld = __float128;
+    read(int, n);
+    readvec(pii, a, n);
+    auto check = [&] (ld b) -> bool {
+        ld prev = -INFLL;
+        for (auto&& [x, h] : a) {
+            ld curr = (h - b) / x;
+            if (curr > prev) {
+                prev = curr;
+            } else {
+                return false;
+            }
+        }
+        return true;
+    };
+    if (check(0)) {
+        cout << -1 << '\n';
+        return;
+    }
+    ld l = 0, r = 2e18;
+
+    while (r - l > 1e-10) {
+        ld mid = l + (r - l) / 2;
+        if (check(mid)) {
+            r = mid;
+        } else {
+            l = mid;
         }
     }
+    cout << fixed << setprecision(50) << (long double)(l) << '\n';
 }
 
 int main() {

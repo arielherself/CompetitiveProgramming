@@ -1,5 +1,4 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#include <ratio>
 #pragma GCC optimize("Ofast,unroll-loops")
 /************* This code requires C++17. ***************/
 
@@ -97,9 +96,9 @@ struct igt {
 
 /* conditions */
 #define loop while (1)
-#define if_or(var, val) if (!(var == val)) var = val; else
-#define continue_or(var, val) __AS_PROCEDURE(if (var == val) continue; var = val;)
-#define break_or(var, val) __AS_PROCEDURE(if (var == val) break; var = val;)
+#define if_or(var, val) if (!((var) == (val))) (var) = (val); else
+#define continue_or(var, val) __AS_PROCEDURE(if ((var) == (val)) continue; (var) = (val);)
+#define break_or(var, val) __AS_PROCEDURE(if ((var) == (val)) break; (var) = (val);)
 
 /* hash */
 struct safe_hash {
@@ -242,14 +241,14 @@ std::ostream& operator<<(std::ostream& dest, const int128& value) {
 template<typename T> void __read(T& x) { cin >> x; }
 template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __read(args...); }
 #define read(t, ...) __AS_PROCEDURE(argument_type<void(t)>::type __VA_ARGS__; __read(__VA_ARGS__);)
-#define readvec(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a(n); for (auto& x : a) cin >> x;)
-#define readvec1(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a((n) + 1); copy_n(ii<argument_type<void(t)>::type>(cin), (n), a.begin() + 1);)
-#define putvec(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
-#define putvec1(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
-#define putvec_eol(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
-#define putvec1_eol(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
+#define readvec(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a(n); for (auto& x : (a)) cin >> x;)
+#define readvec1(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a((n) + 1); copy_n(ii<argument_type<void(t)>::type>(cin), (n), (a).begin() + 1);)
+#define putvec(a) __AS_PROCEDURE(copy((a).begin(), (a).end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
+#define putvec1(a) __AS_PROCEDURE(copy((a).begin() + 1, (a).end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
+#define putvec_eol(a) __AS_PROCEDURE(copy((a).begin(), (a).end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
+#define putvec1_eol(a) __AS_PROCEDURE(copy((a).begin() + 1, (a).end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
 #define debug(x) __AS_PROCEDURE(cerr << #x" = " << (x) << endl;)
-#define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : a) cerr << x << ' '; cerr << endl;)
+#define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : (a)) cerr << x << ' '; cerr << endl;)
 #define deb(...) debug(make_tuple(__VA_ARGS__))
 
 /* pops */
@@ -396,7 +395,7 @@ vector<int> calc_z(string t) {  // z function of t
     }
     return z;
 }
-vector<int> kmp(string s, string t) {  // find all t in s
+vector<int> kmp(const string& s, const string& t) {  // find all t in s
     string cur = t + '#' + s;
     int sz1 = s.size(), sz2 = t.size();
     vector<int> v;
@@ -406,7 +405,7 @@ vector<int> kmp(string s, string t) {  // find all t in s
     }
     return v;
 }
-int period(string s) {  // find the length of shortest recurring period
+int period(const string& s) {  // find the length of shortest recurring period
     int n = s.length();
     auto z = calc_z(s);
     for (int i = 1; i <= n / 2; ++i) {
@@ -538,13 +537,99 @@ void dump_ignore() {}
 void prep() {
 }
 
+class quick_union {
+private:
+    vector<size_t> c, sz;
+public:
+    quick_union(size_t n) : c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
+    }
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] += sz[query(i)];
+        c[query(i)] = query(j);
+    }
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+    size_t query_size(size_t i) {
+        return sz[query(i)];
+    }
+};
+
 // __attribute__((target("popcnt")))
 void solve() {
-    for (int i = 9; ; i += 9) {
-        if (parity(i)) {
-            debug(i);
-            return;
+    read(int, n, m);
+    vector<pii> edges;
+    quick_union qu(n + 1);
+    adj(ch, n);
+    for (int i = 0; i < m; ++i) {
+        read(int, u, v);
+        if (qu.connected(u, v)) {
+            edges.emplace_back(u, v);
+        } else {
+            qu.merge(u, v);
+            edge(ch, u, v);
         }
+    }
+    vector<int> depth(n + 1, -1);
+    vector<int> fa(n + 1);
+    set<tiii> cand;
+    vector<int> cnt(n + 1);
+    {
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            fa[v] = pa;
+            depth[v] = depth[pa] + 1;
+            if (pa != 0) {
+                cand.emplace(depth[v], pa, v);
+            }
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                cnt[qu.query(v)] += 1;
+                dfs(dfs, u, v);
+            }
+        };
+        for (int i = 1; i <= n; ++i) {
+            if (depth[i] == -1) {
+                dfs(dfs, i, 0);
+            }
+        }
+    }
+    for (auto&& [u, v] : edges) {
+        if (depth[u] > depth[v]) swap(u, v);
+        cnt[qu.query(v)] += 1;
+        cand.emplace(depth[u] + 1, u, v);
+    }
+    vector<tiii> res;
+    while (cand.size()) {
+        auto [d, u, v] = *cand.rbegin();
+        cand.erase(prev(cand.end()));
+        cnt[qu.query(v)] -= 1;
+        if (cnt[qu.query(v)] > 0) {
+            if (get<1>(*cand.rbegin()) == u) {
+                // remove two leaves  w-u-v
+                auto [d_, u_, w] = *cand.rbegin();
+                cand.erase(prev(cand.end()));
+                res.emplace_back(w, u, v);
+            } else {
+                // remove one path  fa[u]-u-v
+                assert(cand.count({depth[fa[u]] + 1, fa[u], u}));
+                cand.erase({depth[fa[u]] + 1, fa[u], u});
+                res.emplace_back(fa[u], u, v);
+            }
+            cnt[qu.query(v)] -= 1;
+        } else {
+            // only one edge in the current CC
+        }
+    }
+    cout << res.size() << '\n';
+    for (auto&& [u, v, w] : res) {
+        cout << u << ' ' << v << ' ' << w << '\n';
     }
 }
 

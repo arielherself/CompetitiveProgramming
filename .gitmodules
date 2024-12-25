@@ -1,0 +1,3 @@
+[submodule "src/bin/cp-templates"]
+	path = src/bin/cp-templates
+	url = https://git.subc.rip/subcrip/cp-templates

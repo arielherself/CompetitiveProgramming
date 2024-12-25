@@ -1,5 +1,4 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#include <ratio>
 #pragma GCC optimize("Ofast,unroll-loops")
 /************* This code requires C++17. ***************/
 
@@ -26,7 +25,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;
+using ld = long double;
 using pii = pair<int, int>;           using pil = pair<int, ll>;           using pid = pair<int, ld>;
 using pli = pair<ll, int>;            using pll = pair<ll, ll>;            using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;            using pdl = pair<ld, ll>;            using pdd = pair<ld, ld>;
@@ -133,15 +132,13 @@ struct pair_hash {
 uniform_int_distribution<mt19937::result_type> dist(PRIME);
 const size_t __array_hash_b = 31, __array_hash_mdl1 = dist(rd), __array_hash_mdl2 = dist(rd);
 struct array_hash {
-    safe_hash hasher;
     template <typename Sequence>
     size_t operator()(const Sequence& arr) const {
         size_t pw1 = 1, pw2 = 1;
         size_t res1 = 0, res2 = 0;
         for (auto&& x : arr) {
-            auto h = hasher(x);
-            res1 = (res1 + h * pw1) % __array_hash_mdl1;
-            res2 = (res2 + h * pw2) % __array_hash_mdl2;
+            res1 = (res1 + x * pw1) % __array_hash_mdl1;
+            res2 = (res2 + x * pw2) % __array_hash_mdl2;
             pw1 = (pw1 * __array_hash_b) % __array_hash_mdl1;
             pw2 = (pw2 * __array_hash_b) % __array_hash_mdl2;
         }
@@ -176,7 +173,7 @@ template <typename T, typename Iterator> pair<size_t, unordered_map<T, size_t, s
 /* io */
 #define untie __AS_PROCEDURE(ios_base::sync_with_stdio(0), cin.tie(NULL))
 
-// add declarations to avoid circular dependency
+// add declarations to avoid cyclic dependency
 template<typename T, typename U> istream& operator>>(istream&, pair<T, U>&);
 template<typename T, typename U> ostream& operator<<(ostream&, const pair<T, U>&);
 template<typename T, size_t N> istream& operator>>(istream&, array<T, N>&);
@@ -296,7 +293,7 @@ ll qpow(ll b, ll p, ll mod) {
 #pragma GCC diagnostic ignored "-Wparentheses"
 // Accurately find `i` 'th root of `n` (taking the floor)
 inline ll root(ll n, ll i) {
-    ll l = 0, r = pow(LLONG_MAX, (long double)(1) / i);
+    ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
     while (l < r) {
         ll mid = l + r + 1 >> 1;
         if (qpow<int128>(mid, i) <= n) {
@@ -538,14 +535,117 @@ void dump_ignore() {}
 void prep() {
 }
 
+struct mcmf {
+    struct edge {
+        int to;
+        ll cap;
+        ll flow;
+        ll cost;
+        int rev;
+        int mark;
+    };
+    vector<vector<edge>> edges;
+    vector<ll> dis;
+    vector<bool> vis;
+    ll ret;
+    mcmf(int n) : edges(n + 1), dis(n + 1), vis(n + 1) {}
+    void add_edge(int from, int to, ll cap, ll cost, int mark = 0, int mark_rev = 0) {
+        edges[from].push_back({ to, cap, 0, cost, int(edges[to].size()), mark });
+        edges[to].push_back({ from, 0, 0, -cost, int(edges[from].size() - 1), mark_rev });
+    }
+    bool sp(int s, int t) {
+        dis.assign(edges.size(), INFLL);
+        dis[s] = 0;
+        int n = edges.size();
+        int f = 1;
+        while (f) {
+            f = 0;
+            for (int i = 0; i < n; ++i) {
+                for (auto&& [to, cap, flow, cost, rev, mark] : edges[i]) {
+                    if (cap > flow and dis[to] > dis[i] + cost) {
+                        dis[to] = dis[i] + cost;
+                        f = 1;
+                    }
+                }
+            }
+        }
+        return dis[t] != INFLL;
+    }
+    ll dfs(int s, int t, ll cap) {
+        if (vis[s]) {
+            return 0;
+        }
+        vis[s] = 1;
+        if (s == t) {
+            return cap;
+        }
+        ll res = 0;
+        int n = edges[s].size();
+        for (int i = 0; i < n; ++i) {
+            auto e = edges[s][i];
+            if (e.cap > e.flow and dis[e.to] == dis[s] + e.cost) {
+                ll nw = dfs(e.to, t, min(cap - res, e.cap - e.flow));
+                edges[s][i].flow += nw;
+                edges[e.to][e.rev].flow -= nw;
+                res += nw;
+                ret += nw * e.cost;
+                if (res == cap) {
+                    return res;
+                }
+            }
+        }
+        return res;
+    }
+    // returns: (flow, cost)
+    pll run(int s, int t) {
+        ll res = 0; ret = 0;
+        while (sp(s, t)) {
+            vis.assign(edges.size(), 0);
+            ll curr = dfs(s, t, LLONG_MAX);
+            res += curr;
+            // BUG: this is a temporary fix of the infinite-looping issue observed
+            // when dealing with networks with negative weights.
+            if (curr == 0) break;
+        }
+        return { res, ret };
+    }
+};
+
+
 // __attribute__((target("popcnt")))
 void solve() {
-    for (int i = 9; ; i += 9) {
-        if (parity(i)) {
-            debug(i);
-            return;
+    read(int, n);
+    vector<int> a(n);
+    for (int i = 0; i < n; ++i) {
+        read(char, c);
+        a[i] = c - 'a';
+    }
+    readvec(int, b, n);
+    mcmf net(4 * n * 26 + 3);
+    int filter1 = 1, filter2 = n / 2 * 26 + 1, split = n * 26 + 1, node = 2 * n * 26 + 1, base = 2 * n * 26 + n + 1;
+    int s = 4 * n * 26 - 1, t = 4 * n * 26 - 2;
+    for (int i = 0; i < n; ++i) {
+        net.add_edge(s, base + i, 1, 0);
+        for (int j = 0; j < n; ++j) {
+            net.add_edge(base + i, filter1 + (j >= n / 2 ? n - 1 - j : j) * 26 + a[i], 1, 0);
         }
     }
+    for (int i = 0; i < n / 2; ++i) {
+        for (int j = 0; j < 26; ++j) {
+            net.add_edge(filter1 + i * 26 + j, filter2 + i * 26 + j, 1, 0);
+            net.add_edge(filter2 + i * 26 + j, split + i * 26 + j, 1, a[i] == j ? -b[i] : 0);
+            net.add_edge(filter2 + i * 26 + j, split + (n - 1 - i) * 26 + j, 1, a[n - 1 - i] == j ? -b[n - 1 - i] : 0);
+        }
+    }
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < 26; ++j) {
+            net.add_edge(split + i * 26 + j, node + i, 1, 0);
+        }
+        net.add_edge(node + i, t, 1, 0);
+    }
+    auto [flow, cost] = net.run(s, t);
+    debug(flow);
+    cout << -cost << '\n';
 }
 
 int main() {

@@ -8,7 +8,7 @@ import io
 PRIME = 998_244_353
 
 if __name__ == '__main__':
-    N = 10 ** 6
-    print(N, N)
-    print(*(f'{randint(1, N)} {randint(1, N)} {randint(0, 10 ** 8)}' for _ in range(N)))
-    print(randint(1, N))
+    N = 2 * (10 ** 5)
+    print(N)
+    for i in range(N):
+        print(i + 1, randint(1, 10 ** 9))

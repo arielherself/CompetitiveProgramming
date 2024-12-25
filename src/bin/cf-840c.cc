@@ -1,5 +1,4 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#include <ratio>
 #pragma GCC optimize("Ofast,unroll-loops")
 /************* This code requires C++17. ***************/
 
@@ -26,7 +25,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;
+using ld = long double;
 using pii = pair<int, int>;           using pil = pair<int, ll>;           using pid = pair<int, ld>;
 using pli = pair<ll, int>;            using pll = pair<ll, ll>;            using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;            using pdl = pair<ld, ll>;            using pdd = pair<ld, ld>;
@@ -296,7 +295,7 @@ ll qpow(ll b, ll p, ll mod) {
 #pragma GCC diagnostic ignored "-Wparentheses"
 // Accurately find `i` 'th root of `n` (taking the floor)
 inline ll root(ll n, ll i) {
-    ll l = 0, r = pow(LLONG_MAX, (long double)(1) / i);
+    ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
     while (l < r) {
         ll mid = l + r + 1 >> 1;
         if (qpow<int128>(mid, i) <= n) {
@@ -535,17 +534,67 @@ void dump() {}
 
 void dump_ignore() {}
 
+using mll = MLL<MDL>;
+constexpr int N = 320;
+mll fact[N], factrev[N + 1], s[N + 1];
+
 void prep() {
+    fact[0] = factrev[0] = 1;
+    for (int i = 1; i < N; ++i) {
+        fact[i] = fact[i - 1] * i;
+    }
+    s[0] = 1;
+    for (int i = 1; i <= N; ++i) {
+        s[i] = s[i - 1] * fact[i - 1];
+    }
+    factrev[N] = 1 / s[N];
+    for (int i = N; i; --i) {
+        factrev[i - 1] = factrev[i] * fact[i - 1];
+    }
+    for (int i = 0; i < N; ++i) {
+        factrev[i] = factrev[i + 1] * s[i];
+    }
 }
+
 
 // __attribute__((target("popcnt")))
 void solve() {
-    for (int i = 9; ; i += 9) {
-        if (parity(i)) {
-            debug(i);
-            return;
+    read(int, n);
+    readvec(int, a, n);
+    unordered_map<int, int, safe_hash> cnt;
+    for (int i = 0; i < n; ++i) {
+        auto f = decompose_prime(a[i]);
+        int x = 1;
+        for (auto&& [v, c] : f) {
+            if (c % 2) {
+                x *= v;
+            }
         }
+        cnt[x] += 1;
     }
+    vector<int> b;
+    for (auto&& [v, c] : cnt) {
+        b.emplace_back(c);
+    }
+    vector<mll> dp(n);
+    dp[0] = 1;
+    int tot = 0;
+    for (auto&& x : b) {
+        vector<mll> ndp(n);
+        for (int j = 1; j <= x; ++j) {
+            mll choice = fastcomb((x - j) + j - 1, x - j) * fact[x];
+            int extra = x - j;
+            for (int k = 0; k < n; ++k) {
+                if (dp[k] == 0) continue;
+                for (int l = 0; l <= min(k, j); ++l) {
+                    ndp[k - l + extra] += choice * dp[k] * fastcomb(k, l) * fastcomb(tot + 1 - k, j - l);
+                }
+            }
+        }
+        tot += x;
+        dp = std::move(ndp);
+    }
+    cout << dp[0] << '\n';
 }
 
 int main() {

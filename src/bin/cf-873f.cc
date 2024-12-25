@@ -1,5 +1,4 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#include <ratio>
 #pragma GCC optimize("Ofast,unroll-loops")
 /************* This code requires C++17. ***************/
 
@@ -26,7 +25,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;
+using ld = long double;
 using pii = pair<int, int>;           using pil = pair<int, ll>;           using pid = pair<int, ld>;
 using pli = pair<ll, int>;            using pll = pair<ll, ll>;            using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;            using pdl = pair<ld, ll>;            using pdd = pair<ld, ld>;
@@ -133,15 +132,13 @@ struct pair_hash {
 uniform_int_distribution<mt19937::result_type> dist(PRIME);
 const size_t __array_hash_b = 31, __array_hash_mdl1 = dist(rd), __array_hash_mdl2 = dist(rd);
 struct array_hash {
-    safe_hash hasher;
     template <typename Sequence>
     size_t operator()(const Sequence& arr) const {
         size_t pw1 = 1, pw2 = 1;
         size_t res1 = 0, res2 = 0;
         for (auto&& x : arr) {
-            auto h = hasher(x);
-            res1 = (res1 + h * pw1) % __array_hash_mdl1;
-            res2 = (res2 + h * pw2) % __array_hash_mdl2;
+            res1 = (res1 + x * pw1) % __array_hash_mdl1;
+            res2 = (res2 + x * pw2) % __array_hash_mdl2;
             pw1 = (pw1 * __array_hash_b) % __array_hash_mdl1;
             pw2 = (pw2 * __array_hash_b) % __array_hash_mdl2;
         }
@@ -176,7 +173,7 @@ template <typename T, typename Iterator> pair<size_t, unordered_map<T, size_t, s
 /* io */
 #define untie __AS_PROCEDURE(ios_base::sync_with_stdio(0), cin.tie(NULL))
 
-// add declarations to avoid circular dependency
+// add declarations to avoid cyclic dependency
 template<typename T, typename U> istream& operator>>(istream&, pair<T, U>&);
 template<typename T, typename U> ostream& operator<<(ostream&, const pair<T, U>&);
 template<typename T, size_t N> istream& operator>>(istream&, array<T, N>&);
@@ -296,7 +293,7 @@ ll qpow(ll b, ll p, ll mod) {
 #pragma GCC diagnostic ignored "-Wparentheses"
 // Accurately find `i` 'th root of `n` (taking the floor)
 inline ll root(ll n, ll i) {
-    ll l = 0, r = pow(LLONG_MAX, (long double)(1) / i);
+    ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
     while (l < r) {
         ll mid = l + r + 1 >> 1;
         if (qpow<int128>(mid, i) <= n) {
@@ -538,14 +535,98 @@ void dump_ignore() {}
 void prep() {
 }
 
-// __attribute__((target("popcnt")))
-void solve() {
-    for (int i = 9; ; i += 9) {
-        if (parity(i)) {
-            debug(i);
-            return;
+template <size_t N>
+struct SAM {
+    vector<int> fa, len;
+    vector<bool> cloned;
+    vector<int> cnt;
+    vector<array<int, N>> ch;
+    vector<bool> valid;
+    int last;
+    int tot;
+
+    int create(int _fa, int _len, bool _cloned, array<int, N>&& _ch, bool _valid) {
+        fa.emplace_back(_fa);
+        len.emplace_back(_len);
+        cloned.emplace_back(_cloned);
+        ch.emplace_back(_ch);
+        valid.emplace_back(_valid);
+        return tot++;
+    }
+
+    SAM(void) : fa(2), len(2), cloned(2), ch(2), valid(2), last(1), tot(2) {}
+
+    void push_back(size_t c, bool valid) {
+        int p = last;
+        int nw = create(0, len[p] + 1, false, {}, valid);
+
+        while (p != 0 and ch[p][c] == 0) {
+            ch[p][c] = nw;
+            p = fa[p];
+        }
+
+        if (p == 0) {
+            fa[nw] = 1;
+        } else {
+            int q = ch[p][c];
+            if (len[q] == len[p] + 1) {
+                fa[nw] = q;
+            } else {
+                int nq = create(fa[q], len[p] + 1, true, array(ch[q]), false);
+                fa[nw] = fa[q] = nq;
+                while (p != 0 and ch[p][c] == q) {
+                    ch[p][c] = nq;
+                    p = fa[p];
+                }
+            }
+        }
+
+        last = nw;
+    }
+
+    template <typename T>
+    optional<int> find(const basic_string<T>& seq) {
+        int p = 1;
+        for (auto&& c : seq) {
+            if (ch[p][c] == 0) {
+                return nullopt;
+            }
+            p = ch[p][c];
+        }
+        return p;
+    }
+
+    // Fill `cnt` with the number of occurrences of each substring.
+    void populate(void) {
+        cnt.assign(tot, 0);
+        vector<int> idx(tot);
+        iota(idx.begin(), idx.end(), 0);
+        sort_by_key(idx.begin(), idx.end(), expr(len[i], auto&& i), greater());
+        for (auto&& v : idx) {
+            if (v > 1 and not cloned[v] and valid[v]) {
+                cnt[v] += 1;
+            }
+            cnt[fa[v]] += cnt[v];
         }
     }
+};
+
+// __attribute__((target("popcnt")))
+void solve() {
+    read(int, n);
+    read(string, s);
+    read(string, v);
+    SAM<26> sam;
+    for (int i = 0; i < n; ++i) {
+        sam.push_back(s[i] - 'a', v[i] == '0');
+    }
+    sam.populate();
+    ll res = 0;
+    for (int i = 0; i < sam.tot; ++i) {
+        // deb(sam.cnt[i], sam.len[i]);
+        chmax(res, ll(1) * sam.cnt[i] * sam.len[i]);
+    }
+    cout << res << endl;
 }
 
 int main() {

@@ -1,5 +1,4 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#include <ratio>
 #pragma GCC optimize("Ofast,unroll-loops")
 /************* This code requires C++17. ***************/
 
@@ -49,6 +48,7 @@ constexpr int INF = 0x3f3f3f3f;
 constexpr ll INFLL = 0x3f3f3f3f3f3f3f3fLL;
 constexpr ll MDL = 1e9 + 7;
 constexpr ll PRIME = 998'244'353;
+constexpr ll PRIMELL = 901017227882342239LL;
 constexpr ll MDL1 = 8784491;
 constexpr ll MDL2 = PRIME;
 constexpr int128 INT128_MAX = numeric_limits<int128>::max();
@@ -97,9 +97,9 @@ struct igt {
 
 /* conditions */
 #define loop while (1)
-#define if_or(var, val) if (!(var == val)) var = val; else
-#define continue_or(var, val) __AS_PROCEDURE(if (var == val) continue; var = val;)
-#define break_or(var, val) __AS_PROCEDURE(if (var == val) break; var = val;)
+#define if_or(var, val) if (!((var) == (val))) (var) = (val); else
+#define continue_or(var, val) __AS_PROCEDURE(if ((var) == (val)) continue; (var) = (val);)
+#define break_or(var, val) __AS_PROCEDURE(if ((var) == (val)) break; (var) = (val);)
 
 /* hash */
 struct safe_hash {
@@ -242,14 +242,14 @@ std::ostream& operator<<(std::ostream& dest, const int128& value) {
 template<typename T> void __read(T& x) { cin >> x; }
 template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __read(args...); }
 #define read(t, ...) __AS_PROCEDURE(argument_type<void(t)>::type __VA_ARGS__; __read(__VA_ARGS__);)
-#define readvec(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a(n); for (auto& x : a) cin >> x;)
-#define readvec1(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a((n) + 1); copy_n(ii<argument_type<void(t)>::type>(cin), (n), a.begin() + 1);)
-#define putvec(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
-#define putvec1(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
-#define putvec_eol(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
-#define putvec1_eol(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
+#define readvec(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a(n); for (auto& x : (a)) cin >> x;)
+#define readvec1(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a((n) + 1); copy_n(ii<argument_type<void(t)>::type>(cin), (n), (a).begin() + 1);)
+#define putvec(a) __AS_PROCEDURE(copy((a).begin(), (a).end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
+#define putvec1(a) __AS_PROCEDURE(copy((a).begin() + 1, (a).end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
+#define putvec_eol(a) __AS_PROCEDURE(copy((a).begin(), (a).end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
+#define putvec1_eol(a) __AS_PROCEDURE(copy((a).begin() + 1, (a).end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
 #define debug(x) __AS_PROCEDURE(cerr << #x" = " << (x) << endl;)
-#define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : a) cerr << x << ' '; cerr << endl;)
+#define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : (a)) cerr << x << ' '; cerr << endl;)
 #define deb(...) debug(make_tuple(__VA_ARGS__))
 
 /* pops */
@@ -396,7 +396,7 @@ vector<int> calc_z(string t) {  // z function of t
     }
     return z;
 }
-vector<int> kmp(string s, string t) {  // find all t in s
+vector<int> kmp(const string& s, const string& t) {  // find all t in s
     string cur = t + '#' + s;
     int sz1 = s.size(), sz2 = t.size();
     vector<int> v;
@@ -406,7 +406,7 @@ vector<int> kmp(string s, string t) {  // find all t in s
     }
     return v;
 }
-int period(string s) {  // find the length of shortest recurring period
+int period(const string& s) {  // find the length of shortest recurring period
     int n = s.length();
     auto z = calc_z(s);
     for (int i = 1; i <= n / 2; ++i) {
@@ -424,8 +424,8 @@ template <ll mdl> struct MLL {
     MLL(const MLL<mdl>& other) : val(other.val) {}
     friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
     friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
-    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
-    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
+    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(int128(lhs.val) * rhs.val, mdl); }
+    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return lhs * mod(inverse(rhs.val, mdl), mdl); }
     friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
     friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
     friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
@@ -535,16 +535,78 @@ void dump() {}
 
 void dump_ignore() {}
 
+using mll = MLL<PRIMELL>;
+constexpr int N = 4e5 + 10;
+mll fact[N];
+
 void prep() {
+    fact[0] = fact[1] = 1;
+    for (int i = 2; i < N; ++i) {
+        fact[i] = fact[i - 1] * i;
+    }
 }
 
 // __attribute__((target("popcnt")))
 void solve() {
-    for (int i = 9; ; i += 9) {
-        if (parity(i)) {
-            debug(i);
-            return;
+    read(int, n);
+    read(ll, k);
+    vector<int128> a;
+    int f = 0;
+    for (int i = 0; i < n; ++i) {
+        read(int, x);
+        if (x == 0) {
+            if (f) {
+                a.emplace_back(x);
+            }
+        } else {
+            a.emplace_back(x);
+            f = 1;
         }
+    }
+    n = a.size();
+    if (*max_element(a.begin(), a.end()) >= k) {
+        cout << 0 << '\n';
+        return;
+    }
+    if (n >= 4) {
+        int res = 0;
+        while (a[n - 1] < k) {
+            for (int i = 1; i < n; ++i) {
+                a[i] += a[i - 1];
+            }
+            res += 1;
+        }
+        cout << res << '\n';
+    } else {
+        auto work = [&] (ll x) {
+            x -= 1;
+            int128 res = 0;
+            // debug(x);
+            for (int i = 1; i <= n; ++i) {
+                int128 c = 1;
+                for (int j = 0; j < n - i; ++j) {
+                    ll p = n - i + x - j, q = j + 1;
+                    if (c * p > int128(1) * LLONG_MAX * q) {
+                        return INT128_MAX;
+                    }
+                    c = c * p / q;
+                }
+                // deb(i, c);
+                res += c * a[i - 1];
+            }
+            // debug(res);
+            return res;
+        };
+        ll l = 1, r = INFLL;
+        while (l < r) {
+            ll mid = l + r >> 1;
+            if (work(mid) >= k) {
+                r = mid;
+            } else {
+                l = mid + 1;
+            }
+        }
+        cout << l << '\n';
     }
 }
 

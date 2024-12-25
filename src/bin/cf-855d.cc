@@ -1,5 +1,4 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#include <ratio>
 #pragma GCC optimize("Ofast,unroll-loops")
 /************* This code requires C++17. ***************/
 
@@ -26,7 +25,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;
+using ld = long double;
 using pii = pair<int, int>;           using pil = pair<int, ll>;           using pid = pair<int, ld>;
 using pli = pair<ll, int>;            using pll = pair<ll, ll>;            using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;            using pdl = pair<ld, ll>;            using pdd = pair<ld, ld>;
@@ -296,7 +295,7 @@ ll qpow(ll b, ll p, ll mod) {
 #pragma GCC diagnostic ignored "-Wparentheses"
 // Accurately find `i` 'th root of `n` (taking the floor)
 inline ll root(ll n, ll i) {
-    ll l = 0, r = pow(LLONG_MAX, (long double)(1) / i);
+    ll l = 0, r = pow(LLONG_MAX, ld(1) / i);
     while (l < r) {
         ll mid = l + r + 1 >> 1;
         if (qpow<int128>(mid, i) <= n) {
@@ -447,6 +446,18 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
 }
 
 // miscancellous
+template <typename T>
+string bin(T x) {
+    if (x == 0) {
+        return "0";
+    }
+    string res;
+    while (x) {
+        res += (x & 1) + '0';
+        x >>= 1;
+    }
+    return string(res.rbegin(), res.rend());
+}
 template <typename T, typename U>
 bool chmax(T& lhs, const U& rhs) {
     bool ret = lhs < rhs;
@@ -538,12 +549,110 @@ void dump_ignore() {}
 void prep() {
 }
 
+struct LCA {
+    vector<int> depth;
+    vector<vector<int>> pa;
+    LCA(const vector<vector<int>>& g, const vector<int>& roots) {
+        int n = g.size() - 1;
+        int m = 32 - __builtin_clz(n);
+        depth.resize(n + 1);
+        pa.resize(n + 1, vector<int>(m, -1));
+        function<void(int, int)> dfs = [&](int x, int fa) {
+            pa[x][0] = fa;
+            for (int y: g[x]) {
+                if (y != fa) {
+                    depth[y] = depth[x] + 1;
+                    dfs(y, x);
+                }
+            }
+        };
+        for (auto&& v : roots) {
+            dfs(v, 0);
+        }
+
+        for (int i = 0; i < m - 1; i++)
+            for (int x = 1; x <= n; x++)
+                if (int p = pa[x][i]; p != -1)
+                    pa[x][i + 1] = pa[p][i];
+    }
+
+    int get_kth_ancestor(int node, int k) {
+        for (; k; k &= k - 1)
+            node = pa[node][__builtin_ctz(k)];
+        return node;
+    }
+
+    int query(int x, int y) {
+        if (depth[x] > depth[y])
+            swap(x, y);
+        y = get_kth_ancestor(y, depth[y] - depth[x]);
+        if (y == x)
+            return x;
+        for (int i = pa[x].size() - 1; i >= 0; i--) {
+            int px = pa[x][i], py = pa[y][i];
+            if (px != py) {
+                x = px;
+                y = py;
+            }
+        }
+        return pa[x][0];
+    }
+};
+
+
+
 // __attribute__((target("popcnt")))
 void solve() {
-    for (int i = 9; ; i += 9) {
-        if (parity(i)) {
-            debug(i);
-            return;
+    read(int, n);
+    vector<int> fa(n + 1);
+    adj(ch, n);
+    vector<ll> ps(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        read(int, p, t);
+        if (p == -1) continue;
+        fa[i] = p;
+        edge(ch, i, p);
+        ps[i] = t == 0 ? (1LL << 32) : 1;
+    }
+    vector<int> r(n + 1);
+    vector<int> roots;
+    {
+        int root;
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            r[v] = root;
+            ps[v] += ps[pa];
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v);
+            }
+        };
+        for (int i = 1; i <= n; ++i) {
+            if (not fa[i]) {
+                roots.emplace_back(i);
+                root = i;
+                dfs(dfs, i, 0);
+            }
+        }
+    }
+    read(int, q);
+    LCA lca(ch, roots);
+    while (q--) {
+        read(int, t, u, v);
+        if (t == 1) {
+            if (u != v and r[u] == r[v] and lca.query(u, v) == u and ((ps[v] - ps[u]) & ((1LL << 32) - 1)) == 0) {
+                cout << "YES\n";
+            } else {
+                cout << "NO\n";
+            }
+        } else {
+            if (u != v and r[u] == r[v]) {
+                int l = lca.query(u, v);
+                if (l != v and ((ps[u] - ps[l]) & (1LL << 32) - 1) == 0 and (ps[v] - ps[l] >> 32) == 0) {
+                    cout << "YES\n";
+                    continue;
+                }
+            }
+            cout << "NO\n";
         }
     }
 }
