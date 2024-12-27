@@ -4,3 +4,9 @@
 !*.py
 !*.rs
 !*/
+!.clangd
+!.clang-tidy
+!.clang-format
+!.exrc
+!.nvim.lua
+!.sh

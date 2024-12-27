@@ -8,7 +8,7 @@ import io
 PRIME = 998_244_353
 
 if __name__ == '__main__':
-    N = 2 * (10 ** 5)
-    print(N)
-    for i in range(N):
-        print(i + 1, randint(1, 10 ** 9))
+    N = 500000
+    print(N, N // 2)
+    for _ in range(2):
+        print(*(randint(1, 10 ** 9) for _ in range(N)))

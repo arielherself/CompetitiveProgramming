@@ -25,7 +25,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;
+using ld = __float128;  // up to 1e-9 precision in binary search
 using pii = pair<int, int>;           using pil = pair<int, ll>;           using pid = pair<int, ld>;
 using pli = pair<ll, int>;            using pll = pair<ll, ll>;            using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;            using pdl = pair<ld, ll>;            using pdd = pair<ld, ld>;
@@ -48,6 +48,7 @@ constexpr int INF = 0x3f3f3f3f;
 constexpr ll INFLL = 0x3f3f3f3f3f3f3f3fLL;
 constexpr ll MDL = 1e9 + 7;
 constexpr ll PRIME = 998'244'353;
+constexpr ll PRIMELL = 901017227882342239LL;
 constexpr ll MDL1 = 8784491;
 constexpr ll MDL2 = PRIME;
 constexpr int128 INT128_MAX = numeric_limits<int128>::max();
@@ -96,9 +97,9 @@ struct igt {
 
 /* conditions */
 #define loop while (1)
-#define if_or(var, val) if (!(var == val)) var = val; else
-#define continue_or(var, val) __AS_PROCEDURE(if (var == val) continue; var = val;)
-#define break_or(var, val) __AS_PROCEDURE(if (var == val) break; var = val;)
+#define if_or(var, val) if (!((var) == (val))) (var) = (val); else
+#define continue_or(var, val) __AS_PROCEDURE(if ((var) == (val)) continue; (var) = (val);)
+#define break_or(var, val) __AS_PROCEDURE(if ((var) == (val)) break; (var) = (val);)
 
 /* hash */
 struct safe_hash {
@@ -241,14 +242,14 @@ std::ostream& operator<<(std::ostream& dest, const int128& value) {
 template<typename T> void __read(T& x) { cin >> x; }
 template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __read(args...); }
 #define read(t, ...) __AS_PROCEDURE(argument_type<void(t)>::type __VA_ARGS__; __read(__VA_ARGS__);)
-#define readvec(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a(n); for (auto& x : a) cin >> x;)
-#define readvec1(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a((n) + 1); copy_n(ii<argument_type<void(t)>::type>(cin), (n), a.begin() + 1);)
-#define putvec(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
-#define putvec1(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
-#define putvec_eol(a) __AS_PROCEDURE(copy(a.begin(), a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
-#define putvec1_eol(a) __AS_PROCEDURE(copy(a.begin() + 1, a.end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
+#define readvec(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a(n); for (auto& x : (a)) cin >> x;)
+#define readvec1(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a((n) + 1); copy_n(ii<argument_type<void(t)>::type>(cin), (n), (a).begin() + 1);)
+#define putvec(a) __AS_PROCEDURE(copy((a).begin(), (a).end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
+#define putvec1(a) __AS_PROCEDURE(copy((a).begin() + 1, (a).end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
+#define putvec_eol(a) __AS_PROCEDURE(copy((a).begin(), (a).end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
+#define putvec1_eol(a) __AS_PROCEDURE(copy((a).begin() + 1, (a).end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
 #define debug(x) __AS_PROCEDURE(cerr << #x" = " << (x) << endl;)
-#define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : a) cerr << x << ' '; cerr << endl;)
+#define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : (a)) cerr << x << ' '; cerr << endl;)
 #define deb(...) debug(make_tuple(__VA_ARGS__))
 
 /* pops */
@@ -395,7 +396,7 @@ vector<int> calc_z(string t) {  // z function of t
     }
     return z;
 }
-vector<int> kmp(string s, string t) {  // find all t in s
+vector<int> kmp(const string& s, const string& t) {  // find all t in s
     string cur = t + '#' + s;
     int sz1 = s.size(), sz2 = t.size();
     vector<int> v;
@@ -405,7 +406,7 @@ vector<int> kmp(string s, string t) {  // find all t in s
     }
     return v;
 }
-int period(string s) {  // find the length of shortest recurring period
+int period(const string& s) {  // find the length of shortest recurring period
     int n = s.length();
     auto z = calc_z(s);
     for (int i = 1; i <= n / 2; ++i) {
@@ -423,8 +424,8 @@ template <ll mdl> struct MLL {
     MLL(const MLL<mdl>& other) : val(other.val) {}
     friend MLL operator+(const MLL& lhs, const MLL& rhs) { return mod(lhs.val + rhs.val, mdl); }
     friend MLL operator-(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - rhs.val, mdl); }
-    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * rhs.val, mdl); }
-    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return mod(lhs.val * mod(inverse(rhs.val, mdl), mdl), mdl); }
+    friend MLL operator*(const MLL& lhs, const MLL& rhs) { return mod(int128(lhs.val) * rhs.val, mdl); }
+    friend MLL operator/(const MLL& lhs, const MLL& rhs) { return lhs * mod(inverse(rhs.val, mdl), mdl); }
     friend MLL operator%(const MLL& lhs, const MLL& rhs) { return mod(lhs.val - (lhs / rhs).val, mdl); }
     friend bool operator==(const MLL& lhs, const MLL& rhs) { return lhs.val == rhs.val; }
     friend bool operator!=(const MLL& lhs, const MLL& rhs) { return lhs.val != rhs.val; }
@@ -539,14 +540,40 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    for (int i = 9; ; i += 9) {
-        if (parity(i)) {
-            debug(i);
-            auto test = [&] {
-            };
-            return;
+    read(int, n, k);
+    readvec(int, a, n);
+    readvec(int, b, n);
+
+    auto work = [&] (int128 penalty) -> pair<int, int128> {
+        min_heap<pair<int128, bool>> cand;
+        int128 res = 0;
+        int cnt = 0;
+        for (int i = 0; i < n; ++i) {
+            int128 b1 = int128(1) * b[i] - penalty;
+            cand.emplace(a[i], false);
+            if (cand.size() and cand.top().first + b1 < 0) {
+                auto [x, t] = poptop(cand);
+                res += x + b1;
+                cnt += not t;
+                cand.emplace(-b1, true);
+            }
+        }
+        return { cnt, res + int128(cnt) * penalty };
+    };
+
+    int128 l = -INFLL, r = INFLL;
+    while (l < r) {
+        int128 mid = l + r + 1 >> 1;
+        deb(l, r, mid);
+        if (work(mid).first <= k) {
+            l = mid;
+        } else {
+            r = mid - 1;
         }
     }
+    auto [c, x] = work(l);
+    assert(c == k);
+    cout << x << '\n';
 }
 
 int main() {
