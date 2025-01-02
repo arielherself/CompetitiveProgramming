@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -540,9 +540,111 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    string a = "9";
-    cout << a + char(48) << '\n';
-    sort(a.begin(), a.end());
+    constexpr int N = 1024;
+    read(int, n, x, y);
+
+    auto ask = [&] (const vector<int>& v) {
+        vector<int> q;
+        int red = 0;
+        for (auto&& val : v) {
+            if (val < n) {
+                q.emplace_back(val);
+            } else {
+                red xor_eq x;
+            }
+        }
+        if (q.empty()) {
+            return red;
+        }
+        cout << "? " << q.size() << ' ';
+        for (auto&& val : q) {
+            cout << val + 1 << ' ';
+        }
+        cout << endl;
+        read(int, res);
+        if (res == -1) exit(825);
+        return res xor red;
+    };
+
+    auto par = [&] (int val, int len) {
+        if (len % 2 == 1) {
+            if (val == x) {
+                return 0;
+            } else {
+                return 1;
+            }
+        } else {
+            if (val == (x xor y)) {
+                return 1;
+            } else {
+                return 0;
+            }
+        }
+    };
+
+    int layer = 0;
+    for (int i = 9; i; --i) {
+        vector<int> q;
+        for (int j = 0; j < N; ++j) {
+            if (j >> i & 1) {
+                q.emplace_back(j);
+            }
+        }
+        assert(q.size() * 2 == N);
+        if (par(ask(q), N / 2)) {
+            layer = i;
+            break;
+        }
+    }
+
+    vector<int> left;
+    for (int i = 0; i < N; ++i) {
+        if (i >> layer & 1) {
+            left.emplace_back(i);
+        }
+    }
+
+    int y1, y2;
+
+    {
+        int l = 0, r = N / 2 - 1;
+        while (l < r) {
+            int mid = l + r >> 1;
+            vector<int> q;
+            for (int i = 0; i <= mid; ++i) {
+                q.emplace_back(left[i]);
+            }
+            if (par(ask(q), mid + 1)) {
+                r = mid;
+            } else {
+                l = mid + 1;
+            }
+        }
+        y1 = left[l];
+    }
+
+    {
+        int z = (y1 >> layer xor 1) << layer;
+        int l = z;
+        int r = z xor ((1 << layer) - 1);
+        while (l < r) {
+            int mid = l + r >> 1;
+            vector<int> q;
+            for (int i = z; i <= mid; ++i) {
+                q.emplace_back(i);
+            }
+            if (par(ask(q), mid - z + 1)) {
+                r = mid;
+            } else {
+                l = mid + 1;
+            }
+        }
+        y2 = l;
+    }
+
+    if (y1 > y2) swap(y1, y2);
+    cout << "! " << y1 + 1 << ' ' << y2 + 1 << endl;
+
 }
 
 int main() {

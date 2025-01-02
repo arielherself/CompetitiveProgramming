@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -540,9 +540,157 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    string a = "9";
-    cout << a + char(48) << '\n';
-    sort(a.begin(), a.end());
+    read(int, n);
+
+    readvec((array<int, 3>), edges, n);
+    vector<int> fa(n + 1);
+    vector<ll> depth(n + 1);
+    vector<ll> maxdepth(n + 1);
+    {
+        vector<vector<pii>> e(n + 1);
+        for (auto&& [u, v, w] : edges) {
+            edgew(e, u, v, w);
+        }
+        vector<bool> vis(n + 1);
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            fa[v] = pa;
+            maxdepth[v] = depth[v];
+            vis[v] = 1;
+            for (auto&& [u, w] : e[v]) {
+                if (u == pa or vis[u]) continue;
+                depth[u] = depth[v] + w;
+                dfs(dfs, u, v);
+                chmax(maxdepth[v], maxdepth[u]);
+            }
+        };
+        dfs(dfs, 1, 0);
+    }
+
+    vector<vector<pii>> e(n + 1);
+    int u1 = -1, v1 = -1, w1 = -1;
+    for (auto&& [u, v, w] : edges) {
+        if (fa[u] not_eq v and fa[v] not_eq u) {
+            u1 = u, v1 = v, w1 = w;
+        } else {
+            edgew(e, u, v, w);
+        }
+    }
+    assert(u1 != -1);
+    if (depth[u1] > depth[v1]) swap(u1, v1);
+
+    ll res = INFLL;
+
+    // remove one edge on the cycle
+    vector<ll> du(n + 1), dv(n + 1);
+    {
+        auto dfs = [&] (auto dfs, int v, int pa, ll d) -> void {
+            du[v] = d;
+            for (auto&& [u, w] : e[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v, d + w);
+            }
+        };
+        dfs(dfs, u1, 0, 0);
+    }
+    {
+        auto dfs = [&] (auto dfs, int v, int pa, ll d) -> void {
+            dv[v] = d;
+            for (auto&& [u, w] : e[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v, d + w);
+            }
+        };
+        dfs(dfs, v1, 0, 0);
+    }
+    // subtree max of du and dv
+    vector<ll> mxdu(n + 1), mxdv(n + 1);
+    {
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            mxdu[v] = du[v];
+            for (auto&& [u, w] : e[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v);
+                chmax(mxdu[v], mxdu[u]);
+            }
+        };
+        dfs(dfs, 1, 0);
+    }
+    {
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            mxdv[v] = dv[v];
+            for (auto&& [u, w] : e[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v);
+                chmax(mxdv[v], mxdv[u]);
+            }
+        };
+        dfs(dfs, 1, 0);
+    }
+
+    vector<ll> downinner(n + 1);
+    {
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            multiset<ll> d = { 0 };
+            for (auto&& [u, w] : e[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v);
+                chmax(downinner[v], downinner[u]);
+                d.emplace(maxdepth[u] - depth[v]);
+            }
+            if (d.size() >= 2) {
+                chmax(downinner[v], *d.rbegin() + *next(d.rbegin()));
+            }
+        };
+        dfs(dfs, 1, 0);
+    }
+    // tree diameter
+    chmin(res, downinner[1]);
+
+    vector<ll> updu(n + 1);
+    vector<ll> upinner(n + 1);
+    {
+        auto dfs = [&] (auto dfs, int v, int pa, ll uu, ll ud) -> void {
+            multiset<ll> dus = { uu, du[v] }, depths = { ud, 0 };
+            multiset<ll> downs;
+            for (auto&& [u, w] : e[v]) {
+                if (u == pa) continue;
+                dus.emplace(mxdu[u]);
+                depths.emplace(maxdepth[u] - depth[v]);
+                downs.emplace(downinner[u]);
+            }
+            for (auto&& [u, w] : e[v]) {
+                if (u == pa) continue;
+                dus.erase(dus.find(mxdu[u]));
+                depths.erase(depths.find(maxdepth[u] - depth[v]));
+                downs.erase(downs.find(downinner[u]));
+                if (dus.size()) {
+                    updu[u] = *dus.rbegin();
+                }
+                chmax(upinner[u], upinner[v]);
+                if (downs.size()) {
+                    chmax(upinner[u], *downs.rbegin());
+                }
+                if (depths.size() >= 2) {
+                    chmax(upinner[u], *depths.rbegin() + *next(depths.rbegin()));
+                }
+                dfs(dfs, u, v, dus.size() ? *dus.rbegin() : -INFLL, depths.size() ? *depths.rbegin() + w : -INFLL);
+                dus.emplace(mxdu[u]);
+                depths.emplace(maxdepth[u] - depth[v]);
+                downs.emplace(downinner[u]);
+            }
+        };
+        dfs(dfs, 1, 0, -INFLL, -INFLL);
+    }
+    // deb(u1, v1);
+
+    int v = v1;
+    while (v != u1) {
+        // deb(v, mxdv[v], updu[fa[v]], max({ downinner[v], upinner[v], w1 + mxdv[v] + updu[fa[v]] }));
+        chmin(res, max({ downinner[v], upinner[v], w1 + mxdv[v] + updu[v] }));
+        v = fa[v];
+    }
+
+    cout << res << '\n';
 }
 
 int main() {

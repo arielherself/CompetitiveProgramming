@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -540,9 +540,32 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    string a = "9";
-    cout << a + char(48) << '\n';
-    sort(a.begin(), a.end());
+    read(int, n, m);
+    adj(ch, n);
+    vector<int> ind(n + 1);
+    for (int i = 0; i < m; ++i) {
+        read(int, u, v);
+        Edge(ch, u, v);
+        ind[v] += 1;
+    }
+    min_heap<int> q;
+    for (int i = 1; i <= n; ++i) {
+        if (ind[i] == 0) {
+            q.emplace(i);
+        }
+    }
+    vector<int> res(n + 1);
+    int tm = 0;
+    while (q.size()) {
+        int v = poptop(q);
+        res[v] = ++tm;
+        for (auto&& u : ch[v]) {
+            if (--ind[u] == 0) {
+                q.emplace(u);
+            }
+        }
+    }
+    putvec1(res);
 }
 
 int main() {

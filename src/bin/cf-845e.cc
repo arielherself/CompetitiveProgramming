@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -540,9 +540,81 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    string a = "9";
-    cout << a + char(48) << '\n';
-    sort(a.begin(), a.end());
+    read(int, n, m, k);
+    readvec(pii, a, k);
+    transform(a.begin(), a.end(), a.begin(), expr(pair(p.first - 1, p.second - 1), auto&& p));
+
+    auto check = [&] (int tm) -> bool {
+        vector<int> row = { 0, n - 1, n }, col = { 0, m - 1, m };
+        for (auto&& [x, y] : a) {
+            row.emplace_back(max(0, x - tm));
+            row.emplace_back(max(0, x - tm - 1));
+            row.emplace_back(min(n, x + tm));
+            row.emplace_back(min(n, x + tm + 1));
+            col.emplace_back(max(0, y - tm));
+            col.emplace_back(max(0, y - tm - 1));
+            col.emplace_back(min(m, y + tm));
+            col.emplace_back(min(m, y + tm + 1));
+        }
+        sort(row.begin(), row.end());
+        int p = unique(row.begin(), row.end()) - row.begin();
+        row.resize(p);
+        auto gr = [&] (int x) { return lower_bound(row.begin(), row.end(), x) - row.begin(); };
+        sort(col.begin(), col.end());
+        int q = unique(col.begin(), col.end()) - col.begin();
+        col.resize(q);
+        auto gc = [&] (int x) { return lower_bound(col.begin(), col.end(), x) - col.begin(); };
+        vector cnt(p + 1, vector<int>(q + 1));
+        for (auto&& [x, y] : a) {
+            cnt[gr(max(0, x - tm))][gc(max(0, y - tm))] += 1;
+            cnt[gr(max(0, x - tm))][gc(min(m, y + tm + 1))] -= 1;
+            cnt[gr(min(n, x + tm + 1))][gc(max(0, y - tm))] -= 1;
+            cnt[gr(min(n, x + tm + 1))][gc(min(m, y + tm + 1))] += 1;
+        }
+        for (int j = 1; j <= q; ++j) {
+            cnt[0][j] += cnt[0][j - 1];
+        }
+        // debug(tm);
+        // debug(cnt[0]);
+        for (int i = 1; i <= p; ++i) {
+            cnt[i][0] += cnt[i - 1][0];
+            for (int j = 1; j <= q; ++j) {
+                cnt[i][j] += cnt[i - 1][j] + cnt[i][j - 1] - cnt[i - 1][j - 1];
+            }
+            // debug(cnt[i]);
+        }
+        int mapped_n = gr(n), mapped_m = gc(m);
+        int minx = INF, maxx = -INF, miny = INF, maxy = -INF;
+        for (int i = 0; i < mapped_n; ++i) {
+            for (int j = 0; j < mapped_m; ++j) {
+                if (cnt[i][j] == 0) {
+                    int x = row[i], y = col[j];
+                    chmin(minx, x);
+                    chmax(maxx, x);
+                    chmin(miny, y);
+                    chmax(maxy, y);
+                }
+            }
+        }
+        // deb(minx, maxx);
+        // deb(miny, maxy);
+        if (maxx - minx + 1 <= 1 + tm * 2 and maxy - miny + 1 <= 1 + tm * 2) {
+            return true;
+        } else {
+            return false;
+        }
+    };
+
+    int l = 0, r = INF;
+    while (l < r) {
+        int mid = l + r >> 1;
+        if (check(mid)) {
+            r = mid;
+        } else {
+            l = mid + 1;
+        }
+    }
+    cout << l << '\n';
 }
 
 int main() {

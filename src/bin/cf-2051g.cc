@@ -1,5 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#pragma GCC optimize("Ofast,unroll-loops")
+// #pragma GCC optimize("Ofast,unroll-loops")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -538,11 +538,51 @@ void dump_ignore() {}
 void prep() {
 }
 
-// __attribute__((target("popcnt")))
+__attribute__((target("popcnt,lzcnt")))
 void solve() {
-    string a = "9";
-    cout << a + char(48) << '\n';
-    sort(a.begin(), a.end());
+    read(int, n, q);
+    vector<pii> ops;
+    for (int i = 0; i < q; ++i) {
+        read(int, idx);
+        read(char, op);
+        ops.emplace_back(idx - 1, op == '+');
+    }
+    vector cost(n + 1, vector<int>(n + 1, 1));
+    for (int i = 0; i <= n; ++i) {
+        for (int j = 0; j <= n; ++j) {
+            // calculate the cost if placing i before j
+            if (i == j) continue;
+            int l = 0, r = 0;
+            for (auto&& [idx, op] : ops) {
+                if (idx == i and op == 1) {
+                    r += 1;
+                } else if (idx == j and op == 0) {
+                    l += 1;
+                }
+                chmax(cost[i][j], r - l + 1);
+            }
+        }
+    }
+    // tsp
+    vector dp(1 << n + 1, vector<ll>(n + 1, INFLL));
+    for (int i = 1; i < (1 << n + 1); ++i) {
+        if (popcount(i) == 1) {
+            // start from the current item
+            dp[i][lsp(i)] = 0;
+        } else {
+            for (int j = 0; j <= n; ++j) {
+                if (i >> j bitand 1) {
+                    int rem = i xor 1 << j;
+                    for (int k = 0; k <= n; ++k) {
+                        if (rem >> k bitand 1) {
+                            chmin(dp[i][j], dp[rem][k] + cost[k][j]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+    cout << dp[(1 << n + 1) - 1][n] << '\n';
 }
 
 int main() {

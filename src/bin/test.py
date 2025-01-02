@@ -8,7 +8,8 @@ import io
 PRIME = 998_244_353
 
 if __name__ == '__main__':
-    N = 500000
-    print(N, N // 2)
-    for _ in range(2):
-        print(*(randint(1, 10 ** 9) for _ in range(N)))
+    N = 50
+    print(N)
+    for i in range(2, N + 1):
+        print(f'{randint(1, i - 1)} {i} {randint(100000000, 999999999)}')
+    print(f'1 50 {randint(100000000, 999999999)}')

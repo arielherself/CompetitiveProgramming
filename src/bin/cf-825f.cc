@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -538,11 +538,138 @@ void dump_ignore() {}
 void prep() {
 }
 
+struct SA {
+    int n;
+    std::vector<int> sa, rk, lc;
+    vector<vector<int>> st;
+
+    SA(std::string s) {
+        n = s.size();
+        sa.resize(n);
+        lc.resize(n - 1);
+        rk.resize(n);
+        std::iota(sa.begin(), sa.end(), 0);
+        sort_by_key(sa.begin(), sa.end(), expr(s[i], int i));
+        rk[sa[0]] = 0;
+        for (int i = 1; i < n; i++) {
+            rk[sa[i]] = rk[sa[i - 1]] + (s[sa[i]] != s[sa[i - 1]]);
+        }
+        int k = 1;
+        std::vector<int> tmp, cnt(n);
+        tmp.reserve(n);
+        while (rk[sa[n - 1]] < n - 1) {
+            tmp.clear();
+            for (int i = 0; i < k; i++) {
+                tmp.push_back(n - k + i);
+            }
+            for (auto i : sa) {
+                if (i >= k) {
+                    tmp.push_back(i - k);
+                }
+            }
+            std::fill(cnt.begin(), cnt.end(), 0);
+            for (int i = 0; i < n; i++) {
+                cnt[rk[i]]++;
+            }
+            for (int i = 1; i < n; i++) {
+                cnt[i] += cnt[i - 1];
+            }
+            for (int i = n - 1; i >= 0; i--) {
+                sa[--cnt[rk[tmp[i]]]] = tmp[i];
+            }
+            std::swap(rk, tmp);
+            rk[sa[0]] = 0;
+            for (int i = 1; i < n; i++) {
+                rk[sa[i]] = rk[sa[i - 1]] + (tmp[sa[i - 1]] < tmp[sa[i]] || sa[i - 1] + k == n || tmp[sa[i - 1] + k] < tmp[sa[i] + k]);
+            }
+            k *= 2;
+        }
+        for (int i = 0, j = 0; i < n; i++) {
+            if (rk[i] == 0) {
+                j = 0;
+            } else {
+                for (j -= j > 0; i + j < n && sa[rk[i] - 1] + j < n && s[i + j] == s[sa[rk[i] - 1] + j]; ) {
+                    j++;
+                }
+                lc[rk[i] - 1] = j;
+            }
+        }
+        int m = lc.size();
+        int lgm = lg2(m);
+        st = vector(lgm + 1, vector<int>(m));
+        st[0] = lc;
+        for (int j = 0; j < lgm; j++) {
+            for (int i = 0; i + (2 << j) <= m; i++) {
+                st[j + 1][i] = std::min(st[j][i], st[j][i + (1 << j)]);
+            }
+        }
+    }
+
+    int rmq(int l, int r) {
+        int k = lg2(r - l);
+        return std::min(st[k][l], st[k][r - (1 << k)]);
+    }
+
+    __attribute__((target("lzcnt")))
+    int lcp(int i, int j) {
+        if (i == j || i == n || j == n) {
+            return std::min(n - i, n - j);
+        }
+        int a = rk[i];
+        int b = rk[j];
+        if (a > b) {
+            std::swap(a, b);
+        }
+        return std::min({n - i, n - j, rmq(a, b)});
+    }
+
+    int lcs(int i, int j) {
+        if (i == j || i == 0 || j == 0) {
+            return std::min(i, j);
+        }
+        int a = rk[n + n - i];
+        int b = rk[n + n - j];
+        if (a > b) {
+            std::swap(a, b);
+        }
+        return std::min({i, j, rmq(a, b)});
+    }
+};
+
+int calc_len(int x) {
+    int res = 0;
+    while (x) {
+        x /= 10;
+        res += 1;
+    }
+    return res;
+}
+
 // __attribute__((target("popcnt")))
 void solve() {
-    string a = "9";
-    cout << a + char(48) << '\n';
-    sort(a.begin(), a.end());
+    read(string, s);
+    SA sa(s);
+    int n = s.size();
+    vector dp(n + 1, vector<pii>(n + 1, { INF, 0 }));
+    vector<int> common(n + 1, INF);
+    dp[0][0] = { 0, 0 };
+    common[0] = 0;
+    for (int i = 1; i <= n; ++i) {
+        for (int j = 1; j <= i; ++j) {
+            // concatenate
+            if (i - j >= j and sa.lcp(i - j, i - 2 * j) >= j) {
+                chmin(dp[i][j], pii { dp[i - j][j].first - calc_len(dp[i - j][j].second) + calc_len(dp[i - j][j].second + 1), dp[i - j][j].second + 1 });
+            }
+            // start a new segment
+            chmin(dp[i][j], pii { common[i - j] + j + calc_len(1), 1 });
+            chmin(common[i], dp[i][j].first);
+        }
+    }
+    int res = INF;
+    for (int j = 1; j <= n; ++j) {
+        chmin(res, dp[n][j].first);
+    }
+    cout << res << '\n';
 }
 
 int main() {
