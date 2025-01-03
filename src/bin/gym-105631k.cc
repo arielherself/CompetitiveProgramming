@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -535,18 +535,28 @@ void dump() {}
 
 void dump_ignore() {}
 
-void prep() {
-}
+void prep() {}
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    read(string, a);
-    if (a[0] == '1' or a[n - 1] == '1') {
-        cout << "Alice\n";
-    } else {
-        cout << "Bob\n";
+    read(int, n, m);
+    if (m == 1) {
+        cout << 0 << '\n';
+        return;
     }
+    vector<ll> md(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        md[i] = qpow(i, m, PRIME);
+    }
+    ll res = 0;
+    for (int i = 1; i < n; ++i) {
+        ll all = md[i + 1];
+        ll one = 2 * md[i] % PRIME;
+        ll none = i - 1 <= 0 ? 0 : md[i - 1];
+        res += ll(1) * ((n - i) * mod(all - one + none, PRIME) % PRIME) * (ll(1) * i * i % PRIME) % PRIME;
+        res %= PRIME;
+    }
+    cout << res << '\n';
 }
 
 int main() {

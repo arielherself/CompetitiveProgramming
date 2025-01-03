@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -541,12 +541,72 @@ void prep() {
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
-    read(string, a);
-    if (a[0] == '1' or a[n - 1] == '1') {
-        cout << "Alice\n";
-    } else {
-        cout << "Bob\n";
+    read(ll, k);
+    readvec(int, a, n);
+
+    map<int, vector<int>, greater<>> events;
+    for (int i = 0; i < n; ++i) {
+        int x = a[i];
+        for (ll l = 1, r; l <= x; l = r + 1) {
+            ll val = (x + l - 1) / l;
+            r = val == 1 ? x : (x - 1) / (val - 1);
+            if (val > 1) {
+                events[r].emplace_back(i);
+            }
+        }
     }
+
+    int mx = *max_element(a.begin(), a.end());
+    ll sum = accumulate(a.begin(), a.end(), ll(0));
+    ll tot = ll(1) * mx * n - sum;
+
+    if (tot <= k) {
+        ll extra = (k - tot) / n;
+        cout << mx + extra << '\n';
+        // debug(1);
+        return;
+    }
+
+    vector<int> last(n, mx + 1);
+    tot = ll(1) * (mx + 1) * n;
+
+    vector<int> diff(n, 1);
+    ll tot_diff = n;
+
+    int lastpos = mx + 1;
+    while (events.size()) {
+        auto [r, v] = *events.begin();
+        // deb(r, v);
+        tot -= tot_diff * (lastpos - r);
+        lastpos = r;
+        for (auto&& i : v) {
+            tot -= (diff[i] == 1 ? last[i] : ll(1) * diff[i] * last[i]) - ll(1) * diff[i] * (last[i] - r);
+            tot_diff -= diff[i];
+            diff[i] = (a[i] + r - 1) / r;
+            tot_diff += diff[i];
+            tot += ll(1) * diff[i] * r;
+            last[i] = r;
+        }
+        // debug(tot);
+        // debug(diff);
+        events.erase(events.begin());
+        // debugvec(events);
+        if (events.empty()) {
+            cout << 1 << '\n';
+            return;
+        } else if (tot_diff != 0) {
+            int nxt = events.begin()->first;
+            ll t = (tot - sum - k + tot_diff - 1) / tot_diff;
+            if (r - t > nxt) {
+                // deb(r, t, nxt);
+                cout << r - t << '\n';
+                return;
+            }
+        }
+    }
+
+    assert(false);
+
 }
 
 int main() {

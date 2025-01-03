@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -540,12 +540,63 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    read(string, a);
-    if (a[0] == '1' or a[n - 1] == '1') {
-        cout << "Alice\n";
-    } else {
-        cout << "Bob\n";
+    read(int, n, m);
+    readvec(int, a, n);
+    readvec(int, b, m);
+
+    vector res(n, vector<int>(m));
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            res[i][j] = b[j];
+        }
+    }
+    int g = 0;
+    for (int i = 0; i < n; ++i) {
+        g = g == 0 ? a[i] : gcd(g, a[i]);
+    }
+    ll l = 1;
+    for (int j = 0; j < m; ++j) {
+        l = lcm(l, ll(1) * b[j]);
+        if (l > 1e9) {
+            cout << "No\n";
+            return;
+        }
+    }
+    if (g % l != 0) {
+        cout << "No\n";
+        return;
+    }
+    int col = 0, dir = 1;
+    for (int i = 0; i < n; ++i) {
+        if (l == a[i]) continue;
+        res[i][col] = a[i];
+        col += dir;
+        if (col == m) {
+            col = max(0, m - 2);
+            dir = -dir;
+        } else if (col == -1) {
+            col = min(m - 1, 1);
+            dir = -dir;
+        }
+    }
+
+    for (int j = 0; j < m; ++j) {
+        int g = 0;
+        for (int i = 0; i < n; ++i) {
+            g = g == 0 ? res[i][j] : gcd(g, res[i][j]);
+        }
+        if (g != b[j]) {
+            cout << "No\n";
+            return;
+        }
+    }
+
+    cout << "Yes\n";
+    for (int i = 0; i < n; ++i) {
+        for (int j = 0; j < m; ++j) {
+            cout << res[i][j] << ' ';
+        }
+        cout << '\n';
     }
 }
 

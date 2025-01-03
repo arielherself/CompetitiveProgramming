@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -538,15 +538,71 @@ void dump_ignore() {}
 void prep() {
 }
 
+constexpr int N = 5010;
+ll dp[N][N][2];
+
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    read(string, a);
-    if (a[0] == '1' or a[n - 1] == '1') {
-        cout << "Alice\n";
-    } else {
-        cout << "Bob\n";
+    memset(dp, 0x3f, sizeof(dp));
+
+    read(int, n, tot);
+    vector<int> a(n + 1), b(n + 1);
+    adj(ch, n);
+
+    for (int i = 1; i <= n; ++i) {
+        read(int, c, d);
+        a[i] = c, b[i] = c - d;
+        if (i >= 2) {
+            read(int, j);
+            edge(ch, i, j);
+        }
     }
+
+    vector<int> sz(n + 1);
+    {
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            sz[v] = 1;
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v);
+                sz[v] += sz[u];
+            }
+        };
+        dfs(dfs, 1, 0);
+    }
+
+    // vector dp(n + 1, vector(n + 1, vector<ll>(2, INFLL)));
+    {
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v);
+            }
+            int curr = 1;
+            dp[v][0][0] = 0;
+            dp[v][1][0] = a[v];
+            dp[v][1][1] = b[v];
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                for (int j = curr; ~j; --j) {
+                    for (int k = 0; k <= sz[u]; ++k) {
+                        chmin(dp[v][j + k][0], dp[u][k][0] + dp[v][j][0]);
+                        chmin(dp[v][j + k][1], min(dp[u][k][0], dp[u][k][1]) + dp[v][j][1]);
+                    }
+                }
+                curr += sz[u];
+            }
+        };
+        dfs(dfs, 1, 0);
+    }
+
+    for (int i = n; ~i; --i) {
+        if (min(dp[1][i][0], dp[1][i][1]) <= tot) {
+            cout << i << '\n';
+            return;
+        }
+    }
+
 }
 
 int main() {
