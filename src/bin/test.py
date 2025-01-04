@@ -8,10 +8,6 @@ import io
 PRIME = 998_244_353
 
 if __name__ == '__main__':
-    N = 5000
-    M = 10 ** 9
-    print(N, M)
-    print(10, 9)
-    for i in range(2, N + 1):
-        print(10, 9, 1)
-
+    T = 100000
+    print(T)
+    print('1000000000 ' * T)

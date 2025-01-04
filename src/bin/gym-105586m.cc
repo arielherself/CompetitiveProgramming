@@ -1,5 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#pragma GCC optimize("Ofast,unroll-loops")
+#pragma GCC optimize("O2,unroll-loops")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -535,68 +535,42 @@ void dump() {}
 
 void dump_ignore() {}
 
+constexpr int B = 2;
+constexpr int N = 1e5;
+constexpr int s = 31623;  // sqrt(MDL)
+int a[N], b[N];
+
 void prep() {
+    a[0] = b[0] = 1;
+    for(int i = 1; i <= s; i++) a[i] = (ll)a[i - 1] * B % MDL ;
+    for(int i = 1; i <= s; i++) b[i] = (ll)b[i - 1] * a[s] % MDL ;
+}
+
+ll lpow(ll power) { return ll(b[power / s]) * a[power % s] % MDL; }
+// ll lpow(ll power) {
+//     return qpow(2, power, MDL);
+// }
+
+inline ll series(int n) {
+    return mod(1 - inverse(lpow(n + 1), MDL), MDL) * inverse(1 - inverse(2, MDL), MDL) % MDL;
 }
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n, m);
-    readvec1(int, a, n);
-    adj(ch, n);
-    vector<int> ind(n + 1);
-    for (int i = 0; i < m; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
-        ind[v] += 1;
-    }
+    read(int, n);
 
-    vector<int> starts;
-    for (int i = 1; i <= n; ++i) {
-        if (ind[i] == 0) {
-            starts.emplace_back(i);
-        }
-    }
+    ll inv2 = inverse(2, MDL);
 
-
-    auto check = [&] (ll x) -> bool {
-        deque<int> q;
-        vector<ll> dp(n + 1);
-        for (auto&& v : starts) {
-            q.emplace_back(v);
-            dp[v] = x;
-        }
-
-        vector myind = ind;
-
-        while (q.size()) {
-            int v = popfront(q);
-            if (dp[v] >= a[v]) {
-                dp[v] += a[v];
-            } else {
-                dp[v] -= a[v] - dp[v];
-            }
-            for (auto&& u : ch[v]) {
-                chmax(dp[u], dp[v]);
-                if (--myind[u] == 0) {
-                    q.emplace_back(u);
-                }
-            }
-        }
-
-        return dp[n] > 0;
+    auto calc = [&] (int x) {
+        ll left = ((n - 1) * lpow(n - 2) % MDL) * series(x) % MDL;
+        ll right = lpow(n - 2) * mod(-x * inverse(lpow(x), MDL) % MDL + series(x - 1), MDL) % MDL;
+        ll mid = lpow(n) * series(x) % MDL;
+        // mll mid = 0;
+        // deb(x, mid);
+        return mod(((left - right) % MDL + mid) % MDL - 2 * x, MDL);
     };
-
-    ll l = 0, r = INFLL;
-    while (l < r) {
-        ll mid = l + r >> 1;
-        if (check(mid)) {
-            r = mid;
-        } else {
-            l = mid + 1;
-        }
-    }
-
-    cout << l << '\n';
+    // deb(calc(1), calc(3));
+    cout << mod(mod(lpow(n - 1) - 1 - (n - 1), MDL) - mod(calc(n - 1) - calc(max(1, (n + 1) / 2 - 1)), MDL), MDL) << '\n';
 }
 
 int main() {

@@ -540,13 +540,26 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    read(string, a);
-    if (a[0] == '1' or a[n - 1] == '1') {
-        cout << "Alice\n";
-    } else {
-        cout << "Bob\n";
+    read(int, n, m);
+    int N = n + 100, M = m + 100;
+    vector dis(N, vector<ll>(M, INFLL));
+    dis[50][50] = 0;
+    min_heap<tlii> q;
+    q.emplace(0, 50, 50);
+    auto check = [&] (int x, int y) {
+        return x >= 0 and x < N and y >= 0 and y < M;
+    };
+    while (q.size()) {
+        auto [d, x, y] = poptop(q);
+        for (auto [x1, y1] : vector<pii>{{x + 1, y + 2}, {x - 1, y - 2}, {x + 1, y - 2}, {x - 1, y + 2},
+                {x + 2, y + 1}, {x - 2, y - 1}, {x + 2, y - 1}, {x - 2, y + 1}})
+        {
+            if (check(x1, y1) and chmin(dis[x1][y1], dis[x][y] + 1)) {
+                q.emplace(dis[x1][y1], x1, y1);
+            }
+         }
     }
+    cout << dis[50 + n][50 + m] * dis[50 + n][50 + m] * 2 - (dis[50 + n][50 + m] * 2 - 1) << '\n';
 }
 
 int main() {

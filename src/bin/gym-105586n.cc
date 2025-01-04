@@ -540,63 +540,10 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n, m);
-    readvec1(int, a, n);
-    adj(ch, n);
-    vector<int> ind(n + 1);
-    for (int i = 0; i < m; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
-        ind[v] += 1;
-    }
-
-    vector<int> starts;
-    for (int i = 1; i <= n; ++i) {
-        if (ind[i] == 0) {
-            starts.emplace_back(i);
-        }
-    }
-
-
-    auto check = [&] (ll x) -> bool {
-        deque<int> q;
-        vector<ll> dp(n + 1);
-        for (auto&& v : starts) {
-            q.emplace_back(v);
-            dp[v] = x;
-        }
-
-        vector myind = ind;
-
-        while (q.size()) {
-            int v = popfront(q);
-            if (dp[v] >= a[v]) {
-                dp[v] += a[v];
-            } else {
-                dp[v] -= a[v] - dp[v];
-            }
-            for (auto&& u : ch[v]) {
-                chmax(dp[u], dp[v]);
-                if (--myind[u] == 0) {
-                    q.emplace_back(u);
-                }
-            }
-        }
-
-        return dp[n] > 0;
-    };
-
-    ll l = 0, r = INFLL;
-    while (l < r) {
-        ll mid = l + r >> 1;
-        if (check(mid)) {
-            r = mid;
-        } else {
-            l = mid + 1;
-        }
-    }
-
-    cout << l << '\n';
+    read(int, n);
+    readvec((pair<string, int>), a, n);
+    sort_by_key(a.begin(), a.end(), expr(p.second, auto&& p));
+    cout << a[n - 1].first << '\n';
 }
 
 int main() {
