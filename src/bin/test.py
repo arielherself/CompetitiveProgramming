@@ -8,6 +8,7 @@ import io
 PRIME = 998_244_353
 
 if __name__ == '__main__':
-    T = 100000
-    print(T)
-    print('1000000000 ' * T)
+    N = 1000000
+    print(N, 0)
+    print(*range(1, N + 1))
+

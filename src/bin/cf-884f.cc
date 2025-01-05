@@ -644,7 +644,7 @@ void solve() {
         net.add_edge(node + i, t, 1, 0);
     }
     auto [flow, cost] = net.run(s, t);
-    debug(flow);
+    // debug(flow);
     cout << -cost << '\n';
 }
 

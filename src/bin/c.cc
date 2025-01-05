@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -540,26 +540,25 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    readvec(pll, a, n);
-    ll res = 0;
-    ll lastr = INFLL;
-    for (auto&& [l, r] : a) {
-        l -= res, r -= res;
-        if (r <= 0) {
-            cout << -1 << '\n';
-            return;
+    using mll = MLL<MDL>;
+    read(int, n, k);
+    vector dp(k + 1, vector<mll>(n + 2));
+    vector dp1(k + 1, vector<mll>(n + 2));
+    for (int i = 1; i <= k; ++i) {
+        dp[i][n + 1] = 1;
+        dp1[i][n + 1] = 1;
+        for (int j = n; j; --j) {
+            dp[i][j] = (i > 1) + dp[i][j + 1];
+            dp1[i][j] = dp[i][j + 1];
+            if (i - 2 >= 1) {
+                dp[i][j] += dp1[i - 2][j - 1];
+            }
         }
-        ll wait = max<ll>(0, l - 1);
-        if (lastr - wait < 0) {
-            cout << -1 << '\n';
-            return;
+        for (int j = 1; j <= n; ++j) {
+            dp1[i][j] += dp1[i][j - 1];
         }
-        res += wait + 1;
-        lastr = r - (wait + 1);
     }
-    res += 1;
-    cout << res << '\n';
+    cout << dp[k][1] << '\n';
 }
 
 int main() {

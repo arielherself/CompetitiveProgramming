@@ -541,12 +541,11 @@ void prep() {
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
-    readvec(string, a, n);
-    for (auto&& x : a) {
-        cout << x << '\n';
-        if (x == "Tomori") {
-            cout << "Haruhikage" << '\n';
-        }
+    if (n % 2 == 0) {
+        cout << (n / 2 + 1) * (n / 2 + 1) << '\n';
+    } else {
+        int base = ((n - 1) / 2 + 1);
+        cout << 4 * base * base - (base - 1) * base * 2 << '\n';
     }
 }
 

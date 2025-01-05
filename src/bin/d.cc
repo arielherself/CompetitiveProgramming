@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -538,65 +538,84 @@ void dump_ignore() {}
 void prep() {
 }
 
+template <typename T> struct point {
+    T x, y;
+    point() : x(), y() {}
+    point(const pair<T, T>& a) : x(a.first), y(a.second) {}
+    point(const T& x, const T& y) : x(x), y(y) {}
+
+    inline T square() const { return x * x + y * y; }
+    inline ld norm() const { return sqrt(double(square())); }
+
+    inline point operator+(const point& rhs) const { return point(x + rhs.x, y + rhs.y); }
+    inline point operator-(const point& rhs) const { return point(x - rhs.x, y - rhs.y); }
+    inline point operator+() const { return *this; }
+    inline point operator-() const { return point(-x, -y); }
+    inline point operator*(const T& a) const { return point(x * a, y * a); }
+    inline T operator*(const point& rhs) const { return x * rhs.y - y * rhs.x; }
+    inline point operator/(const T& a) const { return point(x / a, y / a); }
+    inline point& operator+=(const point& rhs) { x += rhs.x, y += rhs.y; return *this; }
+    inline point& operator-=(const point& rhs) { x -= rhs.x, y -= rhs.y; return *this; }
+    inline point& operator*=(const T& a) { x *= a, y *= a; return *this; }
+    inline point& operator/=(const T& a) { x /= a, y /= a; return *this; }
+
+    inline bool operator==(const point& rhs) const { return x == rhs.x and y == rhs.y; }
+    inline bool operator!=(const point& rhs) const { return not (*this == rhs); }
+    inline bool operator<(const point& rhs) const { return pair(x, y) < pair(rhs.x, rhs.y); }
+    inline bool operator<=(const point& rhs) const { return *this < rhs or *this == rhs; }
+    inline bool operator>(const point& rhs) const { return not (*this <= rhs); }
+    inline bool operator>=(const point& rhs) const { return not (*this < rhs); }
+
+    static inline ld slope(const point& a, const point& b) {
+        if (a.x == b.x) return INFLL;
+        return ld(a.y - b.y) / (a.x - b.x);
+    }
+
+    // distance from point `a` to line `l--r`
+    static inline ld dist(const point& a, const point& l, const point& r) {
+        return area(a, l, r) * 2 / (l - r).norm();
+    }
+
+    static inline ld area(const point& a, const point& b, const point& c) {
+        return (b - a) * (c - a) / ld(2);
+    }
+
+    friend inline istream& operator>>(istream& in, point& a) {
+        return in >> a.x >> a.y;
+    }
+
+    friend inline ostream& operator<<(ostream& out, const point& a) {
+        return out << a.x << ' ' << a.y;
+    }
+};
+
+
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n, m);
-    readvec1(int, a, n);
-    adj(ch, n);
-    vector<int> ind(n + 1);
-    for (int i = 0; i < m; ++i) {
-        read(int, u, v);
-        edge(ch, u, v);
-        ind[v] += 1;
-    }
-
-    vector<int> starts;
-    for (int i = 1; i <= n; ++i) {
-        if (ind[i] == 0) {
-            starts.emplace_back(i);
-        }
-    }
-
-
-    auto check = [&] (ll x) -> bool {
-        deque<int> q;
-        vector<ll> dp(n + 1);
-        for (auto&& v : starts) {
-            q.emplace_back(v);
-            dp[v] = x;
-        }
-
-        vector myind = ind;
-
-        while (q.size()) {
-            int v = popfront(q);
-            if (dp[v] >= a[v]) {
-                dp[v] += a[v];
-            } else {
-                dp[v] -= a[v] - dp[v];
-            }
-            for (auto&& u : ch[v]) {
-                chmax(dp[u], dp[v]);
-                if (--myind[u] == 0) {
-                    q.emplace_back(u);
-                }
-            }
-        }
-
-        return dp[n] > 0;
-    };
-
-    ll l = 0, r = INFLL;
-    while (l < r) {
-        ll mid = l + r >> 1;
-        if (check(mid)) {
-            r = mid;
+    read(int, n);
+    vector<pll> pts;
+    for (int i = 0; i < n; ++i) {
+        read(ll, x, y, u, v);
+        if (u - x == 0) {
+            if (v > y) pts.emplace_back(0, 1);
+            else pts.emplace_back(0, -1);
+        } else if (v - y == 0) {
+            if (u < x) pts.emplace_back(-1, 0);
+            else pts.emplace_back(1, 0);
         } else {
-            l = mid + 1;
+            ll g = gcd(u - x, v - y);
+            pts.emplace_back((u - x) / g, (v - y) / g);
         }
     }
-
-    cout << l << '\n';
+    ll res= 0;
+    unordered_map<pll, int, pair_hash> oc;
+    for (auto&& [x, y] : pts) {
+        if (oc.count({-x, -y})) {
+            res += oc[{-x, -y}];
+        }
+        oc[{x, y}] += 1;
+    }
+    cout << res << '\n';
 }
 
 int main() {
