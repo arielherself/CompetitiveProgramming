@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -538,35 +538,223 @@ void dump_ignore() {}
 void prep() {
 }
 
+class quick_union {
+private:
+    vector<size_t> c, sz;
+public:
+    quick_union(size_t n) : c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
+    }
+
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] += sz[query(i)];
+        c[query(i)] = query(j);
+    }
+
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+
+    size_t query_size(size_t i) {
+        return sz[query(i)];
+    }
+};
+
+
 // __attribute__((target("popcnt")))
 void solve() {
-    read(ll, k);
+    constexpr int B = 316;
+    read(int, n, m, q);
+    adj(ch, n);
+    quick_union qu(n + 1);
+    for (int i = 0; i < m; ++i) {
+        read(int, u, v);
+        qu.merge(u, v);
+        edge(ch, u, v);
+    }
 
-    auto work = [&] (int128 tot) -> int128 {
-        constexpr int N = 10;
-        int128 res = 0;
-        int128 pw = 1;
-        for (int i = 1; i <= N; ++i) {
-            pw *= 100;
-        }
-        for (int i = N; ~i; --i) {
-            res += tot / (4 * pw) - tot / (100 * pw);
-            pw /= 100;
-        }
-        return res;
-    };
-
-    int128 l = 2024, r = LLONG_MAX;
-    int128 start = 2024 - work(2024);
-    while (l < r) {
-        int128 mid = l + r >> 1;
-        if ((mid - work(mid)) - start >= k) {
-            r = mid;
-        } else {
-            l = mid + 1;
+    vector<pii> cc;
+    for (int i = 1; i <= n; ++i) {
+        if (qu.query(i) == i) {
+            cc.emplace_back(i, qu.query_size(i));
         }
     }
-    cout << l << '\n';
+
+    m = cc.size();
+
+    vector<int> diameter(n + 1);
+    {
+        int p, q;
+        int maxd;
+        auto dfs = [&] (auto dfs, int v, int pa, int d) -> void {
+            if (chmax(maxd, d)) {
+                q = v;
+            }
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v, d + 1);
+            }
+        };
+        for (auto&& [root, cnt] : cc) {
+            p = root, maxd = -1;
+            dfs(dfs, p, 0, 0);
+            p = q, maxd = -1;
+            dfs(dfs, p, 0, 0);
+            diameter[root] = maxd;
+        }
+    }
+
+    vector<int> max_depth(n + 1);
+    vector<int> depth(n + 1);
+    vector<int> d(n + 1);
+    vector<int> idx(n + 1);
+    {
+        int j;
+        auto dfs = [&] (auto dfs, int v, int pa, int d) -> void {
+            idx[v] = j;
+            max_depth[v] = depth[v] = d;
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                dfs(dfs, u, v, d + 1);
+                chmax(max_depth[v], max_depth[u]);
+            }
+        };
+        for (int i = 0; i < m; ++i) {
+            auto&& [v, cnt] = cc[i];
+            j = i;
+            dfs(dfs, v, 0, 0);
+        }
+    }
+    {
+        auto dfs = [&] (auto dfs, int v, int pa, int up) -> void {
+            multiset<int> ds;
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                ds.emplace(max_depth[u] - depth[v]);
+            }
+            chmax(d[v], max(up, ds.empty() ? -INF : *ds.rbegin()));
+            for (auto&& u : ch[v]) {
+                if (u == pa) continue;
+                ds.erase(ds.find(max_depth[u] - depth[v]));
+                dfs(dfs, u, v, max({up + 1, 1, ds.empty() ? -INF : *ds.rbegin() + 1}));
+                ds.emplace(max_depth[u] - depth[v]);
+            }
+        };
+        for (auto&& [v, cnt] : cc) {
+            dfs(dfs, v, 0, -INF);
+        }
+    }
+
+
+    auto work = [&] (int i, int j) -> ld {
+        auto&& [rootleft, totleft] = cc[i];
+        vector<int> cnt(totleft + 1);
+        {
+            auto dfs = [&] (auto dfs, int v, int pa) -> void {
+                cnt[d[v]] += 1;
+                for (auto&& u : ch[v]) {
+                    if (u == pa) continue;
+                    dfs(dfs, u, v);
+                }
+            };
+            dfs(dfs, rootleft, 0);
+        }
+        vector<int> ps(totleft + 2);
+        vector<ll> pssum(totleft + 2);
+        for (int i = 1; i <= totleft + 1; ++i) {
+            ps[i] = ps[i - 1] + cnt[i - 1];
+            pssum[i] = pssum[i - 1] + ll(1) * cnt[i - 1] * (i - 1);
+        }
+        auto&& [rootright, totright] = cc[j];
+        ld curr = 0;
+        int treed = max(diameter[rootleft], diameter[rootright]);
+        {
+            auto dfs = [&] (auto dfs, int v, int pa) -> void {
+                curr += ll(1) * ps[clamp(treed - d[v] - 1, 0, totleft + 1)] * treed + ll(1) * (ps[totleft + 1] - ps[clamp(treed - d[v] - 1, 0, totleft + 1)]) * (d[v] + 1) + (pssum[totleft + 1] - pssum[clamp(treed - d[v] - 1, 0, totleft + 1)]);
+                for (auto&& u : ch[v]) {
+                    if (u == pa) continue;
+                    dfs(dfs, u, v);
+                }
+            };
+            dfs(dfs, rootright, 0);
+        }
+        return ld(1) * curr / (ll(1) * totleft * totright);
+    };
+
+    vector<int> rev(m, -1);
+    int t = 0;
+    for (int i = 0; i < m; ++i) {
+        auto&& [v, tot] = cc[i];
+        if (tot < B) continue;
+        rev[i] = t++;
+    }
+    vector pre(m, vector<ld>(t));
+    // debug(t);
+    for (int i = 0; i < m; ++i) {
+        if (rev[i] == -1) continue;
+        auto&& [rootleft, totleft] = cc[i];
+        vector<int> cnt(n + 1);
+        {
+            auto dfs = [&] (auto dfs, int v, int pa) -> void {
+                cnt[d[v]] += 1;
+                for (auto&& u : ch[v]) {
+                    if (u == pa) continue;
+                    dfs(dfs, u, v);
+                }
+            };
+            dfs(dfs, rootleft, 0);
+        }
+        vector<int> ps(totleft + 2);
+        vector<ll> pssum(totleft + 2);
+        for (int i = 1; i <= totleft + 1; ++i) {
+            ps[i] = ps[i - 1] + cnt[i - 1];
+            pssum[i] = pssum[i - 1] + ll(1) * cnt[i - 1] * (i - 1);
+        }
+        for (int j = 0; j < m; ++j) {
+            if (j == i) continue;
+            auto&& [rootright, totright] = cc[j];
+            ld curr = 0;
+            int treed = max(diameter[rootleft], diameter[rootright]);
+            {
+                auto dfs = [&] (auto dfs, int v, int pa) -> void {
+                    curr += ll(1) * ps[clamp(treed - d[v] - 1, 0, totleft + 1)] * treed + ll(1) * (ps[totleft + 1] - ps[clamp(treed - d[v] - 1, 0, totleft + 1)]) * (d[v] + 1) + (pssum[totleft + 1] - pssum[clamp(treed - d[v] - 1, 0, totleft + 1)]);
+                    for (auto&& u : ch[v]) {
+                        if (u == pa) continue;
+                        dfs(dfs, u, v);
+                    }
+                };
+                dfs(dfs, rootright, 0);
+            }
+            pre[j][rev[i]] = ld(1) * curr / (ll(1) * totleft * totright);
+        }
+    }
+
+    cout << fixed << setprecision(50);
+    // int cnt = 0;
+    while (q--) {
+        read(int, u, v);
+        u = qu.query(u), v = qu.query(v);
+        if (u == v) {
+            cout << "-1\n";
+        } else if (max(cc[idx[u]].second, cc[idx[v]].second) < B) {
+            // deb(cc[idx[u]].second, cc[idx[v]].second);
+            // cnt += 1;
+            // debug(cnt);
+            cout << (long double)work(idx[u], idx[v]) << '\n';
+        } else {
+            if (cc[idx[v]].second >= B) {
+                swap(u, v);
+            }
+            cout << (long double)pre[idx[v]][rev[idx[u]]] << '\n';
+        }
+    }
 }
 
 int main() {

@@ -8,7 +8,10 @@ import io
 PRIME = 998_244_353
 
 if __name__ == '__main__':
-    N = 1000000
-    print(N, 0)
-    print(*range(1, N + 1))
-
+    N = 100000
+    M = N // 2
+    print(N, M, N)
+    for i in range(1, M + 1):
+        print(randint(1, 2 * i - 1), 2 * i)
+    for _ in range(N):
+        print(randint(1, N), randint(1, N))
