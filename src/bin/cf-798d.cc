@@ -541,23 +541,30 @@ void prep() {
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
-    unordered_map<string, int> mp;
-    for (int i = 0; i < n; ++i) {
-        read(int, m);
-        while (m--) {
-            read(string, s);
-            mp[s] += 1;
+    readvec(int, a, n);
+    readvec(int, b, n);
+    ll sa = accumulate(a.begin(), a.end(), ll(0));
+    ll sb = accumulate(b.begin(), b.end(), ll(0));
+    auto check = [&] (const vector<int>& idx) {
+        ll ca = 0, cb = 0;
+        for (auto&& i : idx) {
+            ca += a[i];
+            cb += b[i];
+        }
+        return 2 * ca > sa and 2 * cb > sb;
+    };
+    vector<int> perm(n);
+    iota(perm.begin(), perm.end(), 0);
+    while (1) {
+        shuffle(perm.begin(), perm.end(), rd);
+        vector<int> curr(perm.begin(), perm.begin() + n / 2 + 1);
+        if (check(curr)) {
+            cout << n / 2 + 1 << '\n';
+            transform(curr.begin(), curr.end(), curr.begin(), expr(x + 1, auto&& x));
+            putvec(curr);
+            break;
         }
     }
-    vector<string> res;
-    for (auto&& [x, c] : mp) {
-        if (c == n) {
-            res.emplace_back(x);
-        }
-    }
-    sort(res.begin(), res.end());
-    cout << res.size() << '\n';
-    putvec_eol(res);
 }
 
 int main() {

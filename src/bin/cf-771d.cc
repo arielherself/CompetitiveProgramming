@@ -541,23 +541,48 @@ void prep() {
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
-    unordered_map<string, int> mp;
+    vector<int> a(n);
     for (int i = 0; i < n; ++i) {
-        read(int, m);
-        while (m--) {
-            read(string, s);
-            mp[s] += 1;
+        read(char, c);
+        if (c == 'V') {
+            a[i] = 0;
+        } else if (c == 'K') {
+            a[i] = 1;
+        } else {
+            a[i] = 2;
         }
     }
-    vector<string> res;
-    for (auto&& [x, c] : mp) {
-        if (c == n) {
-            res.emplace_back(x);
+    // vector dp(n, vector(n, vector(n + 1, vector<int>(n + 1, INF))));
+    vector<vector<vector<vector<vector<int>>>>> dp(n);
+    for (int i = 0; i < n; ++i) {
+        dp[i].resize(n - i);
+        for (int j = 0; j < n - i; ++j) {
+            dp[i][j].resize(j + 2);
+            for (int k = 0; k <= j + 1; ++k) {
+                dp[i][j][k].resize(j + 1 - k + 1);
+                for (int l = 0; l <= j + 1 - k; ++l) {
+                    dp[i][j][k][l].resize((j + 1) / 2 + 1);
+                }
+            }
         }
     }
-    sort(res.begin(), res.end());
-    cout << res.size() << '\n';
-    putvec_eol(res);
+    for (int i = n - 1; ~i; --i) {
+        for (int j = i; j < n; ++j) {
+            if (i == j) {
+                dp[i][0][a[i] == 0][a[i] == 1][0] = 0;
+            } else {
+                if (a[i] == 0) {
+                    for (int k = 0; k <= j - i; ++k) {
+                        for (int l = 0; l <= j - i - k; ++l) {
+                            for (int m = 0; m <= (j - i) / 2; ++m) {
+                                
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
 
 int main() {

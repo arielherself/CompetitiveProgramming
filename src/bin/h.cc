@@ -538,40 +538,71 @@ void dump_ignore() {}
 void prep() {
 }
 
+template <typename T> struct point {
+    T x, y;
+    point() : x(), y() {}
+    point(const pair<T, T>& a) : x(a.first), y(a.second) {}
+    point(const T& x, const T& y) : x(x), y(y) {}
+
+    inline T square() const { return x * x + y * y; }
+    inline long double norm() const { return sqrt((long double)(square())); }
+
+    inline point operator+(const point& rhs) const { return point(x + rhs.x, y + rhs.y); }
+    inline point operator-(const point& rhs) const { return point(x - rhs.x, y - rhs.y); }
+    inline point operator+() const { return *this; }
+    inline point operator-() const { return point(-x, -y); }
+    inline point operator*(const T& a) const { return point(x * a, y * a); }
+    inline T operator*(const point& rhs) const { return x * rhs.y - y * rhs.x; }
+    inline point operator/(const T& a) const { return point(x / a, y / a); }
+    inline point& operator+=(const point& rhs) { x += rhs.x, y += rhs.y; return *this; }
+    inline point& operator-=(const point& rhs) { x -= rhs.x, y -= rhs.y; return *this; }
+    inline point& operator*=(const T& a) { x *= a, y *= a; return *this; }
+    inline point& operator/=(const T& a) { x /= a, y /= a; return *this; }
+
+    inline bool operator==(const point& rhs) const { return x == rhs.x and y == rhs.y; }
+    inline bool operator!=(const point& rhs) const { return not (*this == rhs); }
+    inline bool operator<(const point& rhs) const { return pair(x, y) < pair(rhs.x, rhs.y); }
+    inline bool operator<=(const point& rhs) const { return *this < rhs or *this == rhs; }
+    inline bool operator>(const point& rhs) const { return not (*this <= rhs); }
+    inline bool operator>=(const point& rhs) const { return not (*this < rhs); }
+
+    static inline long double slope(const point& a, const point& b) {
+        if (a.x == b.x) return INFLL;
+        return (long double)(a.y - b.y) / (a.x - b.x);
+    }
+
+    // distance from point `a` to line `l--r`
+    static inline long double dist(const point& a, const point& l, const point& r) {
+        return area(a, l, r) * 2 / (l - r).norm();
+    }
+
+    static inline long double area(const point& a, const point& b, const point& c) {
+        return abs((b - a) * (c - a)) / ld(2);
+    }
+
+    friend inline istream& operator>>(istream& in, point& a) {
+        return in >> a.x >> a.y;
+    }
+
+    friend inline ostream& operator<<(ostream& out, const point& a) {
+        return out << a.x << ' ' << a.y;
+    }
+};
+
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n, q);
-    readvec(int, a, n);
-    read(int, _);
-    int prod = 1;
-    for (auto&& x : a) prod *= x;
-    if (prod == 0) {
-        cout << "Yes\n";
-    } else {
-        constexpr int D = 5;
-        vector dp(n, vector(2 * D + 1, vector<int>(2)));
-        dp[0][D + a[0]][a[0] == 1] = 1;
-        for (int i = 1; i < n; ++i) {
-            for (int j = -D; j <= D; ++j) {
-                for (int k = 0; k < 2; ++k) {
-                    // continue
-                    int nw = (k ? 1 : -1) * a[i];
-                    if (j - (k ? 1 : -1) + nw >= -D and j - (k ? 1 : -1) + nw <= D) {
-                        dp[i][j - (k ? 1 : -1) + nw + D][nw == 1] or_eq dp[i - 1][j + D][k];
-                    }
-                    // new segment
-                    if (j + a[i] >= -D and j + a[i] <= D) {
-                        dp[i][j + a[i] + D][a[i] == 1] or_eq dp[i - 1][j + D][k];
-                    }
-                }
-            }
-        }
-        if (dp[n - 1][D][0] or dp[n - 1][D][1]) {
-            cout << "Yes\n";
-        } else {
-            cout << "No\n";
-        }
-    }
+    using point = point<long double>;
+    read(int, xa, ya);
+    deb(xa, ya);
+    point a(xa, ya);
+    read(point, b);
+    read(point, c, d);
+    point e((a.x + b.x) / ld(2), (a.y + b.y) / ld(2));
+    cout << fixed << setprecision(50);
+    debug(c - e);
+    debug(d - e);
+    debug((long double)point::area(e, c, d));
+    cout << (long double)point::dist(e, c, d) << '\n';
 }
 
 int main() {

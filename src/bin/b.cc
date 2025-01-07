@@ -535,14 +535,29 @@ void dump() {}
 
 void dump_ignore() {}
 
-void prep() {
-}
+constexpr int N = 5e5 + 10;
+ll fact[N], factrev[N + 1], s[N + 1];
+
+void prep() {}
+
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(string, s);
-    string s1(s.rbegin(), s.rend());
-    cout << s1 << '\n';
+    read(int, n, k);
+    auto work = [&n] (int k) -> ll {
+        vector<ll> dp(n + 1);
+        dp[0] = 1;
+        for (int i = 1; i <= n; ++i) {
+            dp[i] = dp[i - 3];
+            if (i - k - 1 >= 0) {
+                dp[i] -= dp[i - k - 1];
+            }
+            dp[i] = mod(dp[i], PRIME);
+            dp[i] = (dp[i] + dp[i - 1]) % PRIME;
+        }
+        return mod(dp[n] - dp[n - 1], PRIME);
+    };
+    ll cnt = mod(work(k) - work(k - 1), PRIME);
 }
 
 int main() {
