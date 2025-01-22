@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -535,11 +535,93 @@ void dump() {}
 
 void dump_ignore() {}
 
+using mll = MLL<MDL>;
+constexpr int N = 1e6 + 10;
+int mu[N];
+ll fact[N], factrev[N + 1], s[N + 1];
+
+void get_mu(int n) {
+    vector<bool> not_prime(n + 1);
+    vector<int> res;
+    mu[1] = 1;
+    for (int i = 2; i <= n; ++i) {
+        if (not not_prime[i]) {
+            res.emplace_back(i);
+            mu[i] = -1;
+        }
+        for (auto&& x : res) {
+            if (i * x > n) break;
+            not_prime[i * x] = 1;
+            if (i % x == 0) {
+                mu[i * x] = 0;
+                break;
+            } else {
+                mu[i * x] = -mu[i];
+            }
+        }
+    }
+}
+
+constexpr int M = MDL;
+
 void prep() {
+	get_mu(N - 1);
+	fact[0] = factrev[0] = 1;
+	for (int i = 1; i < N; ++i) {
+		fact[i] = (fact[i - 1] * i) % M;
+	}
+	s[0] = 1;
+	for (int i = 1; i <= N; ++i) {
+		s[i] = s[i - 1] * fact[i - 1] % M;
+	}
+	factrev[N] = inverse(s[N], M);
+	for (int i = N; i; --i) {
+		factrev[i - 1] = factrev[i] * fact[i - 1] % M;
+	}
+	for (int i = 0; i < N; ++i) {
+		factrev[i] = factrev[i + 1] * s[i] % M;
+	}
+}
+
+ll mycomb(int n, int k) {
+	if (n < 0 or k < 0 or n < k) return 0;
+	return fact[n] * factrev[k] % M * factrev[n - k] % M;
 }
 
 // __attribute__((target("popcnt")))
 void solve() {
+	constexpr int N = 1e6 + 2;
+	read(int, n, k, q);
+	vector<ll> t(N);
+	vector<vector<int>> factors(N);
+	for (int i = 1; i < N; ++i) {
+		for (int j = i; j < N; j += i) {
+			factors[j].emplace_back(i);
+			t[j] += ll(1) * i * mu[j / i] % MDL;
+		}
+	}
+
+	vector<int> cnt(N);
+	ll res = 0;
+
+	auto add = [&] (int x) {
+		for (auto&& f : factors[x]) {
+			res = mod(res - mycomb(cnt[f], k) * t[f] % MDL, MDL);
+			cnt[f] += 1;
+			res = (res + mycomb(cnt[f], k) * t[f] % MDL) % MDL;
+		}
+	};
+
+	while (n--) {
+		read(int, x);
+		add(x);
+	}
+
+	while (q--) {
+		read(int, x);
+		add(x);
+		cout << res << '\n';
+	}
 }
 
 int main() {

@@ -535,11 +535,101 @@ void dump() {}
 
 void dump_ignore() {}
 
-void prep() {
+constexpr int M = PRIME;
+
+constexpr int N = 1e5 + 10;
+ll fact[N], factrev[N + 1], s[N + 1];
+int minp[N];
+
+void soe(int n) {
+    vector<bool> not_prime(n + 1);
+    vector<int> res;
+    minp[1] = 1;
+    for (int i = 2; i <= n; ++i) {
+        if (not not_prime[i]) {
+            res.emplace_back(i);
+            minp[i] = i;
+        }
+        for (auto&& x : res) {
+            if (ll(1) * i * x > n) break;
+            not_prime[i * x] = 1;
+            minp[i * x] = x;
+            if (i % x == 0) break;
+        }
+    }
 }
+
+void prep() {
+	soe(N - 1);
+
+	fact[0] = factrev[0] = 1;
+	for (int i = 1; i < N; ++i) {
+		fact[i] = (fact[i - 1] * i) % M;
+	}
+	s[0] = 1;
+	for (int i = 1; i <= N; ++i) {
+		s[i] = s[i - 1] * fact[i - 1] % M;
+	}
+	factrev[N] = inverse(s[N], M);
+	for (int i = N; i; --i) {
+		factrev[i - 1] = factrev[i] * fact[i - 1] % M;
+	}
+	for (int i = 0; i < N; ++i) {
+		factrev[i] = factrev[i + 1] * s[i] % M;
+	}
+}
+
+ll mycomb(int n, int k) {
+	if (n < 0 or k < 0 or n < k) return 0;
+	return fact[n] * factrev[k] % M * factrev[n - k] % M;
+}
+
 
 // __attribute__((target("popcnt")))
 void solve() {
+	read(int, k, n);
+
+	for (int x = 1; x <= k; ++x) {
+		ll res = 0;
+
+		vector<pii> factors;
+		{
+			int y = x;
+			while (y != 1) {
+				int p = minp[y];
+				int cnt = 0;
+				while (y % p == 0) {
+					y /= p;
+					cnt += 1;
+				}
+				factors.emplace_back(p, cnt);
+			}
+		}
+
+		constexpr int M = 32;
+		vector<ll> cnt(M + 1);
+		for (int i = 0; i <= 32; ++i) {
+			cnt[i] = 1;
+			for (auto&& [p, c] : factors) {
+				cnt[i] = cnt[i] * mycomb(c + i - 1, c) % PRIME;
+			}
+			for (int j = 0; j < i; ++j) {
+				cnt[i] = mod(cnt[i] - mycomb(i, j) * cnt[j], PRIME);
+			}
+			ll c = 1;
+			for (int j = n + 1; j >= n - i + 1; --j) {
+				c = c * j % PRIME;
+			}
+			c = c * factrev[i + 1] % PRIME;
+			if (i == 0) c = mod(c - 1, PRIME);
+			res += c * cnt[i] % PRIME;
+			res %= PRIME;
+		}
+
+		cout << res << ' ';
+	}
+
+	cout << '\n';
 }
 
 int main() {

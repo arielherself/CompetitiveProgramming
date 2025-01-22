@@ -8,9 +8,6 @@ import io
 PRIME = 998_244_353
 
 if __name__ == '__main__':
-    N = 300000
+    N = 500000
     print(N)
-    print(*[randint(1, 10 ** 9) for _ in range(N)])
-    print(N)
-    for _ in range(N):
-        print(f'2 {N - 1} {10 ** 9}')
+    print(''.join((choice('()') for _ in range(N))))

@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -540,6 +540,47 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
+	read(int, n, k);
+	readvec(string, a, n + 1);
+
+	int q = count(a.begin(), a.end(), "?");
+	if (k == 0) {
+		if (a[0] == "?") {
+			if (((n + 1) - q) % 2 == 0) {
+				cout << "No\n";
+			} else {
+				cout << "Yes\n";
+			}
+		} else {
+			if (a[0] == "0") {
+				cout << "Yes\n";
+			} else {
+				cout << "No\n";
+			}
+		}
+	} else {
+		if (q != 0) {
+			if (n % 2 == 1) {
+				cout << "Yes\n";
+			} else {
+				cout << "No\n";
+			}
+		} else {
+			int128 b = 0;
+			for (int i = n; i; --i) {
+				b = stoi(a[i]) + k * b;
+				if (b > 1e17 or b < -1e17) {
+					cout << "No\n";
+					return;
+				}
+			}
+			if (stoi(a[0]) == -k * b) {
+				cout << "Yes\n";
+			} else {
+				cout << "No\n";
+			}
+		}
+	}
 }
 
 int main() {

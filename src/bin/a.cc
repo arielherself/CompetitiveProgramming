@@ -296,7 +296,7 @@ ll qpow(ll b, ll p, ll mod) {
 #pragma GCC diagnostic ignored "-Wparentheses"
 // Accurately find `i` 'th root of `n` (taking the floor)
 inline ll root(ll n, ll i) {
-    ll l = 0, r = pow(LLONG_MAX, (long double)(1) / i);
+    ll l = 0, r = pow(INFLL, (long double)(1) / i);
     while (l < r) {
         ll mid = l + r + 1 >> 1;
         if (qpow<int128>(mid, i) <= n) {
@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -538,26 +538,82 @@ void dump_ignore() {}
 void prep() {
 }
 
+template <typename T, typename IndexType = ll>
+struct ODT {
+    struct Info {
+        IndexType l, r;
+        mutable T val;
+        Info(const IndexType& l, const IndexType& r, const T& val) : l(l), r(r), val(val) {}
+        friend inline bool operator<(const Info& lhs, const Info& rhs) { return lhs.l < rhs.l; }
+    };
+
+    set<Info> info;
+
+    ODT() = delete;
+    ODT(const IndexType& left, const IndexType& right, const T& val) : info {{ left, right, val }} {}
+
+    typename set<Info>::iterator split(const IndexType& x) {
+        auto it = info.lower_bound({ x, {}, {} });
+        if (it != info.end() and it->l == x) {
+            return it;
+        }
+        --it;
+        auto [l, r, val] = *it;
+        info.erase(it);
+        info.emplace(l, x - 1, val);
+        return info.emplace(x, r, val).first;
+    }
+
+    void assign(const IndexType& l, const IndexType& r, const T& val) {
+        auto ri = split(r + 1), li = split(l);
+        info.erase(li, ri);
+        info.emplace(l, r, val);
+    }
+
+    void transform(const IndexType& l, const IndexType& r, const function<T(const Info&)>& operation) {
+        auto ri = split(r + 1), li = split(l);
+        for (; li != ri; ++li) {
+            li->val = operation(*li);
+        }
+    }
+
+    template <typename U>
+    U accumulate(const IndexType& l, const IndexType& r, U&& init, const function<U(const U&, const Info&)>& operation = std::plus()) {
+        auto ri = split(r + 1), li = split(l);
+        U res = init;
+        for (; li != ri; ++li) {
+            res = operation(res, *li);
+        }
+        return res;
+    }
+};
+
+
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    unordered_map<string, int> mp;
-    for (int i = 0; i < n; ++i) {
-        read(int, m);
-        while (m--) {
-            read(string, s);
-            mp[s] += 1;
+    constexpr int T = 100;
+    constexpr int M = 100000;
+    read(ll, n);
+    ll tot = 0;
+    for (int i = 0; i < T; ++i) {
+        ODT<int> tr(1, n, 0);
+        for (int j = 1; j <= M; ++j) {
+            int l = rd() % n + 1, r = rd() % n + 1;
+            if (l > r) swap(l, r);
+            tr.assign(l, r, j);
         }
+        if (tr.info.begin()->l <= 0 or tr.info.begin()->r <= 0) tr.info.erase(tr.info.begin());
+        if (tr.info.rbegin()->r > n or tr.info.rbegin()->l > n) tr.info.erase(prev(tr.info.end()));
+        assert(tr.info.begin()->l == 1 and tr.info.begin()->r <= n and tr.info.rbegin()->l >= 1 and tr.info.rbegin()->r == n);
+        // for (auto&& [l, r, x] : tr.info) {
+        //     cerr << l << ' ' << r << ' '<< x << " ,";
+        // }
+        // cerr << endl;
+        int curr = tr.info.size();
+        tot += curr;
     }
-    vector<string> res;
-    for (auto&& [x, c] : mp) {
-        if (c == n) {
-            res.emplace_back(x);
-        }
-    }
-    sort(res.begin(), res.end());
-    cout << res.size() << '\n';
-    putvec_eol(res);
+    cout << fixed << setprecision(50);
+    cout << (long double)tot / T << '\n';
 }
 
 int main() {

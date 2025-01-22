@@ -1,1 +1,0 @@
-Checks: bugprone-*,performance-*,-bugprone-reserved-identifier,-bugprone-easily-swappable-parameters

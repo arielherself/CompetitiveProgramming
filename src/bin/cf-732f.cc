@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -538,28 +538,140 @@ void dump_ignore() {}
 void prep() {
 }
 
+class quick_union {
+private:
+    vector<size_t> c, sz;
+public:
+    quick_union(size_t n) : c(n), sz(n) {
+        iota(c.begin(), c.end(), 0);
+        sz.assign(n, 1);
+    }
+
+    size_t query(size_t i) {
+        if (c[i] != i) c[i] = query(c[i]);
+        return c[i];
+    }
+
+    void merge(size_t i, size_t j) {
+        if (connected(i, j)) return;
+        sz[query(j)] += sz[query(i)];
+        c[query(i)] = query(j);
+    }
+
+    bool connected(size_t i, size_t j) {
+        return query(i) == query(j);
+    }
+
+    size_t query_size(size_t i) {
+        return sz[query(i)];
+    }
+};
+
+
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    int x = 1;
-    vector res(n, vector<int>(n));
-    for (int i = 0; i < n; ++i) {
-        if (i % 2 == 0) {
-            for (int j = 0; j < n; ++j) {
-                res[i][j] = x++;
+    read(int, n, m);
+    readvec(pii, edges, m);
+
+    vector<pii> res(m);
+
+    vector<bool> isbridge(m);
+    {
+        vector<vector<pii>> ch(n + 1);
+        for (int i = 0; i < m; ++i) {
+            auto&& [u, v] = edges[i];
+            edgew(ch, u, v, i);
+        }
+        vector<int> low(n + 1), dfn(n + 1), father(n + 1);
+        int dfs_clock = 0;
+        int cnt_bridge = 0;
+        auto dfs = [&] (auto dfs, int u, int fa) -> void {
+            father[u] = fa;
+            low[u] = dfn[u] = ++dfs_clock;
+            for (auto&& [v, i] : ch[u]) {
+                if (!dfn[v]) {
+                    dfs(dfs, v, u);
+                    low[u] = min(low[u], low[v]);
+                    if (low[v] > dfn[u]) {
+                        isbridge[i] = true;
+                        ++cnt_bridge;
+                    }
+                } else if (dfn[v] < dfn[u] && v != fa) {
+                    low[u] = min(low[u], dfn[v]);
+                }
             }
-        } else {
-            for (int j = n - 1; ~j; --j) {
-                res[i][j] = x++;
+        };
+        for (int i = 1; i <= n; ++i) {
+            if (not dfn[i]) dfs(dfs, i, 0);
+        }
+    }
+
+    vector<vector<pii>> ch(n + 1);
+    quick_union qu(n + 1);
+    for (int i = 0; i < m; ++i) {
+        auto&& [u, v] = edges[i];
+        if (not isbridge[i]) {
+            edgew(ch, u, v, i);
+            qu.merge(u, v);
+        }
+    }
+
+    vector<vector<tuple<int, int, int, int>>> o(n + 1);
+    for (int i = 0; i < m; ++i) {
+        auto&& [u, v] = edges[i];
+        int u1 = qu.query(u), v1 = qu.query(v);
+        if (isbridge[i]) {
+            edgew(o, u1, v1, i, u, v);
+        }
+    }
+
+    pii cnt = {};
+    {
+        vector<bool> vis(n + 1);
+        vector<int> depth(n + 1);
+        int sz = 0;
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            vis[v] = 1;
+            depth[v] = depth[pa] + 1;
+            sz += 1;
+            for (auto&& [u, i] : ch[v]) {
+                if (u == pa) continue;
+                if (vis[u]) {
+                    if (depth[u] < depth[v]) {
+                        res[i] = { v, u };
+                    }
+                } else {
+                    res[i] = { v, u };
+                    dfs(dfs, u, v);
+                }
+            }
+        };
+        for (int i = 1; i <= n; ++i) {
+            if (not vis[i]) {
+                sz = 0;
+                dfs(dfs, i, 0);
+                chmax(cnt, pii(sz, qu.query(i)));
             }
         }
     }
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            cout << res[i][j] << ' ';
-        }
-        cout << '\n';
+
+    {
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            for (auto&& [u, i, u1, v1] : o[v]) {
+                if (u == pa) continue;
+                if (qu.query(v1) == u) swap(u1, v1);
+                res[i] = { u1, v1 };
+                dfs(dfs, u, v);
+            }
+        };
+        dfs(dfs, cnt.second, 0);
     }
+
+    cout << cnt.first << '\n';
+    for (auto&& [u, v] : res) {
+        cout << u << ' ' << v << '\n';
+    }
+
 }
 
 int main() {

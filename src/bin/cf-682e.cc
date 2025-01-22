@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -538,8 +538,150 @@ void dump_ignore() {}
 void prep() {
 }
 
+template <typename T> struct point {
+	T x, y;
+	point() : x(), y() {}
+	point(const pair<T, T>& a) : x(a.first), y(a.second) {}
+	point(const T& x, const T& y) : x(x), y(y) {}
+
+	inline T square() const { return x * x + y * y; }
+	inline ld norm() const { return sqrt((long double)(square())); }
+
+	inline point operator+(const point& rhs) const { return point(x + rhs.x, y + rhs.y); }
+	inline point operator-(const point& rhs) const { return point(x - rhs.x, y - rhs.y); }
+	inline point operator+() const { return *this; }
+	inline point operator-() const { return point(-x, -y); }
+	inline point operator*(const T& a) const { return point(x * a, y * a); }
+	inline T operator*(const point& rhs) const { return x * rhs.y - y * rhs.x; }
+	inline point operator/(const T& a) const { return point(x / a, y / a); }
+	inline point& operator+=(const point& rhs) { x += rhs.x, y += rhs.y; return *this; }
+	inline point& operator-=(const point& rhs) { x -= rhs.x, y -= rhs.y; return *this; }
+	inline point& operator*=(const T& a) { x *= a, y *= a; return *this; }
+	inline point& operator/=(const T& a) { x /= a, y /= a; return *this; }
+
+	inline bool operator==(const point& rhs) const { return x == rhs.x and y == rhs.y; }
+	inline bool operator!=(const point& rhs) const { return not (*this == rhs); }
+	inline bool operator<(const point& rhs) const { return pair(x, y) < pair(rhs.x, rhs.y); }
+	inline bool operator<=(const point& rhs) const { return *this < rhs or *this == rhs; }
+	inline bool operator>(const point& rhs) const { return not (*this <= rhs); }
+	inline bool operator>=(const point& rhs) const { return not (*this < rhs); }
+
+	static inline ld slope(const point& a, const point& b) {
+		if (a.x == b.x) return INFLL;
+		return ld(a.y - b.y) / (a.x - b.x);
+	}
+
+	// distance from point `a` to line `l--r`
+	static inline ld dist(const point& a, const point& l, const point& r) {
+		return area(a, l, r) * 2 / (l - r).norm();
+	}
+
+	static inline ld area(const point& a, const point& b, const point& c) {
+		return (b - a) * (c - a) / ld(2);
+	}
+
+	friend inline istream& operator>>(istream& in, point& a) {
+		return in >> a.x >> a.y;
+	}
+
+	friend inline ostream& operator<<(ostream& out, const point& a) {
+		return out << a.x << ' ' << a.y;
+	}
+};
+
+struct graham {
+	int n, m;
+	vector<int> on_hull;
+	// WARN: counter-clockwise
+	vector<int> hull;
+
+	// WARN: vector should have at least 2 points
+	template <typename T>
+	graham(const vector<point<T>>& a) : n(a.size()), on_hull(n) {
+		vector<int> idx(n);
+		iota(idx.begin(), idx.end(), 0);
+		for (int i = 1; i < n; ++i) {
+			assert(idx[i] == i);
+			if (a[i].y < a[idx[0]].y or a[i].y == a[idx[0]].y and a[i].x < a[idx[0]].x) {
+				swap(idx[0], idx[i]);
+			}
+		}
+		sort(idx.begin() + 1, idx.end(), [&] (int p, int q) {
+			auto cross = (a[p] - a[idx[0]]) * (a[q] - a[idx[0]]);
+			if (cross == 0) {
+				return (a[p] - a[idx[0]]).norm() < (a[q] - a[idx[0]]).norm();
+			} else {
+				return cross > 0;
+			}
+		});
+		hull.emplace_back(idx[0]);
+		m = hull.size();
+		for (int i = 1; i < n; ++i) {
+			if (a[idx[i]] == a[idx[i - 1]]) continue;  // NOTE: uncomment this line to remove duplicate points
+			// NOTE: change to leq to remove points on edges
+			while (m >= 2 and (a[hull[m - 1]] - a[hull[m - 2]]) * (a[idx[i]] - a[hull[m - 1]]) < 0) {
+				hull.pop_back();
+				m -= 1;
+			}
+			hull.emplace_back(idx[i]);
+			m += 1;
+		}
+		for (auto&& i : hull) {
+			on_hull[i] = 1;
+		}
+	}
+};
+
+
 // __attribute__((target("popcnt")))
 void solve() {
+	using point = point<ll>;
+
+	read(int, n);
+	read(ll, S);
+	readvec(point, a, n);
+
+	graham convex(a);
+	// debug(convex.hull);
+
+	int m = convex.hull.size();
+	int f = 0;
+	point pp, qq, rr;
+	for (int i = 0; i < m; ++i) {
+		int k = i + 1;
+		for (int j = i + 1; j < i + m; ++j) {
+			point p = a[convex.hull[i]], q = a[convex.hull[j % m]];
+			while (k < i + m and (a[convex.hull[(k + 1) % m]] - a[convex.hull[k % m]]) * (p - q) >= 0) {
+				k += 1;
+			}
+			point r = a[convex.hull[k % m]];
+
+			point pf = p - a[convex.hull[mod(i - 1, m)]];
+			point pt = a[convex.hull[(i + 1) % m]] - p;
+			point qf = q - a[convex.hull[mod(j - 1, m)]];
+			point qt = a[convex.hull[(j + 1) % m]] - q;
+
+			if (pf * (q - r) >= 0 and (q - r) * pt >= 0 and qf * (r - p) >= 0 and (r - p) * qt >= 0) {
+				f = 1;
+				pp = p;
+				qq = q;
+				rr = r;
+				break;
+			}
+		}
+	}
+
+	if (f == 0) exit(825);
+	// deb(pp, qq, rr);
+
+	point x = rr + (pp - qq);
+	point y = rr + (qq - pp);
+	point z = x + (pp - x) * 2;
+	if (z != y + (qq - y) * 2) exit(826);
+
+	cout << x.x << ' ' << x.y << '\n';
+	cout << y.x << ' ' << y.y << '\n';
+	cout << z.x << ' ' << z.y << '\n';
 }
 
 int main() {

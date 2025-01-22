@@ -540,26 +540,6 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    int x = 1;
-    vector res(n, vector<int>(n));
-    for (int i = 0; i < n; ++i) {
-        if (i % 2 == 0) {
-            for (int j = 0; j < n; ++j) {
-                res[i][j] = x++;
-            }
-        } else {
-            for (int j = n - 1; ~j; --j) {
-                res[i][j] = x++;
-            }
-        }
-    }
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            cout << res[i][j] << ' ';
-        }
-        cout << '\n';
-    }
 }
 
 int main() {

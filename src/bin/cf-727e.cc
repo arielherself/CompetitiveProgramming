@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -540,26 +540,87 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    int x = 1;
-    vector res(n, vector<int>(n));
-    for (int i = 0; i < n; ++i) {
-        if (i % 2 == 0) {
-            for (int j = 0; j < n; ++j) {
-                res[i][j] = x++;
+    read(int, n, k);
+    read(string, a);
+    a += a.substr(0, k - 1);
+    read(int, m);
+    readvec(string, ss, m);
+
+    int last = 0;
+    vector<array<int, 26>> trie(1);
+    vector<int> tag(1, -1);
+    for (int i = 0; i < m; ++i) {
+        auto&& s = ss[i];
+        int curr = 0;
+        for (auto&& c : s) {
+            int x = c - 'a';
+            if (not trie[curr][x]) {
+                trie[curr][x] = ++last;
+                tag.emplace_back(-1);
+                trie.emplace_back();
             }
-        } else {
-            for (int j = n - 1; ~j; --j) {
-                res[i][j] = x++;
+            curr = trie[curr][x];
+        }
+        tag[curr] = i;
+    }
+
+    vector<int> fail(last + 1);
+    deque<int> q;
+    for (int i = 0; i < 26; ++i) {
+        if (trie[0][i]) {
+            q.emplace_back(trie[0][i]);
+        }
+    }
+    while (q.size()) {
+        int c = popfront(q);
+        for (int i = 0; i < 26; ++i) {
+            if (trie[c][i]) {
+                fail[trie[c][i]] = trie[fail[c]][i];
+                q.emplace_back(trie[c][i]);
+            } else {
+                trie[c][i] = trie[fail[c]][i];
             }
         }
     }
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            cout << res[i][j] << ' ';
+
+    vector<int> match((n + 1) * k - 1, -1);
+    int curr = 0;
+    // debug(a);
+    for (int i = 0; i < (n + 1) * k - 1; ++i) {
+        curr = trie[curr][a[i] - 'a'];
+        if (tag[curr] != -1) {
+            assert(i - k + 1 >= 0);
+            match[i - k + 1] = tag[curr];
         }
-        cout << '\n';
     }
+
+    vector<int> cnt(k);
+    vector mask(k, vector<bool>(m));
+    for (int i = 0; i + k - 1 < (n + 1) * k - 1; ++i) {
+        if (match[i] == -1 or mask[i % k][match[i]]) {
+            cnt[i % k] = -1;
+        }
+        if (cnt[i % k] == -1) continue;
+        mask[i % k][match[i]] = 1;
+        cnt[i % k] += 1;
+    }
+
+    // debug(match);
+    // debug(cnt);
+
+    for (int i = 0; i < k; ++i) {
+        if (cnt[i] == n) {
+            cout << "YES\n";
+            int j = i;
+            while (j + k - 1 < (n + 1) * k - 1) {
+                cout << match[j] + 1 << ' ';
+                j += k;
+            }
+            return;
+        }
+    }
+
+    cout << "NO\n";
 }
 
 int main() {

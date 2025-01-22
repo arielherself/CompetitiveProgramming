@@ -540,23 +540,40 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    int x = 1;
-    vector res(n, vector<int>(n));
+    read(int, n, m);
+    read(string, s);
+    vector a(n, vector<ll>(m));
+    vector<ll> row(n);
+    vector<ll> col(m);
     for (int i = 0; i < n; ++i) {
-        if (i % 2 == 0) {
-            for (int j = 0; j < n; ++j) {
-                res[i][j] = x++;
-            }
-        } else {
-            for (int j = n - 1; ~j; --j) {
-                res[i][j] = x++;
-            }
+        for (int j = 0; j < m; ++j) {
+            cin >> a[i][j];
+            row[i] += a[i][j];
+            col[j] += a[i][j];
         }
     }
+    int x = 0, y = 0;
+    for (int i = 0; i < n + m - 2; ++i) {
+        if (s[i] == 'D') {
+            a[x][y] = -row[x];
+            row[x] += a[x][y];
+            col[y] += a[x][y];
+            x += 1;
+        } else {
+            a[x][y] = -col[y];
+            row[x] += a[x][y];
+            col[y] += a[x][y];
+            y += 1;
+        }
+    }
+    a[x][y] = -row[x];
+    row[x] += a[x][y];
+    col[y] += a[x][y];
+    assert(count(row.begin(), row.end(), 0) == n);
+    assert(count(col.begin(), col.end(), 0) == m);
     for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            cout << res[i][j] << ' ';
+        for (int j = 0; j < m; ++j) {
+            cout << a[i][j] << ' ';
         }
         cout << '\n';
     }

@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -538,28 +538,50 @@ void dump_ignore() {}
 void prep() {
 }
 
+constexpr int M = 100;
+constexpr int N = 4010;
+ll dp[N][4 * M + 3][2];
+ll ndp[N][4 * M + 3][2];
+
 // __attribute__((target("popcnt")))
 void solve() {
+
     read(int, n);
-    int x = 1;
-    vector res(n, vector<int>(n));
-    for (int i = 0; i < n; ++i) {
-        if (i % 2 == 0) {
-            for (int j = 0; j < n; ++j) {
-                res[i][j] = x++;
-            }
-        } else {
-            for (int j = n - 1; ~j; --j) {
-                res[i][j] = x++;
+    readvec(int, a, n);
+    vector<ll> ps(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        ps[i] = ps[i - 1] + a[i - 1];
+    }
+
+    for (int k = M; k; --k) {
+        for (int i = n; ~i; --i) {
+            for (int j = 4 * M + 2; ~j; --j) {
+                int right = i + j - 2 * M;
+                if (right < 0 or right > n) continue;
+                if (i + right < 0 or i + right > n) continue;
+                if (0 <= i + k + right and i + k + right <= n) {
+                    if (j - k >= 0) {
+                        ndp[i][j][0] = ndp[i + k][j - k][1] + ps[i + k] - ps[i];
+                    }
+                    if (j + k < 4 * M) {
+                        ndp[i][j][1] = ndp[i][j + k][0] - (ps[n - right] - ps[n - right - k]);
+                    }
+                    if (i + k + right + 1 <= n) {
+                        if (j - k - 1 >= 0) {
+                            chmax(ndp[i][j][0], dp[i + k + 1][j - k - 1][1] + ps[i + k + 1] - ps[i]);
+                        }
+                        if (j + k + 1 < 4 * M) {
+                            chmin(ndp[i][j][1], dp[i][j + k + 1][0] - (ps[n - right] - ps[n - right - k - 1]));
+                        }
+                    }
+                }
+                // deb(i, right, k, ndp[i][j]);
             }
         }
+        swap(dp, ndp);
     }
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            cout << res[i][j] << ' ';
-        }
-        cout << '\n';
-    }
+
+    cout << dp[0][2 * M][0] << '\n';
 }
 
 int main() {

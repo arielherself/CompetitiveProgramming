@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -540,25 +540,48 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    int x = 1;
-    vector res(n, vector<int>(n));
-    for (int i = 0; i < n; ++i) {
-        if (i % 2 == 0) {
-            for (int j = 0; j < n; ++j) {
-                res[i][j] = x++;
-            }
-        } else {
-            for (int j = n - 1; ~j; --j) {
-                res[i][j] = x++;
-            }
-        }
+    read(int, n, q);
+    readvec(int, a, n);
+
+    vector<ll> ps(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        ps[i] = ps[i - 1] + a[i - 1];
     }
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            cout << res[i][j] << ' ';
+
+    vector<ll> ans(n + 1);
+    for (int i = 0; i <= n; ++i) {
+        auto work = [&] (ll target) -> int {
+            min_heap<int> cand;
+            ll d = 0;
+            int res = 0;
+            for (int i = 0; i < n; ++i) {
+                cand.emplace(a[i]);
+                while (cand.size() and d + ps[i + 1] < target) {
+                    int x = poptop(cand);
+                    d -= x;
+                    res += 1;
+                }
+                if (d + ps[i + 1] < target) {
+                    return INF;
+                }
+            }
+            return res;
+        };
+        ll l = -INFLL, r = INFLL;
+        while (l < r) {
+            ll mid = l + (r - l + 1) / 2;
+            if (work(mid) <= i) {
+                l = mid;
+            } else {
+                r = mid - 1;
+            }
         }
-        cout << '\n';
+        ans[i] = l;
+    }
+
+    while (q--) {
+        read(ll, x);
+        cout << lower_bound(ans.begin(), ans.end(), -x) - ans.begin() << '\n';
     }
 }
 

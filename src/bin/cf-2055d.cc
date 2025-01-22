@@ -538,28 +538,86 @@ void dump_ignore() {}
 void prep() {
 }
 
+template<typename T>
+struct fractional {
+    T p, q;
+    inline void reduce(void) {
+        if (q < 0) p = -p, q = -q;
+        if (p == 0) q = 1; else { T g = mygcd(abs(p), abs(q)); p /= g; q /= g; }
+    }
+    fractional(void) : p(0), q(1) {}
+    template <typename U>
+    fractional(const U& p) : p(p), q(1) { reduce(); }
+    fractional(const T& p, const T& q) : p(p), q(q) { reduce(); }
+    friend inline fractional operator+(const fractional& lhs) { return *lhs; }
+    friend inline fractional operator-(const fractional& lhs) { return { -lhs.p, lhs.q }; }
+    friend inline fractional operator+(const fractional& lhs, const fractional& rhs) { return { lhs.p * rhs.q + lhs.q * rhs.p, lhs.q * rhs.q }; }
+    friend inline fractional operator-(const fractional& lhs, const fractional& rhs) { return lhs + (-rhs); }
+    friend inline fractional operator*(const fractional& lhs, const fractional& rhs) { return { lhs.p * rhs.p, lhs.q * rhs.q }; }
+    friend inline fractional operator/(const fractional& lhs, const fractional& rhs) { return lhs * fractional(rhs.q, rhs.p); }
+    inline fractional& operator+=(const fractional& rhs) { return *this = *this + rhs; }
+    inline fractional& operator-=(const fractional& rhs) { return *this = *this - rhs; }
+    inline fractional& operator*=(const fractional& rhs) { return *this = *this * rhs; }
+    inline fractional& operator/=(const fractional& rhs) { return *this = *this / rhs; }
+    friend inline bool operator==(const fractional& lhs, const fractional& rhs) { return lhs.p == rhs.p and lhs.q == rhs.q; }
+    friend inline bool operator!=(const fractional& lhs, const fractional& rhs) { return not (lhs == rhs); }
+    friend inline bool operator<(const fractional& lhs, const fractional& rhs) { return (lhs - rhs).p < 0; }
+    friend inline bool operator>=(const fractional& lhs, const fractional& rhs) { return not (lhs < rhs); }
+    friend inline bool operator>(const fractional& lhs, const fractional& rhs) { return lhs >= rhs and lhs != rhs; }
+    friend inline bool operator<=(const fractional& lhs, const fractional& rhs) { return lhs < rhs or lhs == rhs; }
+    friend inline ostream& operator<<(ostream& out, const fractional& x) { return out << x.p << '/' << x.q; }
+    friend inline istream& operator>>(istream& in, fractional& x) {
+        read(string, s);
+        auto point = find(s.begin(), s.end(), '.');
+        string left(s.begin(), point);
+        string right(point, s.end());
+        if (right.size()) right.erase(right.begin());
+        T divisor = 1;
+        for (auto&& _ : right) divisor *= 10;
+        T l, r;
+        stringstream(left) >> l;
+        stringstream(right) >> r;
+        x = l + fractional(r, divisor);
+        return in;
+    }
+    template <typename U, typename = typename enable_if<is_convertible_v<T, U>>::type>
+    inline U into(void) const { return static_cast<U>(p) / q; }
+};
+
+
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    int x = 1;
-    vector res(n, vector<int>(n));
-    for (int i = 0; i < n; ++i) {
-        if (i % 2 == 0) {
-            for (int j = 0; j < n; ++j) {
-                res[i][j] = x++;
-            }
+    using frac = fractional<ll>;
+    read(int, n, k, l);
+    readvec(int, a, n);
+    frac loc = k;
+    frac tot_tm = a[0];
+    for (int i = 1; i < n; ++i) {
+        auto&& x = a[i];
+        frac good = loc;
+        frac y;
+        if (x < good) {
+            y = min(x + tot_tm, good);
+            loc = y + k;
+            tot_tm += 0;
+        } else if (x - tot_tm <= good) {
+            y = max(x - tot_tm, good);
+            loc = y + k;
+            tot_tm += 0;
         } else {
-            for (int j = n - 1; ~j; --j) {
-                res[i][j] = x++;
-            }
+            frac extra = ((x - tot_tm) - good) / 2;
+            y = x - tot_tm - extra;
+            loc = y + k;
+            tot_tm += extra;
+        }
+        if (loc >= l) {
+            break;
         }
     }
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            cout << res[i][j] << ' ';
-        }
-        cout << '\n';
+    if (loc < l) {
+        tot_tm += l - loc;
     }
+    cout << (tot_tm * 2).p << '\n';
 }
 
 int main() {

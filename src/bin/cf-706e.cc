@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -540,25 +540,86 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    int x = 1;
-    vector res(n, vector<int>(n));
-    for (int i = 0; i < n; ++i) {
-        if (i % 2 == 0) {
-            for (int j = 0; j < n; ++j) {
-                res[i][j] = x++;
-            }
-        } else {
-            for (int j = n - 1; ~j; --j) {
-                res[i][j] = x++;
-            }
+    read(int, n, m, q);
+    vector<int> L((n + 2) * (m + 2)), R((n + 2) * (m + 2)), U((n + 2) * (m + 2)), D((n + 2) * (m + 2));
+    for (int i = 0; i < n + 2; ++i) {
+        for (int j = 0; j < m + 2; ++j) {
+            L[i * (m + 2) + j] = i * (m + 2) + j - 1;
+            R[i * (m + 2) + j] = i * (m + 2) + j + 1;
+            U[i * (m + 2) + j] = (i - 1) * (m + 2) + j;
+            D[i * (m + 2) + j] = (i + 1) * (m + 2) + j;
         }
     }
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            cout << res[i][j] << ' ';
+
+    vector<int> a((n + 2) * (m + 2));
+    for (int i = 1; i <= n; ++i) {
+        for (int j = 1; j <= m; ++j) {
+            cin >> a[i * (m + 2) + j];
         }
-        cout << '\n';
+    }
+
+    while (q--) {
+        read(int, x1, y1, x2, y2, h, w);
+
+        int curr1 = 0;
+        for (int i = 0; i < x1; ++i) {
+            curr1 = D[curr1];
+        }
+        for (int j = 0; j < y1; ++j) {
+            curr1 = R[curr1];
+        }
+
+        int curr2 = 0;
+        for (int i = 0; i < x2; ++i) {
+            curr2 = D[curr2];
+        }
+        for (int j = 0; j < y2; ++j) {
+            curr2 = R[curr2];
+        }
+        // deb(curr1 / (m + 2), curr1 % (m + 2));
+        // deb(curr2 / (m + 2), curr2 % (m + 2));
+
+        for (int i = 0; i < w; ++i) {
+            swap(U[curr1], U[curr2]);
+            swap(D[U[curr1]], D[U[curr2]]);
+            curr1 = R[curr1];
+            curr2 = R[curr2];
+        }
+        curr1 = L[curr1];
+        curr2 = L[curr2];
+
+        for (int i = 0; i < h; ++i) {
+            swap(R[curr1], R[curr2]);
+            swap(L[R[curr1]], L[R[curr2]]);
+            curr1 = D[curr1];
+            curr2 = D[curr2];
+        }
+        curr1 = U[curr1];
+        curr2 = U[curr2];
+
+        for (int i = 0; i < w; ++i) {
+            swap(D[curr1], D[curr2]);
+            swap(U[D[curr1]], U[D[curr2]]);
+            curr1 = L[curr1];
+            curr2 = L[curr2];
+        }
+        curr1 = R[curr1];
+        curr2 = R[curr2];
+
+        for (int i = 0; i < h; ++i) {
+            swap(L[curr1], L[curr2]);
+            swap(R[L[curr1]], R[L[curr2]]);
+            curr1 = U[curr1];
+            curr2 = U[curr2];
+        }
+    }
+
+    for (int i = 1; i <= n; ++i) {
+        int curr = i * (m + 2);
+        for (int j = 1; j <= m; ++j) {
+            curr = R[curr];
+            cout << a[curr] << " \n"[j == m];
+        }
     }
 }
 

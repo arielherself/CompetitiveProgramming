@@ -1,5 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#pragma GCC optimize("Ofast,unroll-loops")
+#pragma GCC optimize("O2,unroll-loops")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -244,13 +244,13 @@ template<typename T, typename... U> void __read(T& x, U&... args) { cin >> x; __
 #define read(t, ...) __AS_PROCEDURE(argument_type<void(t)>::type __VA_ARGS__; __read(__VA_ARGS__);)
 #define readvec(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a(n); for (auto& x : (a)) cin >> x;)
 #define readvec1(t, a, n) __AS_PROCEDURE(vector<argument_type<void(t)>::type> a((n) + 1); copy_n(ii<argument_type<void(t)>::type>(cin), (n), (a).begin() + 1);)
-#define putvec(a) __AS_PROCEDURE(copy((a).begin(), (a).end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << '\n';)
-#define putvec1(a) __AS_PROCEDURE(copy((a).begin() + 1, (a).end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << '\n';)
+#define putvec(a) __AS_PROCEDURE(copy((a).begin(), (a).end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
+#define putvec1(a) __AS_PROCEDURE(copy((a).begin() + 1, (a).end(), oi<__as_typeof(a)::value_type>(cout, " ")); cout << endl;)
 #define putvec_eol(a) __AS_PROCEDURE(copy((a).begin(), (a).end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
-#define putvec1_eol(a) __AS_PROCEDURE(copy((a).begin() + 1, (a).end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
-#define debug(x) __AS_PROCEDURE(cerr << #x" = " << (x) << endl;)
-#define debugvec(a) __AS_PROCEDURE(cerr << #a" = "; for (auto&& x : (a)) cerr << x << ' '; cerr << endl;)
-#define deb(...) debug(make_tuple(__VA_ARGS__))
+#define putvec1_eol(a) (copy((a).begin() + 1, (a).end(), oi<__as_typeof(a)::value_type>(cout, "\n"));)
+#define debug(x) ({cerr << #x" = " << (x) << endl;0;})
+#define debugvec(a) ({cerr << #a" = "; for (auto&& x : (a)) cerr << x << ' '; cerr << endl;0;})
+#define deb(...) ({debug(make_tuple(__VA_ARGS__));})
 
 /* pops */
 template <typename Container>
@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -538,8 +538,113 @@ void dump_ignore() {}
 void prep() {
 }
 
+constexpr int N = 5e5;
+pii events[N];
+
 // __attribute__((target("popcnt")))
 void solve() {
+	read(int, n, k);
+	readvec(pii, a, n);
+
+	vector<int> oc;
+	for (auto&& [x, y] : a) {
+		oc.emplace_back(x - k + 1);
+		oc.emplace_back(x + 1);
+	}
+
+	sort(oc.begin(), oc.end());
+	int m = unique(oc.begin(), oc.end()) - oc.begin();
+	oc.resize(m);
+	auto get = [&] (int x) { return lower_bound(oc.begin(), oc.end(), x) - oc.begin(); };
+
+	vector<vector<int>> open(m), close(m);
+	for (int i = 0; i < n; ++i) {
+		auto&& [x, y] = a[i];
+
+		int l = get(x - k + 1);
+		int r = get(x + 1);
+
+		open[l].emplace_back(i);
+		close[r].emplace_back(i);
+	}
+
+	vector<ll> res(n + 1);
+
+	int sz = 0;
+	int cnt = 0;
+	auto apply = [&] (int rep) {
+		for (int i = 0; i < sz; ++i) {
+			auto&& [idx, x] = events[i];
+			cnt += 1;
+			res[idx] += ll(1) * x * rep;
+		}
+		sz = 0;
+	};
+
+	// unordered_set<int, safe_hash> curr;
+	map<int, int> curr;
+
+	auto increment = [&] (int x) {
+		if (++curr[x] == 0) {
+			curr.erase(x);
+		}
+	};
+
+	auto decrement = [&] (int x) {
+		if (--curr[x] == 0) {
+			curr.erase(x);
+		}
+	};
+	// faster(curr);
+	// curr.reserve(n);
+	for (int i = 0; i < m; ++i) {
+		if (i != 0) {
+			apply(oc[i] - oc[i - 1]);
+		}
+
+		for (auto&& idx : open[i]) {
+			increment(a[idx].second - k + 1);
+			decrement(a[idx].second + 1);
+		}
+		
+		for (auto&& idx : close[i]) {
+			decrement(a[idx].second - k + 1);
+			increment(a[idx].second + 1);
+		}
+
+		// vector<int> oc;
+		// for (auto&& idx : curr) {
+		// 	oc.emplace_back(a[idx].second - k + 1);
+		// 	oc.emplace_back(a[idx].second + 1);
+		// }
+
+		// sort(oc.begin(), oc.end());
+		// int m = unique(oc.begin(), oc.end()) - oc.begin();
+		// oc.resize(m);
+		// auto get = [&] (int x) { return lower_bound(oc.begin(), oc.end(), x) - oc.begin(); };
+
+		// vector<int> diff(m + 1);
+		// for (auto&& idx : curr) {
+		// 	int l = get(a[idx].second - k + 1);
+		// 	int r = get(a[idx].second + 1);
+		// 	diff[l] += 1;
+		// 	diff[r] -= 1;
+		// }
+
+		int cnt = 0;
+		int prev_loc = -INF;
+		for (auto&& [loc, x] : curr) {
+			events[sz++] = pii(cnt, loc - prev_loc);
+			cnt += x;
+			prev_loc = loc;
+		}
+		debug(oc[i]);
+		debugvec(curr);
+		deb(cnt);
+		// assert(cnt == 0);
+	}
+
+	putvec1(res);
 }
 
 int main() {

@@ -541,25 +541,30 @@ void prep() {
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
-    int x = 1;
-    vector res(n, vector<int>(n));
+    vector<int> a(n), b(n);
+    ll sum = 0;
+    ll sb = 0;
     for (int i = 0; i < n; ++i) {
-        if (i % 2 == 0) {
-            for (int j = 0; j < n; ++j) {
-                res[i][j] = x++;
-            }
-        } else {
-            for (int j = n - 1; ~j; --j) {
-                res[i][j] = x++;
-            }
-        }
+        cin >> a[i] >> b[i];
+        sum += a[i];
+        sb += b[i];
     }
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            cout << res[i][j] << ' ';
-        }
-        cout << '\n';
+
+    vector<int> idx(n);
+    iota(idx.begin(), idx.end(), 0);
+    sort_by_key(idx.begin(), idx.end(), expr(2 * a[i] - b[i], auto i), greater());
+
+    ll tot = 0;
+    ll save = 0;
+    for (auto&& i : idx) {
+        ll use = min<ll>(a[i], save);
+        tot += 2 * a[i] - use;
+        save += b[i] - use;
+        deb(i, tot, save);
     }
+
+    cout << tot << '\n';
+
 }
 
 int main() {

@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -538,27 +538,258 @@ void dump_ignore() {}
 void prep() {
 }
 
+struct LCA {
+    vector<int> depth;
+    vector<vector<int>> pa;
+    LCA(const vector<vector<pii>>& g, int root = 1) {
+        int n = g.size() - 1;
+        int m = 32 - __builtin_clz(n);
+        depth.resize(n + 1);
+        pa.resize(n + 1, vector<int>(m, -1));
+        function<void(int, int)> dfs = [&](int x, int fa) {
+            pa[x][0] = fa;
+            for (auto [y, _]: g[x]) {
+                if (y != fa) {
+                    depth[y] = depth[x] + 1;
+                    dfs(y, x);
+                }
+            }
+        };
+        dfs(root, 0);
+
+        for (int i = 0; i < m - 1; i++)
+            for (int x = 1; x <= n; x++)
+                if (int p = pa[x][i]; p != -1)
+                    pa[x][i + 1] = pa[p][i];
+    }
+
+    int get_kth_ancestor(int node, int k) {
+        for (; k; k &= k - 1)
+            node = pa[node][__builtin_ctz(k)];
+        return node;
+    }
+
+    int query(int x, int y) {
+        if (depth[x] > depth[y])
+            swap(x, y);
+        y = get_kth_ancestor(y, depth[y] - depth[x]);
+        if (y == x)
+            return x;
+        for (int i = pa[x].size() - 1; i >= 0; i--) {
+            int px = pa[x][i], py = pa[y][i];
+            if (px != py) {
+                x = px;
+                y = py;
+            }
+        }
+        return pa[x][0];
+    }
+};
+
+
+
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    int x = 1;
-    vector res(n, vector<int>(n));
-    for (int i = 0; i < n; ++i) {
-        if (i % 2 == 0) {
-            for (int j = 0; j < n; ++j) {
-                res[i][j] = x++;
+    read(int, n, m);
+    read(int, s, t);
+    vector<tiii> edges;
+    for (int i = 0; i < m; ++i) {
+        read(int, u, v, w);
+        edges.emplace_back(u, v, w);
+    }
+
+    vector<bool> extra(m);
+    {
+        vector<vector<pii>> e(n + 1);
+        for (int i = 0; i < m; ++i) {
+            auto [u, v, w] = edges[i];
+            edgew(e, u, v, i);
+        }
+        vector<bool> vis(n + 1);
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            vis[v] = 1;
+            for (auto&& [u, i] : e[v]) {
+                if (u == pa) continue;
+                if (vis[u]) {
+                    extra[i] = 1;
+                } else {
+                    dfs(dfs, u, v);
+                }
             }
-        } else {
-            for (int j = n - 1; ~j; --j) {
-                res[i][j] = x++;
+        };
+        dfs(dfs, s, 0);
+
+        if (not vis[t]) {
+            cout << "0\n0\n";
+            return;
+        }
+    }
+
+
+    vector<vector<pii>> e(n + 1);
+    for (int i = 0; i < m; ++i) {
+        auto [u, v, w] = edges[i];
+        if (extra[i] == 0) {
+            edgew(e, u, v, i);
+            // cerr << u << ' ' << v << endl;
+        }
+    }
+
+    vector<int> depth(n + 1);
+    vector<pii> fa(n + 1);
+    vector<int> dfn(n + 1);
+    vector<int> sz(n + 1);
+    {
+        int tm = 0;
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            dfn[v] = tm++;
+            depth[v] = depth[pa] + 1;
+            sz[v] = 1;
+            for (auto&& [u, idx] : e[v]) {
+                if (u == pa) continue;
+                fa[u] = { v, idx };
+                dfs(dfs, u, v);
+                sz[v] += sz[u];
+            }
+        };
+        dfs(dfs, s, 0);
+    }
+
+    auto not_in = [&] (int v) { return dfn[v] <= dfn[t] or dfn[v] >= dfn[t] + sz[t]; };
+
+    vector<bool> on_path(n + 1);
+    {
+        int curr = t;
+        while (curr) {
+            on_path[curr] = 1;
+            curr = fa[curr].first;
+        }
+    }
+
+    LCA lca(e, s);
+
+    vector<pii> cross(m, { -INF, -INF });
+
+    for (int i = 0; i < m; ++i) {
+        auto [u, v, w] = edges[i];
+        if (extra[i]) {
+            if (depth[v] < depth[u]) swap(u, v);
+            int target = v;
+            // if (dfn[v] > dfn[t] and dfn[v] < dfn[t] + sz[t]) {
+            //     target = -v;
+            // } else {
+            //     target = v;
+            // }
+            int curr = v;
+            while (curr != u) {
+                auto [pa, idx] = fa[curr];
+                if (cross[idx].first != INF) {
+                    // if (target < 0) {
+                    //     if (cross[idx].first == -INF) {
+                    //         cross[idx] = { -v, i };
+                    //     } else if (cross[idx].first > 0) {
+                    //         cross[idx] = { INF, -INF };
+                    //     } else {
+                    //         cross[idx] = { -lca.query(-cross[idx].first, v), -INF };
+                    //     }
+                    // } else {
+                        if (cross[idx].first == -INF) {
+                            cross[idx] = { v, i };
+                        // } else if (cross[idx].first < 0) {
+                        //     cross[idx] = { INF, -INF };
+                        } else if (not_in(cross[idx].first) + not_in(v) == 1) {
+                            cross[idx] = { INF, -INF };
+                        } else {
+                            cross[idx] = { lca.query(cross[idx].first, v), -INF };
+                        }
+                    // }
+                }
+                curr = pa;
             }
         }
     }
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            cout << res[i][j] << ' ';
+
+    int res = INT_MAX;
+    vector<int> sol;
+
+    int curr = t;
+    while (curr != s) {
+        auto [pa, idx] = fa[curr];
+
+        if (cross[idx].first == INF) {
+            ;;
+        } else if (cross[idx].first == -INF) {
+            if (chmin(res, get<2>(edges[idx]))) {
+                sol = { idx + 1 };
+            }
+        // } else if (cross[idx].first > 0) {
+        //     pii mn = cross[idx].second == -INF ? pii(INF, INF) : pii(get<2>(edges[cross[idx].second]), cross[idx].second);
+        //     {
+        //         int curr = cross[idx].first;
+        //         while (not on_path[curr]) {
+        //             auto [pa, idx] = fa[curr];
+        //             chmin(mn, pii(get<2>(edges[idx]), idx));
+        //             curr = pa;
+        //         }
+        //     }
+        //     if (mn.first < INF and chmin(res, get<2>(edges[idx]) + get<2>(edges[mn.second]))) {
+        //         sol = { idx + 1, mn.second + 1 };
+        //     }
+        } else {
+            pii mn = cross[idx].second == -INF ? pii(INF, INF) : pii(get<2>(edges[cross[idx].second]), cross[idx].second);
+            int target = not_in(cross[idx].first) ? curr : t;
+            vector<int> seq;
+            vector<int> rev(n + 1, -1);
+            {
+                int curr = cross[idx].first;
+                while (curr != target) {
+                    auto [pa, idx] = fa[curr];
+                    rev[curr] = seq.size();
+                    seq.emplace_back(curr);
+                    curr = pa;
+                }
+                rev[curr] = seq.size();
+                seq.emplace_back(curr);
+            }
+            int m = seq.size();
+            vector<int> diff(m + 1);
+            for (int i = 0; i < edges.size(); ++i) {
+                if (not extra[i]) continue;
+                auto [u, v, w] = edges[i];
+                if (rev[u] == -1 or rev[v] == -1) continue;
+                if (rev[u] > rev[v]) swap(u, v);
+                diff[rev[u]] += 1;
+                diff[rev[v]] -= 1;
+            }
+            {
+                int curr = cross[idx].first;
+                int t = 0;
+                int cnt = 0;
+                while (curr != target) {
+                    auto [pa, idx] = fa[curr];
+                    cnt += diff[t++];
+                    if (cnt == 0) {
+                        chmin(mn, pii(get<2>(edges[idx]), idx));
+                    }
+                    curr = pa;
+                }
+            }
+            if (mn.first < INF and chmin(res, get<2>(edges[idx]) + get<2>(edges[mn.second]))) {
+                sol = { idx + 1, mn.second + 1 };
+            }
+            // debug(res);
+            // deb(idx + 1, mn.second + 1);
         }
-        cout << '\n';
+
+        curr = pa;
+    }
+
+    if (res == INT_MAX) {
+        cout << "-1\n";
+    } else {
+        cout << res << '\n';
+        cout << sol.size() << '\n';
+        putvec(sol);
     }
 }
 

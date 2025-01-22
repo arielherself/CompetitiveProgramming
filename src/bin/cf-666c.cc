@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -535,11 +535,88 @@ void dump() {}
 
 void dump_ignore() {}
 
+constexpr int M = MDL;
+
+constexpr int N = 3e6 + 10;
+ll fact[N], factrev[N + 1], s[N + 1];
+
 void prep() {
+	fact[0] = factrev[0] = 1;
+	for (int i = 1; i < N; ++i) {
+		fact[i] = (fact[i - 1] * i) % M;
+	}
+	s[0] = 1;
+	for (int i = 1; i <= N; ++i) {
+		s[i] = s[i - 1] * fact[i - 1] % M;
+	}
+	factrev[N] = inverse(s[N], M);
+	for (int i = N; i; --i) {
+		factrev[i - 1] = factrev[i] * fact[i - 1] % M;
+	}
+	for (int i = 0; i < N; ++i) {
+		factrev[i] = factrev[i + 1] * s[i] % M;
+	}
 }
+
+ll mycomb(int n, int k) {
+	if (n < 0 or k < 0 or n < k) return 0;
+	return fact[n] * factrev[k] % M * factrev[n - k] % M;
+}
+
 
 // __attribute__((target("popcnt")))
 void solve() {
+	constexpr int N = 1e5 + 2;
+
+
+	vector<ll> pw25(N), pw26rev(N), pw26(N);
+	pw25[0] = pw26rev[0] = pw26[0] = 1;
+	ll rev26 = inverse(26, MDL);
+	for (int i = 1; i < N; ++i) {
+		pw25[i] = pw25[i - 1] * 25 % MDL;
+		pw26rev[i] = pw26rev[i - 1] * rev26 % MDL;
+		pw26[i] = pw26[i - 1] * 26 % MDL;
+	}
+
+	auto calc = [&] (int l) -> array<ll, N> {
+		array<ll, N> res = {};
+		for (int i = l; i < N; ++i) {
+			res[i] = (res[i - 1] * 26 % MDL + pw26rev[i] * mycomb(i - 1, l - 1) % MDL * pw25[i - l] % MDL * pw26[i] % MDL) % MDL;
+		}
+		return res;
+	};
+
+	read(int, q);
+	read(string, s);
+	int l = s.size();
+
+	vector<tiii> queries;
+
+	int t = 0;
+	while (q--) {
+		read(int, op);
+		if (op == 1) {
+			read(string, s);
+			l = s.size();
+		} else {
+			read(int, i);
+			queries.emplace_back(l, i, t++);
+		}
+	}
+
+	sort(queries.begin(), queries.end());
+	vector<ll> res(t);
+	l = -1;
+	array<ll, N> val;
+	for (auto&& [li, i, idx] : queries) {
+		if (l != li) {
+			l = li;
+			val = calc(l);
+		}
+		res[idx] = val[i];
+	}
+
+	putvec_eol(res);
 }
 
 int main() {

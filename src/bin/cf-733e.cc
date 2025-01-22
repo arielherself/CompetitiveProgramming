@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -541,25 +541,78 @@ void prep() {
 // __attribute__((target("popcnt")))
 void solve() {
     read(int, n);
-    int x = 1;
-    vector res(n, vector<int>(n));
+    vector<int> a(n);
     for (int i = 0; i < n; ++i) {
-        if (i % 2 == 0) {
-            for (int j = 0; j < n; ++j) {
-                res[i][j] = x++;
+        read(char, c);
+        a[i] = c == 'U';
+    }
+
+    vector<int> pr(n + 1);
+    vector<int> pl(n + 1);
+    vector<ll> pra(n + 1);
+    vector<ll> pla(n + 1);
+    for (int i = 1; i <= n; ++i) {
+        pr[i] = pr[i - 1] + a[i - 1];
+        pra[i] = pra[i - 1] + (a[i - 1] ? i - 1 : 0);
+        pl[i] = pl[i - 1] + 1 - a[i - 1];
+        pla[i] = pla[i - 1] + (1 - a[i - 1] ? i - 1 : 0);
+    }
+
+    for (int i = 0; i < n; ++i) {
+        int leftcnt = pr[i];
+        int rightcnt = pl[n] - pl[i + 1];
+        if (a[i]) {
+            if (rightcnt > leftcnt) {
+                int l = i, r = n - 1;
+                while (l < r) {
+                    int mid = l + r >> 1;
+                    if (pl[mid + 1] - pl[i + 1] < leftcnt + 1) {
+                        l = mid + 1;
+                    } else {
+                        r = mid;
+                    }
+                }
+                cout << 2 * (ll(1) * i * leftcnt - pra[i]) + 2 * (pla[l + 1] - pla[i + 1] - ll(1) * i * (leftcnt + 1)) + i + 1 << ' ';
+            } else {
+                int l = 0, r = i;
+                while (l < r) {
+                    int mid = l + r + 1 >> 1;
+                    if (pr[i] - pr[mid] < rightcnt) {
+                        r = mid - 1;
+                    } else {
+                        l = mid;
+                    }
+                }
+                cout << 2 * (ll(1) * i * rightcnt - (pra[i] - pra[l])) + 2 * (pla[n] - pla[i + 1] - ll(1) * i * rightcnt) + n - i << ' ';
             }
         } else {
-            for (int j = n - 1; ~j; --j) {
-                res[i][j] = x++;
+            if (leftcnt > rightcnt) {
+                int l = 0, r = i;
+                while (l < r) {
+                    int mid = l + r + 1 >> 1;
+                    if (pr[i] - pr[mid] < rightcnt + 1) {
+                        r = mid - 1;
+                    } else {
+                        l = mid;
+                    }
+                }
+                cout << 2 * (ll(1) * i * (rightcnt + 1) - (pra[i] - pra[l])) + 2 * (pla[n] - pla[i + 1] - ll(1) * i * rightcnt) + n - i << ' ';
+            } else {
+                int l = i, r = n - 1;
+                while (l < r) {
+                    int mid = l + r >> 1;
+                    if (pl[mid + 1] - pl[i + 1] < leftcnt) {
+                        l = mid + 1;
+                    } else {
+                        r = mid;
+                    }
+                }
+                cout << 2 * (ll(1) * i * leftcnt - pra[i]) + 2 * (pla[l + 1] - pla[i + 1] - ll(1) * i * leftcnt) + i + 1 << ' ';
             }
         }
     }
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            cout << res[i][j] << ' ';
-        }
-        cout << '\n';
-    }
+
+    cout << endl;
 }
 
 int main() {

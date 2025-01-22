@@ -540,6 +540,33 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
+	read(int, n);
+	vector<pii> a(n);
+	for (int i = 0; i < n; ++i) {
+		cin >> a[i].first;
+	}
+	for (int i = 0; i < n; ++i) {
+		cin >> a[i].second;
+	}
+
+	sort_by_key(a.begin(), a.end(), expr(max(p.first, p.second), auto&& p), greater());
+
+	vector dp(n, vector(2, vector<int>(2)));
+	dp[0][0][0] = dp[0][1][1] = 1;
+	for (int i = 1; i < n; ++i) {
+		for (int j = 0; j < 2; ++j) {
+			if (a[i].first < a[i - 1].first and a[i].second < a[i - 1].second) {
+				dp[i][j][0] |= dp[i - 1][j][0];
+				dp[i][1 - j][1] |= dp[i - 1][j][1];
+			}
+			if (a[i].first < a[i - 1].second and a[i].second < a[i - 1].first) {
+				dp[i][j][0] |= dp[i - 1][j][1];
+				dp[i][1 - j][1] |= dp[i - 1][j][0];
+			}
+		}
+	}
+	
+	cout << (dp[n - 1][0][0] or dp[n - 1][0][1] ? "YES" : "NO") << '\n';
 }
 
 int main() {

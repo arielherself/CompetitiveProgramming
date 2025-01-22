@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -538,8 +538,99 @@ void dump_ignore() {}
 void prep() {
 }
 
+template <typename T> struct point {
+	T x, y;
+	point() : x(), y() {}
+	point(const pair<T, T>& a) : x(a.first), y(a.second) {}
+	point(const T& x, const T& y) : x(x), y(y) {}
+
+	inline T square() const { return x * x + y * y; }
+	inline ld norm() const { return sqrt((long double)(square())); }
+
+	inline point operator+(const point& rhs) const { return point(x + rhs.x, y + rhs.y); }
+	inline point operator-(const point& rhs) const { return point(x - rhs.x, y - rhs.y); }
+	inline point operator+() const { return *this; }
+	inline point operator-() const { return point(-x, -y); }
+	inline point operator*(const T& a) const { return point(x * a, y * a); }
+	inline T operator*(const point& rhs) const { return x * rhs.y - y * rhs.x; }
+	inline point operator/(const T& a) const { return point(x / a, y / a); }
+	inline point& operator+=(const point& rhs) { x += rhs.x, y += rhs.y; return *this; }
+	inline point& operator-=(const point& rhs) { x -= rhs.x, y -= rhs.y; return *this; }
+	inline point& operator*=(const T& a) { x *= a, y *= a; return *this; }
+	inline point& operator/=(const T& a) { x /= a, y /= a; return *this; }
+
+	inline bool operator==(const point& rhs) const { return x == rhs.x and y == rhs.y; }
+	inline bool operator!=(const point& rhs) const { return not (*this == rhs); }
+	inline bool operator<(const point& rhs) const { return pair(x, y) < pair(rhs.x, rhs.y); }
+	inline bool operator<=(const point& rhs) const { return *this < rhs or *this == rhs; }
+	inline bool operator>(const point& rhs) const { return not (*this <= rhs); }
+	inline bool operator>=(const point& rhs) const { return not (*this < rhs); }
+
+	static inline ld slope(const point& a, const point& b) {
+		if (a.x == b.x) return INFLL;
+		return ld(a.y - b.y) / (a.x - b.x);
+	}
+
+	// distance from point `a` to line `l--r`
+	static inline ld dist(const point& a, const point& l, const point& r) {
+		return area(a, l, r) * 2 / (l - r).norm();
+	}
+
+	static inline ld area(const point& a, const point& b, const point& c) {
+		return (b - a) * (c - a) / ld(2);
+	}
+
+	friend inline istream& operator>>(istream& in, point& a) {
+		return in >> a.x >> a.y;
+	}
+
+	friend inline ostream& operator<<(ostream& out, const point& a) {
+		return out << a.x << ' ' << a.y;
+	}
+};
+
+
 // __attribute__((target("popcnt")))
 void solve() {
+	using point = point<ll>;
+
+	read(int, n);
+	readvec1(ll, a, n);
+
+	vector<ll> b(n + 1);
+	for (int i = 1; i <= n; ++i) {
+		b[i] = b[i - 1] + i * a[i];
+	}
+
+	partial_sum(a.begin(), a.end(), a.begin());
+	
+	ll res = -INFLL;
+
+	deque<point> q;
+	int m = 0;
+	for (int i = 0; i <= n; ++i) {
+		point curr(i, i * a[i] - b[i]);
+		while (m >= 2 and (q[m - 1] - q[m - 2]) * (curr - q[m - 1]) > 0) {
+			m -= 1;
+			q.pop_back();
+		}
+		m += 1;
+		q.emplace_back(curr);
+		if (m > 0) {
+			int l = 0, r = m - 1;
+			while (l < r) {
+				int mid = l + r >> 1;
+				if (mid != m - 1 and point(1, a[i]) * (q[mid + 1] - q[mid]) > 0) {
+					l = mid + 1;
+				} else {
+					r = mid;
+				}
+			}
+			chmax(res, b[i] - a[i] * q[l].x + q[l].y);
+		}
+	}
+
+	cout << res << '\n';
 }
 
 int main() {

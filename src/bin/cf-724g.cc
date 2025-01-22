@@ -527,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -538,28 +538,122 @@ void dump_ignore() {}
 void prep() {
 }
 
+template <typename T>
+struct basis {
+    array<T, sizeof(T) * 8> p;
+    int cnt = 0;
+
+    basis(const vector<T>& v) {
+        for (auto&& x : v) {
+            insert(x);
+        }
+    }
+
+    bool insert(T x) {
+        for (size_t i = sizeof(T) * 8 - 1; ~i; --i) {
+            if (not (x >> i)) continue;
+            if (not p[i]) {
+                p[i] = x;
+                cnt += 1;
+                return true;
+            }
+            x ^= p[i];
+        }
+        return false;
+    }
+
+    vector<T> value(void) const {
+        vector<T> res;
+        for (size_t i = sizeof(T) * 8 - 1; ~i; --i) {
+            if (not p[i]) continue;
+            res.emplace_back(p[i]);
+        }
+        return res;
+    }
+};
+
 // __attribute__((target("popcnt")))
 void solve() {
-    read(int, n);
-    int x = 1;
-    vector res(n, vector<int>(n));
-    for (int i = 0; i < n; ++i) {
-        if (i % 2 == 0) {
-            for (int j = 0; j < n; ++j) {
-                res[i][j] = x++;
+    using mll = MLL<MDL>;
+
+    read(int, n, m);
+    vector<tiil> edges(m);
+    for (int i = 0; i < m; ++i) {
+        read(int, u, v);
+        read(ll, w);
+        edges[i] = { u, v, w };
+    }
+
+    vector<bool> extra(n + 1);
+    {
+        vector<bool> vis(n + 1);
+        vector<vector<pil>> e(n + 1);
+        for (int i = 0; i < m; ++i) {
+            auto [u, v, _] = edges[i];
+            edgew(e, u, v, i);
+        }
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            vis[v] = 1;
+            for (auto&& [u, idx] : e[v]) {
+                if (u == pa) continue;
+                if (vis[u]) {
+                    extra[idx] = 1;
+                } else {
+                    dfs(dfs, u, v);
+                }
             }
-        } else {
-            for (int j = n - 1; ~j; --j) {
-                res[i][j] = x++;
-            }
+        };
+        dfs(dfs, 1, 0);
+    }
+
+    vector<vector<pil>> e(n + 1);
+    for (int i = 0; i < m; ++i) {
+        auto&& [u, v, w] = edges[i];
+        if (not extra[i]) {
+            edgew(e, u, v, w);
         }
     }
-    for (int i = 0; i < n; ++i) {
-        for (int j = 0; j < n; ++j) {
-            cout << res[i][j] << ' ';
-        }
-        cout << '\n';
+
+    vector<ll> ps(n + 1);
+    {
+        auto dfs = [&] (auto dfs, int v, int pa) -> void {
+            for (auto&& [u, w] : e[v]) {
+                if (u == pa) continue;
+                ps[u] = ps[v] xor w;
+                dfs(dfs, u, v);
+            }
+        };
+        dfs(dfs, 1, 0);
     }
+
+    vector<ll> cycle;
+    int zero = 0;
+    for (int i = 0; i < m; ++i) {
+        auto&& [u, v, w] = edges[i];
+        if (extra[i]) {
+            deb(u, v, w);
+            zero += 1;
+            cycle.emplace_back(ps[u] xor ps[v] xor w);
+        }
+    }
+
+    basis<ll> b(cycle);
+    zero -= b.cnt;
+    debug(zero);
+
+    mll res = 0;
+
+    for (int i = 1; i <= n; ++i) {
+        deb(i, ps[i]);
+        for (auto&& x : b.value()) {
+            deb(x, zero, x xor ps[i]);
+            debug((zero + 1) * (x xor ps[i]));
+            res += mll(zero + 1) * (x xor ps[i]);
+        }
+        zero += 1 - b.insert(ps[i]);
+    }
+
+    cout << res << '\n';
 }
 
 int main() {
