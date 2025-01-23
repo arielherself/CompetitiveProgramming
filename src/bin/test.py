@@ -8,6 +8,7 @@ import io
 PRIME = 998_244_353
 
 if __name__ == '__main__':
-    N = 500000
+    N = 3000000
     print(N)
-    print(''.join((choice('()') for _ in range(N))))
+    for i in range(2, N + 1):
+        print(f'{i} {randint(1, i - 1)}')

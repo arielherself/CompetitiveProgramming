@@ -1,3 +1,5 @@
+use std::io::Write;
+
 const BUFFER_SIZE: usize = 4096;
 pub struct InputCast {
     reader: std::io::BufReader<std::io::Stdin>,
@@ -55,13 +57,43 @@ impl InputCast {
     }
 }
 
+pub struct Writer {
+    buf: String,
+}
+
+impl Writer {
+    pub fn new() -> Self {
+        Self {
+            buf: String::new(),
+        }
+    }
+}
+
+impl std::io::Write for Writer {
+    fn write(&mut self, buf: &[u8]) -> Result<usize, std::io::Error> {
+        let buf = unsafe { std::str::from_utf8_unchecked(buf) };
+        if self.buf.len() + buf.len() > BUFFER_SIZE {
+            self.flush()?;
+            print!("{buf}");
+        } else {
+            self.buf.push_str(buf);
+        }
+        Ok(buf.len())
+    }
+    fn flush(&mut self) -> Result<(), std::io::Error> {
+        print!("{}", self.buf);
+        self.buf.clear();
+        Ok(())
+    }
+}
+
 fn main() {
     let mut input = InputCast::new();
-    let n = input.read::<usize>();
-    let mut output = String::new();
-    for _ in 0..n - 1 {
-        let curr = (input.read::<i32>(), input.read::<i32>());
-        output.push_str(format!("{:?}\n", curr).as_str());
-    }
-    print!("{output}");
+    let mut output = Writer::new();
+
+    // let n = input.read::<usize>();
+    // for _ in 0..n - 1 {
+    //     let curr = (input.read::<i32>(), input.read::<i32>());
+    //     write!(output, "{:?}\n", curr);
+    // }
 }

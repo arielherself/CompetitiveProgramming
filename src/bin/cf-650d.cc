@@ -543,26 +543,134 @@ void solve() {
 	read(int, n, m);
 	readvec(int, a, n);
 
-	vector<int> pivot(n);
+	vector<vector<pii>> queries(n);
+	vector<int> qi(m);
+	for (int i = 0; i < m; ++i) {
+		read(int, idx, x);
+		idx -= 1;
+		queries[idx].emplace_back(x, i);
+		qi[i] = idx;
+	}
+
+	vector<int> ll(m), rr(m);
 
 	vector<int> p(n);
-	vector<int> f(n + 1, INF);
-	f[0] = 0;
-	for (int i = 0; i < n; ++i) {
-		{
-			int l = 0, r = n;
-			while (l < r) {
-				int mid = l + r + 1 >> 1;
-				if (f[mid] < a[i]) {
-					l = mid;
-				} else {
-					r = mid - 1;
+	{
+		vector<int> f(n + 1, INF);
+		f[0] = 0;
+		for (int i = 0; i < n; ++i) {
+			for (auto&& [x, idx] : queries[i]) {
+				int l = 0, r = n;
+				while (l < r) {
+					int mid = l + r + 1 >> 1;
+					if (f[mid] < x) {
+						l = mid;
+					} else {
+						r = mid - 1;
+					}
 				}
+				ll[idx] = l + 1;
 			}
-			chmin(f[l + 1], a[i]);
-			p[i] = l + 1;
+			{
+				int l = 0, r = n;
+				while (l < r) {
+					int mid = l + r + 1 >> 1;
+					if (f[mid] < a[i]) {
+						l = mid;
+					} else {
+						r = mid - 1;
+					}
+				}
+				p[i] = l + 1;
+				chmin(f[l + 1], a[i]);
+			}
 		}
 	}
+	int all = *max_element(p.begin(), p.end());
+
+	vector<int> s(n);
+	{
+		vector<int> f(n + 1, -INF);
+		f[0] = INF;
+		for (int i = n - 1; ~i; --i) {
+			for (auto&& [x, idx] : queries[i]) {
+				int l = 0, r = n;
+				while (l < r) {
+					int mid = l + r + 1 >> 1;
+					if (f[mid] > x) {
+						l = mid;
+					} else {
+						r = mid - 1;
+					}
+				}
+				rr[idx] = l + 1;
+			}
+			{
+				int l = 0, r = n;
+				while (l < r) {
+					int mid = l + r + 1 >> 1;
+					if (f[mid] > a[i]) {
+						l = mid;
+					} else {
+						r = mid - 1;
+					}
+				}
+				s[i] = l + 1;
+				chmax(f[l + 1], a[i]);
+			}
+		}
+	}
+
+	vector<int> ss(n + 1);
+	for (int i = n - 1; ~i; --i) {
+		ss[i] = max(ss[i + 1], s[i]);
+	}
+
+	vector<int> right(n, -INF);
+	{
+		vector<int> idx(n);
+		iota(idx.begin(), idx.end(), 0);
+		sort_by_key(idx.begin(), idx.end(), expr(pii(-a[i], i), auto&& i));
+		vector<int> first_oc(n + 1, -INF);
+		for (auto&& i : idx) {
+			if (first_oc[all - p[i]] > i) {
+				right[i] = first_oc[all - p[i]];
+			}
+			chmax(first_oc[s[i]], i);
+		}
+	}
+
+	vector<int> lis(n);
+	for (int i = 0; i < n; ++i) {
+		lis[i] = p[i] + s[i] - 1;
+	}
+
+	vector<int> pivot(n);
+	{
+		int rm = -INF;
+		int has = 0;
+		for (int i = 0; i < n; ++i) {
+			if (rm > i or has or ss[i + 1] == all) {
+				pivot[i] = 0;
+			} else if (lis[i] == all) {
+				pivot[i] = 1;
+			}
+			chmax(rm, right[i]);
+			if (p[i] == all) has = 1;
+		}
+	}
+
+	vector<int> res(m);
+	for (int i = 0; i < m; ++i) {
+		res[i] = ll[i] + rr[i] - 1;
+		if (not pivot[qi[i]]) {
+			chmax(res[i], all);
+		} else {
+			chmax(res[i], all - 1);
+		}
+	}
+
+	putvec_eol(res);
 }
 
 int main() {
