@@ -530,7 +530,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -541,25 +541,129 @@ void dump_ignore() {}
 void prep() {
 }
 
+template <typename T, typename IndexType = ll>
+struct ODT {
+	struct Info {
+		IndexType l, r;
+		mutable T val;
+		Info(const IndexType& l, const IndexType& r, const T& val) : l(l), r(r), val(val) {}
+		friend inline bool operator<(const Info& lhs, const Info& rhs) { return lhs.l < rhs.l; }
+	};
+
+	set<Info> info;
+
+	ODT() = delete;
+	ODT(const IndexType& left, const IndexType& right, const T& val) : info {{ left, right, val }} {}
+
+	typename set<Info>::iterator split(const IndexType& x) {
+		auto it = info.lower_bound({ x, {}, {} });
+		if (it != info.end() and it->l == x) {
+			return it;
+		}
+		--it;
+		auto [l, r, val] = *it;
+		info.erase(it);
+		info.emplace(l, x - 1, val);
+		return info.emplace(x, r, val).first;
+	}
+
+	void assign(const IndexType& l, const IndexType& r, const T& val) {
+		auto ri = split(r + 1), li = split(l);
+		info.erase(li, ri);
+		info.emplace(l, r, val);
+	}
+
+	void transform(const IndexType& l, const IndexType& r, const function<T(const typename set<Info>::iterator&)>& operation) {
+		auto ri = split(r + 1), li = split(l);
+		for (; li != ri; ++li) {
+			li->val = operation(li);
+		}
+	}
+
+	template <typename U>
+	U fold(const IndexType& l, const IndexType& r, U&& init, const function<U(const U&, const typename set<Info>::iterator&)>& operation = std::plus()) {
+		auto ri = split(r + 1), li = split(l);
+		U res = init;
+		for (; li != ri; ++li) {
+			res = operation(res, li);
+		}
+		return res;
+	}
+};
+
+
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n);
-	readvec(int, a, n);
-	vector<ll> f(n);
-	for (int i = 1; i < n; ++i) {
-		ld d;
-		if (a[i - 1] != 1 and a[i] == 1) {
-			cout << -1 << '\n';
-			return;
-		}
-		if (a[i] == 1) {
-			d = 1;
-		} else {
-			d = log((long double)a[i - 1]) / log((long double)a[i]);
-		}
-		f[i] = max<ll>(0, f[i - 1] + ceil(log2((long double)d)));
+	read(int, n, q, k);
+	vector cnt(k, vector<int>(k));
+	read(string, s);
+	transform(s.begin(), s.end(), s.begin(), expr(x - 'a', auto x));
+	for (int i = 0; i < n - 1; ++i) {
+		cnt[s[i]][s[i + 1]] += 1;
 	}
-	cout << accumulate(f.begin(), f.end(), ll(0)) << '\n';
+	ODT<int> odt(0, n - 1, 0);
+	for (int i = 0; i < n; ++i) {
+		odt.assign(i, i, s[i]);
+	}
+	while (q--) {
+		read(int, op);
+		if (op == 1) {
+			read(int, l, r);
+			read(char, c);
+			--l, --r;
+			c -= 'a';
+
+			// remove old values
+			set<ODT<int>::Info>::iterator it;
+			int first = -1;
+			int last = -1;
+			odt.transform(l, r, [&] (const auto& range) -> int {
+				int len = range->r - range->l + 1;
+				cnt[range->val][range->val] -= len - 1;
+				if (range->l != 0) {
+					cnt[prev(range)->val][range->val] -= 1;
+					if (first == -1) {
+						first = prev(range)->val;
+					}
+				}
+				it = range;
+				return range->val;
+			});
+			if (r != n - 1) {
+				cnt[it->val][next(it)->val] -= 1;
+				last = next(it)->val;
+			}
+
+			// add new values
+			odt.assign(l, r, c);
+			cnt[c][c] += r - l;
+			if (l != 0) {
+				cnt[first][c] += 1;
+			}
+			if (r != n - 1) {
+				cnt[c][last] += 1;
+			}
+		} else {
+			read(string, t);
+			transform(t.begin(), t.end(), t.begin(), expr(x - 'a', auto x));
+			vector<int> pos(k);
+			for (int i = 0; i < k; ++i) {
+				pos[t[i]] = i;
+			}
+			int res = 1;
+			for (int i = 0; i < k; ++i) {
+				for (int j = 0; j < i; ++j) {
+					if (pos[i] > pos[j]) {
+						res += cnt[i][j];
+					} else {
+						res += cnt[j][i];
+					}
+				}
+				res += cnt[i][i];
+			}
+			cout << res << '\n';
+		}
+	}
 }
 
 #ifdef SINGLE_TEST_CASE

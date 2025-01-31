@@ -530,7 +530,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -544,22 +544,75 @@ void prep() {
 // __attribute__((target("popcnt")))
 void solve() {
 	read(int, n);
-	readvec(int, a, n);
-	vector<ll> f(n);
-	for (int i = 1; i < n; ++i) {
-		ld d;
-		if (a[i - 1] != 1 and a[i] == 1) {
-			cout << -1 << '\n';
-			return;
-		}
-		if (a[i] == 1) {
-			d = 1;
-		} else {
-			d = log((long double)a[i - 1]) / log((long double)a[i]);
-		}
-		f[i] = max<ll>(0, f[i - 1] + ceil(log2((long double)d)));
+	adj(ch, n);
+	for (int i = 0; i < n - 1; ++i) {
+		read(int, u, v);
+		edge(ch, u, v);
 	}
-	cout << accumulate(f.begin(), f.end(), ll(0)) << '\n';
+
+	if (n == 2) {
+		cout << 1 << '\n';
+		return;
+	}
+
+	int root = 0;
+	for (int i = 1; i <= n; ++i) {
+		if (ch[i].size() >= 2) {
+			root = i;
+			break;
+		}
+	}
+
+	vector<int> sz(n + 1);
+	int leaf = 0;
+	{
+		auto dfs = [&] (auto dfs, int v, int pa) -> void {
+			sz[v] = 1;
+			for (auto&& u : ch[v]) {
+				if (u == pa) continue;
+				dfs(dfs, u, v);
+				sz[v] += sz[u];
+			}
+			if (sz[v] == 1) {
+				leaf += 1;
+			}
+		};
+		dfs(dfs, root, 0);
+	}
+	assert(leaf % 2 == 0);
+
+	vector<vector<vector<int>>> dp(n + 1);
+	{
+		auto dfs = [&] (auto dfs, int v, int pa) -> void {
+			vector curr(1 + 1, vector<int>(2, INF));
+			if (sz[v] == 1) {
+				curr[0][0] = curr[1][1] = 0;
+			} else {
+				curr[0][0] = curr[0][1] = 0;
+				int s = 1;
+				for (auto&& u : ch[v]) {
+					if (u == pa) continue;
+					dfs(dfs, u, v);
+					vector nxt(s + sz[u] + 1, vector<int>(2, INF));
+					for (int i = 0; i <= s; ++i) {
+						for (int j = 0; j <= sz[u]; ++j) {
+							for (int k = 0; k < 2; ++k) {
+								for (int l = 0; l < 2; ++l) {
+									chmin(nxt[i + j][k], curr[i][k] + dp[u][j][l] + (k != l));
+								}
+							}
+						}
+					}
+					curr = std::move(nxt);
+					s += sz[u];
+				}
+			}
+			dp[v] = std::move(curr);
+		};
+		dfs(dfs, root, 0);
+	}
+
+	cout << min(dp[root][leaf / 2][0], dp[root][leaf / 2][1]) << '\n';
 }
 
 #ifdef SINGLE_TEST_CASE

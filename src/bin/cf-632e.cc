@@ -25,7 +25,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;	// up to 1e-9 precision in binary search, but more than 7x slower
+using ld = __float128;	// up to 1e-9 precision in binary search
 using pii = pair<int, int>;			  using pil = pair<int, ll>;		   using pid = pair<int, ld>;
 using pli = pair<ll, int>;			  using pll = pair<ll, ll>;			   using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;			  using pdl = pair<ld, ll>;			   using pdd = pair<ld, ld>;
@@ -38,8 +38,6 @@ using tldi = tuple<ll, ld, int>;	  using tldl = tuple<ll, ld, ll>;	   using tldd
 using tdii = tuple<ld, int, int>;	  using tdil = tuple<ld, int, ll>;	   using tdid = tuple<ld, int, ld>;
 using tdli = tuple<ld, ll, int>;	  using tdll = tuple<ld, ll, ll>;	   using tdld = tuple<ld, ll, ld>;
 using tddi = tuple<ld, ld, int>;	  using tddl = tuple<ld, ld, ll>;	   using tddd = tuple<ld, ld, ld>;
-template <typename T, size_t N, size_t M> using matrix = array<array<T, M>, N>;
-template <typename T, size_t N, size_t M, size_t W> using cube = array<array<array<T, W>, M>, N>;
 template <typename T> using max_heap = priority_queue<T>;
 template <typename T> using min_heap = priority_queue<T, vector<T>, greater<>>;
 template <typename T> using oi = ostream_iterator<T>;
@@ -57,7 +55,6 @@ constexpr int128 INT128_MAX = numeric_limits<int128>::max();
 constexpr uint128 UINT128_MAX = numeric_limits<uint128>::max();
 constexpr int128 INT128_MIN = numeric_limits<int128>::min();
 constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
-constexpr ld PI = 3.141592653589793238462643383279502884L;
 
 /* random */
 
@@ -530,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -541,32 +538,111 @@ void dump_ignore() {}
 void prep() {
 }
 
-// __attribute__((target("popcnt")))
-void solve() {
-	read(int, n);
-	readvec(int, a, n);
-	vector<ll> f(n);
-	for (int i = 1; i < n; ++i) {
-		ld d;
-		if (a[i - 1] != 1 and a[i] == 1) {
-			cout << -1 << '\n';
-			return;
-		}
-		if (a[i] == 1) {
-			d = 1;
-		} else {
-			d = log((long double)a[i - 1]) / log((long double)a[i]);
-		}
-		f[i] = max<ll>(0, f[i - 1] + ceil(log2((long double)d)));
-	}
-	cout << accumulate(f.begin(), f.end(), ll(0)) << '\n';
+template <ll M>
+ll qpow_m(ll b, ll p) {
+	if (b == 0 and p != 0) return 0;
+	if (p == 0) return 1;
+	ll half = qpow_m<M>(b, p / 2);
+	if (p % 2 == 1) return (half * half % M)* b % M;
+	else return half * half % M;
 }
 
-#ifdef SINGLE_TEST_CASE
-#warning: Will run single test case
-#else
-#warning: Will run multiple test cases
-#endif
+
+template <ll M>
+void ntt(vector<ll>& y, bool idft) {
+	int n = y.size();
+	vector<int> rev(n);
+	for (int i = 0; i < n; ++i) {
+		rev[i] = rev[i >> 1] >> 1;
+		if (i & 1) {
+			rev[i] |= n >> 1;
+		}
+	}
+	for (int i = 0; i < n; ++i) {
+		if (i < rev[i]) {
+			swap(y[i], y[rev[i]]);
+		}
+	}
+	vector<ll> roots = { 0, 1 };
+	if (roots.size() < n) {
+		int k = lsp(roots.size());
+		roots.resize(n);
+		for (; (1 << k) < n; ++k) {
+			ll e = qpow_m<M>(31, 1 << lsp(M - 1) - k - 1);
+			for (int i = 1 << k - 1; i < (1 << k); ++i) {
+				roots[2 * i] = roots[i];
+				roots[2 * i + 1] = roots[i] * e % M;
+			}
+		}
+	}
+	for (int h = 2; h <= n; h <<= 1) {
+		for (int j = 0; j < n; j += h) {
+			for (int k = j; k < j + h / 2; ++k) {
+				ll u = y[k], t = roots[k - j + h / 2] * y[k + h / 2] % M;
+				y[k] = (u + t) % M;
+				y[k + h / 2] = mod(u - t, M);
+			}
+		}
+	}
+	if (idft) {
+		reverse(y.begin() + 1, y.end());
+		ll inv = inverse(n, M);
+		for (int i = 0; i < n; ++i) {
+			y[i] = y[i] * inv % M;
+		}
+	}
+}
+// WARN: resize after use!!!
+template <ll M>
+vector<ll> multiply(const vector<ll>& a, const vector<ll>& b) {
+	vector<ll> A(a.begin(), a.end()), B(b.begin(), b.end());
+	int n = 1;
+	while (n < a.size() + b.size()) n <<= 1;
+	A.resize(n), B.resize(n);
+	ntt<M>(A, false), ntt<M>(B, false);
+	for (int i = 0; i < n; ++i) {
+		A[i] = A[i] * B[i] % M;
+	}
+	ntt<M>(A, true);
+	return A;
+}
+
+
+// __attribute__((target("popcnt")))
+void solve() {
+	constexpr int N = 1000;
+	read(int, n, k);
+
+	vector<ll> a(N + 1);
+	for (int i = 0; i < n; ++i) {
+		read(int, x);
+		a[x] = 1;
+	}
+
+	auto poly_qpow = [&] (auto&& self, const vector<ll>& a, int k) -> vector<ll> {
+		if (k == 1) return a;
+		vector<ll> half = self(self, a, k / 2);
+		vector<ll> res = multiply<PRIME>(half, half);
+		res.resize(k / 2 * 2 * N + 1);
+		for (auto& x : res) x = !!x;
+		if (k % 2) {
+			res = multiply<PRIME>(res, a);
+			res.resize(k * N + 1);
+			for (auto& x : res) x = !!x;
+		}
+		return res;
+	};
+
+	vector<ll> res = poly_qpow(poly_qpow, a, k);
+
+	int m = res.size();
+	for (int i = 1; i < m; ++i) {
+		if (res[i]) {
+			cout << i << ' ';
+		}
+	}
+	cout << endl;
+}
 
 int main() {
 #if __cplusplus < 201402L or defined(_MSC_VER) and not defined(__clang__)

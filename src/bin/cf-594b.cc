@@ -25,7 +25,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;	// up to 1e-9 precision in binary search, but more than 7x slower
+using ld = long double;	// up to 1e-9 precision in binary search, but more than 7x slower
 using pii = pair<int, int>;			  using pil = pair<int, ll>;		   using pid = pair<int, ld>;
 using pli = pair<ll, int>;			  using pll = pair<ll, ll>;			   using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;			  using pdl = pair<ld, ll>;			   using pdd = pair<ld, ld>;
@@ -530,7 +530,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -543,23 +543,31 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n);
-	readvec(int, a, n);
-	vector<ll> f(n);
-	for (int i = 1; i < n; ++i) {
-		ld d;
-		if (a[i - 1] != 1 and a[i] == 1) {
-			cout << -1 << '\n';
-			return;
+	int q, r, v;
+	scanf("%d %d %d", &q, &r, &v);
+	while (q--) {
+		int s, f;
+		scanf("%d %d", &s, &f);
+		int d = f - s;
+		ld peri = 2 * PI * r;
+		ld p = floor((long double)(d / peri));
+		ld rem = d - peri * p;
+		auto calc = [&] (ld x) {
+			return r * (x - sin((long double)x));
+		};
+		ld M = calc(PI);
+		ld left = 0, right = PI;
+		for (int i = 0; i < 100; ++i) {
+			ld mid = left + (right - left) / 2;
+			if ((M - calc(PI - mid)) * 2 >= rem) {
+				right = mid;
+			} else {
+				left = mid;
+			}
 		}
-		if (a[i] == 1) {
-			d = 1;
-		} else {
-			d = log((long double)a[i - 1]) / log((long double)a[i]);
-		}
-		f[i] = max<ll>(0, f[i - 1] + ceil(log2((long double)d)));
+		ld res = (p + left / PI) * (peri / v);
+		printf("%.9Lf\n", (long double)res);
 	}
-	cout << accumulate(f.begin(), f.end(), ll(0)) << '\n';
 }
 
 #ifdef SINGLE_TEST_CASE

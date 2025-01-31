@@ -530,7 +530,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -543,23 +543,32 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
+	static unordered_map<char, char> rev = {
+		{ 'N', 'S' },
+		{ 'S', 'N' },
+		{ 'W', 'E' },
+		{ 'E', 'W' },
+	};
+
 	read(int, n);
-	readvec(int, a, n);
-	vector<ll> f(n);
-	for (int i = 1; i < n; ++i) {
-		ld d;
-		if (a[i - 1] != 1 and a[i] == 1) {
-			cout << -1 << '\n';
+	n -= 1;
+	read(string, a);
+	read(string, b);
+
+	transform(a.begin(), a.end(), a.begin(), expr(rev[c], auto&& c));
+	reverse(a.begin(), a.end());
+
+	a += "#" + b;
+	auto z = calc_z(a);
+
+	for (int i = 0; i < n; ++i) {
+		if (z[n + 1 + i] == n - i) {
+			cout << "NO\n";
 			return;
 		}
-		if (a[i] == 1) {
-			d = 1;
-		} else {
-			d = log((long double)a[i - 1]) / log((long double)a[i]);
-		}
-		f[i] = max<ll>(0, f[i - 1] + ceil(log2((long double)d)));
 	}
-	cout << accumulate(f.begin(), f.end(), ll(0)) << '\n';
+
+	cout << "YES\n";
 }
 
 #ifdef SINGLE_TEST_CASE

@@ -25,7 +25,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;	// up to 1e-9 precision in binary search, but more than 7x slower
+using ld = __float128;	// up to 1e-9 precision in binary search
 using pii = pair<int, int>;			  using pil = pair<int, ll>;		   using pid = pair<int, ld>;
 using pli = pair<ll, int>;			  using pll = pair<ll, ll>;			   using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;			  using pdl = pair<ld, ll>;			   using pdd = pair<ld, ld>;
@@ -57,7 +57,6 @@ constexpr int128 INT128_MAX = numeric_limits<int128>::max();
 constexpr uint128 UINT128_MAX = numeric_limits<uint128>::max();
 constexpr int128 INT128_MIN = numeric_limits<int128>::min();
 constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
-constexpr ld PI = 3.141592653589793238462643383279502884L;
 
 /* random */
 
@@ -530,7 +529,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -538,28 +537,146 @@ void dump() {}
 
 void dump_ignore() {}
 
+constexpr int N = 2e5 + 10;
+ll fact[N];
+bool mark[N];
+
 void prep() {
+	fact[0] = 1;
+	for (int i = 1; i < N; ++i) {
+		fact[i] = fact[i - 1] * i % PRIME;
+	}
+}
+
+template <ll M>
+ll qpow_m(ll b, ll p) {
+	if (b == 0 and p != 0) return 0;
+	if (p == 0) return 1;
+	ll half = qpow_m<M>(b, p / 2);
+	if (p % 2 == 1) return (half * half % M)* b % M;
+	else return half * half % M;
+}
+
+
+template <ll M>
+void ntt(vector<ll>& y, bool idft) {
+	int n = y.size();
+	vector<int> rev(n);
+	for (int i = 0; i < n; ++i) {
+		rev[i] = rev[i >> 1] >> 1;
+		if (i & 1) {
+			rev[i] |= n >> 1;
+		}
+	}
+	for (int i = 0; i < n; ++i) {
+		if (i < rev[i]) {
+			swap(y[i], y[rev[i]]);
+		}
+	}
+	vector<ll> roots = { 0, 1 };
+	if (roots.size() < n) {
+		int k = lsp(roots.size());
+		roots.resize(n);
+		for (; (1 << k) < n; ++k) {
+			ll e = qpow_m<M>(31, 1 << lsp(M - 1) - k - 1);
+			for (int i = 1 << k - 1; i < (1 << k); ++i) {
+				roots[2 * i] = roots[i];
+				roots[2 * i + 1] = roots[i] * e % M;
+			}
+		}
+	}
+	for (int h = 2; h <= n; h <<= 1) {
+		for (int j = 0; j < n; j += h) {
+			for (int k = j; k < j + h / 2; ++k) {
+				ll u = y[k], t = roots[k - j + h / 2] * y[k + h / 2] % M;
+				y[k] = (u + t) % M;
+				y[k + h / 2] = mod(u - t, M);
+			}
+		}
+	}
+	if (idft) {
+		reverse(y.begin() + 1, y.end());
+		ll inv = inverse(n, M);
+		for (int i = 0; i < n; ++i) {
+			y[i] = y[i] * inv % M;
+		}
+	}
+}
+// WARN: resize after use!!!
+template <ll M>
+vector<ll> multiply(const vector<ll>& a, const vector<ll>& b) {
+	vector<ll> A(a.begin(), a.end()), B(b.begin(), b.end());
+	int n = 1;
+	while (n < a.size() + b.size()) n <<= 1;
+	A.resize(n), B.resize(n);
+	ntt<M>(A, false), ntt<M>(B, false);
+	for (int i = 0; i < n; ++i) {
+		A[i] = A[i] * B[i] % M;
+	}
+	ntt<M>(A, true);
+	return A;
 }
 
 // __attribute__((target("popcnt")))
 void solve() {
 	read(int, n);
-	readvec(int, a, n);
-	vector<ll> f(n);
-	for (int i = 1; i < n; ++i) {
-		ld d;
-		if (a[i - 1] != 1 and a[i] == 1) {
-			cout << -1 << '\n';
-			return;
+
+	vector<int> digit(n + 1);
+	for (int i = 1; i <= n; ++i) {
+		int x = i;
+		while (x) {
+			digit[i] += 1;
+			x /= 10;
 		}
-		if (a[i] == 1) {
-			d = 1;
-		} else {
-			d = log((long double)a[i - 1]) / log((long double)a[i]);
-		}
-		f[i] = max<ll>(0, f[i - 1] + ceil(log2((long double)d)));
 	}
-	cout << accumulate(f.begin(), f.end(), ll(0)) << '\n';
+
+	vector<int> g = { 1, 10, 100, 1000, 10000, 100000, 1000000 };
+	for (int i = 0; i < 6; ++i) {
+		mark[g[i]] = 1;
+	}
+
+	vector<ll> pw(7);
+	auto dfs = [&] (auto dfs, int l, int r) -> vector<ll> {
+		vector<ll> res;
+		if (l == r) {
+			if (mark[l]) {
+				res = { 1 };
+			} else {
+				res = { 1, g[digit[l]] };
+			}
+		} else {
+			int mid = l + r >> 1;
+			res = multiply<PRIME>(dfs(dfs, l, mid), dfs(dfs, mid + 1, r));
+		}
+		res.resize(r - l + 2);
+		// deb(i, l, r, res);
+		return res;
+	};
+	vector<ll> c = dfs(dfs, 1, n);
+	for (int i = 1; i <= 6; ++i) {
+		vector<ll> d = { 1 };
+		int k = 1;
+		for (int j = 1; j <= 6; ++j) {
+			if (j == i or g[j - 1] > n) continue;
+			d = multiply<PRIME>(d, { 1, g[j] });
+			k += 1;
+			d.resize(k);
+		}
+		d = multiply<PRIME>(d, c);
+		// deb(i, c);
+		for (int j = 0; j <= n - 1; ++j) {
+			(pw[i] += fact[j] * fact[n - 1 - j] % PRIME * d[j] % PRIME) %= PRIME;
+			// deb(n - 1 - j, c[j], j);
+		}
+	}
+
+	ll res = 0;
+
+	for (int i = 1; i <= n; ++i) {
+		res = (res + pw[digit[i]] * i % PRIME) % PRIME;
+	}
+
+	cout << res << '\n';
 }
 
 #ifdef SINGLE_TEST_CASE

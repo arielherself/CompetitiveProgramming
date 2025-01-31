@@ -25,7 +25,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;	// up to 1e-9 precision in binary search, but more than 7x slower
+using ld = __float128;	// up to 1e-9 precision in binary search
 using pii = pair<int, int>;			  using pil = pair<int, ll>;		   using pid = pair<int, ld>;
 using pli = pair<ll, int>;			  using pll = pair<ll, ll>;			   using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;			  using pdl = pair<ld, ll>;			   using pdd = pair<ld, ld>;
@@ -38,8 +38,6 @@ using tldi = tuple<ll, ld, int>;	  using tldl = tuple<ll, ld, ll>;	   using tldd
 using tdii = tuple<ld, int, int>;	  using tdil = tuple<ld, int, ll>;	   using tdid = tuple<ld, int, ld>;
 using tdli = tuple<ld, ll, int>;	  using tdll = tuple<ld, ll, ll>;	   using tdld = tuple<ld, ll, ld>;
 using tddi = tuple<ld, ld, int>;	  using tddl = tuple<ld, ld, ll>;	   using tddd = tuple<ld, ld, ld>;
-template <typename T, size_t N, size_t M> using matrix = array<array<T, M>, N>;
-template <typename T, size_t N, size_t M, size_t W> using cube = array<array<array<T, W>, M>, N>;
 template <typename T> using max_heap = priority_queue<T>;
 template <typename T> using min_heap = priority_queue<T, vector<T>, greater<>>;
 template <typename T> using oi = ostream_iterator<T>;
@@ -57,7 +55,6 @@ constexpr int128 INT128_MAX = numeric_limits<int128>::max();
 constexpr uint128 UINT128_MAX = numeric_limits<uint128>::max();
 constexpr int128 INT128_MIN = numeric_limits<int128>::min();
 constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
-constexpr ld PI = 3.141592653589793238462643383279502884L;
 
 /* random */
 
@@ -530,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -541,32 +538,131 @@ void dump_ignore() {}
 void prep() {
 }
 
+template <typename T> struct point {
+	T x, y;
+	point() : x(), y() {}
+	point(const pair<T, T>& a) : x(a.first), y(a.second) {}
+	point(const T& x, const T& y) : x(x), y(y) {}
+
+	inline T square() const { return x * x + y * y; }
+	inline ld norm() const { return sqrt((long double)(square())); }
+
+	inline point operator+(const point& rhs) const { return point(x + rhs.x, y + rhs.y); }
+	inline point operator-(const point& rhs) const { return point(x - rhs.x, y - rhs.y); }
+	inline point operator+() const { return *this; }
+	inline point operator-() const { return point(-x, -y); }
+	inline point operator*(const T& a) const { return point(x * a, y * a); }
+	inline T operator*(const point& rhs) const { return x * rhs.y - y * rhs.x; }
+	inline point operator/(const T& a) const { return point(x / a, y / a); }
+	inline point& operator+=(const point& rhs) { x += rhs.x, y += rhs.y; return *this; }
+	inline point& operator-=(const point& rhs) { x -= rhs.x, y -= rhs.y; return *this; }
+	inline point& operator*=(const T& a) { x *= a, y *= a; return *this; }
+	inline point& operator/=(const T& a) { x /= a, y /= a; return *this; }
+
+	inline bool operator==(const point& rhs) const { return x == rhs.x and y == rhs.y; }
+	inline bool operator!=(const point& rhs) const { return not (*this == rhs); }
+	inline bool operator<(const point& rhs) const { return pair(x, y) < pair(rhs.x, rhs.y); }
+	inline bool operator<=(const point& rhs) const { return *this < rhs or *this == rhs; }
+	inline bool operator>(const point& rhs) const { return not (*this <= rhs); }
+	inline bool operator>=(const point& rhs) const { return not (*this < rhs); }
+
+	static inline ld slope(const point& a, const point& b) {
+		if (a.x == b.x) return INFLL;
+		return ld(a.y - b.y) / (a.x - b.x);
+	}
+
+	// distance from point `a` to line `l--r`
+	static inline ld dist(const point& a, const point& l, const point& r) {
+		return area(a, l, r) * 2 / (l - r).norm();
+	}
+
+	static inline ld area(const point& a, const point& b, const point& c) {
+		return (b - a) * (c - a) / ld(2);
+	}
+
+	friend inline istream& operator>>(istream& in, point& a) {
+		return in >> a.x >> a.y;
+	}
+
+	friend inline ostream& operator<<(ostream& out, const point& a) {
+		return out << a.x << ' ' << a.y;
+	}
+};
+
+
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n);
-	readvec(int, a, n);
-	vector<ll> f(n);
-	for (int i = 1; i < n; ++i) {
-		ld d;
-		if (a[i - 1] != 1 and a[i] == 1) {
-			cout << -1 << '\n';
-			return;
-		}
-		if (a[i] == 1) {
-			d = 1;
-		} else {
-			d = log((long double)a[i - 1]) / log((long double)a[i]);
-		}
-		f[i] = max<ll>(0, f[i - 1] + ceil(log2((long double)d)));
-	}
-	cout << accumulate(f.begin(), f.end(), ll(0)) << '\n';
-}
+	using point = point<int128>;
 
-#ifdef SINGLE_TEST_CASE
-#warning: Will run single test case
-#else
-#warning: Will run multiple test cases
-#endif
+	read(int, n);
+	readvec1(int, a, n);
+
+	int128 tot = 0;
+
+	vector<int128> ps(n + 1);
+	for (int i = 1; i <= n; ++i) {
+		tot += int128(1) * i * a[i];
+		ps[i] = ps[i - 1] + a[i];
+	}
+
+	int128 res = 0;
+	{
+		vector<point> stack;
+		int m = 0;
+		for (int i = n; i; --i) {
+			point curr(i, ps[i]);
+
+			if (m != 0) {
+				int l = 0, r = m - 1;
+				while (l < r) {
+					int mid = l + r >> 1;
+					if (mid < m - 1 and point(-1, -a[i]) * (stack[mid + 1] - stack[mid]) > 0) {
+						l = mid + 1;
+					} else {
+						r = mid;
+					}
+				}
+				chmax(res, -int128(1) * i * a[i] + ps[i] - (stack[l].y - a[i] * stack[l].x));
+			}
+
+			while (m >= 2 and (curr - stack[m - 1]) * (stack[m - 1] - stack[m - 2]) <= 0) {
+				m -= 1;
+				stack.pop_back();
+			}
+			m += 1;
+			stack.emplace_back(curr);
+		}
+	}
+	{
+		vector<point> stack;
+		int m = 0;
+		for (int i = 1; i <= n; ++i) {
+			point curr(i, ps[i - 1]);
+
+			if (m != 0) {
+				int l = 0, r = m - 1;
+				while (l < r) {
+					int mid = l + r >> 1;
+					if (mid < m - 1 and (stack[mid + 1] - stack[mid]) * point(1, a[i]) > 0) {
+						l = mid + 1;
+					} else {
+						r = mid;
+					}
+				}
+				chmax(res, -int128(1) * i * a[i] + ps[i - 1] - (stack[l].y - a[i] * stack[l].x));
+			}
+
+			while (m >= 2 and (curr - stack[m - 1]) * (stack[m - 1] - stack[m - 2]) >= 0) {
+				m -= 1;
+				stack.pop_back();
+			}
+			m += 1;
+			stack.emplace_back(curr);
+		}
+	}
+
+	cout << tot + res << '\n';
+}
 
 int main() {
 #if __cplusplus < 201402L or defined(_MSC_VER) and not defined(__clang__)

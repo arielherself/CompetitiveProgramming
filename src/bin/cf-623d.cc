@@ -25,7 +25,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;	// up to 1e-9 precision in binary search, but more than 7x slower
+using ld = __float128;	// up to 1e-9 precision in binary search
 using pii = pair<int, int>;			  using pil = pair<int, ll>;		   using pid = pair<int, ld>;
 using pli = pair<ll, int>;			  using pll = pair<ll, ll>;			   using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;			  using pdl = pair<ld, ll>;			   using pdd = pair<ld, ld>;
@@ -57,7 +57,6 @@ constexpr int128 INT128_MAX = numeric_limits<int128>::max();
 constexpr uint128 UINT128_MAX = numeric_limits<uint128>::max();
 constexpr int128 INT128_MIN = numeric_limits<int128>::min();
 constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
-constexpr ld PI = 3.141592653589793238462643383279502884L;
 
 /* random */
 
@@ -530,7 +529,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -545,21 +544,36 @@ void prep() {
 void solve() {
 	read(int, n);
 	readvec(int, a, n);
-	vector<ll> f(n);
-	for (int i = 1; i < n; ++i) {
-		ld d;
-		if (a[i - 1] != 1 and a[i] == 1) {
-			cout << -1 << '\n';
-			return;
-		}
-		if (a[i] == 1) {
-			d = 1;
-		} else {
-			d = log((long double)a[i - 1]) / log((long double)a[i]);
-		}
-		f[i] = max<ll>(0, f[i - 1] + ceil(log2((long double)d)));
+
+	vector<ld> b(n);
+	for (int i = 0; i < n; ++i) {
+		b[i] = 1 - ld(1) * a[i] / 100;
 	}
-	cout << accumulate(f.begin(), f.end(), ll(0)) << '\n';
+
+	max_heap<pdi> q;
+	for (int i = 0; i < n; ++i) {
+		q.emplace(INFLL, i);
+	}
+
+	ld res = 1;
+
+	vector<ld> p(n, 1);
+
+	for (int i = 0; i < 200000; ++i) {
+		auto [_, idx] = poptop(q);
+		p[idx] *= b[idx];
+		q.emplace((1 - p[idx] * b[idx]) / (1 - p[idx]), idx);
+
+		ld prod = 1;
+		for (int j = 0; j < n; ++j) {
+			prod *= 1 - p[j];
+		}
+
+		res += 1 - prod;
+	}
+
+	cout << fixed << setprecision(50);
+	cout << (long double)res << '\n';
 }
 
 #ifdef SINGLE_TEST_CASE

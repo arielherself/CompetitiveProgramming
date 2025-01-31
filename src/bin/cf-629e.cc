@@ -25,7 +25,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;	// up to 1e-9 precision in binary search, but more than 7x slower
+using ld = __float128;	// up to 1e-9 precision in binary search
 using pii = pair<int, int>;			  using pil = pair<int, ll>;		   using pid = pair<int, ld>;
 using pli = pair<ll, int>;			  using pll = pair<ll, ll>;			   using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;			  using pdl = pair<ld, ll>;			   using pdd = pair<ld, ld>;
@@ -57,7 +57,6 @@ constexpr int128 INT128_MAX = numeric_limits<int128>::max();
 constexpr uint128 UINT128_MAX = numeric_limits<uint128>::max();
 constexpr int128 INT128_MIN = numeric_limits<int128>::min();
 constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
-constexpr ld PI = 3.141592653589793238462643383279502884L;
 
 /* random */
 
@@ -530,7 +529,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -541,25 +540,117 @@ void dump_ignore() {}
 void prep() {
 }
 
+struct LCA {
+	vector<int> depth;
+	vector<vector<int>> pa;
+	LCA(const vector<vector<int>>& g, int root = 1) {
+		int n = g.size() - 1;
+		int m = 32 - __builtin_clz(n);
+		depth.resize(n + 1);
+		pa.resize(n + 1, vector<int>(m, -1));
+		function<void(int, int)> dfs = [&](int x, int fa) {
+			pa[x][0] = fa;
+			for (int y: g[x]) {
+				if (y != fa) {
+					depth[y] = depth[x] + 1;
+					dfs(y, x);
+				}
+			}
+		};
+		dfs(root, 0);
+
+		for (int i = 0; i < m - 1; i++)
+			for (int x = 1; x <= n; x++)
+				if (int p = pa[x][i]; p != -1)
+					pa[x][i + 1] = pa[p][i];
+	}
+
+	int get_kth_ancestor(int node, int k) {
+		for (; k; k &= k - 1)
+			node = pa[node][__builtin_ctz(k)];
+		return node;
+	}
+
+	int query(int x, int y) {
+		if (depth[x] > depth[y])
+			swap(x, y);
+		y = get_kth_ancestor(y, depth[y] - depth[x]);
+		if (y == x)
+			return x;
+		for (int i = pa[x].size() - 1; i >= 0; i--) {
+			int px = pa[x][i], py = pa[y][i];
+			if (px != py) {
+				x = px;
+				y = py;
+			}
+		}
+		return pa[x][0];
+	}
+};
+
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n);
-	readvec(int, a, n);
-	vector<ll> f(n);
-	for (int i = 1; i < n; ++i) {
-		ld d;
-		if (a[i - 1] != 1 and a[i] == 1) {
-			cout << -1 << '\n';
-			return;
-		}
-		if (a[i] == 1) {
-			d = 1;
-		} else {
-			d = log((long double)a[i - 1]) / log((long double)a[i]);
-		}
-		f[i] = max<ll>(0, f[i - 1] + ceil(log2((long double)d)));
+	read(int, n, q);
+	adj(ch, n);
+	for (int i = 0; i < n - 1; ++i) {
+		read(int, u, v);
+		edge(ch, u, v);
 	}
-	cout << accumulate(f.begin(), f.end(), ll(0)) << '\n';
+
+	vector<int> sz(n + 1);
+	vector<int> depth(n + 1);
+	vector<ll> sum(n + 1);
+	{
+		auto dfs = [&] (auto dfs, int v, int pa) -> void {
+			depth[v] = depth[pa] + 1;
+			sz[v] = 1;
+			sum[v] = depth[v];
+			for (auto&& u : ch[v]) {
+				if (u == pa) continue;
+				dfs(dfs, u, v);
+				sz[v] += sz[u];
+				sum[v] += sum[u];
+			}
+		};
+		dfs(dfs, 1, 0);
+	}
+
+	LCA lca(ch, 1);
+
+	vector<ld> res(q);
+	vector<vector<pii>> queries(n + 1);
+	for (int i = 0; i < q; ++i) {
+		read(int, u, v);
+		if (depth[u] > depth[v]) swap(u, v);
+		int l = lca.query(u, v);
+		if (l != u) {
+			res[i] = ld(sz[v] * sum[u] + sz[u] * sum[v] + ll(1) * sz[u] * sz[v] * (-2 * depth[l] + 1)) / (ll(1) * sz[u] * sz[v]);
+		} else {
+			queries[lca.get_kth_ancestor(v, depth[v] - depth[u] - 1)].emplace_back(v, i);
+		}
+	}
+
+	{
+		auto dfs = [&] (auto dfs, int v, int pa, ll sum_dist) -> void {
+			for (auto&& [u, idx] : queries[v]) {
+				res[idx] = ld((n - sz[v]) * (sum[u] - ll(1) * sz[u] * depth[u]) + sz[u] * sum_dist + ll(1) * sz[u] * (n - sz[v]) * (depth[u] - depth[v] + 1)) / (ll(1) * (n - sz[v]) * sz[u]);
+			}
+
+			ll tot = 0;
+			for (auto&& u : ch[v]) {
+				if (u == pa) continue;
+				tot += sum[u] - ll(1) * sz[u] * depth[v];
+			}
+			for (auto&& u : ch[v]) {
+				if (u == pa) continue;
+				dfs(dfs, u, v, sum_dist + n - sz[v] + tot - (sum[u] - ll(1) * sz[u] * depth[v]) + sz[v] - sz[u]);
+			}
+		};
+		dfs(dfs, 1, 0, 0);
+	}
+
+	cout << fixed << setprecision(50);
+	for (auto&& x : res) cout << (long double)x << '\n';
 }
 
 #ifdef SINGLE_TEST_CASE

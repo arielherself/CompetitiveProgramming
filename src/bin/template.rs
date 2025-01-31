@@ -1,3 +1,4 @@
+#[allow(unused_imports)]
 use std::io::Write;
 
 const BUFFER_SIZE: usize = 4096;
@@ -87,13 +88,9 @@ impl std::io::Write for Writer {
     }
 }
 
+#[allow(unused)]
 fn main() {
     let mut input = InputCast::new();
     let mut output = Writer::new();
 
-    // let n = input.read::<usize>();
-    // for _ in 0..n - 1 {
-    //     let curr = (input.read::<i32>(), input.read::<i32>());
-    //     write!(output, "{:?}\n", curr);
-    // }
 }

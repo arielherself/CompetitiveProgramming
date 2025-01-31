@@ -530,7 +530,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -545,21 +545,27 @@ void prep() {
 void solve() {
 	read(int, n);
 	readvec(int, a, n);
-	vector<ll> f(n);
-	for (int i = 1; i < n; ++i) {
-		ld d;
-		if (a[i - 1] != 1 and a[i] == 1) {
-			cout << -1 << '\n';
-			return;
+
+	max_heap<pli> q;
+	ll res = 0;
+	for (int i = 0; i < n; ++i) {
+		if (q.size()) {
+			ll x = q.top().first;
+			if (a[i] + x > 0) {
+				int y = q.top().second;
+				q.pop();
+				if (y) {
+					q.emplace(x, 0);
+				}
+				q.emplace(-a[i], 1);
+				res += a[i] + x;
+				continue;
+			}
 		}
-		if (a[i] == 1) {
-			d = 1;
-		} else {
-			d = log((long double)a[i - 1]) / log((long double)a[i]);
-		}
-		f[i] = max<ll>(0, f[i - 1] + ceil(log2((long double)d)));
+		q.emplace(-a[i], 0);
 	}
-	cout << accumulate(f.begin(), f.end(), ll(0)) << '\n';
+
+	cout << res << '\n';
 }
 
 #ifdef SINGLE_TEST_CASE

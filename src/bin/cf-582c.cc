@@ -530,7 +530,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -545,21 +545,101 @@ void prep() {
 void solve() {
 	read(int, n);
 	readvec(int, a, n);
-	vector<ll> f(n);
-	for (int i = 1; i < n; ++i) {
-		ld d;
-		if (a[i - 1] != 1 and a[i] == 1) {
-			cout << -1 << '\n';
-			return;
+
+	// vector<int> oc;
+	// for (auto&& [x, c] : decompose_prime(n)) {
+	// 	oc.emplace_back(x);
+	// }
+
+	vector<int> oc;
+	for (int i = 1; i * i <= n; ++i) {
+		if (n % i == 0) {
+			oc.emplace_back(i);
+			oc.emplace_back(n / i);
 		}
-		if (a[i] == 1) {
-			d = 1;
-		} else {
-			d = log((long double)a[i - 1]) / log((long double)a[i]);
-		}
-		f[i] = max<ll>(0, f[i - 1] + ceil(log2((long double)d)));
 	}
-	cout << accumulate(f.begin(), f.end(), ll(0)) << '\n';
+	sort(oc.begin(), oc.end());
+	int m = unique(oc.begin(), oc.end()) - oc.begin();
+	oc.resize(m);
+
+	vector<int> rev(n + 1);
+	for (int i = 0; i < m; ++i) {
+		rev[oc[i]] = i;
+	}
+
+	vector<bool> vis(n);
+	vector<vector<int>> cnt(m);
+	for (int i = 0; i < m; ++i) {
+		cnt[i].resize((n - 1) / oc[i] + 1);
+	}
+	for (int i = 1; i < n; ++i) {
+		int g = gcd(i, n);
+		cnt[rev[g]][i / g] = 1;
+	}
+	for (int i = 0; i < m; ++i) {
+		for (int j = 1; j <= (n - 1) / oc[i]; ++j) {
+			cnt[i][j] += cnt[i][j - 1];
+		}
+	}
+	// for (int i = 0; i < m; ++i) {
+	// 	int x = oc[i];
+	// 	cnt[i].resize((n - 1) / x + 1);
+	// 	for (int j = x, c = 1; j < n; j += x, c += 1) {
+	// 		if (vis[j]) {
+	// 			cnt[i][c] = cnt[i][c - 1];
+	// 		} else {
+	// 			vis[j] = 1;
+	// 			cnt[i][c] = cnt[i][c - 1] + 1;
+	// 		}
+	// 	}
+	// }
+	
+	// debug(cnt1);
+
+	// oc.emplace_back(1);
+	// int m = oc.size();
+
+	vector<vector<int>> modmax(m);
+	for (int i = 0; i < m; ++i) {
+		modmax[i].resize(oc[i]);
+	}
+	for (int i = 0; i < n; ++i) {
+		for (int j = 0; j < m; ++j) {
+			chmax(modmax[j][i % oc[j]], a[i]);
+		}
+	}
+	// debug(modmax);
+
+	vector good(m, vector<int>(n));
+	for (int i = 0; i < n; ++i) {
+		for (int j = 0; j < m; ++j) {
+			if (a[i] >= modmax[j][i % oc[j]]) {
+				good[j][i] = 1;
+			}
+		}
+	}
+	// debug(good);
+
+	ll res = 0;
+
+	for (int i = 0; i < m; ++i) {
+		int nxt = n + n - 1;
+		for (int j = n - 2; ~j; --j) {
+			if (not good[i][j]) nxt = n + j;
+		}
+		for (int j = n - 1; ~j; --j) {
+			if (not good[i][j]) nxt = j;
+			// if (oc[i] == 1) {
+				res += cnt[i][min(n - 1, nxt - j) / oc[i]];
+			// } else {
+			// 	res += min(n - 1, nxt - j) / oc[i];
+			// }
+			// res += cnt[i][min(n - 1, nxt - j) / oc[i]];
+			// deb(i, j, nxt - j, min(n - 1, nxt - j) / oc[i], res);
+		}
+	}
+
+	cout << res << '\n';
 }
 
 #ifdef SINGLE_TEST_CASE

@@ -25,7 +25,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;	// up to 1e-9 precision in binary search, but more than 7x slower
+using ld = __float128;	// up to 1e-9 precision in binary search
 using pii = pair<int, int>;			  using pil = pair<int, ll>;		   using pid = pair<int, ld>;
 using pli = pair<ll, int>;			  using pll = pair<ll, ll>;			   using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;			  using pdl = pair<ld, ll>;			   using pdd = pair<ld, ld>;
@@ -57,7 +57,6 @@ constexpr int128 INT128_MAX = numeric_limits<int128>::max();
 constexpr uint128 UINT128_MAX = numeric_limits<uint128>::max();
 constexpr int128 INT128_MIN = numeric_limits<int128>::min();
 constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
-constexpr ld PI = 3.141592653589793238462643383279502884L;
 
 /* random */
 
@@ -530,7 +529,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -543,23 +542,41 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n);
+	read(int, n, k);
 	readvec(int, a, n);
-	vector<ll> f(n);
-	for (int i = 1; i < n; ++i) {
-		ld d;
-		if (a[i - 1] != 1 and a[i] == 1) {
-			cout << -1 << '\n';
-			return;
+
+	sort(a.begin(), a.end());
+
+	vector dp(n + 1, vector<ll>(k + 1));
+	dp[0][0] = 1;
+	for (int i = 0; i < n; ++i) {
+		vector ndp(n + 1, vector<ll>(k + 1));
+		for (int j = 0; j <= n; ++j) {
+			for (int l = 0; l <= k; ++l) {
+				int nw = l + (a[i] - a[max(0, i - 1)]) * j;
+				if (nw > k) continue;
+				// add to existing
+				(ndp[j][nw] += dp[j][l] * j % MDL) %= MDL;
+				// create new
+				if (j + 1 <= n) {
+					(ndp[j + 1][nw] += dp[j][l]) %= MDL;
+				}
+				// close existing
+				if (j - 1 >= 0) {
+					(ndp[j - 1][nw] += dp[j][l] * j % MDL) %= MDL;
+				}
+				// create then close
+				(ndp[j][nw] += dp[j][l]) %= MDL;
+			}
 		}
-		if (a[i] == 1) {
-			d = 1;
-		} else {
-			d = log((long double)a[i - 1]) / log((long double)a[i]);
-		}
-		f[i] = max<ll>(0, f[i - 1] + ceil(log2((long double)d)));
+		dp = std::move(ndp);
 	}
-	cout << accumulate(f.begin(), f.end(), ll(0)) << '\n';
+
+	ll res = 0;
+	for (int i = 0; i <= k; ++i) {
+		res = (res + dp[0][i]) % MDL;
+	}
+	cout << res << '\n';
 }
 
 #ifdef SINGLE_TEST_CASE

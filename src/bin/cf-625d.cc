@@ -25,7 +25,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;	// up to 1e-9 precision in binary search, but more than 7x slower
+using ld = __float128;	// up to 1e-9 precision in binary search
 using pii = pair<int, int>;			  using pil = pair<int, ll>;		   using pid = pair<int, ld>;
 using pli = pair<ll, int>;			  using pll = pair<ll, ll>;			   using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;			  using pdl = pair<ld, ll>;			   using pdd = pair<ld, ld>;
@@ -57,7 +57,6 @@ constexpr int128 INT128_MAX = numeric_limits<int128>::max();
 constexpr uint128 UINT128_MAX = numeric_limits<uint128>::max();
 constexpr int128 INT128_MIN = numeric_limits<int128>::min();
 constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
-constexpr ld PI = 3.141592653589793238462643383279502884L;
 
 /* random */
 
@@ -530,7 +529,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -543,23 +542,135 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n);
-	readvec(int, a, n);
-	vector<ll> f(n);
-	for (int i = 1; i < n; ++i) {
-		ld d;
-		if (a[i - 1] != 1 and a[i] == 1) {
-			cout << -1 << '\n';
+	read(string, s);
+	transform(s.begin(), s.end(), s.begin(), expr(x - '0', auto x));
+	reverse(s.begin(), s.end());
+	int n = s.size();
+
+	auto check = [&] (string a) -> bool {
+		string b(a.rbegin(), a.rend());
+		if (b[0] == 0) return false;
+		int m = a.size();
+		string res;
+		int carry = 0;
+		for (int i = 0; i < m; ++i) {
+			int sum = a[i] + b[i] + carry;
+			carry = sum >= 10;
+			sum %= 10;
+			res += char(sum);
+		}
+		if (carry) res += 1;
+		return res == s;
+	};
+
+	auto work = [&] (int m) -> optional<string> {
+		vector<bool> carry(m);
+		for (int i = 0; i < m / 2; ++i) {
+			if (s[i] != s[m - 1 - i]) {
+				if (i - 1 >= 0 and s[i] == (s[m - 1 - i] + 1) % 10) {
+					carry[i - 1] = 1;
+				} else if (m - 1 - i - 1 >= 0 and s[m - 1 - i] == (s[i] + 1) % 10) {
+					carry[m - 1 - i - 1] = 1;
+				} else {
+					return nullopt;
+				}
+			}
+		}
+		if (m + 1 == n and s.back() == 1) {
+			carry[m - 1] = 1;
+		}
+		// for (int i = 0; i < m / 2; ++i) {
+		// 	if (carry[i] or carry[m - 1 - i]) {
+		// 		carry[i] = 1;
+		// 		carry[m - 1 - i] = 1;
+		// 	}
+		// }
+		for (int i = 0; i < m / 2; ++i) {
+			if (s[i] == s[m - 1 - i]) {
+				if ((i - 1 >= 0 and carry[i - 1]) or ((m - 1 - i) - 1 >= 0 and carry[(m - 1 - i) - 1])) {
+					if (i - 1 < 0 or (m - 1 - i) - 1 < 0) {
+						return nullopt;
+					} else {
+						carry[i - 1] = 1;
+						carry[(m - 1 - i) - 1] = 1;
+					}
+				}
+			}
+		}
+		// for (int i = 0; i < m / 2; ++i) {
+		// 	if (carry[i] or carry[m - 1 - i]) {
+		// 		carry[i] = 1;
+		// 		carry[m - 1 - i] = 1;
+		// 	}
+		// }
+		if (m % 2) {
+			if (s[m / 2] % 2) {
+				if (m / 2 - 1 < 0) return nullopt;
+				carry[m / 2 - 1] = 1;
+			}
+		}
+		debug(carry);
+		vector<char> res(m);
+		int c = 0;
+		for (int i = 0; i < m / 2; ++i) {
+			int curr = mod(s[i] - c, 10) + carry[i] * 10;
+			c = curr >= 10;
+			res[m - 1 - i] = min(curr, 9);
+			res[i] = curr - res[m - 1 - i];
+		}
+		if (m % 2) {
+			int curr = mod(s[m / 2] - c, 10) + carry[m / 2] * 10;
+			c = curr >= 10;
+			res[m / 2] = curr / 2;
+		}
+		// for (int i = 0; i < m / 2; ++i) {
+		// 	int curr = s[i];
+		// 	if (i and carry[i - 1]) {
+		// 		curr = mod(curr - 1, 10);
+		// 	}
+		// 	// deb(i, curr);
+		// 	if (carry[i] and carry[m - 1 - i]) {
+		// 		res[i] = 9;
+		// 		res[m - 1 - i] = curr + 1;
+		// 	} else {
+		// 		res[i] = 0;
+		// 		res[m - 1 - i] = curr;
+		// 	}
+		// }
+		// if (m % 2) {
+		// 	int curr = s[m / 2];
+		// 	if (m / 2 > 0 and carry[m / 2 - 1]) {
+		// 		curr = mod(curr - 1, 10);
+		// 	}
+		// 	res[m / 2] = (int(carry[m / 2]) * 10 + curr) / 2;
+		// }
+		for (auto&& x : res) {
+			cerr << int(x) << ' ';
+		}
+		cerr << endl;
+		string ret;
+		for (auto&& x : res) {
+			if (x >= 10) return nullopt;
+			ret += x;
+		}
+		if (check(ret)) {
+			return ret;
+		} else {
+			return nullopt;
+		}
+	};
+	for (int i = max(1, n - 1); i <= n; ++i) {
+		auto x = work(i);
+		if (x) {
+			string res = *x;
+			reverse(res.begin(), res.end());
+			transform(res.begin(), res.end(), res.begin(), expr(x + '0', auto x));
+			cout << res << '\n';
 			return;
 		}
-		if (a[i] == 1) {
-			d = 1;
-		} else {
-			d = log((long double)a[i - 1]) / log((long double)a[i]);
-		}
-		f[i] = max<ll>(0, f[i - 1] + ceil(log2((long double)d)));
 	}
-	cout << accumulate(f.begin(), f.end(), ll(0)) << '\n';
+
+	cout << 0 << '\n';
 }
 
 #ifdef SINGLE_TEST_CASE

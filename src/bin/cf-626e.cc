@@ -25,7 +25,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;	// up to 1e-9 precision in binary search, but more than 7x slower
+using ld = __float128;	// up to 1e-9 precision in binary search
 using pii = pair<int, int>;			  using pil = pair<int, ll>;		   using pid = pair<int, ld>;
 using pli = pair<ll, int>;			  using pll = pair<ll, ll>;			   using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;			  using pdl = pair<ld, ll>;			   using pdd = pair<ld, ld>;
@@ -57,7 +57,6 @@ constexpr int128 INT128_MAX = numeric_limits<int128>::max();
 constexpr uint128 UINT128_MAX = numeric_limits<uint128>::max();
 constexpr int128 INT128_MIN = numeric_limits<int128>::min();
 constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
-constexpr ld PI = 3.141592653589793238462643383279502884L;
 
 /* random */
 
@@ -530,7 +529,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -545,21 +544,68 @@ void prep() {
 void solve() {
 	read(int, n);
 	readvec(int, a, n);
-	vector<ll> f(n);
-	for (int i = 1; i < n; ++i) {
-		ld d;
-		if (a[i - 1] != 1 and a[i] == 1) {
-			cout << -1 << '\n';
-			return;
-		}
-		if (a[i] == 1) {
-			d = 1;
-		} else {
-			d = log((long double)a[i - 1]) / log((long double)a[i]);
-		}
-		f[i] = max<ll>(0, f[i - 1] + ceil(log2((long double)d)));
+	sort(a.begin(), a.end());
+
+	vector<ll> ps(n + 1);
+	for (int i = 1; i <= n; ++i) {
+		ps[i] = ps[i - 1] + a[i - 1];
 	}
-	cout << accumulate(f.begin(), f.end(), ll(0)) << '\n';
+
+	tdii res = { -INFLL, 0, 0 };
+
+	for (int i = 0; i < n; ++i) {
+		auto calc = [&] (int x) {
+			return ld(ps[n] - ps[n - x] + ps[i] - ps[i - x] + a[i]) / (2 * x + 1);
+		};
+		int rr = min(n - i - 1, i);
+		int l = 0, r = rr;
+		while (l < r) {
+			int mid = l + r >> 1;
+			if (mid != rr and calc(mid + 1) >= calc(mid)) {
+				l = mid + 1;
+			} else {
+				r = mid;
+			}
+		}
+		chmax(res, tdii(calc(l) - a[i], i, l));
+	}
+
+	int par = 0;
+	for (int i = 0; i < n - 1; ++i) {
+		auto calc = [&] (int x) {
+			return ld(ps[n] - ps[n - x] + ps[i] - ps[i - x] + a[i] + a[i + 1]) / (2 * x + 2);
+		};
+		int rr = min(i, n - i - 2);
+		int l = 0, r = rr;
+		while (l < r) {
+			int mid = l + r >> 1;
+			if (mid != rr and calc(mid + 1) >= calc(mid)) {
+				l = mid + 1;
+			} else {
+				r = mid;
+			}
+		}
+		if (chmax(res, tdii(calc(l) - (a[i] + a[i + 1]) / 2.0, i, l))) {
+			par = 1;
+		}
+	}
+
+	auto [val, idx, j] = res;
+	if (par == 0) {
+		cout << 2 * j + 1 << '\n';
+		cout << a[idx] << ' ';
+		for (int i = 0; i < j; ++i) {
+			cout << a[n - 1 - i] << ' ' << a[idx - 1 - i] << ' ';
+		}
+		cout << '\n';
+	} else {
+		cout << 2 * j + 2 << '\n';
+		cout << a[idx] << ' ' << a[idx + 1] << ' ';
+		for (int i = 0; i < j; ++i) {
+			cout << a[n - 1 - i] << ' ' << a[idx - 1 - i] << ' ';
+		}
+		cout << '\n';
+	}
 }
 
 #ifdef SINGLE_TEST_CASE

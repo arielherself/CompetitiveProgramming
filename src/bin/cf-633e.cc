@@ -25,7 +25,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;	// up to 1e-9 precision in binary search, but more than 7x slower
+using ld = __float128;	// up to 1e-9 precision in binary search
 using pii = pair<int, int>;			  using pil = pair<int, ll>;		   using pid = pair<int, ld>;
 using pli = pair<ll, int>;			  using pll = pair<ll, ll>;			   using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;			  using pdl = pair<ld, ll>;			   using pdd = pair<ld, ld>;
@@ -38,8 +38,6 @@ using tldi = tuple<ll, ld, int>;	  using tldl = tuple<ll, ld, ll>;	   using tldd
 using tdii = tuple<ld, int, int>;	  using tdil = tuple<ld, int, ll>;	   using tdid = tuple<ld, int, ld>;
 using tdli = tuple<ld, ll, int>;	  using tdll = tuple<ld, ll, ll>;	   using tdld = tuple<ld, ll, ld>;
 using tddi = tuple<ld, ld, int>;	  using tddl = tuple<ld, ld, ll>;	   using tddd = tuple<ld, ld, ld>;
-template <typename T, size_t N, size_t M> using matrix = array<array<T, M>, N>;
-template <typename T, size_t N, size_t M, size_t W> using cube = array<array<array<T, W>, M>, N>;
 template <typename T> using max_heap = priority_queue<T>;
 template <typename T> using min_heap = priority_queue<T, vector<T>, greater<>>;
 template <typename T> using oi = ostream_iterator<T>;
@@ -57,7 +55,6 @@ constexpr int128 INT128_MAX = numeric_limits<int128>::max();
 constexpr uint128 UINT128_MAX = numeric_limits<uint128>::max();
 constexpr int128 INT128_MIN = numeric_limits<int128>::min();
 constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
-constexpr ld PI = 3.141592653589793238462643383279502884L;
 
 /* random */
 
@@ -530,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -541,25 +538,85 @@ void dump_ignore() {}
 void prep() {
 }
 
+template<typename _Tp, typename _Op = function<_Tp(const _Tp&, const _Tp&)>> struct sparse_table {
+	_Op op;
+	vector<vector<_Tp>> st;
+	sparse_table() {}
+	template <typename ReverseIterator>
+	sparse_table(ReverseIterator __first, ReverseIterator __last, _Op&& __operation) {
+		op = __operation;
+		int n = distance(__first, __last);
+		st = vector<vector<_Tp>>(n, vector<_Tp>(int(log2(n) + 1)));
+		int i = n - 1;
+		for (auto it = __first; it != __last; ++it) {
+			st[i][0] = *it;
+			for (int j = 1; i + (1 << j) <= n; ++j) {
+				st[i][j] = op(st[i][j - 1], st[i + (1 << (j - 1))][j - 1]);
+			}
+			i -= 1;
+		}
+	}
+	_Tp query(size_t __start, size_t __end) {
+		int s = lg2(__end - __start + 1);
+		return op(st[__start][s], st[__end - (1 << s) + 1][s]);
+	}
+};
+
+
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n);
+	read(int, n, k);
 	readvec(int, a, n);
-	vector<ll> f(n);
-	for (int i = 1; i < n; ++i) {
-		ld d;
-		if (a[i - 1] != 1 and a[i] == 1) {
-			cout << -1 << '\n';
-			return;
+	readvec(int, b, n);
+	sparse_table<int> range_max(a.rbegin(), a.rend(), functor(max));
+	sparse_table<int> range_min(b.rbegin(), b.rend(), functor(min));
+
+	vector<int> c(n);
+	int j = n - 1;
+	for (int i = n - 1; ~i; --i) {
+		auto calc = [&] (int j) { return min(100 * range_max.query(i, j), range_min.query(i, j)); };
+		while (j > i and calc(j - 1) >= calc(j)) {
+			j -= 1;
 		}
-		if (a[i] == 1) {
-			d = 1;
-		} else {
-			d = log((long double)a[i - 1]) / log((long double)a[i]);
-		}
-		f[i] = max<ll>(0, f[i - 1] + ceil(log2((long double)d)));
+		c[i] = calc(j);
 	}
-	cout << accumulate(f.begin(), f.end(), ll(0)) << '\n';
+
+	sort(c.begin(), c.end(), greater());
+
+	ld p = 1;
+	int ptr = 0;
+
+	if (k - 1 != 0) p /= k - 1;
+
+	ld q = p;
+	ld res = 0;
+	for (int i = k - 1; i < n; ++i) {
+		if (i != 0) q *= i;
+		if (i != k - 1) q /= i - k + 1;
+		while (q > 1e9 and ptr < k) {
+			q /= n - ptr;
+			res /= n - ptr;
+			ptr += 1;
+		}
+		res += q * c[i];
+	}
+	for (int i = 0; i < k; ++i) {
+		res *= i + 1;
+		while (res > 1e9 and ptr < k) {
+			res /= n - ptr;
+			ptr += 1;
+		}
+	}
+
+	while (ptr < k) {
+		res /= n - ptr;
+		ptr += 1;
+	}
+
+
+	cout << fixed << setprecision(50);
+	cout << (long double)res << '\n';
+	
 }
 
 #ifdef SINGLE_TEST_CASE

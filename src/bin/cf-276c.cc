@@ -530,7 +530,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -543,23 +543,32 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n);
+	read(int, n, q);
+	vector<int> diff(n + 1);
 	readvec(int, a, n);
-	vector<ll> f(n);
-	for (int i = 1; i < n; ++i) {
-		ld d;
-		if (a[i - 1] != 1 and a[i] == 1) {
-			cout << -1 << '\n';
-			return;
-		}
-		if (a[i] == 1) {
-			d = 1;
-		} else {
-			d = log((long double)a[i - 1]) / log((long double)a[i]);
-		}
-		f[i] = max<ll>(0, f[i - 1] + ceil(log2((long double)d)));
+
+	while (q--) {
+		read(int, l, r);
+		diff[l - 1] += 1;
+		diff[r] -= 1;
 	}
-	cout << accumulate(f.begin(), f.end(), ll(0)) << '\n';
+
+	int curr = 0;
+	vector<int> cnt(n);
+	for (int i = 0; i < n; ++i) {
+		curr += diff[i];
+		cnt[i] = curr;
+	}
+
+	sort(cnt.begin(), cnt.end(), greater());
+	sort(a.begin(), a.end(), greater());
+
+	ll res = 0;
+	for (int i = 0; i < n; ++i) {
+		res += ll(1) * cnt[i] * a[i];
+	}
+
+	cout << res << '\n';
 }
 
 #ifdef SINGLE_TEST_CASE

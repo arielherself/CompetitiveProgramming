@@ -25,7 +25,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;	// up to 1e-9 precision in binary search, but more than 7x slower
+using ld = __float128;	// up to 1e-9 precision in binary search
 using pii = pair<int, int>;			  using pil = pair<int, ll>;		   using pid = pair<int, ld>;
 using pli = pair<ll, int>;			  using pll = pair<ll, ll>;			   using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;			  using pdl = pair<ld, ll>;			   using pdd = pair<ld, ld>;
@@ -57,7 +57,6 @@ constexpr int128 INT128_MAX = numeric_limits<int128>::max();
 constexpr uint128 UINT128_MAX = numeric_limits<uint128>::max();
 constexpr int128 INT128_MIN = numeric_limits<int128>::min();
 constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
-constexpr ld PI = 3.141592653589793238462643383279502884L;
 
 /* random */
 
@@ -530,7 +529,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -544,22 +543,83 @@ void prep() {
 // __attribute__((target("popcnt")))
 void solve() {
 	read(int, n);
-	readvec(int, a, n);
-	vector<ll> f(n);
-	for (int i = 1; i < n; ++i) {
-		ld d;
-		if (a[i - 1] != 1 and a[i] == 1) {
-			cout << -1 << '\n';
-			return;
-		}
-		if (a[i] == 1) {
-			d = 1;
-		} else {
-			d = log((long double)a[i - 1]) / log((long double)a[i]);
-		}
-		f[i] = max<ll>(0, f[i - 1] + ceil(log2((long double)d)));
+	readvec1(int, a, n);
+	adj(ch, n);
+	for (int i = 0; i < n - 1; ++i) {
+		read(int, u, v);
+		edge(ch, u, v);
 	}
-	cout << accumulate(f.begin(), f.end(), ll(0)) << '\n';
+
+	vector<ll> ps(n + 1);
+	vector<array<ll, 2>> leaf(n + 1);
+	{
+		auto dfs = [&] (auto dfs, int v, int pa) -> void {
+			ps[v] = ps[pa] + a[v];
+			vector<ll> curr;
+			for (auto&& u : ch[v]) {
+				if (u == pa) continue;
+				dfs(dfs, u, v);
+				curr.emplace_back(leaf[u][0]);
+			}
+			if (curr.empty()) {
+				leaf[v] = { ps[v], -INFLL };
+			} else {
+				sort(curr.begin(), curr.end(), greater());
+				if (curr.size() >= 2) {
+					leaf[v] = { curr[0], curr[1] };
+				} else {
+					leaf[v] = { curr[0], -INFLL };
+				}
+			}
+			// deb(v, leaf[v][0], leaf[v][1]);
+		};
+		dfs(dfs, 1, 0);
+	}
+
+	vector<ll> down(n + 1);
+	{
+		auto dfs = [&] (auto dfs, int v, int pa) -> void {
+			auto [mx, sec] = leaf[v];
+			if (sec != -INFLL) {
+				chmax(down[v], mx + sec - 2 * ps[v] + a[v]);
+			} else if (mx != -INFLL) {
+				chmax(down[v], mx - ps[pa]);
+			}
+			for (auto&& u : ch[v]) {
+				if (u == pa) continue;
+				dfs(dfs, u, v);
+				chmax(down[v], down[u]);
+			}
+		};
+		dfs(dfs, 1, 0);
+	}
+
+	ll res = -INFLL;
+	{
+		auto dfs = [&] (auto dfs, int v, int pa, ll up_far, ll up_link) -> void {
+			chmax(res, up_link + down[v]);
+			deb(v, up_link, down[v], up_link + down[v]);
+			multiset<ll> far, link;
+			for (auto&& u : ch[v]) {
+				if (u == pa) continue;
+				far.emplace(leaf[u][0]);
+				link.emplace(down[u]);
+			}
+			for (auto&& u : ch[v]) {
+				if (u == pa) continue;
+				far.erase(far.find(leaf[u][0]));
+				link.erase(link.find(down[u]));
+				ll next_far = max<ll>({0, up_far, (far.size() ? *far.rbegin() - ps[v] : -INFLL)}) + a[v];
+				ll next_link = max<ll>({up_link, (far.size() ? *far.rbegin() - ps[v] + max<ll>(0, up_far) + a[v] : -INFLL), (far.size() >= 2 ? *far.rbegin() + *next(far.rbegin()) - 2 * ps[v] + a[v] : -INFLL), (link.size() ? *link.rbegin() : -INFLL)});
+				dfs(dfs, u, v, next_far, next_link);
+				far.emplace(leaf[u][0]);
+				link.emplace(down[u]);
+			}
+		};
+		dfs(dfs, 1, 0, -INFLL, 0);
+	}
+
+	cout << res << '\n';
 }
 
 #ifdef SINGLE_TEST_CASE

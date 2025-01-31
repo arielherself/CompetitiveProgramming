@@ -1,5 +1,6 @@
 #[allow(unused_imports)]
 use std::io::Write;
+use std::collections::HashSet;
 
 const BUFFER_SIZE: usize = 4096;
 pub struct InputCast {
@@ -94,5 +95,54 @@ fn main() {
     let mut output = Writer::new();
 
     let n = input.read::<usize>();
-    let a = input.read_vec::<i32>(n);
+    let mut a = vec![vec![0; n]; n];
+    for i in 0 .. n {
+        for j in 0 .. n {
+            a[i][j] = input.read();
+        }
+    }
+
+    let mut o = vec![HashSet::new(); n];
+
+    let mut idx = Vec::with_capacity(n * n);
+    for i in 0 .. n {
+        for j in 0 .. n {
+            idx.push((i, j));
+            o[i].insert(j);
+        }
+    }
+    idx.sort_by_key(|p: &(usize, usize)| -a[p.0][p.1]);
+
+    let mut vis = vec![false; n];
+
+    let mut res = vec![vec![0; n]; n];
+
+    for (i, j) in idx {
+        if vis[i] {
+            continue;
+        }
+        vis[i] = true;
+        for k in o[i].clone() {
+            res[i][k] = a[i][j];
+            res[k][i] = a[i][j];
+            o[k].remove(&i);
+        }
+    }
+
+    let mut ans = true;
+    'outer: for i in 0 .. n {
+        for j in 0 .. n {
+            if a[i][j] > res[i][j] || a[i][j] != a[j][i] || a[i][i] != 0 {
+                ans = false;
+                break 'outer;
+            }
+        }
+    }
+
+    if ans {
+        println!("MAGIC");
+    } else {
+        println!("NOT MAGIC");
+    }
+    
 }

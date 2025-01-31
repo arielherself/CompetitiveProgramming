@@ -25,7 +25,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;	// up to 1e-9 precision in binary search, but more than 7x slower
+using ld = __float128;	// up to 1e-9 precision in binary search
 using pii = pair<int, int>;			  using pil = pair<int, ll>;		   using pid = pair<int, ld>;
 using pli = pair<ll, int>;			  using pll = pair<ll, ll>;			   using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;			  using pdl = pair<ld, ll>;			   using pdd = pair<ld, ld>;
@@ -57,7 +57,6 @@ constexpr int128 INT128_MAX = numeric_limits<int128>::max();
 constexpr uint128 UINT128_MAX = numeric_limits<uint128>::max();
 constexpr int128 INT128_MIN = numeric_limits<int128>::min();
 constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
-constexpr ld PI = 3.141592653589793238462643383279502884L;
 
 /* random */
 
@@ -543,23 +542,48 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n);
-	readvec(int, a, n);
-	vector<ll> f(n);
-	for (int i = 1; i < n; ++i) {
-		ld d;
-		if (a[i - 1] != 1 and a[i] == 1) {
-			cout << -1 << '\n';
-			return;
-		}
-		if (a[i] == 1) {
-			d = 1;
-		} else {
-			d = log((long double)a[i - 1]) / log((long double)a[i]);
-		}
-		f[i] = max<ll>(0, f[i - 1] + ceil(log2((long double)d)));
+	read(ll, n, k);
+
+	vector<int> cnt(32);
+	for (int i = 0; i < 32; ++i) {
+		cnt[i] = n >> i & 1;
 	}
-	cout << accumulate(f.begin(), f.end(), ll(0)) << '\n';
+
+	vector<ll> ps(33);
+	for (int i = 1; i <= 32; ++i) {
+		ps[i] = ps[i - 1] + cnt[i - 1];
+	}
+
+	auto work = [&] (ll x) -> ll {
+		ll res = 0;
+		for (int i = 31; ~i; --i) {
+			int bit = x >> i & 1;
+			if (bit == 1) {
+				if (not cnt[i]) {
+					res += ll(1) << i - ps[i];
+				}
+			} else if (cnt[i]) {
+				return res;
+			}
+		}
+		res += 1;
+		return res;
+	};
+
+	// debug(work(n - 1));
+	ll l = n, r = 2 * n - 1;
+	while (l < r) {
+		ll mid = l + r >> 1;
+		// deb(l, r, mid, work(mid));
+		if (work(mid) - work(n - 1) >= k) {
+			r = mid;
+		} else {
+			l = mid + 1;
+		}
+	}
+
+	if (work(l) - work(n - 1) < k) cout << -1 << '\n';
+	else cout << l << '\n';
 }
 
 #ifdef SINGLE_TEST_CASE

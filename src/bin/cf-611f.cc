@@ -530,7 +530,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -543,23 +543,58 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n);
-	readvec(int, a, n);
-	vector<ll> f(n);
-	for (int i = 1; i < n; ++i) {
-		ld d;
-		if (a[i - 1] != 1 and a[i] == 1) {
-			cout << -1 << '\n';
-			return;
+	using mll = MLL<MDL>;
+
+	read(int, n, h, w);
+	read(string, s);
+
+	int u = 0, d = 0, l = 0, r = 0;
+	int x = 0, y = 0;
+	vector<array<int, 4>> box(n);
+	vector<int> up;
+	vector<int> down;
+	vector<int> left;
+	vector<int> right;
+	for (int i = 0; i < n; ++i) {
+		if (s[i] == 'U') {
+			x -= 1;
+		} else if (s[i] == 'D') {
+			x += 1;
+		} else if (s[i] == 'L') {
+			y -= 1;
+		} else if (s[i] == 'R') {
+			y += 1;
 		}
-		if (a[i] == 1) {
-			d = 1;
-		} else {
-			d = log((long double)a[i - 1]) / log((long double)a[i]);
+		chmin(u, x);
+		chmax(d, x);
+		chmin(l, y);
+		chmax(r, y);
+
+		box[i] = { u, d, l, r };
+
+		if (s[i] == 'U') {
+			up.emplace_back(i);
+		} else if (s[i] == 'D') {
+			down.emplace_back(i);
+		} else if (s[i] == 'L') {
+			left.emplace_back(i);
+		} else if (s[i] == 'R') {
+			right.emplace_back(i);
 		}
-		f[i] = max<ll>(0, f[i - 1] + ceil(log2((long double)d)));
 	}
-	cout << accumulate(f.begin(), f.end(), ll(0)) << '\n';
+
+	if (box[n - 1][1] - box[n - 1][0] + 1 <= h and box[n - 1][3] - box[n - 1][2] <= w) {
+		cout << -1 << '\n';
+		return;
+	}
+
+	mll res = 0;
+
+	// up edge
+	for (int i = 0; i < w; ++i) {
+		int x1 = 0, y1 = i;
+		
+	}
 }
 
 #ifdef SINGLE_TEST_CASE

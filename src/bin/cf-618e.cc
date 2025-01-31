@@ -25,7 +25,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;	// up to 1e-9 precision in binary search, but more than 7x slower
+using ld = long double;	// up to 1e-9 precision in binary search
 using pii = pair<int, int>;			  using pil = pair<int, ll>;		   using pid = pair<int, ld>;
 using pli = pair<ll, int>;			  using pll = pair<ll, ll>;			   using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;			  using pdl = pair<ld, ll>;			   using pdd = pair<ld, ld>;
@@ -57,7 +57,6 @@ constexpr int128 INT128_MAX = numeric_limits<int128>::max();
 constexpr uint128 UINT128_MAX = numeric_limits<uint128>::max();
 constexpr int128 INT128_MIN = numeric_limits<int128>::min();
 constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
-constexpr ld PI = 3.141592653589793238462643383279502884L;
 
 /* random */
 
@@ -530,7 +529,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -541,25 +540,199 @@ void dump_ignore() {}
 void prep() {
 }
 
-// __attribute__((target("popcnt")))
-void solve() {
-	read(int, n);
-	readvec(int, a, n);
-	vector<ll> f(n);
-	for (int i = 1; i < n; ++i) {
-		ld d;
-		if (a[i - 1] != 1 and a[i] == 1) {
-			cout << -1 << '\n';
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+	using size_type = uint64_t;
+	using info_type = Addable_Info_t;
+	using tag_type = Tag_t;
+	size_type _max;
+	vector<info_type> d;
+	vector<tag_type> b;
+
+	void pull(size_type p) {
+		d[p] = d[p * 2] + d[p * 2 + 1];
+	}
+
+	void push(size_type p, size_type left_len, size_type right_len) {
+		d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
+		b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+		b[p] = tag_type();
+	}
+
+	void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+		if (s == t) {
+			d[p] = c;
 			return;
 		}
-		if (a[i] == 1) {
-			d = 1;
-		} else {
-			d = log((long double)a[i - 1]) / log((long double)a[i]);
-		}
-		f[i] = max<ll>(0, f[i - 1] + ceil(log2((long double)d)));
+		size_type m = s + (t - s >> 1);
+		if (s != t) push(p, m - s + 1, t - m);
+		if (x <= m) set(s, m, p * 2, x, c);
+		else set(m + 1, t, p * 2 + 1, x, c);
+		pull(p);
 	}
-	cout << accumulate(f.begin(), f.end(), ll(0)) << '\n';
+
+	void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+		if (l <= s && t <= r) {
+			d[p].apply(c, t - s + 1);
+			b[p].apply(c);
+			return;
+		}
+		size_type m = s + (t - s >> 1);
+		push(p, m - s + 1, t - m);
+		if (l <= m) range_apply(s, m, p * 2, l, r, c);
+		if (r > m)	range_apply(m + 1, t, p * 2 + 1, l, r, c);
+		pull(p);
+	}
+
+	info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+		if (l <= s && t <= r) {
+			return d[p];
+		}
+		size_type m = s + (t - s >> 1);
+		info_type res = {};
+		push(p, m - s + 1, t - m);
+		if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+		if (r > m)	res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+		return res;
+	}
+
+	void build(const Sequence& a, size_type s, size_type t, size_type p) {
+		if (s == t) {
+			d[p] = a[s];
+			return;
+		}
+		int m = s + (t - s >> 1);
+		build(a, s, m, p * 2);
+		build(a, m + 1, t, p * 2 + 1);
+		pull(p);
+	}
+public:
+	segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+	segtree(const Sequence& a) : segtree(a.size()) {
+		build(a, {}, _max, 1);
+	}
+
+	void set(size_type i, const info_type& c) {
+		set({}, _max, 1, i, c);
+	}
+
+	void range_apply(size_type l, size_type r, const tag_type& c) {
+		range_apply({}, _max, 1, l, r, c);
+	}
+
+	void apply(size_type i, const tag_type& c) {
+		range_apply(i, i, c);
+	}
+
+	info_type range_query(size_type l, size_type r) {
+		return range_query({}, _max, 1, l, r);
+	}
+
+	info_type query(size_type i) {
+		return range_query(i, i);
+	}
+
+	Sequence serialize() {
+		Sequence res = {};
+		for (size_type i = 0; i <= _max; ++i) {
+			res.push_back(query(i));
+		}
+		return res;
+	}
+
+	const vector<info_type>& get_d() {
+		return d;
+	}
+};
+
+using ld = long double;
+
+matrix<ld, 2, 2> prod(const matrix<ld, 2, 2>& a, const matrix<ld, 2, 2>& b) {
+	return {
+		a[0][0] * b[0][0] + a[0][1] * b[1][0],
+		a[0][0] * b[0][1] + a[0][1] * b[1][1],
+		a[1][0] * b[0][0] + a[1][1] * b[1][0],
+		a[1][0] * b[0][1] + a[1][1] * b[1][1],
+	};
+}
+
+array<ld, 2> prod(const matrix<ld, 2, 2>& a, const array<ld, 2>& b) {
+	return {
+		a[0][0] * b[0] + a[0][1] * b[1],
+		a[1][0] * b[0] + a[1][1] * b[1],
+	};
+}
+
+array<ld, 2> sum(const array<ld, 2>& a, const array<ld, 2>& b) {
+	return {
+		a[0] + b[0],
+		a[1] + b[1],
+	};
+}
+
+struct Tag {
+	matrix<ld, 2, 2> mul = {1, 0, 0, 1};
+	array<ld, 2> add = {};
+	void apply(const Tag& rhs) {
+		add = prod(rhs.mul, add);
+		mul = prod(rhs.mul, mul);
+		add = sum(rhs.add, add);
+	}
+};
+
+struct Info {
+	array<ld, 2> val = {};
+	void apply(const Tag& rhs, size_t len) {
+		val = sum(prod(rhs.mul, val), rhs.add);
+	}
+};
+
+Info operator+(const Info &a, const Info &b) {
+	return { sum(a.val, b.val) };
+}
+
+# define M_PIl		3.141592653589793238462643383279502884L /* pi */
+
+// __attribute__((target("popcnt")))
+void solve() {
+	int n, m; scanf("%d%d", &n, &m);
+	segtree<Info, Tag> tr(n + 1);
+	for (int i = 0; i <= n; ++i) {
+		tr.set(i, {{ ld(i), 0 }});
+	}
+	for (int i = 0; i < m; ++i) {
+		int op, idx, l;
+		scanf("%d%d%d", &op, &idx, &l);
+		--idx;
+		array<ld, 2> p = tr.query(idx).val;
+		array<ld, 2> q = tr.query(idx + 1).val;
+		// deb((long double)p[0], (long double)p[1]);
+		// deb((long double)q[0], (long double)q[1]);
+		array<ld, 2> d = { q[0] - p[0], q[1] - p[1] };
+		if (op == 1) {
+			ld len = sqrt((long double)(d[0] * d[0] + d[1] * d[1]));
+			d[0] *= l / len, d[1] *= l / len;
+			// deb((long double)d[0], (long double)d[1]);
+			tr.range_apply(idx + 1, n, {
+					.mul = { 1, 0, 0, 1 },
+					.add = d,
+					});
+		} else {
+			l = 360 - l;
+			long double rad = l * M_PIl / 180;
+			ld ux = cos(rad), uy = sin(rad);
+			// deb((long double)ux, (long double)uy);
+			matrix<ld, 2, 2> rot = { ux, -uy, uy, ux };
+			array<ld, 2> negp = { -p[0], -p[1] };
+			array<ld, 2> b = sum(p, prod(rot, negp));
+			tr.range_apply(idx + 1, n, {
+					.mul = rot,
+					.add = b,
+					});
+		}
+		auto [x, y] = tr.query(n).val;
+		printf("%.6Lf %.6Lf\n", (long double)x, (long double)y);
+	}
 }
 
 #ifdef SINGLE_TEST_CASE

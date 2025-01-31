@@ -530,7 +530,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -543,23 +543,102 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n);
-	readvec(int, a, n);
-	vector<ll> f(n);
-	for (int i = 1; i < n; ++i) {
-		ld d;
-		if (a[i - 1] != 1 and a[i] == 1) {
-			cout << -1 << '\n';
-			return;
+	read(int, n, m, q);
+	int N = n * m;
+
+	auto multiply = [&] (const vector<vector<ll>>& a, const vector<vector<ll>>& b) -> vector<vector<ll>> {
+		vector c(N, vector<ll>(N));
+		for (int i = 0; i < N; ++i) {
+			for (int j = 0; j < N; ++j) {
+				for (int k = 0; k < N; ++k) {
+					(c[i][j] += a[i][k] * b[k][j] % MDL) %= MDL;
+				}
+			}
 		}
-		if (a[i] == 1) {
-			d = 1;
-		} else {
-			d = log((long double)a[i - 1]) / log((long double)a[i]);
+		return c;
+	};
+
+	auto matrix_qpow = [&] (auto&& self, const vector<vector<ll>>& a, int k) -> vector<vector<ll>> {
+		if (k == 1) {
+			return a;
 		}
-		f[i] = max<ll>(0, f[i - 1] + ceil(log2((long double)d)));
+		auto half = self(self, a, k / 2);
+		auto res = multiply(half, half);
+		if (k % 2) {
+			res = multiply(res, a);
+		}
+		return res;
+	};
+
+	vector base(N, vector<ll>(N));
+
+	auto open = [&] (int i, int j) {
+		base[i * m + j][i * m + j] = 1;
+		if (i - 1 >= 0) {
+			base[i * m + j][(i - 1) * m + j] = 1;
+		}
+		if (i + 1 < n) {
+			base[i * m + j][(i + 1) * m + j] = 1;
+		}
+		if (j - 1 >= 0) {
+			base[i * m + j][i * m + j - 1] = 1;
+		}
+		if (j + 1 < m) {
+			base[i * m + j][i * m + j + 1] = 1;
+		}
+	};
+
+	auto close = [&] (int i, int j) {
+		base[i * m + j][i * m + j] = 0;
+		if (i - 1 >= 0) {
+			base[i * m + j][(i - 1) * m + j] = 0;
+		}
+		if (i + 1 < n) {
+			base[i * m + j][(i + 1) * m + j] = 0;
+		}
+		if (j - 1 >= 0) {
+			base[i * m + j][i * m + j - 1] = 0;
+		}
+		if (j + 1 < m) {
+			base[i * m + j][i * m + j + 1] = 0;
+		}
+	};
+
+	for (int i = 0; i < n; ++i) {
+		for (int j = 0; j < m; ++j) {
+			open(i, j);
+		}
 	}
-	cout << accumulate(f.begin(), f.end(), ll(0)) << '\n';
+
+	vector pre(N, vector<ll>(N));
+	for (int i = 0; i < N; ++i) {
+		pre[i][i] = 1;
+	}
+
+	int last = 1;
+	while (q--) {
+		read(int, op, x, y, t);
+		--x, --y;
+
+		if (op == 1) {
+			int duration = t - last;
+			pre = multiply(matrix_qpow(matrix_qpow, base, duration), pre);
+			cout << pre[x * m + y][0] << '\n';
+			last = t;
+		} else if (op == 2) {
+			int duration = t - 1 - last;
+			if (duration > 0) {
+				pre = multiply(matrix_qpow(matrix_qpow, base, duration), pre);
+			}
+			last = t - 1;
+			close(x, y);
+		} else if (op == 3) {
+			int duration = t - last;
+			pre = multiply(matrix_qpow(matrix_qpow, base, duration), pre);
+			last = t;
+			open(x, y);
+		}
+	}
 }
 
 #ifdef SINGLE_TEST_CASE

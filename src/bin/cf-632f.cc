@@ -25,7 +25,7 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;	// up to 1e-9 precision in binary search, but more than 7x slower
+using ld = __float128;	// up to 1e-9 precision in binary search
 using pii = pair<int, int>;			  using pil = pair<int, ll>;		   using pid = pair<int, ld>;
 using pli = pair<ll, int>;			  using pll = pair<ll, ll>;			   using pld = pair<ll, ld>;
 using pdi = pair<ld, int>;			  using pdl = pair<ld, ll>;			   using pdd = pair<ld, ld>;
@@ -38,8 +38,6 @@ using tldi = tuple<ll, ld, int>;	  using tldl = tuple<ll, ld, ll>;	   using tldd
 using tdii = tuple<ld, int, int>;	  using tdil = tuple<ld, int, ll>;	   using tdid = tuple<ld, int, ld>;
 using tdli = tuple<ld, ll, int>;	  using tdll = tuple<ld, ll, ll>;	   using tdld = tuple<ld, ll, ld>;
 using tddi = tuple<ld, ld, int>;	  using tddl = tuple<ld, ld, ll>;	   using tddd = tuple<ld, ld, ld>;
-template <typename T, size_t N, size_t M> using matrix = array<array<T, M>, N>;
-template <typename T, size_t N, size_t M, size_t W> using cube = array<array<array<T, W>, M>, N>;
 template <typename T> using max_heap = priority_queue<T>;
 template <typename T> using min_heap = priority_queue<T, vector<T>, greater<>>;
 template <typename T> using oi = ostream_iterator<T>;
@@ -57,7 +55,6 @@ constexpr int128 INT128_MAX = numeric_limits<int128>::max();
 constexpr uint128 UINT128_MAX = numeric_limits<uint128>::max();
 constexpr int128 INT128_MIN = numeric_limits<int128>::min();
 constexpr uint128 UINT128_MIN = numeric_limits<uint128>::min();
-constexpr ld PI = 3.141592653589793238462643383279502884L;
 
 /* random */
 
@@ -530,7 +527,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -541,32 +538,66 @@ void dump_ignore() {}
 void prep() {
 }
 
+constexpr int N = 2510;
+ipair q[N * N];
+ipair idx[N * N];
+bool res[N][N];
+int a[N][N];
+bitset<N> mask[N];
+int sz = 0;
+
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n);
-	readvec(int, a, n);
-	vector<ll> f(n);
-	for (int i = 1; i < n; ++i) {
-		ld d;
-		if (a[i - 1] != 1 and a[i] == 1) {
-			cout << -1 << '\n';
-			return;
+	int n;
+	scanf("%d", &n);
+	for (int i = 0; i < n; ++i) {
+		for (int j = 0; j < n; ++j) {
+			idx[i * n + j] = imake(i, j);
+			scanf("%d", &a[i][j]);
 		}
-		if (a[i] == 1) {
-			d = 1;
-		} else {
-			d = log((long double)a[i - 1]) / log((long double)a[i]);
-		}
-		f[i] = max<ll>(0, f[i - 1] + ceil(log2((long double)d)));
 	}
-	cout << accumulate(f.begin(), f.end(), ll(0)) << '\n';
-}
+	// debug(1);
 
-#ifdef SINGLE_TEST_CASE
-#warning: Will run single test case
-#else
-#warning: Will run multiple test cases
-#endif
+	// sort_by_key(idx, idx + n * n, expr(a[i1(p)][i2(p)], auto&& p), greater());
+	// debug(2);
+
+	int last = -1;
+	for (int k = 0; k < n * n; ++k) {
+		int i = i1(idx[k]), j = i2(idx[k]);
+		if (a[i][j] != last) {
+			while (sz > 0) {
+				--sz;
+				int i = i1(q[sz]);
+				int j = i2(q[sz]);
+				if ((mask[i] bitor mask[j]).count() == n) {
+					res[i][j] = 1;
+				}
+			}
+		}
+		mask[i][j] = 1;
+		q[sz++] = imake(i, j);
+		last = a[i][j];
+	}
+	while (sz > 0) {
+		--sz;
+		int i = i1(q[sz]);
+		int j = i2(q[sz]);
+		if ((mask[i] bitor mask[j]).count() == n) {
+			res[i][j] = 1;
+		}
+	}
+
+	for (int i = 0; i < n; ++i) {
+		for (int j = 0; j < n; ++j) {
+			if (a[i][j] != a[j][i] or a[i][i] != 0 or not res[i][j]) {
+				printf("NOT MAGIC\n");
+				return;
+			}
+		}
+	}
+
+	printf("MAGIC\n");
+}
 
 int main() {
 #if __cplusplus < 201402L or defined(_MSC_VER) and not defined(__clang__)

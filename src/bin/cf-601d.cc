@@ -530,7 +530,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -544,22 +544,112 @@ void prep() {
 // __attribute__((target("popcnt")))
 void solve() {
 	read(int, n);
-	readvec(int, a, n);
-	vector<ll> f(n);
-	for (int i = 1; i < n; ++i) {
-		ld d;
-		if (a[i - 1] != 1 and a[i] == 1) {
-			cout << -1 << '\n';
-			return;
-		}
-		if (a[i] == 1) {
-			d = 1;
-		} else {
-			d = log((long double)a[i - 1]) / log((long double)a[i]);
-		}
-		f[i] = max<ll>(0, f[i - 1] + ceil(log2((long double)d)));
+	readvec1(int, w, n);
+
+	vector<int> c(n + 1);
+	for (int i = 1; i <= n; ++i) {
+		read(char, x);
+		c[i] = x - 'a';
 	}
-	cout << accumulate(f.begin(), f.end(), ll(0)) << '\n';
+
+	adj(ch, n);
+	for (int i = 0; i < n - 1; ++i) {
+		read(int, u, v);
+		edge(ch, u, v);
+	}
+
+	vector<int> sz(n + 1);
+	vector<int> heavy(n + 1);
+	vector<int> fa(n + 1);
+	{
+		auto dfs = [&] (auto dfs, int v, int pa) -> void {
+			fa[v] = pa;
+			sz[v] = 1;
+			for (auto&& u : ch[v]) {
+				if (u == pa) continue;
+				dfs(dfs, u, v);
+				sz[v] += sz[u];
+				if (sz[u] > sz[heavy[v]]) {
+					heavy[v] = u;
+				}
+			}
+		};
+		dfs(dfs, 1, 0);
+	}
+
+	vector<array<int, 26>> nxt(n + 1);
+	vector<int> mark(n + 1);
+
+	vector<int> dif(n + 1);
+
+	{
+		int ans = 0;
+		auto dfs = [&] (auto dfs, int v, int pa, int keep) -> void {
+			for (auto&& u : ch[v]) {
+				if (u == pa or u == heavy[v]) {
+					continue;
+				}
+				dfs(dfs, u, v, false);
+			}
+			if (heavy[v]) {
+				dfs(dfs, heavy[v], v, true);
+				nxt[v][c[heavy[v]]] = heavy[v];
+			}
+			int curr = v;
+
+			ans += 1;
+			mark[v] = 1;
+
+			auto dfs2 = [&] (auto dfs2, int v, int pa) -> void {
+				// go to the current 
+				int prev = curr;
+				if (not nxt[curr][c[v]]) {
+					nxt[curr][c[v]] = v;
+				}
+				curr = nxt[curr][c[v]];
+				if (chmax(mark[curr], 1)) {
+					ans += 1;
+				}
+				for (auto&& u : ch[v]) {
+					if (u == pa) continue;
+					dfs2(dfs2, u, v);
+				}
+				curr = prev;
+			};
+			for (auto&& u : ch[v]) {
+				if (u == pa or u == heavy[v]) continue;
+				dfs2(dfs2, u, v);
+			}
+
+			dif[v] = ans;
+
+			if (not keep) {
+				ans = 0;
+				auto dfs2 = [&] (auto dfs2, int v) -> void {
+					mark[v] = 0;
+					for (int i = 0; i < 26; ++i) {
+						if (nxt[v][i]) {
+							dfs2(dfs2, nxt[v][i]);
+						}
+					}
+				};
+				dfs2(dfs2, v);
+			}
+		};
+		dfs(dfs, 1, 0, true);
+	}
+
+	int val = 0;
+	int cnt = 0;
+	for (int i = 1; i <= n; ++i) {
+		if (chmax(val, dif[i] + w[i])) {
+			cnt = 1;
+		} else if (val == dif[i] + w[i]) {
+			cnt += 1;
+		}
+	}
+
+	cout << val << '\n' << cnt << '\n';
 }
 
 #ifdef SINGLE_TEST_CASE
