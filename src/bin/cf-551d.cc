@@ -542,74 +542,70 @@ void dump_ignore() {}
 void prep() {
 }
 
-// __attribute__((target("popcnt")))
-void solve() {
-	read(int, n, q);
-	readvec(ll, a, n);
-	constexpr int M = 708;
-	vector<set<pli>> blocks(M);
-	vector<ll> diff(M);
-	for (int i = 0; i < n; ++i) {
-		blocks[i / M].emplace(a[i], i);
-	}
-	while (q--) {
-		read(int, op);
-		if (op == 1) {
-			read(int, l, r, x);
-			--l, --r;
-			while (l % M != 0 and l <= r) {
-				int i = l / M;
-				blocks[i].erase({a[l], l});
-				a[l] += x;
-				blocks[i].emplace(a[l], l);
-				l += 1;
-			}
-			while (r % M != 0 and l <= r) {
-				int i = r / M;
-				blocks[i].erase({a[r], r});
-				a[r] += x;
-				blocks[i].emplace(a[r], r);
-				r -= 1;
-			}
-			while (l < r) {
-				diff[l / M] += x;
-				l += M;
-			}
-			if (l == r) {
-				{
-					int i = r / M;
-					blocks[i].erase({a[r], r});
-					a[r] += x;
-					blocks[i].emplace(a[r], r);
-					r -= 1;
-				}
-			}
-		} else {
-			read(int, x);
-			int left = -1;
-			for (int i = 0; i < M; ++i) {
-				auto it = blocks[i].lower_bound({x - diff[i], 0});
-				if (it != blocks[i].end() and it->first == x - diff[i]) {
-					left = it->second;
-					break;
-				}
-			}
-			if (left == -1) {
-				cout << -1 << '\n';
-			} else {
-				int right = -1;
-				for (int i = M - 1; ~i; --i) {
-					auto it = blocks[i].lower_bound({x - diff[i] + 1, 0});
-					if (it != blocks[i].begin() and (--it)->first == x - diff[i]) {
-						right = it->second;
-						break;
-					}
-				}
-				assert(right != -1);
-				cout << right - left << '\n';
+int m;
+
+always_inline matrix<ll, 2, 2> multiply(const matrix<ll, 2, 2>& a, const matrix<ll, 2, 2>& b) {
+	matrix<ll, 2, 2> res = {};
+	for (int i = 0; i < 2; ++i) {
+		for (int j = 0; j < 2; ++j) {
+			for (int k = 0; k < 2; ++k) {
+				(res[i][j] += a[i][k] * b[k][j] % m) %= m;
 			}
 		}
 	}
+	return res;
+}
+
+always_inline array<ll, 2> multiply(const matrix<ll, 2, 2>& a, const array<ll, 2>& b) {
+	return {
+		(a[0][0] * b[0] % m + a[0][1] * b[1] % m) % m,
+		(a[1][0] * b[0] % m + a[1][1] * b[1] % m) % m,
+	};
+}
+
+// __attribute__((target("popcnt")))
+void solve() {
+	read(ll, n, k);
+	read(int, l);
+	cin >> m;
+
+	auto mat_qpow = [&] (auto self, const matrix<ll, 2, 2>& a, ll k) -> matrix<ll, 2, 2> {
+		if (k == 1) return a;
+		auto half = self(self, a, k / 2);
+		auto res = multiply(half, half);
+		if (k % 2) {
+			res = multiply(res, a);
+		}
+		return res;
+	};
+
+	ll one, zero;
+	{
+		auto c = mat_qpow(mat_qpow, { 1, 1, 1, 0 }, n);
+		auto [r1, r2] = multiply(c, array<ll, 2> { 1, 0 });
+		zero = (r1 + r2) % m;
+		one = mod(qpow(2, n, m) - zero, m);
+	}
+
+	ll res = 1 % m;
+
+	for (int i = 0; i < 64; ++i) {
+		if (k >> i & 1) {
+			if (i >= l) {
+				res = 0;
+			} else {
+				res = res * one % m;
+			}
+		} else {
+			if (i >= l) {
+				;;
+			} else {
+				res = res * zero % m;
+			}
+		}
+	}
+
+	cout << res<< '\n';
 }
 
 #ifdef SINGLE_TEST_CASE

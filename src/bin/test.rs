@@ -88,11 +88,43 @@ impl std::io::Write for Writer {
     }
 }
 
+struct LinkedList {
+    val: i32,
+    next: Option<Box<LinkedList>>,
+}
+
 #[allow(unused)]
 fn main() {
     let mut input = InputCast::new();
     let mut output = Writer::new();
 
-    let n = input.read::<usize>();
-    let a = input.read_vec::<i32>(n);
+    let mut a = LinkedList {
+        val: 1,
+        next: None,
+    };
+
+    let mut b = LinkedList {
+        val: 2,
+        next: None,
+    };
+
+    let mut c = LinkedList {
+        val: 3,
+        next: None,
+    };
+
+    b.next = Some(Box::new(c));
+    a.next = Some(Box::new(b));
+
+    loop {
+        if matches!(a.next, None) {
+            break;
+        }
+        let next_val = a.next.as_ref().unwrap().val;
+        if a.val == next_val {
+            a.next = a.next.unwrap().next;
+        } else {
+            a = *a.next.unwrap();
+        }
+    }
 }

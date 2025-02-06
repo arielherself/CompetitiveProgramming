@@ -544,71 +544,10 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n, q);
-	readvec(ll, a, n);
-	constexpr int M = 708;
-	vector<set<pli>> blocks(M);
-	vector<ll> diff(M);
-	for (int i = 0; i < n; ++i) {
-		blocks[i / M].emplace(a[i], i);
-	}
-	while (q--) {
-		read(int, op);
-		if (op == 1) {
-			read(int, l, r, x);
-			--l, --r;
-			while (l % M != 0 and l <= r) {
-				int i = l / M;
-				blocks[i].erase({a[l], l});
-				a[l] += x;
-				blocks[i].emplace(a[l], l);
-				l += 1;
-			}
-			while (r % M != 0 and l <= r) {
-				int i = r / M;
-				blocks[i].erase({a[r], r});
-				a[r] += x;
-				blocks[i].emplace(a[r], r);
-				r -= 1;
-			}
-			while (l < r) {
-				diff[l / M] += x;
-				l += M;
-			}
-			if (l == r) {
-				{
-					int i = r / M;
-					blocks[i].erase({a[r], r});
-					a[r] += x;
-					blocks[i].emplace(a[r], r);
-					r -= 1;
-				}
-			}
-		} else {
-			read(int, x);
-			int left = -1;
-			for (int i = 0; i < M; ++i) {
-				auto it = blocks[i].lower_bound({x - diff[i], 0});
-				if (it != blocks[i].end() and it->first == x - diff[i]) {
-					left = it->second;
-					break;
-				}
-			}
-			if (left == -1) {
-				cout << -1 << '\n';
-			} else {
-				int right = -1;
-				for (int i = M - 1; ~i; --i) {
-					auto it = blocks[i].lower_bound({x - diff[i] + 1, 0});
-					if (it != blocks[i].begin() and (--it)->first == x - diff[i]) {
-						right = it->second;
-						break;
-					}
-				}
-				assert(right != -1);
-				cout << right - left << '\n';
-			}
-		}
+	read(int, n);
+	adj(ch, n);
+	for (int i = 0; i < n - 1; ++i) {
+		
 	}
 }
 

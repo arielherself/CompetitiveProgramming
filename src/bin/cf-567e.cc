@@ -26,19 +26,19 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;  // up to 1e-9 precision in binary search, but more than 7x slower
-using pii = pair<int, int>;			using pil = pair<int, ll>;			using pid = pair<int, ld>;
-using pli = pair<ll, int>;			using pll = pair<ll, ll>;			using pld = pair<ll, ld>;
-using pdi = pair<ld, int>;			using pdl = pair<ld, ll>;			using pdd = pair<ld, ld>;
-using tiii = tuple<int, int, int>;	using tiil = tuple<int, int, ll>;   using tiid = tuple<int, int, ld>;
-using tili = tuple<int, ll, int>;	using till = tuple<int, ll, ll>;	using tild = tuple<int, ll, ld>;
-using tidi = tuple<int, ld, int>;	using tidl = tuple<int, ld, ll>;	using tidd = tuple<int, ld, ld>;
-using tlii = tuple<ll, int, int>;	using tlil = tuple<ll, int, ll>;	using tlid = tuple<ll, int, ld>;
-using tlli = tuple<ll, ll, int>;	using tlll = tuple<ll, ll, ll>;		using tlld = tuple<ll, ll, ld>;
-using tldi = tuple<ll, ld, int>;	using tldl = tuple<ll, ld, ll>;		using tldd = tuple<ll, ld, ld>;
-using tdii = tuple<ld, int, int>;	using tdil = tuple<ld, int, ll>;	using tdid = tuple<ld, int, ld>;
-using tdli = tuple<ld, ll, int>;	using tdll = tuple<ld, ll, ll>;		using tdld = tuple<ld, ll, ld>;
-using tddi = tuple<ld, ld, int>;	using tddl = tuple<ld, ld, ll>;		using tddd = tuple<ld, ld, ld>;
+using ld = __float128;	// up to 1e-9 precision in binary search, but more than 7x slower
+using pii = pair<int, int>;			  using pil = pair<int, ll>;		   using pid = pair<int, ld>;
+using pli = pair<ll, int>;			  using pll = pair<ll, ll>;			   using pld = pair<ll, ld>;
+using pdi = pair<ld, int>;			  using pdl = pair<ld, ll>;			   using pdd = pair<ld, ld>;
+using tiii = tuple<int, int, int>;	  using tiil = tuple<int, int, ll>;    using tiid = tuple<int, int, ld>;
+using tili = tuple<int, ll, int>;	  using till = tuple<int, ll, ll>;	   using tild = tuple<int, ll, ld>;
+using tidi = tuple<int, ld, int>;	  using tidl = tuple<int, ld, ll>;	   using tidd = tuple<int, ld, ld>;
+using tlii = tuple<ll, int, int>;	  using tlil = tuple<ll, int, ll>;	   using tlid = tuple<ll, int, ld>;
+using tlli = tuple<ll, ll, int>;	  using tlll = tuple<ll, ll, ll>;	   using tlld = tuple<ll, ll, ld>;
+using tldi = tuple<ll, ld, int>;	  using tldl = tuple<ll, ld, ll>;	   using tldd = tuple<ll, ld, ld>;
+using tdii = tuple<ld, int, int>;	  using tdil = tuple<ld, int, ll>;	   using tdid = tuple<ld, int, ld>;
+using tdli = tuple<ld, ll, int>;	  using tdll = tuple<ld, ll, ll>;	   using tdld = tuple<ld, ll, ld>;
+using tddi = tuple<ld, ld, int>;	  using tddl = tuple<ld, ld, ll>;	   using tddd = tuple<ld, ld, ld>;
 template <typename T, size_t N, size_t M> using matrix = array<array<T, M>, N>;
 template <typename T, size_t N, size_t M, size_t W> using cube = array<array<array<T, W>, M>, N>;
 template <typename T> using max_heap = priority_queue<T>;
@@ -324,12 +324,12 @@ template <typename T>
 T mygcd(T a, T b) { return b == 0 ? a : mygcd(b, a % b); }
 
 void __exgcd(ll a, ll b, ll& x, ll& y) {
-	if (b == 0) {
-		x = 1, y = 0;
-		return;
-	}
-	__exgcd(b, a % b, y, x);
-	y -= a / b * x;
+  if (b == 0) {
+	x = 1, y = 0;
+	return;
+  }
+  __exgcd(b, a % b, y, x);
+  y -= a / b * x;
 }
 
 ll inverse(ll a, ll b) {
@@ -544,72 +544,122 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n, q);
-	readvec(ll, a, n);
-	constexpr int M = 708;
-	vector<set<pli>> blocks(M);
-	vector<ll> diff(M);
-	for (int i = 0; i < n; ++i) {
-		blocks[i / M].emplace(a[i], i);
+	read(int, n, m, s, t);
+	vector<vector<tiii>> e(n + 1);
+	vector<vector<pii>> er(n + 1);
+	vector<tiii> edges;
+	for (int i = 0; i < m; ++i) {
+		read(int, u, v, w);
+		Edgew(e, u, v, w, i);
+		Edgew(er, v, u, w);
+		edges.emplace_back(u, v, w);
 	}
-	while (q--) {
-		read(int, op);
-		if (op == 1) {
-			read(int, l, r, x);
-			--l, --r;
-			while (l % M != 0 and l <= r) {
-				int i = l / M;
-				blocks[i].erase({a[l], l});
-				a[l] += x;
-				blocks[i].emplace(a[l], l);
-				l += 1;
-			}
-			while (r % M != 0 and l <= r) {
-				int i = r / M;
-				blocks[i].erase({a[r], r});
-				a[r] += x;
-				blocks[i].emplace(a[r], r);
-				r -= 1;
-			}
-			while (l < r) {
-				diff[l / M] += x;
-				l += M;
-			}
-			if (l == r) {
-				{
-					int i = r / M;
-					blocks[i].erase({a[r], r});
-					a[r] += x;
-					blocks[i].emplace(a[r], r);
-					r -= 1;
+
+	vector<ll> dis(n + 1, INFLL);
+	{
+		vector<bool> vis(n + 1);
+		min_heap<pli> q;
+		q.emplace(0, s);
+		dis[s] = 0;
+		while (q.size()) {
+			auto [d, v] = poptop(q);
+			vis[v] = 1;
+			for (auto&& [u, w, i] : e[v]) {
+				if (chmin(dis[u], d + w)) {
+					q.emplace(dis[u], u);
 				}
-			}
-		} else {
-			read(int, x);
-			int left = -1;
-			for (int i = 0; i < M; ++i) {
-				auto it = blocks[i].lower_bound({x - diff[i], 0});
-				if (it != blocks[i].end() and it->first == x - diff[i]) {
-					left = it->second;
-					break;
-				}
-			}
-			if (left == -1) {
-				cout << -1 << '\n';
-			} else {
-				int right = -1;
-				for (int i = M - 1; ~i; --i) {
-					auto it = blocks[i].lower_bound({x - diff[i] + 1, 0});
-					if (it != blocks[i].begin() and (--it)->first == x - diff[i]) {
-						right = it->second;
-						break;
-					}
-				}
-				assert(right != -1);
-				cout << right - left << '\n';
 			}
 		}
 	}
+
+	vector<ll> disr(n + 1, INFLL);
+	{
+		vector<bool> vis(n + 1);
+		min_heap<pli> q;
+		q.emplace(0, t);
+		disr[t] = 0;
+		while (q.size()) {
+			auto [d, v] = poptop(q);
+			vis[v] = 1;
+			for (auto&& [u, w] : er[v]) {
+				if (chmin(disr[u], d + w)) {
+					q.emplace(disr[u], u);
+				}
+			}
+		}
+	}
+	// debug(dis);
+	// debug(disr);
+
+	vector<vector<pii>> ee(n + 1);
+	vector<bool> bridge_override(m);
+	{
+		unordered_map<pii, int, pair_hash> oc;
+		vector<bool> vis(n + 1);
+		auto dfs = [&] (auto dfs, int v) -> void {
+			if (vis[v]) {
+				return;
+			}
+			vis[v] = 1;
+			for (auto&& [u, w, i] : e[v]) {
+				if (dis[v] + w + disr[u] == disr[s]) {
+					if (oc.count(minmax(u, v))) {
+						bridge_override[i] = 1;
+						bridge_override[oc[minmax(u, v)]] = 1;
+					} else {
+						oc[minmax(u, v)] = i;
+						edgew(ee, v, u, i);
+						dfs(dfs, u);
+					}
+				}
+			}
+		};
+		dfs(dfs, s);
+	}
+
+	vector<bool> isbridge(m);
+	{
+		vector<int> low(n + 1), dfn(n + 1), father(n + 1);
+		int dfs_clock = 0;
+		int cnt_bridge = 0;
+		auto dfs = [&] (auto dfs, int u, int fa) -> void {
+			father[u] = fa;
+			low[u] = dfn[u] = ++dfs_clock;
+			for (auto&& [v, i] : ee[u]) {
+				if (!dfn[v]) {
+					dfs(dfs, v, u);
+					low[u] = min(low[u], low[v]);
+					if (low[v] > dfn[u]) {
+						isbridge[i] = true;
+						++cnt_bridge;
+					}
+				} else if (dfn[v] < dfn[u] && v != fa) {
+					low[u] = min(low[u], dfn[v]);
+				}
+			}
+		};
+		for (int i = 1; i <= n; ++i) {
+			if (not dfn[i]) dfs(dfs, i, 0);
+		}
+	}
+
+	for (int i = 0; i < m; ++i) {
+		if (bridge_override[i]) {
+			isbridge[i] = 0;
+		}
+	}
+
+	for (int i = 0; i < m; ++i) {
+		auto&& [u, v, w] = edges[i];
+		if (isbridge[i]) {
+			cout << "YES\n";
+		} else if (dis[u] == INFLL or disr[v] == INFLL or dis[u] + disr[v] - dis[t] + 1 >= 0) {
+			cout << "NO\n";
+		} else {
+			cout << "CAN " << dis[u] + w + disr[v] - dis[t] + 1 << '\n';
+		}
+	}
+	
 }
 
 #ifdef SINGLE_TEST_CASE

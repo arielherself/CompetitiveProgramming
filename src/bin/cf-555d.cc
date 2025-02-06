@@ -545,70 +545,71 @@ void prep() {
 // __attribute__((target("popcnt")))
 void solve() {
 	read(int, n, q);
-	readvec(ll, a, n);
-	constexpr int M = 708;
-	vector<set<pli>> blocks(M);
-	vector<ll> diff(M);
+	readvec(int, a, n);
+
+	vector<int> idx(n);
+	iota(idx.begin(), idx.end(), 0);
+	sort_by_key(idx.begin(), idx.end(), expr(a[i], auto&& i));
+	sort(a.begin(), a.end());
+
+	vector<int> rev(n);
 	for (int i = 0; i < n; ++i) {
-		blocks[i / M].emplace(a[i], i);
+		rev[idx[i]] = i;
 	}
-	while (q--) {
-		read(int, op);
-		if (op == 1) {
-			read(int, l, r, x);
-			--l, --r;
-			while (l % M != 0 and l <= r) {
-				int i = l / M;
-				blocks[i].erase({a[l], l});
-				a[l] += x;
-				blocks[i].emplace(a[l], l);
-				l += 1;
-			}
-			while (r % M != 0 and l <= r) {
-				int i = r / M;
-				blocks[i].erase({a[r], r});
-				a[r] += x;
-				blocks[i].emplace(a[r], r);
-				r -= 1;
-			}
+
+	auto find = [&] (int i, int len, int direction) {
+		if (direction) {
+			int l = i, r = n - 1;
 			while (l < r) {
-				diff[l / M] += x;
-				l += M;
-			}
-			if (l == r) {
-				{
-					int i = r / M;
-					blocks[i].erase({a[r], r});
-					a[r] += x;
-					blocks[i].emplace(a[r], r);
-					r -= 1;
+				int mid = l + r + 1 >> 1;
+				if (a[mid] - a[i] <= len) {
+					l = mid;
+				} else {
+					r = mid - 1;
 				}
 			}
+			return l;
 		} else {
-			read(int, x);
-			int left = -1;
-			for (int i = 0; i < M; ++i) {
-				auto it = blocks[i].lower_bound({x - diff[i], 0});
-				if (it != blocks[i].end() and it->first == x - diff[i]) {
-					left = it->second;
-					break;
+			int l = 0, r = i;
+			while (l < r) {
+				int mid = l + r >> 1;
+				if (a[i] - a[mid] <= len) {
+					r = mid;
+				} else {
+					l = mid + 1;
 				}
 			}
-			if (left == -1) {
-				cout << -1 << '\n';
-			} else {
-				int right = -1;
-				for (int i = M - 1; ~i; --i) {
-					auto it = blocks[i].lower_bound({x - diff[i] + 1, 0});
-					if (it != blocks[i].begin() and (--it)->first == x - diff[i]) {
-						right = it->second;
-						break;
-					}
-				}
-				assert(right != -1);
-				cout << right - left << '\n';
-			}
+			return l;
 		}
+	};
+	
+	while (q--) {
+		read(int, i, l);
+
+		i = rev[i - 1];
+		int direction = 1;  // right
+
+		for (int k = 0; k < 2; ++k) {
+			int j = find(i, l, direction);
+			int unit = abs(a[j] - a[i]);
+
+			direction ^= 1;
+			i = j;
+			l -= unit;
+		}
+		while (1) {
+			int j = find(i, l, direction);
+			if (j == i) break;
+			int unit = abs(a[j] - a[i]);
+
+			if (l / unit % 2) {
+				direction ^= 1;
+				i = j;
+			}
+			l %= unit;
+		}
+
+		cout << idx[i] + 1 << '\n';
 	}
 }
 

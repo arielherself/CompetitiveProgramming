@@ -531,7 +531,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -542,73 +542,105 @@ void dump_ignore() {}
 void prep() {
 }
 
+/**
+ * My thinking process
+ * 1. The problem is we cannot skip operations.
+ * 2. If there exists a solution of length k, then there must also exist
+ *    a solution of length k + 2 * n.
+ * 3. We could do binary search for each remainder in [0, 2 * n).
+ * 4. Time complexity is O((n ** 2) * log(n)).
+ * 5. TLEd.
+ */
+
+constexpr int N = 2010;
+vector<int> ch[N];
+int a[N];
+ll rem[N][2 * N];
+int n, rt;
+
+void dfs(ll total, int v, int pa) {
+	for (int i = 0; i < 2 * n; ++i) {
+		rem[v][i] = a[v];
+	}
+	for (auto&& u : ch[v]) {
+		if (u == pa) continue;
+		dfs(total, u, v);
+		for (int i = 0; i < 2 * n; ++i) {
+			rem[v][i] += rem[u][i];
+		}
+	}
+	for (int i = 0; i < 2 * n; ++i) {
+		ll curr = total * 2 + (i >= v) + (i >= n + v);
+		if (curr > rem[v][i]) {
+			rem[v][i] = (curr - rem[v][i]) % 2;
+		} else {
+			rem[v][i] -= curr;
+		}
+	}
+}
+
+always_inline bool check(ll total) {
+	dfs(total, rt, 0);
+	for (int i = 0; i < 2 * n; ++i) {
+		if (rem[rt][i] == 0) return true;
+	}
+	return false;
+}
+
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n, q);
-	readvec(ll, a, n);
-	constexpr int M = 708;
-	vector<set<pli>> blocks(M);
-	vector<ll> diff(M);
-	for (int i = 0; i < n; ++i) {
-		blocks[i / M].emplace(a[i], i);
+	read(int, n, root);
+	::n = n;
+	rt = root;
+	// readvec1(int, a, n);
+	for (int i = 1; i <= n; ++i) cin >> a[i];
+	// adj(ch, n);
+	for (int i = 0; i < n - 1; ++i) {
+		read(int, u, v);
+		edge(ch, u, v);
 	}
-	while (q--) {
-		read(int, op);
-		if (op == 1) {
-			read(int, l, r, x);
-			--l, --r;
-			while (l % M != 0 and l <= r) {
-				int i = l / M;
-				blocks[i].erase({a[l], l});
-				a[l] += x;
-				blocks[i].emplace(a[l], l);
-				l += 1;
-			}
-			while (r % M != 0 and l <= r) {
-				int i = r / M;
-				blocks[i].erase({a[r], r});
-				a[r] += x;
-				blocks[i].emplace(a[r], r);
-				r -= 1;
-			}
-			while (l < r) {
-				diff[l / M] += x;
-				l += M;
-			}
-			if (l == r) {
-				{
-					int i = r / M;
-					blocks[i].erase({a[r], r});
-					a[r] += x;
-					blocks[i].emplace(a[r], r);
-					r -= 1;
-				}
-			}
+
+	// auto check = [&] (ll total) -> bool {
+	// 	auto dfs = [&] (auto&& dfs, int v, int pa) -> ll {
+	// 		ll curr = total / n + (total % n >= v);
+	// 		ll rem = a[v];
+	// 		for (auto&& u : ch[v]) {
+	// 			if (u == pa) continue;
+	// 			rem += dfs(dfs, u, v);
+	// 		}
+	// 		if (curr > rem) {
+	// 			return (curr - rem) % 2;
+	// 		} else {
+	// 			return rem - curr;
+	// 		}
+	// 	};
+	// 	return dfs(dfs, root, 0) == 0;
+	// };
+
+	ll rr = INFLL / (2 * n) + 1;
+	ll l = 0, r = rr;
+	while (l < r) {
+		ll mid = l + r >> 1;
+		if (check(mid)) {
+			r = mid;
 		} else {
-			read(int, x);
-			int left = -1;
-			for (int i = 0; i < M; ++i) {
-				auto it = blocks[i].lower_bound({x - diff[i], 0});
-				if (it != blocks[i].end() and it->first == x - diff[i]) {
-					left = it->second;
-					break;
-				}
-			}
-			if (left == -1) {
-				cout << -1 << '\n';
-			} else {
-				int right = -1;
-				for (int i = M - 1; ~i; --i) {
-					auto it = blocks[i].lower_bound({x - diff[i] + 1, 0});
-					if (it != blocks[i].begin() and (--it)->first == x - diff[i]) {
-						right = it->second;
-						break;
-					}
-				}
-				assert(right != -1);
-				cout << right - left << '\n';
+			l = mid + 1;
+		}
+	}
+
+	if (not check(l)) {
+		cout << -1 << '\n';
+	} else {
+		for (int i = 0; i < 2 * n; ++i) {
+			if (rem[root][i] == 0) {
+				cout << l * 2 * n + i << '\n';
+				break;
 			}
 		}
+	}
+
+	for (int i = 1; i <= n; ++i) {
+		ch[i] = {};
 	}
 }
 

@@ -531,7 +531,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -544,72 +544,97 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n, q);
-	readvec(ll, a, n);
-	constexpr int M = 708;
-	vector<set<pli>> blocks(M);
-	vector<ll> diff(M);
+	read(int, n, m);
+	vector a(n, vector<int>(m));
+	vector b(n, vector<int>(m));
+
 	for (int i = 0; i < n; ++i) {
-		blocks[i / M].emplace(a[i], i);
-	}
-	while (q--) {
-		read(int, op);
-		if (op == 1) {
-			read(int, l, r, x);
-			--l, --r;
-			while (l % M != 0 and l <= r) {
-				int i = l / M;
-				blocks[i].erase({a[l], l});
-				a[l] += x;
-				blocks[i].emplace(a[l], l);
-				l += 1;
-			}
-			while (r % M != 0 and l <= r) {
-				int i = r / M;
-				blocks[i].erase({a[r], r});
-				a[r] += x;
-				blocks[i].emplace(a[r], r);
-				r -= 1;
-			}
-			while (l < r) {
-				diff[l / M] += x;
-				l += M;
-			}
-			if (l == r) {
-				{
-					int i = r / M;
-					blocks[i].erase({a[r], r});
-					a[r] += x;
-					blocks[i].emplace(a[r], r);
-					r -= 1;
-				}
-			}
-		} else {
-			read(int, x);
-			int left = -1;
-			for (int i = 0; i < M; ++i) {
-				auto it = blocks[i].lower_bound({x - diff[i], 0});
-				if (it != blocks[i].end() and it->first == x - diff[i]) {
-					left = it->second;
-					break;
-				}
-			}
-			if (left == -1) {
-				cout << -1 << '\n';
-			} else {
-				int right = -1;
-				for (int i = M - 1; ~i; --i) {
-					auto it = blocks[i].lower_bound({x - diff[i] + 1, 0});
-					if (it != blocks[i].begin() and (--it)->first == x - diff[i]) {
-						right = it->second;
-						break;
-					}
-				}
-				assert(right != -1);
-				cout << right - left << '\n';
-			}
+		for (int j = 0; j < m; ++j) {
+			cin >> a[i][j];
 		}
 	}
+	for (int i = 0; i < n; ++i) {
+		for (int j = 0; j < m; ++j) {
+			cin >> b[i][j];
+		}
+	}
+
+	for (int k = 0; k < 31; ++k) {
+		vector<int> row(n), col(m);
+		vector<vector<int>> events(m + 1);
+		for (int i = 0; i < n; ++i) {
+			for (int j = 0; j < m; ++j) {
+				if ((a[i][j] >> k & 1) and (b[i][j] >> k & 1) == 0) {
+					events[m].emplace_back(i);
+				} else if ((b[i][j] >> k & 1) == 0) {
+					events[j].emplace_back(i);
+				} else if ((a[i][j] >> k & 1) == 0 and (b[i][j] >> k & 1)) {
+					col[j] = 1;
+				}
+			}
+		}
+		auto dfs = [&] (auto dfs, int j) -> void {
+			for (auto&& i : events[j]) {
+				if (row[i]) continue;
+				row[i] = 1;
+				for (int l = 0; l < m; ++l) {
+					if (b[i][l] >> k & 1) {
+						if (col[l]) continue;
+						col[l] = 1;
+						dfs(dfs, l);
+					}
+				}
+			}
+		};
+		dfs(dfs, m);
+		for (int j = 0; j < m; ++j) {
+			if (col[j]) {
+				dfs(dfs, j);
+			}
+		}
+
+		adj(ch, m + n);
+		vector<int> ind(m + n);
+		
+		for (int i = 0; i < n; ++i) {
+			if (row[i]) {
+				for (int j = 0; j < m; ++j) {
+					if (b[i][j] >> k & 1) {
+						Edge(ch, m + i, j);
+						ind[j] += 1;
+					} else {
+						Edge(ch, j, m + i);
+						ind[m + i] += 1;
+					}
+				}
+			}
+		}
+
+		deque<int> q;
+		for (int i = 0; i < m + n; ++i) {
+			if (ind[i] == 0) {
+				q.emplace_back(i);
+			}
+		}
+
+		vector<bool> vis(m + n);
+		while (q.size()) {
+			int v = popfront(q);
+			vis[v] = 1;
+			for (auto&& u : ch[v]) {
+				if (--ind[u] == 0) {
+					q.emplace_back(u);
+				}
+			}
+		}
+
+		if (count(vis.begin(), vis.end(), 0)) {
+			cout << "No\n";
+			return;
+		}
+	}
+
+	cout << "Yes\n";
 }
 
 #ifdef SINGLE_TEST_CASE

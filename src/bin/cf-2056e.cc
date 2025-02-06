@@ -531,7 +531,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -539,77 +539,74 @@ void dump() {}
 
 void dump_ignore() {}
 
+constexpr int M = PRIME;
+
+constexpr int N = 4e5 + 10;
+ll fact[N], factrev[N + 1], s[N + 1];
+
 void prep() {
+	fact[0] = factrev[0] = 1;
+	for (int i = 1; i < N; ++i) {
+		fact[i] = (fact[i - 1] * i) % M;
+	}
+	s[0] = 1;
+	for (int i = 1; i <= N; ++i) {
+		s[i] = s[i - 1] * fact[i - 1] % M;
+	}
+	factrev[N] = inverse(s[N], M);
+	for (int i = N; i; --i) {
+		factrev[i - 1] = factrev[i] * fact[i - 1] % M;
+	}
+	for (int i = 0; i < N; ++i) {
+		factrev[i] = factrev[i + 1] * s[i] % M;
+	}
+}
+
+always_inline ll mycomb(int n, int k) {
+	if (n < 0 or k < 0 or n < k) return 0;
+	return fact[n] * factrev[k] % M * factrev[n - k] % M;
+}
+
+always_inline ll catalan(int n) {
+	return mycomb(2 * n, n) * inverse(n + 1, PRIME) % PRIME;
 }
 
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n, q);
-	readvec(ll, a, n);
-	constexpr int M = 708;
-	vector<set<pli>> blocks(M);
-	vector<ll> diff(M);
-	for (int i = 0; i < n; ++i) {
-		blocks[i / M].emplace(a[i], i);
+	read(int, n, m);
+
+	vector<vector<int>> right(n);
+	for (int i = 0; i < m; ++i) {
+		read(int, l, r);
+		--l, --r;
+		right[l].emplace_back(r);
 	}
-	while (q--) {
-		read(int, op);
-		if (op == 1) {
-			read(int, l, r, x);
-			--l, --r;
-			while (l % M != 0 and l <= r) {
-				int i = l / M;
-				blocks[i].erase({a[l], l});
-				a[l] += x;
-				blocks[i].emplace(a[l], l);
-				l += 1;
-			}
-			while (r % M != 0 and l <= r) {
-				int i = r / M;
-				blocks[i].erase({a[r], r});
-				a[r] += x;
-				blocks[i].emplace(a[r], r);
-				r -= 1;
-			}
-			while (l < r) {
-				diff[l / M] += x;
-				l += M;
-			}
-			if (l == r) {
-				{
-					int i = r / M;
-					blocks[i].erase({a[r], r});
-					a[r] += x;
-					blocks[i].emplace(a[r], r);
-					r -= 1;
-				}
-			}
-		} else {
-			read(int, x);
-			int left = -1;
-			for (int i = 0; i < M; ++i) {
-				auto it = blocks[i].lower_bound({x - diff[i], 0});
-				if (it != blocks[i].end() and it->first == x - diff[i]) {
-					left = it->second;
-					break;
-				}
-			}
-			if (left == -1) {
-				cout << -1 << '\n';
+	for (int i = 0; i < n; ++i) {
+		sort(right[i].begin(), right[i].end());
+	}
+
+	ll res = 1;
+
+	auto dfs = [&] (auto dfs, int l, int r) -> void {
+		int i = l;
+		int cnt = 0;
+		while (i <= r) {
+			cnt += 1;
+			if (right[i].size()) {
+				int rr = popback(right[i]);
+				dfs(dfs, i, rr);
+				i = rr + 1;
 			} else {
-				int right = -1;
-				for (int i = M - 1; ~i; --i) {
-					auto it = blocks[i].lower_bound({x - diff[i] + 1, 0});
-					if (it != blocks[i].begin() and (--it)->first == x - diff[i]) {
-						right = it->second;
-						break;
-					}
-				}
-				assert(right != -1);
-				cout << right - left << '\n';
+				i += 1;
 			}
 		}
-	}
+		
+		res = res * catalan(cnt - 1) % PRIME;
+	};
+
+	dfs(dfs, 0, n - 1);
+
+	cout << res << '\n';
 }
 
 #ifdef SINGLE_TEST_CASE

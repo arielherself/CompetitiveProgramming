@@ -372,7 +372,8 @@ vector<pii> decompose_prime(int N) {
 }
 
 /* string algorithms */
-vector<int> calc_next(string t) {  // pi function of t
+template <typename T>
+vector<int> calc_next(basic_string<T> t) {  // pi function of t
 	int n = (int)t.length();
 	vector<int> pi(n);
 	for (int i = 1; i < n; i++) {
@@ -383,7 +384,8 @@ vector<int> calc_next(string t) {  // pi function of t
 	}
 	return pi;
 }
-vector<int> calc_z(string t) {	// z function of t
+template <typename T>
+vector<int> calc_z(basic_string<T> t) {	// z function of t
 	int m = t.length();
 	vector<int> z;
 	z.push_back(m);
@@ -531,7 +533,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -542,74 +544,131 @@ void dump_ignore() {}
 void prep() {
 }
 
+/**
+ * My thought process
+ * 1. Congruential
+ * 2. All paths from u to v have equal length with regard to modulo K.
+ * 3. (u->v) == (1->v) - (1->u).
+ * 4. Use Z function to determine whether there exists a match.
+ * 5. Condition is: to + from = k - 2.
+ */
+
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n, q);
-	readvec(ll, a, n);
-	constexpr int M = 708;
-	vector<set<pli>> blocks(M);
-	vector<ll> diff(M);
-	for (int i = 0; i < n; ++i) {
-		blocks[i / M].emplace(a[i], i);
-	}
-	while (q--) {
-		read(int, op);
-		if (op == 1) {
-			read(int, l, r, x);
-			--l, --r;
-			while (l % M != 0 and l <= r) {
-				int i = l / M;
-				blocks[i].erase({a[l], l});
-				a[l] += x;
-				blocks[i].emplace(a[l], l);
-				l += 1;
+	read(int, n, k);
+
+	vector<int> in1(k), out1(k);
+	{
+		vector<int> d1(n + 1);
+		readvec1(int, t, n);
+		read(int, m);
+		adj(ch, n);
+		for (int i = 0; i < m; ++i) {
+			read(int, u, v);
+			Edge(ch, u, v);
+		}
+		vector<bool> vis(n + 1);
+		auto dfs = [&] (auto dfs, int v, int d) -> void {
+			d1[v] = d % k;
+			vis[v] = 1;
+			for (auto&& u : ch[v]) {
+				if (vis[u]) continue;
+				dfs(dfs, u, d + 1);
 			}
-			while (r % M != 0 and l <= r) {
-				int i = r / M;
-				blocks[i].erase({a[r], r});
-				a[r] += x;
-				blocks[i].emplace(a[r], r);
-				r -= 1;
-			}
-			while (l < r) {
-				diff[l / M] += x;
-				l += M;
-			}
-			if (l == r) {
-				{
-					int i = r / M;
-					blocks[i].erase({a[r], r});
-					a[r] += x;
-					blocks[i].emplace(a[r], r);
-					r -= 1;
-				}
-			}
-		} else {
-			read(int, x);
-			int left = -1;
-			for (int i = 0; i < M; ++i) {
-				auto it = blocks[i].lower_bound({x - diff[i], 0});
-				if (it != blocks[i].end() and it->first == x - diff[i]) {
-					left = it->second;
-					break;
-				}
-			}
-			if (left == -1) {
-				cout << -1 << '\n';
+		};
+		dfs(dfs, 1, 0);
+		for (int i = 1; i <= n; ++i) {
+			if (t[i]) {
+				out1[d1[i]] += 1;
 			} else {
-				int right = -1;
-				for (int i = M - 1; ~i; --i) {
-					auto it = blocks[i].lower_bound({x - diff[i] + 1, 0});
-					if (it != blocks[i].begin() and (--it)->first == x - diff[i]) {
-						right = it->second;
-						break;
-					}
-				}
-				assert(right != -1);
-				cout << right - left << '\n';
+				in1[d1[i]] += 1;
 			}
 		}
 	}
+	
+	vector<int> in2(k), out2(k);
+	{
+		vector<int> d2(n + 1);
+		readvec1(int, t, n);
+		read(int, m);
+		adj(ch, n);
+		for (int i = 0; i < m; ++i) {
+			read(int, u, v);
+			Edge(ch, u, v);
+		}
+		vector<bool> vis(n + 1);
+		auto dfs = [&] (auto dfs, int v, int d) -> void {
+			d2[v] = d % k;
+			vis[v] = 1;
+			for (auto&& u : ch[v]) {
+				if (vis[u]) continue;
+				dfs(dfs, u, d + 1);
+			}
+		};
+		dfs(dfs, 1, 0);
+		for (int i = 1; i <= n; ++i) {
+			if (t[i]) {
+				out2[d2[i]] += 1;
+			} else {
+				in2[d2[i]] += 1;
+			}
+		}
+	}
+
+	if (count(out1.begin(), out1.end(), 0) == k and count(in2.begin(), in2.end(), 0) == k or
+			count(out2.begin(), out2.end(), 0) == k and count(in1.begin(), in1.end(), 0) == k) {
+		cout << "YES\n";
+		return;
+	}
+
+	basic_string<int> in1s;
+	for (int i = 0; i < k; ++i) {
+		in1s += in1[i];
+	}
+	basic_string<int> out1s;
+	for (int i = 0; i < k; ++i) {
+		out1s += out1[i];
+	}
+	basic_string<int> in2s;
+	for (int i = 0; i < k; ++i) {
+		in2s += in2[i];
+	}
+	basic_string<int> out2s;
+	for (int i = 0; i < k; ++i) {
+		out2s += out2[i];
+	}
+
+	auto z_to = calc_z(out1s + INF + in2s + in2s);
+	auto z_from = calc_z(out2s + INF + in1s + in1s);
+	// debug(out1);
+	// debug(in2);
+	// debug(out2);
+	// debug(in1);
+	// debug(z_to);
+	// debug(z_from);
+
+	vector<bool> to_good(k);
+	for (int i = 0; i < k; ++i) {
+		if (z_to[k + 1 + i] >= k) {
+			to_good[(k - i) % k] = 1;
+		}
+	}
+
+	vector<bool> from_good(k);
+	for (int i = 0; i < k; ++i) {
+		if (z_from[k + 1 + i] >= k) {
+			from_good[(k - i) % k] = 1;
+		}
+	}
+
+	for (int i = 0; i < k; ++i) {
+		if (to_good[i] and from_good[mod(k - 2 - i, k)]) {
+			cout << "YES\n";
+			return;
+		}
+	}
+
+	cout << "NO\n";
 }
 
 #ifdef SINGLE_TEST_CASE

@@ -1,5 +1,5 @@
 // #pragma GCC target("popcnt,lzcnt,abm,bmi,bmi2")
-#pragma GCC optimize("Ofast,unroll-loops")
+// #pragma GCC optimize("Ofast,unroll-loops")
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
@@ -544,72 +544,81 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n, q);
-	readvec(ll, a, n);
-	constexpr int M = 708;
-	vector<set<pli>> blocks(M);
-	vector<ll> diff(M);
-	for (int i = 0; i < n; ++i) {
-		blocks[i / M].emplace(a[i], i);
+	read(int, n, k);
+	read(string, s);
+
+	constexpr char charset[] = "NOI";
+
+	auto deserialize = [&] (int mask) {
+		vector<int> a(k + 1);
+		for (int i = 1; i <= k; ++i) {
+			a[i] = a[i - 1] + (mask >> i & 1);
+		}
+		return a;
+	};
+
+	vector<vector<int>> state(1 << k + 1);
+	for (int i = 0; i < (1 << k + 1); ++i) {
+		state[i] = deserialize(i);
 	}
-	while (q--) {
-		read(int, op);
-		if (op == 1) {
-			read(int, l, r, x);
-			--l, --r;
-			while (l % M != 0 and l <= r) {
-				int i = l / M;
-				blocks[i].erase({a[l], l});
-				a[l] += x;
-				blocks[i].emplace(a[l], l);
-				l += 1;
-			}
-			while (r % M != 0 and l <= r) {
-				int i = r / M;
-				blocks[i].erase({a[r], r});
-				a[r] += x;
-				blocks[i].emplace(a[r], r);
-				r -= 1;
-			}
-			while (l < r) {
-				diff[l / M] += x;
-				l += M;
-			}
-			if (l == r) {
-				{
-					int i = r / M;
-					blocks[i].erase({a[r], r});
-					a[r] += x;
-					blocks[i].emplace(a[r], r);
-					r -= 1;
+
+	auto serialize = [&] (const vector<int>& a) {
+		int mask = 0;
+		for (int i = 1; i <= k; ++i) {
+			assert(a[i] == a[i - 1] or a[i] == a[i - 1] + 1);
+			mask |= a[i] - a[i - 1] << i;
+		}
+		return mask;
+	};
+
+	vector nxt_state(1 << k + 1, vector<int>(3));
+	for (int i = 0; i < (1 << k + 1); ++i) {
+		vector<int> a = state[i];
+		for (int j = 0; j < 3; ++j) {
+			vector<int> b(k + 1);
+			for (int l = 1; l <= k; ++l) {
+				if (charset[j] == s[l - 1]) {
+					b[l] = a[l - 1] + 1;
+				} else {
+					b[l] = max(b[l - 1], a[l]);
 				}
 			}
-		} else {
-			read(int, x);
-			int left = -1;
-			for (int i = 0; i < M; ++i) {
-				auto it = blocks[i].lower_bound({x - diff[i], 0});
-				if (it != blocks[i].end() and it->first == x - diff[i]) {
-					left = it->second;
-					break;
-				}
-			}
-			if (left == -1) {
-				cout << -1 << '\n';
-			} else {
-				int right = -1;
-				for (int i = M - 1; ~i; --i) {
-					auto it = blocks[i].lower_bound({x - diff[i] + 1, 0});
-					if (it != blocks[i].begin() and (--it)->first == x - diff[i]) {
-						right = it->second;
-						break;
-					}
-				}
-				assert(right != -1);
-				cout << right - left << '\n';
-			}
+			nxt_state[i][j] = serialize(b);
 		}
 	}
+
+	vector dp(1 << k + 1, vector<ll>(3));
+	dp[0][0] = 1;
+	for (int i = 0; i < n; ++i) {
+		vector nxt(1 << k + 1, vector<ll>(3));
+		for (int j = 0; j < (1 << k + 1); ++j) {
+			for (int l = 0; l < 3; ++l) {
+				for (int q = 0; q < 3; ++q) {
+					int q1 = q + (l == q);
+					if (l == q) {
+						q1 = q + 1;
+					} else if (l == 0) {
+						q1 = 1;
+					} else {
+						q1 = 0;
+					}
+					if (q1 == 3) continue;
+					(nxt[nxt_state[j][l]][q1] += dp[j][q]) %= MDL;
+				}
+			}
+		}
+		dp = std::move(nxt);
+	}
+
+	vector<ll> res(k + 1);
+	for (int i = 0; i < (1 << k + 1); ++i) {
+		vector<int> a = state[i];
+		for (int j = 0; j < 3; ++j) {
+			(res[a[k]] += dp[i][j]) %= MDL;
+		}
+	}
+
+	putvec_eol(res);
 }
 
 #ifdef SINGLE_TEST_CASE

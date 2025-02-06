@@ -542,72 +542,193 @@ void dump_ignore() {}
 void prep() {
 }
 
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+	using size_type = uint64_t;
+	using info_type = Addable_Info_t;
+	using tag_type = Tag_t;
+	size_type _max;
+	vector<info_type> d;
+	vector<tag_type> b;
+
+	void pull(size_type p) {
+		d[p] = d[p * 2] + d[p * 2 + 1];
+	}
+
+	void push(size_type p, size_type left_len, size_type right_len) {
+		d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
+		b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+		b[p] = tag_type();
+	}
+
+	void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+		if (s == t) {
+			d[p] = c;
+			return;
+		}
+		size_type m = s + (t - s >> 1);
+		if (s != t) push(p, m - s + 1, t - m);
+		if (x <= m) set(s, m, p * 2, x, c);
+		else set(m + 1, t, p * 2 + 1, x, c);
+		pull(p);
+	}
+
+	void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+		if (l <= s && t <= r) {
+			d[p].apply(c, t - s + 1);
+			b[p].apply(c);
+			return;
+		}
+		size_type m = s + (t - s >> 1);
+		push(p, m - s + 1, t - m);
+		if (l <= m) range_apply(s, m, p * 2, l, r, c);
+		if (r > m)	range_apply(m + 1, t, p * 2 + 1, l, r, c);
+		pull(p);
+	}
+
+	info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+		if (l <= s && t <= r) {
+			return d[p];
+		}
+		size_type m = s + (t - s >> 1);
+		info_type res = {};
+		push(p, m - s + 1, t - m);
+		if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+		if (r > m)	res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+		return res;
+	}
+
+	void build(const Sequence& a, size_type s, size_type t, size_type p) {
+		if (s == t) {
+			d[p] = a[s];
+			return;
+		}
+		int m = s + (t - s >> 1);
+		build(a, s, m, p * 2);
+		build(a, m + 1, t, p * 2 + 1);
+		pull(p);
+	}
+public:
+	segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+	segtree(const Sequence& a) : segtree(a.size()) {
+		build(a, {}, _max, 1);
+	}
+
+	void set(size_type i, const info_type& c) {
+		set({}, _max, 1, i, c);
+	}
+
+	void range_apply(size_type l, size_type r, const tag_type& c) {
+		range_apply({}, _max, 1, l, r, c);
+	}
+
+	void apply(size_type i, const tag_type& c) {
+		range_apply(i, i, c);
+	}
+
+	info_type range_query(size_type l, size_type r) {
+		return range_query({}, _max, 1, l, r);
+	}
+
+	info_type query(size_type i) {
+		return range_query(i, i);
+	}
+
+	Sequence serialize() {
+		Sequence res = {};
+		for (size_type i = 0; i <= _max; ++i) {
+			res.push_back(query(i));
+		}
+		return res;
+	}
+
+	const vector<info_type>& get_d() {
+		return d;
+	}
+};
+
+struct Tag {
+	void apply(const Tag& rhs) { }
+};
+
+struct Info {
+	ll one_none = -INFLL;
+	ll one_left = -INFLL;
+	ll one_right = -INFLL;
+	ll one_leftright = 0;
+	ll two_none = -INFLL;
+	ll two_left = -INFLL;
+	ll two_right = -INFLL;
+	ll two_leftright = -INFLL;
+	void apply(const Tag& rhs, size_t len) { }
+};
+
+Info operator+(const Info &a, const Info &b) {
+	return {
+		.one_none = max({a.one_none, b.one_none, a.one_right + b.one_left}),
+		.one_left = max(a.one_left, a.one_leftright + b.one_left),
+		.one_right = max(b.one_right, a.one_right + b.one_leftright),
+		.one_leftright = a.one_leftright + b.one_leftright,
+		.two_none = max({a.two_none, b.two_none, a.one_none + b.one_none, a.two_right + b.one_left, a.one_right + b.two_left}),
+		.two_left = max({a.two_left, a.two_leftright + b.one_left, a.one_left + b.one_none, a.one_leftright + b.two_left}),
+		.two_right = max({b.two_right, a.one_right + b.two_leftright, a.one_none + b.one_right, a.two_right + b.one_leftright}),
+		.two_leftright = max({a.one_left + b.one_right, a.two_leftright + b.one_leftright, a.one_leftright + b.two_leftright}),
+	};
+}
+
+
+/**
+ * My thinking process
+ * 1. Use segment tree to maintain all information.
+ * 2. Choose one/two subarray from the current subarray,
+ *    connected/disconnected to the left/right bound.
+ * 3. Therefore 8 values to maintain.
+ * 4. Run time is only 3e7, very fast.
+ * 5. Not very sure every value could be properly maintained,
+ *    try to write the code.
+ */
+
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n, q);
-	readvec(ll, a, n);
-	constexpr int M = 708;
-	vector<set<pli>> blocks(M);
-	vector<ll> diff(M);
+	read(int, n);
+
+	segtree<Info, Tag> tr(n);
+	auto update = [&] (int i, ll ai, ll bi) {
+		tr.set(i, {
+				.one_none = ai + 2 * bi,
+				.one_left = ai + bi,
+				.one_right = ai + bi,
+				.one_leftright = ai,
+				.two_none = -INFLL,
+				.two_left = -INFLL,
+				.two_right = -INFLL,
+				.two_leftright = -INFLL,
+				});
+	};
+
+	readvec(int, a, n);
+	readvec(int, b, n);
 	for (int i = 0; i < n; ++i) {
-		blocks[i / M].emplace(a[i], i);
+		update(i, a[i], b[i]);
 	}
+
+	read(int, q);
 	while (q--) {
 		read(int, op);
 		if (op == 1) {
-			read(int, l, r, x);
-			--l, --r;
-			while (l % M != 0 and l <= r) {
-				int i = l / M;
-				blocks[i].erase({a[l], l});
-				a[l] += x;
-				blocks[i].emplace(a[l], l);
-				l += 1;
-			}
-			while (r % M != 0 and l <= r) {
-				int i = r / M;
-				blocks[i].erase({a[r], r});
-				a[r] += x;
-				blocks[i].emplace(a[r], r);
-				r -= 1;
-			}
-			while (l < r) {
-				diff[l / M] += x;
-				l += M;
-			}
-			if (l == r) {
-				{
-					int i = r / M;
-					blocks[i].erase({a[r], r});
-					a[r] += x;
-					blocks[i].emplace(a[r], r);
-					r -= 1;
-				}
-			}
+			read(int, i, x);
+			--i;
+			a[i] = x;
+			update(i, a[i], b[i]);
+		} else if (op == 2) {
+			read(int, i, x);
+			--i;
+			b[i] = x;
+			update(i, a[i], b[i]);
 		} else {
-			read(int, x);
-			int left = -1;
-			for (int i = 0; i < M; ++i) {
-				auto it = blocks[i].lower_bound({x - diff[i], 0});
-				if (it != blocks[i].end() and it->first == x - diff[i]) {
-					left = it->second;
-					break;
-				}
-			}
-			if (left == -1) {
-				cout << -1 << '\n';
-			} else {
-				int right = -1;
-				for (int i = M - 1; ~i; --i) {
-					auto it = blocks[i].lower_bound({x - diff[i] + 1, 0});
-					if (it != blocks[i].begin() and (--it)->first == x - diff[i]) {
-						right = it->second;
-						break;
-					}
-				}
-				assert(right != -1);
-				cout << right - left << '\n';
-			}
+			read(int, l, r);
+			--l, --r;
+			cout << tr.range_query(l, r).two_none << '\n';
 		}
 	}
 }

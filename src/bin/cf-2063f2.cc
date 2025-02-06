@@ -26,19 +26,19 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;  // up to 1e-9 precision in binary search, but more than 7x slower
-using pii = pair<int, int>;			using pil = pair<int, ll>;			using pid = pair<int, ld>;
-using pli = pair<ll, int>;			using pll = pair<ll, ll>;			using pld = pair<ll, ld>;
-using pdi = pair<ld, int>;			using pdl = pair<ld, ll>;			using pdd = pair<ld, ld>;
-using tiii = tuple<int, int, int>;	using tiil = tuple<int, int, ll>;   using tiid = tuple<int, int, ld>;
-using tili = tuple<int, ll, int>;	using till = tuple<int, ll, ll>;	using tild = tuple<int, ll, ld>;
-using tidi = tuple<int, ld, int>;	using tidl = tuple<int, ld, ll>;	using tidd = tuple<int, ld, ld>;
-using tlii = tuple<ll, int, int>;	using tlil = tuple<ll, int, ll>;	using tlid = tuple<ll, int, ld>;
-using tlli = tuple<ll, ll, int>;	using tlll = tuple<ll, ll, ll>;		using tlld = tuple<ll, ll, ld>;
-using tldi = tuple<ll, ld, int>;	using tldl = tuple<ll, ld, ll>;		using tldd = tuple<ll, ld, ld>;
-using tdii = tuple<ld, int, int>;	using tdil = tuple<ld, int, ll>;	using tdid = tuple<ld, int, ld>;
-using tdli = tuple<ld, ll, int>;	using tdll = tuple<ld, ll, ll>;		using tdld = tuple<ld, ll, ld>;
-using tddi = tuple<ld, ld, int>;	using tddl = tuple<ld, ld, ll>;		using tddd = tuple<ld, ld, ld>;
+using ld = __float128;	// up to 1e-9 precision in binary search, but more than 7x slower
+using pii = pair<int, int>;			  using pil = pair<int, ll>;		   using pid = pair<int, ld>;
+using pli = pair<ll, int>;			  using pll = pair<ll, ll>;			   using pld = pair<ll, ld>;
+using pdi = pair<ld, int>;			  using pdl = pair<ld, ll>;			   using pdd = pair<ld, ld>;
+using tiii = tuple<int, int, int>;	  using tiil = tuple<int, int, ll>;    using tiid = tuple<int, int, ld>;
+using tili = tuple<int, ll, int>;	  using till = tuple<int, ll, ll>;	   using tild = tuple<int, ll, ld>;
+using tidi = tuple<int, ld, int>;	  using tidl = tuple<int, ld, ll>;	   using tidd = tuple<int, ld, ld>;
+using tlii = tuple<ll, int, int>;	  using tlil = tuple<ll, int, ll>;	   using tlid = tuple<ll, int, ld>;
+using tlli = tuple<ll, ll, int>;	  using tlll = tuple<ll, ll, ll>;	   using tlld = tuple<ll, ll, ld>;
+using tldi = tuple<ll, ld, int>;	  using tldl = tuple<ll, ld, ll>;	   using tldd = tuple<ll, ld, ld>;
+using tdii = tuple<ld, int, int>;	  using tdil = tuple<ld, int, ll>;	   using tdid = tuple<ld, int, ld>;
+using tdli = tuple<ld, ll, int>;	  using tdll = tuple<ld, ll, ll>;	   using tdld = tuple<ld, ll, ld>;
+using tddi = tuple<ld, ld, int>;	  using tddl = tuple<ld, ld, ll>;	   using tddd = tuple<ld, ld, ld>;
 template <typename T, size_t N, size_t M> using matrix = array<array<T, M>, N>;
 template <typename T, size_t N, size_t M, size_t W> using cube = array<array<array<T, W>, M>, N>;
 template <typename T> using max_heap = priority_queue<T>;
@@ -324,12 +324,12 @@ template <typename T>
 T mygcd(T a, T b) { return b == 0 ? a : mygcd(b, a % b); }
 
 void __exgcd(ll a, ll b, ll& x, ll& y) {
-	if (b == 0) {
-		x = 1, y = 0;
-		return;
-	}
-	__exgcd(b, a % b, y, x);
-	y -= a / b * x;
+  if (b == 0) {
+	x = 1, y = 0;
+	return;
+  }
+  __exgcd(b, a % b, y, x);
+  y -= a / b * x;
 }
 
 ll inverse(ll a, ll b) {
@@ -531,7 +531,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -539,77 +539,216 @@ void dump() {}
 
 void dump_ignore() {}
 
+constexpr int M = PRIME;
+
+constexpr int N = 6e5 + 10;
+ll fact[N], factrev[N + 1], s[N + 1];
+
 void prep() {
+	fact[0] = factrev[0] = 1;
+	for (int i = 1; i < N; ++i) {
+		fact[i] = (fact[i - 1] * i) % M;
+	}
+	s[0] = 1;
+	for (int i = 1; i <= N; ++i) {
+		s[i] = s[i - 1] * fact[i - 1] % M;
+	}
+	factrev[N] = inverse(s[N], M);
+	for (int i = N; i; --i) {
+		factrev[i - 1] = factrev[i] * fact[i - 1] % M;
+	}
+	for (int i = 0; i < N; ++i) {
+		factrev[i] = factrev[i + 1] * s[i] % M;
+	}
 }
+
+ll mycomb(int n, int k) {
+	if (n < 0 or k < 0 or n < k) return 0;
+	return fact[n] * factrev[k] % M * factrev[n - k] % M;
+}
+
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+	using size_type = uint64_t;
+	using info_type = Addable_Info_t;
+	using tag_type = Tag_t;
+	size_type _max;
+	vector<info_type> d;
+	vector<tag_type> b;
+
+	void pull(size_type p) {
+		d[p] = d[p * 2] + d[p * 2 + 1];
+	}
+
+	void push(size_type p, size_type left_len, size_type right_len) {
+		d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
+		b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+		b[p] = tag_type();
+	}
+
+	void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+		if (s == t) {
+			d[p] = c;
+			return;
+		}
+		size_type m = s + (t - s >> 1);
+		if (s != t) push(p, m - s + 1, t - m);
+		if (x <= m) set(s, m, p * 2, x, c);
+		else set(m + 1, t, p * 2 + 1, x, c);
+		pull(p);
+	}
+
+	void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+		if (l <= s && t <= r) {
+			d[p].apply(c, t - s + 1);
+			b[p].apply(c);
+			return;
+		}
+		size_type m = s + (t - s >> 1);
+		push(p, m - s + 1, t - m);
+		if (l <= m) range_apply(s, m, p * 2, l, r, c);
+		if (r > m)	range_apply(m + 1, t, p * 2 + 1, l, r, c);
+		pull(p);
+	}
+
+	info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+		if (l <= s && t <= r) {
+			return d[p];
+		}
+		size_type m = s + (t - s >> 1);
+		info_type res = {};
+		push(p, m - s + 1, t - m);
+		if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+		if (r > m)	res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+		return res;
+	}
+
+	void build(const Sequence& a, size_type s, size_type t, size_type p) {
+		if (s == t) {
+			d[p] = a[s];
+			return;
+		}
+		int m = s + (t - s >> 1);
+		build(a, s, m, p * 2);
+		build(a, m + 1, t, p * 2 + 1);
+		pull(p);
+	}
+public:
+	segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+	segtree(const Sequence& a) : segtree(a.size()) {
+		build(a, {}, _max, 1);
+	}
+
+	void set(size_type i, const info_type& c) {
+		set({}, _max, 1, i, c);
+	}
+
+	void range_apply(size_type l, size_type r, const tag_type& c) {
+		range_apply({}, _max, 1, l, r, c);
+	}
+
+	void apply(size_type i, const tag_type& c) {
+		range_apply(i, i, c);
+	}
+
+	info_type range_query(size_type l, size_type r) {
+		return range_query({}, _max, 1, l, r);
+	}
+
+	info_type query(size_type i) {
+		return range_query(i, i);
+	}
+
+	Sequence serialize() {
+		Sequence res = {};
+		for (size_type i = 0; i <= _max; ++i) {
+			res.push_back(query(i));
+		}
+		return res;
+	}
+
+	const vector<info_type>& get_d() {
+		return d;
+	}
+};
+
+struct Tag {
+	int left = 0;
+	void apply(const Tag& rhs) {
+		chmax(left, rhs.left);
+	}
+};
+
+struct Info {
+	int cnt = 0;
+	int left = INF;
+	void apply(const Tag& rhs, size_t len) {
+		chmax(left, rhs.left);
+	}
+};
+
+Info operator+(const Info &a, const Info &b) {
+	return {
+		.cnt = a.cnt + b.cnt,
+		.left = min(a.left, b.left),
+	};
+}
+
 
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n, q);
-	readvec(ll, a, n);
-	constexpr int M = 708;
-	vector<set<pli>> blocks(M);
-	vector<ll> diff(M);
-	for (int i = 0; i < n; ++i) {
-		blocks[i / M].emplace(a[i], i);
+	read(int, n);
+	n += 1;
+	
+	segtree<Info, Tag> tr(2 * n);
+	tr.set(0, {
+			.cnt = 2 * n,
+			.left = 0,
+			});
+	for (int i = 1; i < 2 * n; ++i) {
+		tr.set(i, {
+				.cnt = 0,
+				.left = 0,
+				});
 	}
-	while (q--) {
-		read(int, op);
-		if (op == 1) {
-			read(int, l, r, x);
-			--l, --r;
-			while (l % M != 0 and l <= r) {
-				int i = l / M;
-				blocks[i].erase({a[l], l});
-				a[l] += x;
-				blocks[i].emplace(a[l], l);
-				l += 1;
-			}
-			while (r % M != 0 and l <= r) {
-				int i = r / M;
-				blocks[i].erase({a[r], r});
-				a[r] += x;
-				blocks[i].emplace(a[r], r);
-				r -= 1;
-			}
-			while (l < r) {
-				diff[l / M] += x;
-				l += M;
-			}
-			if (l == r) {
-				{
-					int i = r / M;
-					blocks[i].erase({a[r], r});
-					a[r] += x;
-					blocks[i].emplace(a[r], r);
-					r -= 1;
-				}
-			}
-		} else {
-			read(int, x);
-			int left = -1;
-			for (int i = 0; i < M; ++i) {
-				auto it = blocks[i].lower_bound({x - diff[i], 0});
-				if (it != blocks[i].end() and it->first == x - diff[i]) {
-					left = it->second;
-					break;
-				}
-			}
-			if (left == -1) {
-				cout << -1 << '\n';
-			} else {
-				int right = -1;
-				for (int i = M - 1; ~i; --i) {
-					auto it = blocks[i].lower_bound({x - diff[i] + 1, 0});
-					if (it != blocks[i].begin() and (--it)->first == x - diff[i]) {
-						right = it->second;
-						break;
-					}
-				}
-				assert(right != -1);
-				cout << right - left << '\n';
-			}
-		}
+
+	auto calc = [&] (int n) {
+		n = n / 2 - 1;
+		return mycomb(2 * n, n) * inverse(n + 1, PRIME) % PRIME;
+	};
+
+	vector<int> cnt(2 * n);
+	vector<ll> prod(2 * n);
+	prod[0] = calc(cnt[0] = 2 * n);
+
+	ll res = prod[0];
+
+	cout << res << ' ';
+
+	for (int i = 0; i < n - 1; ++i) {
+		read(int, l, r);
+
+		auto [range_used, l1] = tr.range_query(l, r);
+		int rem = r - l + 1 - range_used;
+		tr.set(l, {
+				.cnt = rem,
+				.left = l,
+				});
+		tr.range_apply(l, r, { l });
+		prod[l] = calc(cnt[l] = rem);
+		res = res * prod[l] % PRIME;
+		res = res * inverse(prod[l1], PRIME) % PRIME;
+		tr.set(l1, {
+				.cnt = cnt[l1] - rem,
+				.left = l1,
+				});
+		prod[l1] = calc(cnt[l1] -= rem);
+		res = res * prod[l1] % PRIME;
+
+		cout << res << ' ';
 	}
+
+	cout << '\n';
 }
 
 #ifdef SINGLE_TEST_CASE

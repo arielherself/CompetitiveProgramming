@@ -372,7 +372,8 @@ vector<pii> decompose_prime(int N) {
 }
 
 /* string algorithms */
-vector<int> calc_next(string t) {  // pi function of t
+template <typename T>
+vector<int> calc_next(basic_string<T> t) {  // pi function of t
 	int n = (int)t.length();
 	vector<int> pi(n);
 	for (int i = 1; i < n; i++) {
@@ -383,7 +384,8 @@ vector<int> calc_next(string t) {  // pi function of t
 	}
 	return pi;
 }
-vector<int> calc_z(string t) {	// z function of t
+template <typename T>
+vector<int> calc_z(basic_string<T> t) {	// z function of t
 	int m = t.length();
 	vector<int> z;
 	z.push_back(m);
@@ -531,7 +533,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -542,73 +544,86 @@ void dump_ignore() {}
 void prep() {
 }
 
+template<typename _Tp, typename _Op = function<_Tp(const _Tp&, const _Tp&)>> struct sparse_table {
+	_Op op;
+	vector<vector<_Tp>> st;
+	sparse_table() {}
+	template <typename ReverseIterator>
+	sparse_table(ReverseIterator __first, ReverseIterator __last, _Op&& __operation) {
+		op = __operation;
+		int n = distance(__first, __last);
+		st = vector<vector<_Tp>>(n, vector<_Tp>(int(log2(n) + 1)));
+		int i = n - 1;
+		for (auto it = __first; it != __last; ++it) {
+			st[i][0] = *it;
+			for (int j = 1; i + (1 << j) <= n; ++j) {
+				st[i][j] = op(st[i][j - 1], st[i + (1 << (j - 1))][j - 1]);
+			}
+			i -= 1;
+		}
+	}
+	_Tp query(size_t __start, size_t __end) {
+		int s = lg2(__end - __start + 1);
+		return op(st[__start][s], st[__end - (1 << s) + 1][s]);
+	}
+};
+
+
+/**
+ * My thought process
+ * 1. The only situation to avoid is "abab".
+ * 2. For every pair of adjacent "a"s, get the minimum value of nxt["b"].
+ * 3. Use a difference array to maintain the limitations.
+ * 5. Offline twice and binary search to get the result.
+ */
+
 // __attribute__((target("popcnt")))
 void solve() {
 	read(int, n, q);
-	readvec(ll, a, n);
-	constexpr int M = 708;
-	vector<set<pli>> blocks(M);
-	vector<ll> diff(M);
-	for (int i = 0; i < n; ++i) {
-		blocks[i / M].emplace(a[i], i);
+	readvec(int, a, n);
+
+	vector<int> nxt(n);
+	vector<int> last(n + 1, n);
+	for (int i = n - 1; ~i; --i) {
+		nxt[i] = last[a[i]];
+		last[a[i]] = i;
 	}
-	while (q--) {
-		read(int, op);
-		if (op == 1) {
-			read(int, l, r, x);
-			--l, --r;
-			while (l % M != 0 and l <= r) {
-				int i = l / M;
-				blocks[i].erase({a[l], l});
-				a[l] += x;
-				blocks[i].emplace(a[l], l);
-				l += 1;
-			}
-			while (r % M != 0 and l <= r) {
-				int i = r / M;
-				blocks[i].erase({a[r], r});
-				a[r] += x;
-				blocks[i].emplace(a[r], r);
-				r -= 1;
-			}
-			while (l < r) {
-				diff[l / M] += x;
-				l += M;
-			}
-			if (l == r) {
-				{
-					int i = r / M;
-					blocks[i].erase({a[r], r});
-					a[r] += x;
-					blocks[i].emplace(a[r], r);
-					r -= 1;
-				}
-			}
-		} else {
-			read(int, x);
-			int left = -1;
-			for (int i = 0; i < M; ++i) {
-				auto it = blocks[i].lower_bound({x - diff[i], 0});
-				if (it != blocks[i].end() and it->first == x - diff[i]) {
-					left = it->second;
-					break;
-				}
-			}
-			if (left == -1) {
-				cout << -1 << '\n';
-			} else {
-				int right = -1;
-				for (int i = M - 1; ~i; --i) {
-					auto it = blocks[i].lower_bound({x - diff[i] + 1, 0});
-					if (it != blocks[i].begin() and (--it)->first == x - diff[i]) {
-						right = it->second;
-						break;
-					}
-				}
-				assert(right != -1);
-				cout << right - left << '\n';
+
+	sparse_table<int> rmq(nxt.rbegin(), nxt.rend(), functor(min));
+
+	vector<int> open;
+	vector<vector<int>> close(n);
+	last.assign(n + 1, -1);
+	for (int i = 0; i < n; ++i) {
+		if (last[a[i]] != -1) {
+			int l = last[a[i]], r = i;
+			if (l + 1 < r) {
+				int x = rmq.query(l + 1, r - 1);
+				open.emplace_back(x);
+				close[l].emplace_back(x);
 			}
 		}
+		last[a[i]] = i;
+	}
+
+	vector<int> limit(n);
+
+	multiset<int> oc(open.begin(), open.end());
+	for (int i = 0; i < n; ++i) {
+		if (oc.empty()) {
+			limit[i] = n;
+		} else {
+			limit[i] = *oc.begin();
+		}
+		for (auto&& x : close[i]) {
+			oc.erase(oc.find(x));
+		}
+	}
+
+	while (q--) {
+		read(int, l, r);
+		--l, --r;
+		cout << (limit[l] > r ? "YES" : "NO") << '\n';
 	}
 }
 

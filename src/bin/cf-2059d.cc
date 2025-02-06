@@ -531,7 +531,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -544,72 +544,73 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n, q);
-	readvec(ll, a, n);
-	constexpr int M = 708;
-	vector<set<pli>> blocks(M);
-	vector<ll> diff(M);
-	for (int i = 0; i < n; ++i) {
-		blocks[i / M].emplace(a[i], i);
+	read(int, n, s1, s2);
+
+	unordered_set<pii, pair_hash> edges;
+	vector<bool> good(n + 1);
+
+	adj(e1, n);
+	{
+		read(int, m);
+		while (m--) {
+			read(int, u, v);
+			Edge(e1, u, v);
+			Edge(e1, v, u);
+			edges.emplace(minmax(u, v));
+		}
 	}
-	while (q--) {
-		read(int, op);
-		if (op == 1) {
-			read(int, l, r, x);
-			--l, --r;
-			while (l % M != 0 and l <= r) {
-				int i = l / M;
-				blocks[i].erase({a[l], l});
-				a[l] += x;
-				blocks[i].emplace(a[l], l);
-				l += 1;
-			}
-			while (r % M != 0 and l <= r) {
-				int i = r / M;
-				blocks[i].erase({a[r], r});
-				a[r] += x;
-				blocks[i].emplace(a[r], r);
-				r -= 1;
-			}
-			while (l < r) {
-				diff[l / M] += x;
-				l += M;
-			}
-			if (l == r) {
-				{
-					int i = r / M;
-					blocks[i].erase({a[r], r});
-					a[r] += x;
-					blocks[i].emplace(a[r], r);
-					r -= 1;
-				}
-			}
-		} else {
-			read(int, x);
-			int left = -1;
-			for (int i = 0; i < M; ++i) {
-				auto it = blocks[i].lower_bound({x - diff[i], 0});
-				if (it != blocks[i].end() and it->first == x - diff[i]) {
-					left = it->second;
-					break;
-				}
-			}
-			if (left == -1) {
-				cout << -1 << '\n';
-			} else {
-				int right = -1;
-				for (int i = M - 1; ~i; --i) {
-					auto it = blocks[i].lower_bound({x - diff[i] + 1, 0});
-					if (it != blocks[i].begin() and (--it)->first == x - diff[i]) {
-						right = it->second;
-						break;
-					}
-				}
-				assert(right != -1);
-				cout << right - left << '\n';
+
+	adj(e2, n);
+	{
+		read(int, m);
+		while (m--) {
+			read(int, u, v);
+			Edge(e2, u, v);
+			Edge(e2, v, u);
+			if (edges.count(minmax(u, v))) {
+				good[u] = 1;
+				good[v] = 1;
 			}
 		}
 	}
+
+
+	vector<vector<pii>> ch((n + 1) * (n + 1));
+	for (int i = n + 2; i < (n + 1) * (n + 1); ++i) {
+		int v1 = i / (n + 1);
+		int v2 = i % (n + 1);
+		for (auto&& u1 : e1[v1]) {
+			for (auto&& u2 : e2[v2]) {
+				Edgew(ch, i, u1 * (n + 1) + u2, abs(u1 - u2));
+			}
+		}
+	}
+
+	vector<ll> dis((n + 1) * (n + 1), INFLL);
+	{
+		vector<bool> vis((n + 1) * (n + 1));
+		min_heap<pli> q;
+		q.emplace(0, s1 * (n + 1) + s2);
+		dis[s1 * (n + 1) + s2] = 0;
+		while (q.size()) {
+			auto [d, v] = poptop(q);
+			continue_or(vis[v], 1);
+			for (auto&& [u, w] : ch[v]) {
+				if (chmin(dis[u], dis[v] + w)) {
+					q.emplace(dis[u], u);
+				}
+			}
+		}
+	}
+
+	ll res = INFLL;
+	for (int i = 1; i <= n; ++i) {
+		if (good[i]) {
+			chmin(res, dis[i * (n + 1) + i]);
+		}
+	}
+
+	cout << (res == INFLL ? -1 : res) << '\n';
 }
 
 #ifdef SINGLE_TEST_CASE

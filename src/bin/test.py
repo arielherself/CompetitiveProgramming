@@ -8,6 +8,8 @@ import io
 PRIME = 998_244_353
 
 if __name__ == '__main__':
-    N = 200000
-    print(N)
-    print('1 ' * N)
+    N = 2000
+    print(1, N, 1)
+    print(*([0] * N))
+    for i in range(2, N + 1):
+        print(f'{randint(1, i - 1)} {i}')

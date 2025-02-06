@@ -124,14 +124,14 @@ struct safe_hash {
 
 struct pair_hash {
 	template <typename T, typename U>
-	size_t operator()(const pair<T, U>& a) const {
-		auto hash1 = safe_hash()(a.first);
-		auto hash2 = safe_hash()(a.second);
-		if (hash1 != hash2) {
-			return hash1 ^ hash2;
+		size_t operator()(const pair<T, U>& a) const {
+			auto hash1 = safe_hash()(a.first);
+			auto hash2 = safe_hash()(a.second);
+			if (hash1 != hash2) {
+				return hash1 ^ hash2;
+			}
+			return hash1;
 		}
-		return hash1;
-	}
 };
 
 uniform_int_distribution<mt19937::result_type> dist(PRIME);
@@ -139,18 +139,18 @@ const size_t __array_hash_b = 31, __array_hash_mdl1 = dist(rd), __array_hash_mdl
 struct array_hash {
 	safe_hash hasher;
 	template <typename Sequence>
-	size_t operator()(const Sequence& arr) const {
-		size_t pw1 = 1, pw2 = 1;
-		size_t res1 = 0, res2 = 0;
-		for (auto&& x : arr) {
-			auto h = hasher(x);
-			res1 = (res1 + h * pw1) % __array_hash_mdl1;
-			res2 = (res2 + h * pw2) % __array_hash_mdl2;
-			pw1 = (pw1 * __array_hash_b) % __array_hash_mdl1;
-			pw2 = (pw2 * __array_hash_b) % __array_hash_mdl2;
+		size_t operator()(const Sequence& arr) const {
+			size_t pw1 = 1, pw2 = 1;
+			size_t res1 = 0, res2 = 0;
+			for (auto&& x : arr) {
+				auto h = hasher(x);
+				res1 = (res1 + h * pw1) % __array_hash_mdl1;
+				res2 = (res2 + h * pw2) % __array_hash_mdl2;
+				pw1 = (pw1 * __array_hash_b) % __array_hash_mdl1;
+				pw2 = (pw2 * __array_hash_b) % __array_hash_mdl2;
+			}
+			return res1 + res2;
 		}
-		return res1 + res2;
-	}
 };
 
 /* build data structures */
@@ -469,8 +469,8 @@ bool chmin(T& lhs, const U& rhs) {
 }
 
 #define functor(func) ([&](auto&&... val) \
-noexcept(noexcept(func(std::forward<decltype(val)>(val)...))) -> decltype(auto) \
-{return func(std::forward<decltype(val)>(val)...);})
+		noexcept(noexcept(func(std::forward<decltype(val)>(val)...))) -> decltype(auto) \
+		{return func(std::forward<decltype(val)>(val)...);})
 #define expr(ret, ...) ([&] (__VA_ARGS__) { return (ret); })
 template <typename Func, typename RandomIt> void sort_by_key(RandomIt first, RandomIt last, Func extractor) {
 	std::sort(first, last, [&] (auto&& a, auto&& b) { return std::less<>()(extractor(a), extractor(b)); });
@@ -501,17 +501,17 @@ vector<pair<T, U>> zip_n(Iterator_T a_first, Iterator_U b_first, size_t n) {
 }
 template <typename T>
 class ArithmeticIterator : bidirectional_iterator_tag {
-public:
-	using difference_type = ptrdiff_t;
-	using value_type = T;
-private:
-	value_type value;
-public:
-	ArithmeticIterator(const T& value) : value(value) {}
-	value_type operator*() const { return value; }
-	ArithmeticIterator<T>& operator++() { ++value; return *this; }
-	ArithmeticIterator<T>& operator--() { --value; return *this; }
-	bool operator==(const ArithmeticIterator<T>& rhs) const { return value == rhs.value; }
+	public:
+		using difference_type = ptrdiff_t;
+		using value_type = T;
+	private:
+		value_type value;
+	public:
+		ArithmeticIterator(const T& value) : value(value) {}
+		value_type operator*() const { return value; }
+		ArithmeticIterator<T>& operator++() { ++value; return *this; }
+		ArithmeticIterator<T>& operator--() { --value; return *this; }
+		bool operator==(const ArithmeticIterator<T>& rhs) const { return value == rhs.value; }
 };
 template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container) {
 	return zip<int, T>(ArithmeticIterator<int>(0), ArithmeticIterator<int>(INT_MAX), container.begin(), container.end());
@@ -519,10 +519,10 @@ template <typename T> vector<pair<int, T>> enumerate(const vector<T>& container)
 #define initarray(init, N) (__initarray<decay<decltype(init)>::type, (N)>(init))
 namespace detail {
 	template <typename T, std::size_t...Is>
-	constexpr std::array<T, sizeof...(Is)>
-	make_array(const T& value, std::index_sequence<Is...>) {
-		return {{(static_cast<void>(Is), value)...}};
-	}
+		constexpr std::array<T, sizeof...(Is)>
+		make_array(const T& value, std::index_sequence<Is...>) {
+			return {{(static_cast<void>(Is), value)...}};
+		}
 }
 
 template <typename T, std::size_t N>
@@ -546,41 +546,42 @@ void prep() {
 void solve() {
 	read(int, n, q);
 	readvec(ll, a, n);
-	constexpr int M = 708;
-	vector<set<pli>> blocks(M);
+	constexpr int U = 700;
+	constexpr int M = 5e5 / U + 1;
+	vector<unordered_multiset<ll>> blocks(M);
 	vector<ll> diff(M);
 	for (int i = 0; i < n; ++i) {
-		blocks[i / M].emplace(a[i], i);
+		blocks[i / U].emplace(a[i]);
 	}
 	while (q--) {
 		read(int, op);
 		if (op == 1) {
 			read(int, l, r, x);
 			--l, --r;
-			while (l % M != 0 and l <= r) {
-				int i = l / M;
-				blocks[i].erase({a[l], l});
+			while (l % U != 0 and l <= r) {
+				int i = l / U;
+				blocks[i].erase(blocks[i].find(a[l]));
 				a[l] += x;
-				blocks[i].emplace(a[l], l);
+				blocks[i].emplace(a[l]);
 				l += 1;
 			}
-			while (r % M != 0 and l <= r) {
-				int i = r / M;
-				blocks[i].erase({a[r], r});
+			while (r % U != 0 and l <= r) {
+				int i = r / U;
+				blocks[i].erase(blocks[i].find(a[r]));
 				a[r] += x;
-				blocks[i].emplace(a[r], r);
+				blocks[i].emplace(a[r]);
 				r -= 1;
 			}
 			while (l < r) {
-				diff[l / M] += x;
-				l += M;
+				diff[l / U] += x;
+				l += U;
 			}
 			if (l == r) {
 				{
-					int i = r / M;
-					blocks[i].erase({a[r], r});
+					int i = r / U;
+					blocks[i].erase(blocks[i].find(a[r]));
 					a[r] += x;
-					blocks[i].emplace(a[r], r);
+					blocks[i].emplace(a[r]);
 					r -= 1;
 				}
 			}
@@ -588,24 +589,31 @@ void solve() {
 			read(int, x);
 			int left = -1;
 			for (int i = 0; i < M; ++i) {
-				auto it = blocks[i].lower_bound({x - diff[i], 0});
-				if (it != blocks[i].end() and it->first == x - diff[i]) {
-					left = it->second;
-					break;
+				if (blocks[i].count(x - diff[i])) {
+					for (int j = i * U; ; ++j) {
+						if (a[j] + diff[i] == x) {
+							left = j;
+							goto f1;
+						}
+					}
 				}
 			}
+f1:
 			if (left == -1) {
 				cout << -1 << '\n';
 			} else {
 				int right = -1;
 				for (int i = M - 1; ~i; --i) {
-					auto it = blocks[i].lower_bound({x - diff[i] + 1, 0});
-					if (it != blocks[i].begin() and (--it)->first == x - diff[i]) {
-						right = it->second;
-						break;
+					if (blocks[i].count(x - diff[i])) {
+						for (int j = min(n, (i + 1) * U) - 1; ; --j) {
+							if (a[j] + diff[i] == x) {
+								right = j;
+								goto f2;
+							}
+						}
 					}
 				}
-				assert(right != -1);
+f2:
 				cout << right - left << '\n';
 			}
 		}

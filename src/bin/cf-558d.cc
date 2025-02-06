@@ -26,19 +26,19 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;  // up to 1e-9 precision in binary search, but more than 7x slower
-using pii = pair<int, int>;			using pil = pair<int, ll>;			using pid = pair<int, ld>;
-using pli = pair<ll, int>;			using pll = pair<ll, ll>;			using pld = pair<ll, ld>;
-using pdi = pair<ld, int>;			using pdl = pair<ld, ll>;			using pdd = pair<ld, ld>;
-using tiii = tuple<int, int, int>;	using tiil = tuple<int, int, ll>;   using tiid = tuple<int, int, ld>;
-using tili = tuple<int, ll, int>;	using till = tuple<int, ll, ll>;	using tild = tuple<int, ll, ld>;
-using tidi = tuple<int, ld, int>;	using tidl = tuple<int, ld, ll>;	using tidd = tuple<int, ld, ld>;
-using tlii = tuple<ll, int, int>;	using tlil = tuple<ll, int, ll>;	using tlid = tuple<ll, int, ld>;
-using tlli = tuple<ll, ll, int>;	using tlll = tuple<ll, ll, ll>;		using tlld = tuple<ll, ll, ld>;
-using tldi = tuple<ll, ld, int>;	using tldl = tuple<ll, ld, ll>;		using tldd = tuple<ll, ld, ld>;
-using tdii = tuple<ld, int, int>;	using tdil = tuple<ld, int, ll>;	using tdid = tuple<ld, int, ld>;
-using tdli = tuple<ld, ll, int>;	using tdll = tuple<ld, ll, ll>;		using tdld = tuple<ld, ll, ld>;
-using tddi = tuple<ld, ld, int>;	using tddl = tuple<ld, ld, ll>;		using tddd = tuple<ld, ld, ld>;
+using ld = __float128;	// up to 1e-9 precision in binary search, but more than 7x slower
+using pii = pair<int, int>;			  using pil = pair<int, ll>;		   using pid = pair<int, ld>;
+using pli = pair<ll, int>;			  using pll = pair<ll, ll>;			   using pld = pair<ll, ld>;
+using pdi = pair<ld, int>;			  using pdl = pair<ld, ll>;			   using pdd = pair<ld, ld>;
+using tiii = tuple<int, int, int>;	  using tiil = tuple<int, int, ll>;    using tiid = tuple<int, int, ld>;
+using tili = tuple<int, ll, int>;	  using till = tuple<int, ll, ll>;	   using tild = tuple<int, ll, ld>;
+using tidi = tuple<int, ld, int>;	  using tidl = tuple<int, ld, ll>;	   using tidd = tuple<int, ld, ld>;
+using tlii = tuple<ll, int, int>;	  using tlil = tuple<ll, int, ll>;	   using tlid = tuple<ll, int, ld>;
+using tlli = tuple<ll, ll, int>;	  using tlll = tuple<ll, ll, ll>;	   using tlld = tuple<ll, ll, ld>;
+using tldi = tuple<ll, ld, int>;	  using tldl = tuple<ll, ld, ll>;	   using tldd = tuple<ll, ld, ld>;
+using tdii = tuple<ld, int, int>;	  using tdil = tuple<ld, int, ll>;	   using tdid = tuple<ld, int, ld>;
+using tdli = tuple<ld, ll, int>;	  using tdll = tuple<ld, ll, ll>;	   using tdld = tuple<ld, ll, ld>;
+using tddi = tuple<ld, ld, int>;	  using tddl = tuple<ld, ld, ll>;	   using tddd = tuple<ld, ld, ld>;
 template <typename T, size_t N, size_t M> using matrix = array<array<T, M>, N>;
 template <typename T, size_t N, size_t M, size_t W> using cube = array<array<array<T, W>, M>, N>;
 template <typename T> using max_heap = priority_queue<T>;
@@ -324,12 +324,12 @@ template <typename T>
 T mygcd(T a, T b) { return b == 0 ? a : mygcd(b, a % b); }
 
 void __exgcd(ll a, ll b, ll& x, ll& y) {
-	if (b == 0) {
-		x = 1, y = 0;
-		return;
-	}
-	__exgcd(b, a % b, y, x);
-	y -= a / b * x;
+  if (b == 0) {
+	x = 1, y = 0;
+	return;
+  }
+  __exgcd(b, a % b, y, x);
+  y -= a / b * x;
 }
 
 ll inverse(ll a, ll b) {
@@ -542,73 +542,70 @@ void dump_ignore() {}
 void prep() {
 }
 
+always_inline pll intersect(const pll& a, const pll& b) {
+	ll l = max(a.first, b.first);
+	ll r = min(a.second, b.second);
+	return { l, r };
+}
+
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n, q);
-	readvec(ll, a, n);
-	constexpr int M = 708;
-	vector<set<pli>> blocks(M);
-	vector<ll> diff(M);
-	for (int i = 0; i < n; ++i) {
-		blocks[i / M].emplace(a[i], i);
-	}
-	while (q--) {
-		read(int, op);
-		if (op == 1) {
-			read(int, l, r, x);
-			--l, --r;
-			while (l % M != 0 and l <= r) {
-				int i = l / M;
-				blocks[i].erase({a[l], l});
-				a[l] += x;
-				blocks[i].emplace(a[l], l);
-				l += 1;
-			}
-			while (r % M != 0 and l <= r) {
-				int i = r / M;
-				blocks[i].erase({a[r], r});
-				a[r] += x;
-				blocks[i].emplace(a[r], r);
-				r -= 1;
-			}
-			while (l < r) {
-				diff[l / M] += x;
-				l += M;
-			}
-			if (l == r) {
-				{
-					int i = r / M;
-					blocks[i].erase({a[r], r});
-					a[r] += x;
-					blocks[i].emplace(a[r], r);
-					r -= 1;
-				}
-			}
+	read(int, b, q);
+	vector<pli> events;
+	pll cand = { ll(1) << b - 1, (ll(1) << b) - 1 };
+	for (int i = 0; i < q; ++i) {
+		read(int, h);
+		read(ll, l, r);
+		read(int, x);
+		if (x == 1) {
+			cand = intersect(cand, { ll(l) << b - h, (ll(r) + 1 << b - h) - 1 });
 		} else {
-			read(int, x);
-			int left = -1;
-			for (int i = 0; i < M; ++i) {
-				auto it = blocks[i].lower_bound({x - diff[i], 0});
-				if (it != blocks[i].end() and it->first == x - diff[i]) {
-					left = it->second;
-					break;
-				}
-			}
-			if (left == -1) {
-				cout << -1 << '\n';
-			} else {
-				int right = -1;
-				for (int i = M - 1; ~i; --i) {
-					auto it = blocks[i].lower_bound({x - diff[i] + 1, 0});
-					if (it != blocks[i].begin() and (--it)->first == x - diff[i]) {
-						right = it->second;
-						break;
-					}
-				}
-				assert(right != -1);
-				cout << right - left << '\n';
-			}
+			events.emplace_back(ll(l) << b - h, 1);
+			events.emplace_back(ll(r) + 1 << b - h, -1);
 		}
+	}
+	sort(events.begin(), events.end());
+	int m = events.size();
+	ll last = ll(1) << b - 1;
+	int close = 0;
+	ll open_range = 0;
+	ll one = -1;
+	for (int i = 0; i < m; ++i) {
+		auto&& [loc, val] = events[i];
+		if (loc != last) {
+			if (close == 0) {
+				auto [l, r] = intersect(cand, { last, loc - 1 });
+				ll len = max<ll>(0, r - l + 1);
+				open_range += len;
+				if (len == 1) {
+					one = l;
+				}
+			}
+			last = loc;
+		}
+		close += val;
+	}
+	{
+		ll loc = ll(1) << b;
+		if (loc != last) {
+			if (close == 0) {
+				auto [l, r] = intersect(cand, { last, loc - 1 });
+				ll len = max<ll>(0, r - l + 1);
+				open_range += len;
+				if (len == 1) {
+					one = l;
+				}
+			}
+			last = loc;
+		}
+	}
+
+	if (open_range == 0) {
+		cout << "Game cheated!\n";
+	} else if (open_range == 1) {
+		cout << one << '\n';
+	} else {
+		cout << "Data not sufficient!\n";
 	}
 }
 

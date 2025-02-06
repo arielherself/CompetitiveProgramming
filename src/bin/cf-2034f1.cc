@@ -531,7 +531,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -539,77 +539,137 @@ void dump() {}
 
 void dump_ignore() {}
 
+constexpr int M = PRIME;
+
+constexpr int N = 4e5 + 10;
+ll fact[N], factrev[N + 1], s[N + 1];
+
 void prep() {
+	fact[0] = factrev[0] = 1;
+	for (int i = 1; i < N; ++i) {
+		fact[i] = (fact[i - 1] * i) % M;
+	}
+	s[0] = 1;
+	for (int i = 1; i <= N; ++i) {
+		s[i] = s[i - 1] * fact[i - 1] % M;
+	}
+	factrev[N] = inverse(s[N], M);
+	for (int i = N; i; --i) {
+		factrev[i - 1] = factrev[i] * fact[i - 1] % M;
+	}
+	for (int i = 0; i < N; ++i) {
+		factrev[i] = factrev[i + 1] * s[i] % M;
+	}
 }
+
+always_inline ll mycomb(int n, int k) {
+	if (n < 0 or k < 0 or n < k) return 0;
+	return fact[n] * factrev[k] % M * factrev[n - k] % M;
+}
+
+/**
+ * My thinking process
+ * 1. It's obvious that the condition on the i'th scroll could only be satisfied
+ *    in the (n + m - r[i] - b[i])'th round, if ever satisfied.
+ * 2. TLE if track the state using simple DP. Only O(nk) or O(n + k ** 2) is accepted.
+ * 4. Consider the contribution of the i'th added gem when encountering the j'th scroll.
+ * 6. Calculate the probability by observing the operation sequence.
+ * 7. Let dp[i][j] represent that the probability of choosing a non-decreasing subsequence
+ *    of length j starting with the i'th scroll.
+ * 8. Update the difference array.
+ * 9. Time complexity is O(n + k ** 3).
+ * 11. But values are dependent.
+ * 12. P(A_i&~A_j) = P(A_i) - sum(P(A_j)P(A_i|A_j)).
+ */
 
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n, q);
-	readvec(ll, a, n);
-	constexpr int M = 708;
-	vector<set<pli>> blocks(M);
-	vector<ll> diff(M);
-	for (int i = 0; i < n; ++i) {
-		blocks[i / M].emplace(a[i], i);
-	}
-	while (q--) {
-		read(int, op);
-		if (op == 1) {
-			read(int, l, r, x);
-			--l, --r;
-			while (l % M != 0 and l <= r) {
-				int i = l / M;
-				blocks[i].erase({a[l], l});
-				a[l] += x;
-				blocks[i].emplace(a[l], l);
-				l += 1;
-			}
-			while (r % M != 0 and l <= r) {
-				int i = r / M;
-				blocks[i].erase({a[r], r});
-				a[r] += x;
-				blocks[i].emplace(a[r], r);
-				r -= 1;
-			}
-			while (l < r) {
-				diff[l / M] += x;
-				l += M;
-			}
-			if (l == r) {
-				{
-					int i = r / M;
-					blocks[i].erase({a[r], r});
-					a[r] += x;
-					blocks[i].emplace(a[r], r);
-					r -= 1;
-				}
-			}
-		} else {
-			read(int, x);
-			int left = -1;
-			for (int i = 0; i < M; ++i) {
-				auto it = blocks[i].lower_bound({x - diff[i], 0});
-				if (it != blocks[i].end() and it->first == x - diff[i]) {
-					left = it->second;
-					break;
-				}
-			}
-			if (left == -1) {
-				cout << -1 << '\n';
-			} else {
-				int right = -1;
-				for (int i = M - 1; ~i; --i) {
-					auto it = blocks[i].lower_bound({x - diff[i] + 1, 0});
-					if (it != blocks[i].begin() and (--it)->first == x - diff[i]) {
-						right = it->second;
-						break;
-					}
-				}
-				assert(right != -1);
-				cout << right - left << '\n';
-			}
+	read(int, n, m, k);
+
+	readvec(pii, a, k);
+	transform(a.begin(), a.end(), a.begin(), expr(pii(n - p.first, m - p.second), auto&& p));
+	sort_by_key(a.begin(), a.end(), expr(p.first + p.second, auto&& p));
+
+	vector dis(k, vector<ll>(k));
+	for (int i = 0; i < k; ++i) {
+		for (int j = i; j < k; ++j) {
+			dis[i][j] = mycomb(a[j].first - a[i].first + a[j].second - a[i].second, a[j].first - a[i].first) / ?;
+			// dis[i][j] = mycomb(n - a[i].first, a[j].first - a[i].first) * mycomb(m - a[i].second, a[j].second - a[i].second) % M * inverse(mycomb(n + m - a[i].first - a[i].second, a[j].first - a[i].first + a[j].second - a[i].second), M) % M;
 		}
 	}
+
+	vector dp(k, vector<ll>(k + 1));
+	vector p(k, vector<ll>(k));
+	for (int i = k - 1; ~i; --i) {
+		dp[i][1] = 1;
+		for (int j = i + 1; j < k; ++j) {
+			p[i][j] = dis[i][j];
+			for (int l = i + 1; l < j; ++l) {
+				p[i][j] = mod(p[i][j] - p[i][l] * dis[l][j] % M, M);
+			}
+			for (int l = 1; l < k; ++l) {
+				(dp[i][l + 1] += p[i][j] * dp[j][l] % M) %= M;
+			}
+		}
+		// deb(i, dp[i]);
+	}
+
+	vector diff1(n + 1, vector<ll>(k + 1));
+	vector diff2(m + 1, vector<ll>(k + 1));
+	vector<ll> p1(k);
+	for (int i = 0; i < k; ++i) {
+		p1[i] = mycomb(a[i].first + a[i].second, a[i].first) / ?;
+		// p1[i] = mycomb(n, a[i].first) * mycomb(m, a[i].second) % M * inverse(mycomb(n + m, a[i].first + a[i].second), M) % M;
+		// deb(i, p1[i]);
+		for (int j = 0; j < i; ++j) {
+			p1[i] = mod(p1[i] - p1[j] * dis[j][i] % M, M);
+		}
+		for (int j = 1; j <= k; ++j) {
+			ll curr = p1[i] * dp[i][j] % M;
+			diff1[0][j] = (diff1[0][j] + curr) % M;
+			diff1[a[i].first][j] = mod(diff1[a[i].first][j] - curr, M);
+			diff2[0][j] = (diff2[0][j] + curr) % M;
+			diff2[a[i].second][j] = mod(diff2[a[i].second][j] - curr, M);
+		}
+	}
+
+	vector<int> pw(k + 1);
+	pw[0] = 1;
+	for (int i = 1; i <= k; ++i) {
+		pw[i] = pw[i - 1] * 2 % M;
+	}
+
+	ll res = 0;
+
+	{
+		vector<ll> curr(k + 1);
+		for (int i = 0; i < n; ++i) {
+			ll has = 0;
+			for (int j = 1; j <= k; ++j) {
+				(curr[j] += diff1[i][j]) %= M;
+				(has += curr[j]) %= M;
+				(res += curr[j] * 2 % M * pw[j] % M) %= M;
+			}
+			// deb(1, i, has, res);
+			(res += mod(1 - has, M) * 2 % M) %= M;
+		}
+	}
+
+	{
+		vector<ll> curr(k + 1);
+		for (int i = 0; i < m; ++i) {
+			ll has = 0;
+			for (int j = 1; j <= k; ++j) {
+				(curr[j] += diff2[i][j]) %= M;
+				(has += curr[j]) %= M;
+				(res += curr[j] * pw[j] % M) %= M;
+			}
+			// deb(2, i, has);
+			(res += mod(1 - has, M)) %= M;
+		}
+	}
+
+	cout << res << '\n';
 }
 
 #ifdef SINGLE_TEST_CASE

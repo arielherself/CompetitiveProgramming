@@ -531,7 +531,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -542,74 +542,130 @@ void dump_ignore() {}
 void prep() {
 }
 
+/**
+ * My thinking process
+ * 1. Two greatest segments cannot be partially overlapping.
+ * 2. There are only n greatest segments.
+ * 3. Answer <= 64.
+ * 4. Can achieve O(n * 64 * 64) by DP while recursing, but too slow.
+ * 9. Use heap to truncate the subtree merge process to O(n * 64 * log(n)).
+ * 10. Use a DP in O(n * 64).
+ * 11. The overall process is 1e8, but still not fast.
+ */
+
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n, q);
+	constexpr int M = 65;
+
+	read(int, n);
 	readvec(ll, a, n);
-	constexpr int M = 708;
-	vector<set<pli>> blocks(M);
-	vector<ll> diff(M);
-	for (int i = 0; i < n; ++i) {
-		blocks[i / M].emplace(a[i], i);
-	}
-	while (q--) {
-		read(int, op);
-		if (op == 1) {
-			read(int, l, r, x);
-			--l, --r;
-			while (l % M != 0 and l <= r) {
-				int i = l / M;
-				blocks[i].erase({a[l], l});
-				a[l] += x;
-				blocks[i].emplace(a[l], l);
-				l += 1;
-			}
-			while (r % M != 0 and l <= r) {
-				int i = r / M;
-				blocks[i].erase({a[r], r});
-				a[r] += x;
-				blocks[i].emplace(a[r], r);
-				r -= 1;
-			}
-			while (l < r) {
-				diff[l / M] += x;
-				l += M;
-			}
-			if (l == r) {
-				{
-					int i = r / M;
-					blocks[i].erase({a[r], r});
-					a[r] += x;
-					blocks[i].emplace(a[r], r);
-					r -= 1;
+
+	vector<tiil> segments(n);
+	{
+		readvec(ll, b, n);
+
+		vector<int> left(n, -1);
+		{
+			vector<int> stack;
+			for (int i = 0; i < n; ++i) {
+				while (stack.size() and b[stack.back()] >= b[i]) {
+					stack.pop_back();
 				}
-			}
-		} else {
-			read(int, x);
-			int left = -1;
-			for (int i = 0; i < M; ++i) {
-				auto it = blocks[i].lower_bound({x - diff[i], 0});
-				if (it != blocks[i].end() and it->first == x - diff[i]) {
-					left = it->second;
-					break;
+				if (stack.size()) {
+					left[i] = stack.back();
 				}
-			}
-			if (left == -1) {
-				cout << -1 << '\n';
-			} else {
-				int right = -1;
-				for (int i = M - 1; ~i; --i) {
-					auto it = blocks[i].lower_bound({x - diff[i] + 1, 0});
-					if (it != blocks[i].begin() and (--it)->first == x - diff[i]) {
-						right = it->second;
-						break;
-					}
-				}
-				assert(right != -1);
-				cout << right - left << '\n';
+				stack.emplace_back(i);
 			}
 		}
+
+		vector<int> right(n, n);
+		{
+			vector<int> stack;
+			for (int i = n - 1; ~i; --i) {
+				while (stack.size() and b[stack.back()] >= b[i]) {
+					stack.pop_back();
+				}
+				if (stack.size()) {
+					right[i] = stack.back();
+				}
+				stack.emplace_back(i);
+			}
+		}
+		// debug(left);
+		// debug(right);
+
+		for (int i = 0; i < n; ++i) {
+			segments[i] = { left[i] + 1, right[i] - 1, b[i] };
+		}
+		sort(segments.begin(), segments.end());
+		segments.resize(unique(segments.begin(), segments.end()) - segments.begin());
 	}
+
+	// debug(segments);
+
+	vector<vector<pil>> right(n);
+	for (auto&& [l, r, x] : segments) {
+		right[l].emplace_back(r, x);
+	}
+
+	vector<array<ll, M>> dp;
+	int t = 0;
+	auto dfs = [&] (auto dfs, int l, int r, ll x, int i) -> void {
+		max_heap<tlii> q;
+
+		ll spare = 0;
+
+		{
+			int ptr = l;
+			while (ptr <= r) {
+				if (right[ptr].size()) {
+					auto [rr, xx] = popback(right[ptr]);
+					int j = t++;
+					dp.emplace_back();
+					dfs(dfs, ptr, rr, xx, j);
+					q.emplace(dp[j][0], 0, j);
+
+					ptr = rr + 1;
+				} else {
+					chmax(spare, a[ptr]);
+					ptr += 1;
+				}
+			}
+		}
+
+		q.emplace(1, INF, INF);
+		dp[i][0] = max(spare, get<0>(q.top()));
+		for (int j = 1; j < M; ++j) {
+			{
+				if (get<1>(q.top()) == INF) {
+					;;
+				} else {
+					auto [val, k, idx] = poptop(q);
+					k += 1;
+					if (k < M) {
+						q.emplace(dp[idx][k], k, idx);
+					}
+				}
+			}
+			dp[i][j] = min((dp[i][j - 1] + x - 1) / x, max(spare, get<0>(q.top())));
+		}
+		// deb(l, r, i, dp[i]);
+	};
+
+	auto [r, x] = popback(right[0]);
+	assert(r == n - 1);
+	dp.emplace_back();
+	t++;
+	dfs(dfs, 0, r, x, 0);
+
+	for (int i = 0; i < M; ++i) {
+		if (dp[0][i] == 1) {
+			cout << i << '\n';
+			return;
+		}
+	}
+
+	exit(825);
 }
 
 #ifdef SINGLE_TEST_CASE

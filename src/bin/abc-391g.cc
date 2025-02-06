@@ -544,72 +544,59 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n, q);
-	readvec(ll, a, n);
-	constexpr int M = 708;
-	vector<set<pli>> blocks(M);
-	vector<ll> diff(M);
-	for (int i = 0; i < n; ++i) {
-		blocks[i / M].emplace(a[i], i);
-	}
-	while (q--) {
-		read(int, op);
-		if (op == 1) {
-			read(int, l, r, x);
-			--l, --r;
-			while (l % M != 0 and l <= r) {
-				int i = l / M;
-				blocks[i].erase({a[l], l});
-				a[l] += x;
-				blocks[i].emplace(a[l], l);
-				l += 1;
-			}
-			while (r % M != 0 and l <= r) {
-				int i = r / M;
-				blocks[i].erase({a[r], r});
-				a[r] += x;
-				blocks[i].emplace(a[r], r);
-				r -= 1;
-			}
-			while (l < r) {
-				diff[l / M] += x;
-				l += M;
-			}
-			if (l == r) {
-				{
-					int i = r / M;
-					blocks[i].erase({a[r], r});
-					a[r] += x;
-					blocks[i].emplace(a[r], r);
-					r -= 1;
+	read(int, n, m);
+	read(string, s);
+
+	auto deserialize = [&] (int mask) {
+		vector<int> a(n + 1);
+		for (int i = 1; i <= n; ++i) {
+			a[i] = a[i - 1] + (mask >> i & 1);
+		}
+		return a;
+	};
+
+	auto serialize = [&] (const vector<int>& a) {
+		int mask = 0;
+		for (int i = 1; i <= n; ++i) {
+			mask |= a[i] - a[i - 1] << i;
+		}
+		return mask;
+	};
+
+	vector nxt_state(1 << n + 1, vector<int>(26));
+	for (int i = 0; i < (1 << n + 1); ++i) {
+		auto a = deserialize(i);
+		for (int j = 0; j < 26; ++j) {
+			vector<int> b(n + 1);
+			for (int k = 1; k <= n; ++k) {
+				if ('a' + j == s[k - 1]) {
+					b[k] = a[k - 1] + 1;
+				} else {
+					b[k] = max(b[k - 1], a[k]);
 				}
 			}
-		} else {
-			read(int, x);
-			int left = -1;
-			for (int i = 0; i < M; ++i) {
-				auto it = blocks[i].lower_bound({x - diff[i], 0});
-				if (it != blocks[i].end() and it->first == x - diff[i]) {
-					left = it->second;
-					break;
-				}
-			}
-			if (left == -1) {
-				cout << -1 << '\n';
-			} else {
-				int right = -1;
-				for (int i = M - 1; ~i; --i) {
-					auto it = blocks[i].lower_bound({x - diff[i] + 1, 0});
-					if (it != blocks[i].begin() and (--it)->first == x - diff[i]) {
-						right = it->second;
-						break;
-					}
-				}
-				assert(right != -1);
-				cout << right - left << '\n';
-			}
+			nxt_state[i][j] = serialize(b);
 		}
 	}
+
+	vector<ll> dp(1 << n + 1);
+	dp[0] = 1;
+	for (int i = 0; i < m; ++i) {
+		vector<ll> nxt(1 << n + 1);
+		for (int j = 0; j < (1 << n + 1); ++j) {
+			for (int k = 0; k < 26; ++k) {
+				(nxt[nxt_state[j][k]] += dp[j]) %= PRIME;
+			}
+		}
+		dp = std::move(nxt);
+	}
+
+	vector<ll> res(n + 1);
+	for (int i = 0; i < (1 << n + 1); ++i) {
+		(res[deserialize(i)[n]] += dp[i]) %= PRIME;
+	}
+
+	putvec(res);
 }
 
 #ifdef SINGLE_TEST_CASE

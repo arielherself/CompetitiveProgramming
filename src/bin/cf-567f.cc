@@ -26,19 +26,19 @@ using ull = unsigned long long;
 #endif
 using int128 = __int128_t;
 using uint128 = __uint128_t;
-using ld = __float128;  // up to 1e-9 precision in binary search, but more than 7x slower
-using pii = pair<int, int>;			using pil = pair<int, ll>;			using pid = pair<int, ld>;
-using pli = pair<ll, int>;			using pll = pair<ll, ll>;			using pld = pair<ll, ld>;
-using pdi = pair<ld, int>;			using pdl = pair<ld, ll>;			using pdd = pair<ld, ld>;
-using tiii = tuple<int, int, int>;	using tiil = tuple<int, int, ll>;   using tiid = tuple<int, int, ld>;
-using tili = tuple<int, ll, int>;	using till = tuple<int, ll, ll>;	using tild = tuple<int, ll, ld>;
-using tidi = tuple<int, ld, int>;	using tidl = tuple<int, ld, ll>;	using tidd = tuple<int, ld, ld>;
-using tlii = tuple<ll, int, int>;	using tlil = tuple<ll, int, ll>;	using tlid = tuple<ll, int, ld>;
-using tlli = tuple<ll, ll, int>;	using tlll = tuple<ll, ll, ll>;		using tlld = tuple<ll, ll, ld>;
-using tldi = tuple<ll, ld, int>;	using tldl = tuple<ll, ld, ll>;		using tldd = tuple<ll, ld, ld>;
-using tdii = tuple<ld, int, int>;	using tdil = tuple<ld, int, ll>;	using tdid = tuple<ld, int, ld>;
-using tdli = tuple<ld, ll, int>;	using tdll = tuple<ld, ll, ll>;		using tdld = tuple<ld, ll, ld>;
-using tddi = tuple<ld, ld, int>;	using tddl = tuple<ld, ld, ll>;		using tddd = tuple<ld, ld, ld>;
+using ld = __float128;	// up to 1e-9 precision in binary search, but more than 7x slower
+using pii = pair<int, int>;			  using pil = pair<int, ll>;		   using pid = pair<int, ld>;
+using pli = pair<ll, int>;			  using pll = pair<ll, ll>;			   using pld = pair<ll, ld>;
+using pdi = pair<ld, int>;			  using pdl = pair<ld, ll>;			   using pdd = pair<ld, ld>;
+using tiii = tuple<int, int, int>;	  using tiil = tuple<int, int, ll>;    using tiid = tuple<int, int, ld>;
+using tili = tuple<int, ll, int>;	  using till = tuple<int, ll, ll>;	   using tild = tuple<int, ll, ld>;
+using tidi = tuple<int, ld, int>;	  using tidl = tuple<int, ld, ll>;	   using tidd = tuple<int, ld, ld>;
+using tlii = tuple<ll, int, int>;	  using tlil = tuple<ll, int, ll>;	   using tlid = tuple<ll, int, ld>;
+using tlli = tuple<ll, ll, int>;	  using tlll = tuple<ll, ll, ll>;	   using tlld = tuple<ll, ll, ld>;
+using tldi = tuple<ll, ld, int>;	  using tldl = tuple<ll, ld, ll>;	   using tldd = tuple<ll, ld, ld>;
+using tdii = tuple<ld, int, int>;	  using tdil = tuple<ld, int, ll>;	   using tdid = tuple<ld, int, ld>;
+using tdli = tuple<ld, ll, int>;	  using tdll = tuple<ld, ll, ll>;	   using tdld = tuple<ld, ll, ld>;
+using tddi = tuple<ld, ld, int>;	  using tddl = tuple<ld, ld, ll>;	   using tddd = tuple<ld, ld, ld>;
 template <typename T, size_t N, size_t M> using matrix = array<array<T, M>, N>;
 template <typename T, size_t N, size_t M, size_t W> using cube = array<array<array<T, W>, M>, N>;
 template <typename T> using max_heap = priority_queue<T>;
@@ -324,12 +324,12 @@ template <typename T>
 T mygcd(T a, T b) { return b == 0 ? a : mygcd(b, a % b); }
 
 void __exgcd(ll a, ll b, ll& x, ll& y) {
-	if (b == 0) {
-		x = 1, y = 0;
-		return;
-	}
-	__exgcd(b, a % b, y, x);
-	y -= a / b * x;
+  if (b == 0) {
+	x = 1, y = 0;
+	return;
+  }
+  __exgcd(b, a % b, y, x);
+  y -= a / b * x;
 }
 
 ll inverse(ll a, ll b) {
@@ -544,72 +544,78 @@ void prep() {
 
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n, q);
-	readvec(ll, a, n);
-	constexpr int M = 708;
-	vector<set<pli>> blocks(M);
-	vector<ll> diff(M);
-	for (int i = 0; i < n; ++i) {
-		blocks[i / M].emplace(a[i], i);
-	}
-	while (q--) {
-		read(int, op);
-		if (op == 1) {
-			read(int, l, r, x);
-			--l, --r;
-			while (l % M != 0 and l <= r) {
-				int i = l / M;
-				blocks[i].erase({a[l], l});
-				a[l] += x;
-				blocks[i].emplace(a[l], l);
-				l += 1;
+	read(int, n, k);
+	n *= 2;
+	vector<tiii> cond(k);
+	vector<pii> lt(n, { INF, -INF });
+	vector<pii> leq(n, { INF, -INF });
+	vector<int> eq(n, -1);
+	for (int i = 0; i < k; ++i) {
+		read(int, x);
+		read(string, c);
+		read(int, y);
+		--x, --y;
+		if (c == "<") {
+			if (x == y) {
+				cout << 0 << '\n';
+				return;
 			}
-			while (r % M != 0 and l <= r) {
-				int i = r / M;
-				blocks[i].erase({a[r], r});
-				a[r] += x;
-				blocks[i].emplace(a[r], r);
-				r -= 1;
+			chmin(lt[x].first, y);
+			chmax(lt[x].second, y);
+		} else if (c == ">") {
+			if (x == y) {
+				cout << 0 << '\n';
+				return;
 			}
-			while (l < r) {
-				diff[l / M] += x;
-				l += M;
+			chmin(lt[y].first, x);
+			chmax(lt[y].second, x);
+		} else if (c == "=") {
+			if (x == y) continue;
+			if (eq[x] != y and eq[x] != -1) {
+				cout << 0 << '\n';
+				return;
 			}
-			if (l == r) {
-				{
-					int i = r / M;
-					blocks[i].erase({a[r], r});
-					a[r] += x;
-					blocks[i].emplace(a[r], r);
-					r -= 1;
-				}
+			eq[x] = y;
+			if (eq[y] != x and eq[y] != -1) {
+				cout << 0 << '\n';
+				return;
 			}
+		} else if (c == "<=") {
+			chmin(leq[x].first, y);
+			chmax(leq[x].second, y);
 		} else {
-			read(int, x);
-			int left = -1;
-			for (int i = 0; i < M; ++i) {
-				auto it = blocks[i].lower_bound({x - diff[i], 0});
-				if (it != blocks[i].end() and it->first == x - diff[i]) {
-					left = it->second;
-					break;
+			chmin(leq[y].first, x);
+			chmax(leq[y].second, x);
+		}
+	}
+	vector dp(n, vector<ll>(n));
+	for (int i = n - 1; ~i; --i) {
+		for (int j = i + 1; j < n; ++j) {
+			if ((j - i + 1) % 2 == 1) continue;
+			if (i + 1 == j) {
+				if (lt[i] == pii(INF, -INF) and lt[j] == pii(INF, -INF) and (eq[i] == j or eq[i] == -1) and (eq[j] == i or eq[j] == -1) and leq[i].first >= i and leq[i].second <= j and leq[j].first >= i and leq[j].second <= j) {
+					dp[i][j] = 1;
+				} else {
+					dp[i][j] = 0;
 				}
-			}
-			if (left == -1) {
-				cout << -1 << '\n';
 			} else {
-				int right = -1;
-				for (int i = M - 1; ~i; --i) {
-					auto it = blocks[i].lower_bound({x - diff[i] + 1, 0});
-					if (it != blocks[i].begin() and (--it)->first == x - diff[i]) {
-						right = it->second;
-						break;
-					}
+				// align to left
+				if (lt[i].first >= i + 2 and lt[i].second <= j and lt[i + 1].first >= i + 2 and lt[i + 1].second <= j and (eq[i] == i + 1 or eq[i] == -1) and (eq[i + 1] == i or eq[i + 1] == -1) and leq[i].first >= i and leq[i].second <= j and leq[i + 1].first >= i and leq[i + 1].second <= j) {
+					dp[i][j] += dp[i + 2][j];
 				}
-				assert(right != -1);
-				cout << right - left << '\n';
+				// align to right
+				if (lt[j - 1].first >= i and lt[j - 1].second <= j - 2 and lt[j].first >= i and lt[j].second <= j - 2 and (eq[j - 1] == j or eq[j - 1] == -1) and (eq[j] == j - 1 or eq[j] == -1) and leq[j - 1].first >= i and leq[j - 1].second <= j and leq[j].first >= i and leq[j].second <= j) {
+					dp[i][j] += dp[i][j - 2];
+				}
+				// centered
+				if (lt[i].first >= i + 1 and lt[i].second <= j - 1 and lt[j].first >= i + 1 and lt[j].second <= j - 1 and (eq[i] == j or eq[i] == -1) and (eq[j] == i or eq[j] == -1) and leq[i].first >= i and leq[i].second <= j and leq[j].first >= i and leq[j].second <= j) {
+					dp[i][j] += dp[i + 1][j - 1];
+				}
 			}
 		}
 	}
+
+	cout << dp[0][n - 1] << '\n';
 }
 
 #ifdef SINGLE_TEST_CASE

@@ -531,7 +531,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -542,74 +542,107 @@ void dump_ignore() {}
 void prep() {
 }
 
+class quick_union {
+private:
+	vector<size_t> c, sz;
+public:
+	quick_union(size_t n) : c(n), sz(n) {
+		iota(c.begin(), c.end(), 0);
+		sz.assign(n, 1);
+	}
+
+	size_t query(size_t i) {
+		if (c[i] != i) c[i] = query(c[i]);
+		return c[i];
+	}
+
+	void merge(size_t i, size_t j) {
+		if (connected(i, j)) return;
+		sz[query(j)] += sz[query(i)];
+		c[query(i)] = query(j);
+	}
+
+	bool connected(size_t i, size_t j) {
+		return query(i) == query(j);
+	}
+
+	size_t query_size(size_t i) {
+		return sz[query(i)];
+	}
+};
+
+
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n, q);
-	readvec(ll, a, n);
-	constexpr int M = 708;
-	vector<set<pli>> blocks(M);
-	vector<ll> diff(M);
-	for (int i = 0; i < n; ++i) {
-		blocks[i / M].emplace(a[i], i);
+	read(int, n, m, q);
+
+	adj(ch, n);
+	vector<tiii> edges(m);
+	vector dis(n + 1, vector<int>(n + 1, INF));
+	for (int i = 0; i < m; ++i) {
+		read(int, u, v, w);
+		edge(ch, u, v);
+		dis[u][v] = dis[v][u] = 1;
+		edges[i] = { u, v, w };
 	}
-	while (q--) {
-		read(int, op);
-		if (op == 1) {
-			read(int, l, r, x);
-			--l, --r;
-			while (l % M != 0 and l <= r) {
-				int i = l / M;
-				blocks[i].erase({a[l], l});
-				a[l] += x;
-				blocks[i].emplace(a[l], l);
-				l += 1;
-			}
-			while (r % M != 0 and l <= r) {
-				int i = r / M;
-				blocks[i].erase({a[r], r});
-				a[r] += x;
-				blocks[i].emplace(a[r], r);
-				r -= 1;
-			}
-			while (l < r) {
-				diff[l / M] += x;
-				l += M;
-			}
-			if (l == r) {
-				{
-					int i = r / M;
-					blocks[i].erase({a[r], r});
-					a[r] += x;
-					blocks[i].emplace(a[r], r);
-					r -= 1;
-				}
-			}
-		} else {
-			read(int, x);
-			int left = -1;
-			for (int i = 0; i < M; ++i) {
-				auto it = blocks[i].lower_bound({x - diff[i], 0});
-				if (it != blocks[i].end() and it->first == x - diff[i]) {
-					left = it->second;
-					break;
-				}
-			}
-			if (left == -1) {
-				cout << -1 << '\n';
-			} else {
-				int right = -1;
-				for (int i = M - 1; ~i; --i) {
-					auto it = blocks[i].lower_bound({x - diff[i] + 1, 0});
-					if (it != blocks[i].begin() and (--it)->first == x - diff[i]) {
-						right = it->second;
-						break;
-					}
-				}
-				assert(right != -1);
-				cout << right - left << '\n';
+
+	sort_by_key(edges.begin(), edges.end(), expr(get<2>(p), auto&& p));
+
+	for (int i = 1; i <= n; ++i) {
+		dis[i][i] = 0;
+	}
+	for (int k = 1; k <= n; ++k) {
+		for (int i = 1; i <= n; ++i) {
+			for (int j = 1; j <= n; ++j) {
+				chmin(dis[i][j], dis[i][k] + dis[k][j]);
 			}
 		}
 	}
+
+
+	vector res(n + 1, vector(n + 1, vector<int>(n + 1, INF)));
+
+	int bound = -1;
+
+	auto update = [&] (int u, int v) {
+		for (int i = 1; i <= n; ++i) {
+			for (int j = 1; j <= n; ++j) {
+				chmin(dis[i][j], dis[i][u] + dis[j][v]);
+				chmin(dis[i][j], dis[i][v] + dis[j][u]);
+			}
+		}
+			
+		for (int i = 1; i <= n; ++i) {
+			for (int j = 1; j <= n; ++j) {
+				if (dis[i][j] != INF) {
+					chmin(res[i][j][dis[i][j]], bound);
+				}
+			}
+		}
+	};
+
+	quick_union qu(n + 1);
+	for (auto&& [u, v, w] : edges) {
+		chmax(bound, w);
+		if (qu.connected(u, v)) continue;
+		qu.merge(u, v);
+		update(u, v);
+	}
+
+	for (int i = 1; i <= n; ++i) {
+		for (int j = 1; j <= n; ++j) {
+			for (int k = 1; k <= n; ++k) {
+				chmin(res[i][j][k], res[i][j][k - 1]);
+			}
+		}
+	}
+
+	while (q--) {
+		read(int, u, v, k);
+		cout << res[u][v][k - 1] << ' ';
+	}
+
+	cout << '\n';
 }
 
 #ifdef SINGLE_TEST_CASE
