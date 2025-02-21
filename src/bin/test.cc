@@ -3,6 +3,7 @@
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
+#include<tr2/dynamic_bitset>
 using namespace std;
 
 /* macro helpers */
@@ -45,6 +46,7 @@ template <typename T> using max_heap = priority_queue<T>;
 template <typename T> using min_heap = priority_queue<T, vector<T>, greater<>>;
 template <typename T> using oi = ostream_iterator<T>;
 template <typename T> using ii = istream_iterator<T>;
+using dynamic_bitset = tr2::dynamic_bitset<>;
 
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
@@ -128,7 +130,7 @@ struct pair_hash {
 		auto hash1 = safe_hash()(a.first);
 		auto hash2 = safe_hash()(a.second);
 		if (hash1 != hash2) {
-			return hash1 ^ hash2;
+			return hash1 << 3 ^ hash2;
 		}
 		return hash1;
 	}
@@ -278,7 +280,7 @@ inline auto popfront(Container& q) {
 
 /* math */
 template <typename return_t>
-return_t qpow(ll b, ll p) {
+constexpr return_t qpow(ll b, ll p) {
 	if (b == 0 and p != 0) return 0;
 	if (p == 0) return 1;
 	return_t half = qpow<return_t>(b, p / 2);
@@ -287,7 +289,7 @@ return_t qpow(ll b, ll p) {
 }
 
 // dynamic modulus
-ll qpow(ll b, ll p, ll mod) {
+constexpr ll qpow(ll b, ll p, ll mod) {
 	if (b == 0 and p != 0) return 0;
 	if (p == 0) return 1;
 	ll half = qpow(b, p / 2, mod);
@@ -299,7 +301,7 @@ ll qpow(ll b, ll p, ll mod) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wparentheses"
 // Accurately find `i` 'th root of `n` (taking the floor)
-inline ll root(ll n, ll i) {
+constexpr inline ll root(ll n, ll i) {
 	ll l = 0, r = pow(INFLL, (long double)(1) / i);
 	while (l < r) {
 		ll mid = l + r + 1 >> 1;
@@ -321,9 +323,9 @@ __attribute__((target("lzcnt")))
 constexpr inline int lg2(ll x) { return x == 0 ? -1 : sizeof(ll) * 8 - 1 - __builtin_clzll(x); }
 
 template <typename T>
-T mygcd(T a, T b) { return b == 0 ? a : mygcd(b, a % b); }
+constexpr T mygcd(T a, T b) { return b == 0 ? a : mygcd(b, a % b); }
 
-void __exgcd(ll a, ll b, ll& x, ll& y) {
+constexpr void __exgcd(ll a, ll b, ll& x, ll& y) {
 	if (b == 0) {
 		x = 1, y = 0;
 		return;
@@ -332,8 +334,8 @@ void __exgcd(ll a, ll b, ll& x, ll& y) {
 	y -= a / b * x;
 }
 
-ll inverse(ll a, ll b) {
-	ll x, y;
+constexpr ll inverse(ll a, ll b) {
+	ll x = 0, y = 0;
 	__exgcd(a, b, x, y);
 	return mod(x, b);
 }
@@ -372,7 +374,8 @@ vector<pii> decompose_prime(int N) {
 }
 
 /* string algorithms */
-vector<int> calc_next(string t) {  // pi function of t
+template <typename T>
+vector<int> calc_next(basic_string<T> t) {  // pi function of t
 	int n = (int)t.length();
 	vector<int> pi(n);
 	for (int i = 1; i < n; i++) {
@@ -383,7 +386,8 @@ vector<int> calc_next(string t) {  // pi function of t
 	}
 	return pi;
 }
-vector<int> calc_z(string t) {	// z function of t
+template <typename T>
+vector<int> calc_z(basic_string<T> t) {	// z function of t
 	int m = t.length();
 	vector<int> z;
 	z.push_back(m);
@@ -452,7 +456,7 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
 
 // miscancellous
 template <typename T, typename U>
-bool chmax(T& lhs, const U& rhs) {
+constexpr bool chmax(T& lhs, const U& rhs) {
 	bool ret = lhs < rhs;
 	if (ret) {
 		lhs = rhs;
@@ -460,7 +464,7 @@ bool chmax(T& lhs, const U& rhs) {
 	return ret;
 }
 template <typename T, typename U>
-bool chmin(T& lhs, const U& rhs) {
+constexpr bool chmin(T& lhs, const U& rhs) {
 	bool ret = lhs > rhs;
 	if (ret) {
 		lhs = rhs;
@@ -531,7 +535,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -542,74 +546,12 @@ void dump_ignore() {}
 void prep() {
 }
 
+/**
+ * My thought process
+ */
+
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n, q);
-	readvec(ll, a, n);
-	constexpr int M = 708;
-	vector<set<pli>> blocks(M);
-	vector<ll> diff(M);
-	for (int i = 0; i < n; ++i) {
-		blocks[i / M].emplace(a[i], i);
-	}
-	while (q--) {
-		read(int, op);
-		if (op == 1) {
-			read(int, l, r, x);
-			--l, --r;
-			while (l % M != 0 and l <= r) {
-				int i = l / M;
-				blocks[i].erase({a[l], l});
-				a[l] += x;
-				blocks[i].emplace(a[l], l);
-				l += 1;
-			}
-			while (r % M != 0 and l <= r) {
-				int i = r / M;
-				blocks[i].erase({a[r], r});
-				a[r] += x;
-				blocks[i].emplace(a[r], r);
-				r -= 1;
-			}
-			while (l < r) {
-				diff[l / M] += x;
-				l += M;
-			}
-			if (l == r) {
-				{
-					int i = r / M;
-					blocks[i].erase({a[r], r});
-					a[r] += x;
-					blocks[i].emplace(a[r], r);
-					r -= 1;
-				}
-			}
-		} else {
-			read(int, x);
-			int left = -1;
-			for (int i = 0; i < M; ++i) {
-				auto it = blocks[i].lower_bound({x - diff[i], 0});
-				if (it != blocks[i].end() and it->first == x - diff[i]) {
-					left = it->second;
-					break;
-				}
-			}
-			if (left == -1) {
-				cout << -1 << '\n';
-			} else {
-				int right = -1;
-				for (int i = M - 1; ~i; --i) {
-					auto it = blocks[i].lower_bound({x - diff[i] + 1, 0});
-					if (it != blocks[i].begin() and (--it)->first == x - diff[i]) {
-						right = it->second;
-						break;
-					}
-				}
-				assert(right != -1);
-				cout << right - left << '\n';
-			}
-		}
-	}
 }
 
 #ifdef SINGLE_TEST_CASE

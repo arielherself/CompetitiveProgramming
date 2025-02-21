@@ -544,6 +544,132 @@ void dump_ignore() {}
 void prep() {
 }
 
+/**
+ * My thought process
+ * 1. The only situation to avoid is "abab".
+ * 2. For every pair of adjacent "a"s, get the minimum value of nxt["b"].
+ * 3. Use a difference array to maintain the limitations.
+ * 5. Offline twice and binary search to get the result.
+ */
+
+template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
+private:
+	using size_type = uint64_t;
+	using info_type = Addable_Info_t;
+	using tag_type = Tag_t;
+	size_type _max;
+	vector<info_type> d;
+	vector<tag_type> b;
+
+	void pull(size_type p) {
+		d[p] = d[p * 2] + d[p * 2 + 1];
+	}
+
+	void push(size_type p, size_type left_len, size_type right_len) {
+		d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
+		b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
+		b[p] = tag_type();
+	}
+
+	void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
+		if (s == t) {
+			d[p] = c;
+			return;
+		}
+		size_type m = s + (t - s >> 1);
+		if (s != t) push(p, m - s + 1, t - m);
+		if (x <= m) set(s, m, p * 2, x, c);
+		else set(m + 1, t, p * 2 + 1, x, c);
+		pull(p);
+	}
+
+	void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
+		if (l <= s && t <= r) {
+			d[p].apply(c, t - s + 1);
+			b[p].apply(c);
+			return;
+		}
+		size_type m = s + (t - s >> 1);
+		push(p, m - s + 1, t - m);
+		if (l <= m) range_apply(s, m, p * 2, l, r, c);
+		if (r > m)	range_apply(m + 1, t, p * 2 + 1, l, r, c);
+		pull(p);
+	}
+
+	info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
+		if (l <= s && t <= r) {
+			return d[p];
+		}
+		size_type m = s + (t - s >> 1);
+		info_type res = {};
+		push(p, m - s + 1, t - m);
+		if (l <= m) res = res + range_query(s, m, p * 2, l, r);
+		if (r > m)	res = res + range_query(m + 1, t, p * 2 + 1, l, r);
+		return res;
+	}
+
+	void build(const Sequence& a, size_type s, size_type t, size_type p) {
+		if (s == t) {
+			d[p] = a[s];
+			return;
+		}
+		int m = s + (t - s >> 1);
+		build(a, s, m, p * 2);
+		build(a, m + 1, t, p * 2 + 1);
+		pull(p);
+	}
+public:
+	segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
+	segtree(const Sequence& a) : segtree(a.size()) {
+		build(a, {}, _max, 1);
+	}
+
+	void set(size_type i, const info_type& c) {
+		set({}, _max, 1, i, c);
+	}
+
+	void range_apply(size_type l, size_type r, const tag_type& c) {
+		range_apply({}, _max, 1, l, r, c);
+	}
+
+	void apply(size_type i, const tag_type& c) {
+		range_apply(i, i, c);
+	}
+
+	info_type range_query(size_type l, size_type r) {
+		return range_query({}, _max, 1, l, r);
+	}
+
+	info_type query(size_type i) {
+		return range_query(i, i);
+	}
+
+	Sequence serialize() {
+		Sequence res = {};
+		for (size_type i = 0; i <= _max; ++i) {
+			res.push_back(query(i));
+		}
+		return res;
+	}
+
+	const vector<info_type>& get_d() {
+		return d;
+	}
+};
+
+struct Tag {
+	void apply(const Tag& rhs) { }
+};
+
+struct Info {
+	int val = INF;
+	void apply(const Tag& rhs, size_t len) { }
+};
+
+Info operator+(const Info &a, const Info &b) {
+	return { min(a.val, b.val) };
+}
+
 template<typename _Tp, typename _Op = function<_Tp(const _Tp&, const _Tp&)>> struct sparse_table {
 	_Op op;
 	vector<vector<_Tp>> st;
@@ -569,61 +695,42 @@ template<typename _Tp, typename _Op = function<_Tp(const _Tp&, const _Tp&)>> str
 };
 
 
-/**
- * My thought process
- * 1. The only situation to avoid is "abab".
- * 2. For every pair of adjacent "a"s, get the minimum value of nxt["b"].
- * 3. Use a difference array to maintain the limitations.
- * 5. Offline twice and binary search to get the result.
- */
-
 // __attribute__((target("popcnt")))
 void solve() {
 	read(int, n, q);
 	readvec(int, a, n);
 
+	segtree<Info, Tag> tr(n);
+
 	vector<int> nxt(n);
-	vector<int> last(n + 1, n);
-	for (int i = n - 1; ~i; --i) {
-		nxt[i] = last[a[i]];
-		last[a[i]] = i;
+	{
+		vector<int> last(n + 1, INF);
+		for (int i = n - 1; ~i; --i) {
+			nxt[i] = last[a[i]];
+			last[a[i]] = i;
+		}
 	}
 
-	sparse_table<int> rmq(nxt.rbegin(), nxt.rend(), functor(min));
-
-	vector<int> open;
-	vector<vector<int>> close(n);
-	last.assign(n + 1, -1);
+	vector<int> prev(n + 1, -1);
+	vector<int> f(n, INF);
 	for (int i = 0; i < n; ++i) {
-		if (last[a[i]] != -1) {
-			int l = last[a[i]], r = i;
-			if (l + 1 < r) {
-				int x = rmq.query(l + 1, r - 1);
-				open.emplace_back(x);
-				close[l].emplace_back(x);
-			}
+		if (prev[a[i]] != -1) {
+			tr.set(prev[a[i]], { INF });
+			f[prev[a[i]]] = tr.range_query(prev[a[i]], i - 1).val;
 		}
-		last[a[i]] = i;
+		tr.set(i, { nxt[i] });
+		prev[a[i]] = i;
 	}
 
-	vector<int> limit(n);
-
-	multiset<int> oc(open.begin(), open.end());
-	for (int i = 0; i < n; ++i) {
-		if (oc.empty()) {
-			limit[i] = n;
-		} else {
-			limit[i] = *oc.begin();
-		}
-		for (auto&& x : close[i]) {
-			oc.erase(oc.find(x));
-		}
-	}
-
+	sparse_table<int> rmq(f.rbegin(), f.rend(), functor(min));
 	while (q--) {
 		read(int, l, r);
 		--l, --r;
-		cout << (limit[l] > r ? "YES" : "NO") << '\n';
+		if (rmq.query(l, r) <= r) {
+			cout << "NO\n";
+		} else {
+			cout << "YES\n";
+		}
 	}
 }
 
