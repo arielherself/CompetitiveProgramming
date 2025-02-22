@@ -543,85 +543,99 @@ void dump() {}
 
 void dump_ignore() {}
 
+constexpr int M = MDL;  // WARN: check it!
+
+constexpr int N = 2024;
+ll fact[N], factrev[N + 1], s[N + 1];
+
 void prep() {
+	fact[0] = factrev[0] = 1;
+	for (int i = 1; i < N; ++i) {
+		fact[i] = (fact[i - 1] * i) % M;
+	}
+	s[0] = 1;
+	for (int i = 1; i <= N; ++i) {
+		s[i] = s[i - 1] * fact[i - 1] % M;
+	}
+	factrev[N] = inverse(s[N], M);
+	for (int i = N; i; --i) {
+		factrev[i - 1] = factrev[i] * fact[i - 1] % M;
+	}
+	for (int i = 0; i < N; ++i) {
+		factrev[i] = factrev[i + 1] * s[i] % M;
+	}
+}
+
+always_inline ll mycomb(int n, int k) {
+	if (n < 0 or k < 0 or n < k) return 0;
+	return fact[n] * factrev[k] % M * factrev[n - k] % M;
 }
 
 /**
  * My thought process
  */
 
-always_inline void get(int x, int y, int z) {
-	array<int, 3> a = { x + 1, y + 1, z + 1 };
-	sort(a.begin(), a.end());
-	cout << a[0] << ' ' << a[1] << ' ' <<  a[2] << '\n';
-}
-
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n, q);
+	read(int, n, k);
 	readvec(int, a, n);
-	while (q--) {
-		read(int, i, x);
-		--i;
-		a[i] = x;
-		if (n >= 6) {
-			cout << "YES\n";
-			vector<int> x, y;
-			int f = 0;
-			for (int j = 0; j < n; ++j) {
-				if (j == i) continue;
-				if (gcd(a[j], a[i]) == 1) {
-					x.emplace_back(j);
-					if (x.size() == 3) {
-						if (gcd(a[x[0]], a[x[1]]) == 1) {
-							get(x[0], x[1], i);
-						} else if (gcd(a[x[0]], a[x[2]]) == 1) {
-							get(x[0], x[2], i);
-						} else if (gcd(a[x[1]], a[x[2]]) == 1) {
-							get(x[1], x[2], i);
-						} else {
-							get(x[0], x[1], x[2]);
-						}
-						f = 1;
-						break;
-					}
-				} else {
-					y.emplace_back(j);
-					if (y.size() == 3) {
-						if (gcd(a[y[0]], a[y[1]]) != 1) {
-							get(y[0], y[1], i);
-						} else if (gcd(a[y[0]], a[y[2]]) != 1) {
-							get(y[0], y[2], i);
-						} else if (gcd(a[y[1]], a[y[2]]) != 1) {
-							get(y[1], y[2], i);
-						} else {
-							get(y[0], y[1], y[2]);
-						}
-						f = 1;
-						break;
-					}
-				}
-			}
-			if (f == 0) exit(825);
+	sort(a.begin(), a.end());
+	ll diff = 0;
+	for (int i = 0; i < k; ++i) {
+		diff -= a[i];
+	}
+	for (int i = n - k; i < n; ++i) {
+		diff += a[i];
+	}
+	cout << diff << ' ';
+
+	ll sol = 1;
+
+	int lval = a[k - 1];
+	int left = 1;
+	for (int i = k - 2; ~i; --i) {
+		if (a[i] == lval) {
+			left += 1;
 		} else {
-			for (int i = 0; i < n; ++i) {
-				for (int j = i + 1; j < n; ++j) {
-					int x = gcd(a[i], a[j]);
-					for (int k = j + 1; k < n; ++k) {
-						int y = gcd(a[i], a[k]);
-						int z = gcd(a[j], a[k]);
-						if (x == 1 and y == 1 and z == 1 or x != 1 and y != 1 and z != 1) {
-							cout << "YES\n";
-							cout << i + 1 << ' ' << j + 1 << ' ' << k + 1 << '\n';
-							goto fi;
-						}
-					}
-				}
-			}
-			cout << "NO\n";
-fi:
+			break;
 		}
 	}
+	int rval = a[n - k];
+	int right = 1;
+	for (int i = n - k + 1; i < n; ++i) {
+		if (a[i] == rval) {
+			right += 1;
+		} else {
+			break;
+		}
+	}
+	
+
+	if (lval == rval) {
+		int all = left + right + n - k - k;
+		sol = mycomb(all, left) * mycomb(all - left, right) % M;
+		if (a[0] == a[n - 1]) sol = sol * inverse(2, M) % M;
+	} else {
+		int lr = 0;
+		for (int i = k; i < n - k; ++i) {
+			if (a[i] == lval) {
+				lr += 1;
+			} else {
+				break;
+			}
+		}
+		int rl = 0;
+		for (int i = n - k - 1; i >= k; --i) {
+			if (a[i] == rval) {
+				rl += 1;
+			} else {
+				break;
+			}
+		}
+		sol = mycomb(lr + left, left) * mycomb(rl + right, right) % M;
+	}
+
+	cout << sol << '\n';
 }
 
 #ifdef SINGLE_TEST_CASE

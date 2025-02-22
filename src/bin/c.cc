@@ -535,7 +535,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -543,57 +543,91 @@ void dump() {}
 
 void dump_ignore() {}
 
+void prep() {
+}
+
 /**
  * My thought process
  */
 
-constexpr int N = 1e4 + 9;
-struct Pre {
-	int res[1234] = {};
-	int cnt = 0;
-	constexpr Pre() {
-		bool not_prime[N + 1] = {};
-		for (int i = 2; i <= N; ++i) {
-			if (not not_prime[i]) {
-				res[cnt++] = i;
-			}
-			for (auto&& x : res) {
-				if (i * x > N) break;
-				not_prime[i * x] = 1;
-				if (i % x == 0) break;
-			}
-		}
-	}
-};
-
-constexpr Pre pre;
-
-void prep() {
-}
-
-ll res[N];
-
 // __attribute__((target("popcnt")))
 void solve() {
 	read(int, n);
-	readvec(int, a, n);
-	ll tot = 0;
+	vector a(n, vector<char>(n));
 	for (int i = 0; i < n; ++i) {
-		for (int j = 0; j < pre.cnt and a[i] - pre.res[j] >= 0; ++j) {
-			ll curr = res[a[i] - pre.res[j]];
-			(res[a[i]] += curr) %= PRIME;
-			(tot += curr) %= PRIME;
+		for (int j = 0; j < n;  ++j) {
+			cin >> a[i][j];
 		}
-		for (int j = 0; j < pre.cnt and a[i] + pre.res[j] < N; ++j) {
-			ll curr = res[a[i] + pre.res[j]];
-			(res[a[i]] += curr) %= PRIME;
-			(tot += curr) %= PRIME;
-		}
-		res[a[i]] += 1;
 	}
-	cout << tot << '\n';
+
+	auto recalc = [&] {
+		int res = 0;
+		for (int i = 0; i < n; ++i) {
+			for (int j = 0; j < n; ++j) {
+				if (a[i][j] >= 'A' and a[i][j] <= 'Z') {
+					res += 1;
+				}
+			}
+		}
+		for (int i = 0; i < n; ++i) {
+			for (int j = 1; j < n; ++j) {
+				if (a[i][j] == 'M' and a[i][j - 1] == 'P' or a[i][j] == 'P' and a[i][j - 1] == 'M' or a[i][j] == 'O' and a[i][j - 1] == 'O') {
+					res += 1;
+				}
+			}
+		}
+		for (int j = 0; j < n; ++j) {
+			for (int i = 1; i < n; ++i) {
+				if (a[i][j] == 'M' and a[i - 1][j] == 'P' or a[i][j] == 'P' and a[i - 1][j] == 'M' or a[i][j] == 'O' and a[i - 1][j] == 'O') {
+					res += 1;
+				}
+			}
+		}
+		for (int i = 1; i < n; ++i) {
+			for (int j = 1; j < n; ++j) {
+				if (a[i][j] == 'M' and a[i - 1][j - 1] == 'P' or a[i][j] == 'P' and a[i - 1][j - 1] == 'M' or a[i][j] == 'O' and a[i - 1][j - 1] == 'O') {
+					res += 1;
+				}
+			}
+		}
+		for (int i = 1; i < n; ++i) {
+			for (int j = 0; j < n - 1; ++j) {
+				if (a[i][j] == 'M' and a[i - 1][j + 1] == 'P' or a[i][j] == 'P' and a[i - 1][j + 1] == 'M' or a[i][j] == 'O' and a[i - 1][j + 1] == 'O') {
+					res += 1;
+				}
+			}
+		}
+		return res;
+	};
+
+	int origin = recalc();
+	int curr = origin;
+
+	while(1) {
+		int mx = 0;
+		pii target;
+		for (int i = 0; i < n; ++i) {
+			for (int j = 0; j < n; ++j) {
+				if (a[i][j] == 'o' or a[i][j] == 'm' or a[i][j] == 'p') {
+					a[i][j] += 'A' - 'a';
+					int nw = recalc();
+					a[i][j] -= 'A' - 'a';
+					if (chmax(mx, nw - curr)) {
+						target = { i, j };
+					}
+				}
+			}
+		}
+		if (mx <= 1) break;
+		a[target.first][target.second] += 'A' - 'a';
+		curr += mx;
+	}
+	cout << origin << ' ' << curr << '\n';
 	for (int i = 0; i < n; ++i) {
-		res[a[i]] = 0;
+		for (int j = 0; j < n; ++j) {
+			cout << a[i][j];
+		}
+		cout << '\n';
 	}
 }
 

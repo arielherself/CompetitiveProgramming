@@ -3,6 +3,7 @@
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
+#include<tr2/dynamic_bitset>
 using namespace std;
 
 /* macro helpers */
@@ -45,6 +46,7 @@ template <typename T> using max_heap = priority_queue<T>;
 template <typename T> using min_heap = priority_queue<T, vector<T>, greater<>>;
 template <typename T> using oi = ostream_iterator<T>;
 template <typename T> using ii = istream_iterator<T>;
+using dynamic_bitset = tr2::dynamic_bitset<>;
 
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
@@ -128,7 +130,7 @@ struct pair_hash {
 		auto hash1 = safe_hash()(a.first);
 		auto hash2 = safe_hash()(a.second);
 		if (hash1 != hash2) {
-			return hash1 ^ hash2;
+			return hash1 << 3 ^ hash2;
 		}
 		return hash1;
 	}
@@ -278,7 +280,7 @@ inline auto popfront(Container& q) {
 
 /* math */
 template <typename return_t>
-return_t qpow(ll b, ll p) {
+constexpr return_t qpow(ll b, ll p) {
 	if (b == 0 and p != 0) return 0;
 	if (p == 0) return 1;
 	return_t half = qpow<return_t>(b, p / 2);
@@ -287,7 +289,7 @@ return_t qpow(ll b, ll p) {
 }
 
 // dynamic modulus
-ll qpow(ll b, ll p, ll mod) {
+constexpr ll qpow(ll b, ll p, ll mod) {
 	if (b == 0 and p != 0) return 0;
 	if (p == 0) return 1;
 	ll half = qpow(b, p / 2, mod);
@@ -299,7 +301,7 @@ ll qpow(ll b, ll p, ll mod) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wparentheses"
 // Accurately find `i` 'th root of `n` (taking the floor)
-inline ll root(ll n, ll i) {
+constexpr inline ll root(ll n, ll i) {
 	ll l = 0, r = pow(INFLL, (long double)(1) / i);
 	while (l < r) {
 		ll mid = l + r + 1 >> 1;
@@ -321,9 +323,9 @@ __attribute__((target("lzcnt")))
 constexpr inline int lg2(ll x) { return x == 0 ? -1 : sizeof(ll) * 8 - 1 - __builtin_clzll(x); }
 
 template <typename T>
-T mygcd(T a, T b) { return b == 0 ? a : mygcd(b, a % b); }
+constexpr T mygcd(T a, T b) { return b == 0 ? a : mygcd(b, a % b); }
 
-void __exgcd(ll a, ll b, ll& x, ll& y) {
+constexpr void __exgcd(ll a, ll b, ll& x, ll& y) {
 	if (b == 0) {
 		x = 1, y = 0;
 		return;
@@ -332,8 +334,8 @@ void __exgcd(ll a, ll b, ll& x, ll& y) {
 	y -= a / b * x;
 }
 
-ll inverse(ll a, ll b) {
-	ll x, y;
+constexpr ll inverse(ll a, ll b) {
+	ll x = 0, y = 0;
 	__exgcd(a, b, x, y);
 	return mod(x, b);
 }
@@ -454,7 +456,7 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
 
 // miscancellous
 template <typename T, typename U>
-bool chmax(T& lhs, const U& rhs) {
+constexpr bool chmax(T& lhs, const U& rhs) {
 	bool ret = lhs < rhs;
 	if (ret) {
 		lhs = rhs;
@@ -462,7 +464,7 @@ bool chmax(T& lhs, const U& rhs) {
 	return ret;
 }
 template <typename T, typename U>
-bool chmin(T& lhs, const U& rhs) {
+constexpr bool chmin(T& lhs, const U& rhs) {
 	bool ret = lhs > rhs;
 	if (ret) {
 		lhs = rhs;
@@ -533,7 +535,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-// #define SINGLE_TEST_CASE
+#define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -544,328 +546,27 @@ void dump_ignore() {}
 void prep() {
 }
 
-struct LCA {
-	vector<int> depth;
-	vector<vector<int>> pa;
-	LCA(const vector<vector<int>>& g, int root = 1) {
-		int n = g.size() - 1;
-		int m = 32 - __builtin_clz(n);
-		depth.resize(n + 1);
-		pa.resize(n + 1, vector<int>(m, -1));
-		function<void(int, int)> dfs = [&](int x, int fa) {
-			pa[x][0] = fa;
-			for (int y: g[x]) {
-				if (y != fa) {
-					depth[y] = depth[x] + 1;
-					dfs(y, x);
-				}
-			}
-		};
-		dfs(root, 0);
-
-		for (int i = 0; i < m - 1; i++)
-			for (int x = 1; x <= n; x++)
-				if (int p = pa[x][i]; p != -1)
-					pa[x][i + 1] = pa[p][i];
-	}
-
-	int get_kth_ancestor(int node, int k) {
-		for (; k; k &= k - 1)
-			node = pa[node][__builtin_ctz(k)];
-		return node;
-	}
-
-	int query(int x, int y) {
-		if (depth[x] > depth[y])
-			swap(x, y);
-		y = get_kth_ancestor(y, depth[y] - depth[x]);
-		if (y == x)
-			return x;
-		for (int i = pa[x].size() - 1; i >= 0; i--) {
-			int px = pa[x][i], py = pa[y][i];
-			if (px != py) {
-				x = px;
-				y = py;
-			}
-		}
-		return pa[x][0];
-	}
-};
-
-
-
-template<typename Addable_Info_t, typename Tag_t, typename Sequence = std::vector<Addable_Info_t>> class segtree {
-private:
-	using size_type = uint64_t;
-	using info_type = Addable_Info_t;
-	using tag_type = Tag_t;
-	size_type _max;
-	vector<info_type> d;
-	vector<tag_type> b;
-
-	void pull(size_type p) {
-		d[p] = d[p * 2] + d[p * 2 + 1];
-	}
-
-	void push(size_type p, size_type left_len, size_type right_len) {
-		d[p * 2].apply(b[p], left_len), d[p * 2 + 1].apply(b[p], right_len);
-		b[p * 2].apply(b[p]), b[p * 2 + 1].apply(b[p]);
-		b[p] = tag_type();
-	}
-
-	void set(size_type s, size_type t, size_type p, size_type x, const info_type& c) {
-		if (s == t) {
-			d[p] = c;
-			return;
-		}
-		size_type m = s + (t - s >> 1);
-		if (s != t) push(p, m - s + 1, t - m);
-		if (x <= m) set(s, m, p * 2, x, c);
-		else set(m + 1, t, p * 2 + 1, x, c);
-		pull(p);
-	}
-
-	void range_apply(size_type s, size_type t, size_type p, size_type l, size_type r, const tag_type& c) {
-		if (l <= s && t <= r) {
-			d[p].apply(c, t - s + 1);
-			b[p].apply(c);
-			return;
-		}
-		size_type m = s + (t - s >> 1);
-		push(p, m - s + 1, t - m);
-		if (l <= m) range_apply(s, m, p * 2, l, r, c);
-		if (r > m)	range_apply(m + 1, t, p * 2 + 1, l, r, c);
-		pull(p);
-	}
-
-	info_type range_query(size_type s, size_type t, size_type p, size_type l, size_type r) {
-		if (l <= s && t <= r) {
-			return d[p];
-		}
-		size_type m = s + (t - s >> 1);
-		info_type res = {};
-		push(p, m - s + 1, t - m);
-		if (l <= m) res = res + range_query(s, m, p * 2, l, r);
-		if (r > m)	res = res + range_query(m + 1, t, p * 2 + 1, l, r);
-		return res;
-	}
-
-	void build(const Sequence& a, size_type s, size_type t, size_type p) {
-		if (s == t) {
-			d[p] = a[s];
-			return;
-		}
-		int m = s + (t - s >> 1);
-		build(a, s, m, p * 2);
-		build(a, m + 1, t, p * 2 + 1);
-		pull(p);
-	}
-public:
-	segtree(size_type __max) : d(4 * __max), b(4 * __max), _max(__max - 1) {}
-	segtree(const Sequence& a) : segtree(a.size()) {
-		build(a, {}, _max, 1);
-	}
-
-	void set(size_type i, const info_type& c) {
-		set({}, _max, 1, i, c);
-	}
-
-	void range_apply(size_type l, size_type r, const tag_type& c) {
-		range_apply({}, _max, 1, l, r, c);
-	}
-
-	void apply(size_type i, const tag_type& c) {
-		range_apply(i, i, c);
-	}
-
-	info_type range_query(size_type l, size_type r) {
-		return range_query({}, _max, 1, l, r);
-	}
-
-	info_type query(size_type i) {
-		return range_query(i, i);
-	}
-
-	Sequence serialize() {
-		Sequence res = {};
-		for (size_type i = 0; i <= _max; ++i) {
-			res.push_back(query(i));
-		}
-		return res;
-	}
-
-	const vector<info_type>& get_d() {
-		return d;
-	}
-};
-
-struct Tag {
-	int val = -1;
-	void apply(const Tag& rhs) {
-		if (rhs.val != -1)
-		val = rhs.val;
-	}
-};
-
-struct Info {
-	int val = 0;
-	void apply(const Tag& rhs, size_t len) {
-		if (rhs.val != -1)
-		val = rhs.val;
-	}
-};
-
-Info operator+(const Info &a, const Info &b) {
-	return b;
-}
-
-template <typename Info, typename Tag>
-struct HLD {
-	struct node_info {
-		int father, depth, hson, size, head, dfn = -1;
-	};
-
-	int n;
-	vector<int> seq;
-	vector<node_info> info;
-	segtree<Info, Tag> tr;
-
-	// returns: (dfs sequence, node info)
-	// node numbering starts from `1`
-	// if `dfn(v) == -1`, then node `v` is never accessed.
-	HLD(const vector<vector<int>>& ch, const vector<Info>& init, int root = 0) : n(ch.size() - 1), seq(), info(n + 1), tr(n + 1) {
-		vector<node_info> res(n + 1);
-		auto dfs1 = [&] (auto dfs1, int v, int pa) -> void {
-			res[v].father = pa;
-			res[v].depth = res[pa].depth + 1;
-			res[v].size = 1;
-			int mx = 0;
-			for (auto&& u : ch[v]) {
-				if (u == pa) continue;
-				dfs1(dfs1, u, v);
-				res[v].size += res[u].size;
-				if (res[u].size > mx) {
-					mx = res[u].size;
-					res[v].hson = u;
-				}
-			}
-		};
-		dfs1(dfs1, root, root);
-		int tm = 0;
-		auto dfs2 = [&] (auto dfs2, int v, int head) -> void {
-			res[v].dfn = tm++;
-			seq.emplace_back(v);
-			res[v].head = head;
-			if (not res[v].hson) return;
-			dfs2(dfs2, res[v].hson, head);
-			for (auto&& u : ch[v]) {
-				if (u == res[v].father or u == res[v].hson) continue;
-				dfs2(dfs2, u, u);
-			}
-		};
-		dfs2(dfs2, root, root);
-		info = res;
-
-		for (int i = 1; i <= n; ++i) {
-			tr.set(info[i].dfn, init[i]);
-		}
-	}
-
-	void set(int v, const Info& t) {
-		tr.set(info[v].dfn, t);
-	}
-
-	void apply(int v, const Tag& t) {
-		tr.apply(info[v].dfn, t);
-	}
-
-	Info query(int v) {
-		return tr.query(info[v].dfn);
-	}
-
-	void path_apply(int u, int v, const Tag& t) {
-		while (info[u].head != info[v].head) {
-			if (info[info[u].head].depth < info[info[v].head].depth) {
-				swap(u, v);
-			}
-			tr.range_apply(info[info[u].head].dfn, info[u].dfn, t);
-			u = info[info[u].head].father;
-		}
-		if (info[u].depth < info[v].depth) swap(u, v);
-		tr.range_apply(info[v].dfn, info[u].dfn, t);
-	}
-
-	Info path_query(int u, int v) {
-		Info res;
-		while (info[u].head != info[v].head) {
-			if (info[info[u].head].depth < info[info[v].head].depth) {
-				swap(u, v);
-			}
-			res = res + tr.range_query(info[info[u].head].dfn, info[u].dfn);
-			u = info[info[u].head].father;
-		}
-		if (info[u].depth < info[v].depth) swap(u, v);
-		res = res + tr.range_query(info[v].dfn, info[u].dfn);
-		return res;
-	}
-
-	void subtree_apply(int v, const Tag& t) {
-		tr.range_apply(info[v].dfn, info[v].dfn + info[v].size - 1, t);
-	}
-
-	void subtree_apply_exclude(int v, const Tag& t) {
-		tr.range_apply(info[1].dfn, info[v].dfn - 1, t);
-		if (info[v].dfn + info[v].size < info[1].dfn + info[1].size) {
-			tr.range_apply(info[v].dfn + info[v].size, info[1].dfn + info[1].size - 1, t);
-		}
-	}
-
-	Info subtree_query(int v) {
-		return tr.range_query(info[v].dfn, info[v].dfn + info[v].size - 1);
-	}
-};
-
-
-
 /**
  * My thought process
  */
 
 // __attribute__((target("popcnt")))
 void solve() {
-	read(int, n, m);
-	adj(ch, n);
-	vector<Info> init(n + 1);
-	for (int i = 1; i <= n; ++i) {
-		read(int, x);
-		init[i] = { x };
-	}
-	for (int i = 0; i < n - 1; ++i) {
-		read(int, u, v);
-		edge(ch, u, v);
-	}
-	LCA lca(ch, 1);
-	HLD<Info, Tag> hld(ch, init, 1);
-	while (m--) {
-		read(int, op, u, v, c);
-		if (op == 1) {
-			hld.path_apply(u, v, { c });
+	read(int, n, k);
+	readvec(int, a, n);
+	ll prev = 0;
+	int cnt = 0;
+	vector<int> seq;
+	for (int i = 0; i < n; ++i) {
+		ll d = prev - ll(n - 1 - i) * cnt * a[i];
+		if (d < k) {
+			seq.emplace_back(i + 1);
 		} else {
-			if (u == v) {
-				hld.subtree_apply(1, { c });
-			} else if (lca.query(u, v) == u) {
-				int son = lca.get_kth_ancestor(v, lca.depth[v] - lca.depth[u] - 1);
-				hld.subtree_apply_exclude(son, { c });
-			} else {
-				hld.subtree_apply(u, { c });
-			}
+			prev += ll(1) * cnt * a[i];
+			cnt += 1;
 		}
 	}
-
-	for (int i = 1; i <= n; ++i) {
-		cout << hld.query(i).val << ' ';
-	}
-	cout << '\n';
+	putvec_eol(seq);
 }
 
 #ifdef SINGLE_TEST_CASE

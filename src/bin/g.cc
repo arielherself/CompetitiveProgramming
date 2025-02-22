@@ -3,6 +3,7 @@
 /************* This code requires C++17. ***************/
 
 #include<bits/stdc++.h>
+#include<tr2/dynamic_bitset>
 using namespace std;
 
 /* macro helpers */
@@ -45,6 +46,7 @@ template <typename T> using max_heap = priority_queue<T>;
 template <typename T> using min_heap = priority_queue<T, vector<T>, greater<>>;
 template <typename T> using oi = ostream_iterator<T>;
 template <typename T> using ii = istream_iterator<T>;
+using dynamic_bitset = tr2::dynamic_bitset<>;
 
 /* constants */
 constexpr int INF = 0x3f3f3f3f;
@@ -128,7 +130,7 @@ struct pair_hash {
 		auto hash1 = safe_hash()(a.first);
 		auto hash2 = safe_hash()(a.second);
 		if (hash1 != hash2) {
-			return hash1 ^ hash2;
+			return hash1 << 3 ^ hash2;
 		}
 		return hash1;
 	}
@@ -278,7 +280,7 @@ inline auto popfront(Container& q) {
 
 /* math */
 template <typename return_t>
-return_t qpow(ll b, ll p) {
+constexpr return_t qpow(ll b, ll p) {
 	if (b == 0 and p != 0) return 0;
 	if (p == 0) return 1;
 	return_t half = qpow<return_t>(b, p / 2);
@@ -287,7 +289,7 @@ return_t qpow(ll b, ll p) {
 }
 
 // dynamic modulus
-ll qpow(ll b, ll p, ll mod) {
+constexpr ll qpow(ll b, ll p, ll mod) {
 	if (b == 0 and p != 0) return 0;
 	if (p == 0) return 1;
 	ll half = qpow(b, p / 2, mod);
@@ -299,7 +301,7 @@ ll qpow(ll b, ll p, ll mod) {
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wparentheses"
 // Accurately find `i` 'th root of `n` (taking the floor)
-inline ll root(ll n, ll i) {
+constexpr inline ll root(ll n, ll i) {
 	ll l = 0, r = pow(INFLL, (long double)(1) / i);
 	while (l < r) {
 		ll mid = l + r + 1 >> 1;
@@ -321,9 +323,9 @@ __attribute__((target("lzcnt")))
 constexpr inline int lg2(ll x) { return x == 0 ? -1 : sizeof(ll) * 8 - 1 - __builtin_clzll(x); }
 
 template <typename T>
-T mygcd(T a, T b) { return b == 0 ? a : mygcd(b, a % b); }
+constexpr T mygcd(T a, T b) { return b == 0 ? a : mygcd(b, a % b); }
 
-void __exgcd(ll a, ll b, ll& x, ll& y) {
+constexpr void __exgcd(ll a, ll b, ll& x, ll& y) {
 	if (b == 0) {
 		x = 1, y = 0;
 		return;
@@ -332,8 +334,8 @@ void __exgcd(ll a, ll b, ll& x, ll& y) {
 	y -= a / b * x;
 }
 
-ll inverse(ll a, ll b) {
-	ll x, y;
+constexpr ll inverse(ll a, ll b) {
+	ll x = 0, y = 0;
 	__exgcd(a, b, x, y);
 	return mod(x, b);
 }
@@ -454,7 +456,7 @@ istream& operator>>(istream& in, MLL<mdl>& num) {
 
 // miscancellous
 template <typename T, typename U>
-bool chmax(T& lhs, const U& rhs) {
+constexpr bool chmax(T& lhs, const U& rhs) {
 	bool ret = lhs < rhs;
 	if (ret) {
 		lhs = rhs;
@@ -462,7 +464,7 @@ bool chmax(T& lhs, const U& rhs) {
 	return ret;
 }
 template <typename T, typename U>
-bool chmin(T& lhs, const U& rhs) {
+constexpr bool chmin(T& lhs, const U& rhs) {
 	bool ret = lhs > rhs;
 	if (ret) {
 		lhs = rhs;
@@ -533,7 +535,7 @@ constexpr std::array<T, N> __initarray(const T& value) {
 }
 /*******************************************************/
 
-#define SINGLE_TEST_CASE
+// #define SINGLE_TEST_CASE
 // #define DUMP_TEST_CASE 7219
 // #define TOT_TEST_CASE 10000
 
@@ -546,96 +548,26 @@ void prep() {
 
 /**
  * My thought process
- * 1. A + C = 2 * B
- * 2. Will not produce duplicates, since elements are distinct.
- * 3. Use FFT to count these (A, C) pairs.
  */
-
-template <ll M>
-ll qpow_m(ll b, ll p) {
-	if (b == 0 and p != 0) return 0;
-	if (p == 0) return 1;
-	ll half = qpow_m<M>(b, p / 2);
-	if (p % 2 == 1) return (half * half % M)* b % M;
-	else return half * half % M;
-}
-
-
-template <ll M>
-void ntt(vector<ll>& y, bool idft) {
-	int n = y.size();
-	vector<int> rev(n);
-	for (int i = 0; i < n; ++i) {
-		rev[i] = rev[i >> 1] >> 1;
-		if (i & 1) {
-			rev[i] |= n >> 1;
-		}
-	}
-	for (int i = 0; i < n; ++i) {
-		if (i < rev[i]) {
-			swap(y[i], y[rev[i]]);
-		}
-	}
-	vector<ll> roots = { 0, 1 };
-	if (roots.size() < n) {
-		int k = lsp(roots.size());
-		roots.resize(n);
-		for (; (1 << k) < n; ++k) {
-			ll e = qpow_m<M>(31, 1 << lsp(M - 1) - k - 1);
-			for (int i = 1 << k - 1; i < (1 << k); ++i) {
-				roots[2 * i] = roots[i];
-				roots[2 * i + 1] = roots[i] * e % M;
-			}
-		}
-	}
-	for (int h = 2; h <= n; h <<= 1) {
-		for (int j = 0; j < n; j += h) {
-			for (int k = j; k < j + h / 2; ++k) {
-				ll u = y[k], t = roots[k - j + h / 2] * y[k + h / 2] % M;
-				y[k] = (u + t) % M;
-				y[k + h / 2] = mod(u - t, M);
-			}
-		}
-	}
-	if (idft) {
-		reverse(y.begin() + 1, y.end());
-		ll inv = inverse(n, M);
-		for (int i = 0; i < n; ++i) {
-			y[i] = y[i] * inv % M;
-		}
-	}
-}
-// WARN: resize after use!!!
-template <ll M>
-vector<ll> multiply(const vector<ll>& a, const vector<ll>& b) {
-	vector<ll> A(a.begin(), a.end()), B(b.begin(), b.end());
-	int n = 1;
-	while (n < a.size() + b.size()) n <<= 1;
-	A.resize(n), B.resize(n);
-	ntt<M>(A, false), ntt<M>(B, false);
-	for (int i = 0; i < n; ++i) {
-		A[i] = A[i] * B[i] % M;
-	}
-	ntt<M>(A, true);
-	return A;
-}
-
 
 // __attribute__((target("popcnt")))
 void solve() {
-	constexpr int N = 1e6 + 5;
-	read(int, n);
-	vector<ll> a(N);
-	for (int i = 0; i < n; ++i) {
-		read(int, x);
-		a[x] = 1;
+	readvec(int, a, 4);
+	a[0] -= 1;
+	a[1] -= 1;
+	a[2] -= 1;
+	a[3] -= 1;
+	if (a[0] < 0 or a[1] < 0 or a[2] < 0 or a[3] < 0 or a[0] + 1 != a[1] or a[2] + 1 != a[3] or a[2] <= a[0] or a[2] - a[0] != a[3] - a[1]) {
+		cout << -1 << '\n';
+		return;
 	}
-	auto cnt = multiply<PRIME>(a, a);
-	ll res = 0;
-	for (int i = 1; i <= 1e6; ++i) {
-		res += a[i] * (cnt[2 * i] - 1) / 2;
+	int m = a[2] - a[0];
+	int n = a[2] / m;
+	if (a[2] / m != a[3] / m or a[0] / m != a[1] / m or m < 2 or a[2] % m + 1 != a[3] % m or a[0] % m + 1 != a[1] % m) {
+		cout << -1 << '\n';
+		return;
 	}
-	cout << res << '\n';
+	cout << n + 1 << ' ' << m << '\n';
 }
 
 #ifdef SINGLE_TEST_CASE
